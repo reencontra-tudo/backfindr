@@ -1,0 +1,24 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root { --radius: 0.75rem; }
+
+::-webkit-scrollbar { width: 6px; }
+::-webkit-scrollbar-track { background: #0f172a; }
+::-webkit-scrollbar-thumb { background: #334155; border-radius: 9999px; }
+::selection { background: #14b8a680; color: #f0fdf9; }
+*:focus-visible { outline: 2px solid #14b8a6; outline-offset: 2px; }
+html { scroll-behavior: smooth; }
+.mapboxgl-ctrl-logo, .mapboxgl-ctrl-attrib { display: none !important; }
+
+@layer utilities {
+  .animate-delay-100 { animation-delay: 100ms; }
+  .animate-delay-200 { animation-delay: 200ms; }
+  .animate-delay-300 { animation-delay: 300ms; }
+  .animate-delay-400 { animation-delay: 400ms; }
+  .gradient-brand { background: linear-gradient(135deg, #14b8a6 0%, #0d9488 50%, #0f766e 100%); }
+  .gradient-text { background: linear-gradient(135deg, #14b8a6, #5eead4); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
+  .glass { background: rgba(30,41,59,0.7); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); border: 1px solid rgba(51,65,85,0.8); }
+  .glow-teal { box-shadow: 0 0 20px rgba(20,184,166,0.3), 0 0 60px rgba(20,184,166,0.1); }
+}
