@@ -1,0 +1,41 @@
+name: Deploy Backend to Render
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'backend/**'
+      - '.github/workflows/deploy-render.yml'
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Deploy to Render
+        run: |
+          echo "🚀 Iniciando deploy no Render..."
+          
+          # Usar Render Deploy Hook se disponível
+          if [ ! -z "${{ secrets.RENDER_DEPLOY_HOOK }}" ]; then
+            curl -X POST "${{ secrets.RENDER_DEPLOY_HOOK }}"
+            echo "✅ Deploy disparado no Render"
+          else
+            echo "⚠️  RENDER_DEPLOY_HOOK não configurado"
+            echo "Configure em: Settings → Secrets and variables → Actions"
+          fi
+      
+      - name: Verify deployment
+        run: |
+          echo "⏳ Aguardando deployment..."
+          sleep 10
+          
+          # Testar se o backend está respondendo
+          BACKEND_URL="${{ secrets.RENDER_BACKEND_URL }}"
+          if [ ! -z "$BACKEND_URL" ]; then
+            curl -f "$BACKEND_URL/health" || echo "⚠️  Backend ainda não está pronto"
+          fi

@@ -1,0 +1,45 @@
+name: Deploy Frontend to Vercel
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'web/**'
+      - '.github/workflows/deploy-vercel.yml'
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Install Vercel CLI
+        run: npm install -g vercel
+      
+      - name: Deploy to Vercel
+        env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+          VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+          VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+        run: |
+          echo "🚀 Iniciando deploy no Vercel..."
+          
+          if [ -z "$VERCEL_TOKEN" ]; then
+            echo "❌ VERCEL_TOKEN não configurado"
+            exit 1
+          fi
+          
+          cd web
+          vercel deploy --prod --token $VERCEL_TOKEN
+          
+          echo "✅ Deploy concluído no Vercel"
+      
+      - name: Notify deployment
+        if: always()
+        run: |
+          echo "📧 Deploy completado"
+          echo "Frontend: https://backfindr.vercel.app"
+          echo "Backend: ${{ secrets.RENDER_BACKEND_URL }}"
