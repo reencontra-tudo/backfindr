@@ -30,7 +30,7 @@ export default function LoginPage() {
 
   const onSubmit = async (data: FormData) => {
     try {
-      await login(data);
+      await login(data.email, data.password);
       toast.success('Bem-vindo de volta!');
       router.push('/dashboard');
     } catch {

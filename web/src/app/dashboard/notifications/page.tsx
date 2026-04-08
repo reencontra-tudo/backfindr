@@ -3,8 +3,8 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import {
-  Bell, Package, Zap, MessageCircle, CheckCircle2,
-  QrCode, Settings, Check, Trash2
+  Bell, Zap, MessageCircle, CheckCircle2,
+  QrCode, Check, Trash2
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { formatDistanceToNow } from 'date-fns';
