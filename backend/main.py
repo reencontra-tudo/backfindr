@@ -4,10 +4,11 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 
 from core.config import settings
-from core.database import engine, Base
+# Lazy import to avoid startup errors
+# from core.database import engine, Base
 
 # Import all models so Alembic can detect them
-from models import User, RegisteredObject, Match, ChatMessage, PushSubscription, Notification  # noqa
+# from models import User, RegisteredObject, Match, ChatMessage, PushSubscription, Notification  # noqa
 
 # Routers
 from routers.health import router as health_router
