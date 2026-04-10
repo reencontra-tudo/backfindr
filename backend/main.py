@@ -62,11 +62,12 @@ app.include_router(admin_router, prefix=PREFIX)
 
 
 # ─── Startup ──────────────────────────────────────────────────────────────────
-@app.on_event("startup")
-async def startup():
-    # Create tables if not exist (use Alembic in production)
-    async with engine.begin() as conn:
-        await conn.run_sync(Base.metadata.create_all)
+# Comentado temporariamente para evitar erro de conexão no startup
+# @app.on_event("startup")
+# async def startup():
+#     # Create tables if not exist (use Alembic in production)
+#     async with engine.begin() as conn:
+#         await conn.run_sync(Base.metadata.create_all)
 
 
 @app.get("/")
