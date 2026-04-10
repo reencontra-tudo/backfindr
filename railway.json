@@ -8,5 +8,28 @@
     "numReplicas": 1,
     "startCommand": "uvicorn main:app --host 0.0.0.0 --port $PORT",
     "restartPolicyMaxRetries": 10
+  },
+  "env": {
+    "DATABASE_URL": {
+      "description": "PostgreSQL connection string"
+    },
+    "REDIS_URL": {
+      "description": "Redis connection string"
+    },
+    "MAPBOX_ACCESS_TOKEN": {
+      "description": "Mapbox API token for mapping features"
+    },
+    "STRIPE_SECRET_KEY": {
+      "description": "Stripe secret key for payments"
+    },
+    "STRIPE_PUBLISHABLE_KEY": {
+      "description": "Stripe publishable key for payments"
+    },
+    "JWT_SECRET": {
+      "description": "JWT secret key for authentication"
+    },
+    "ENVIRONMENT": {
+      "value": "production"
+    }
   }
 }
