@@ -6,7 +6,7 @@ from typing import Optional
 
 from core.database import get_db
 from core.security import decode_token
-from models.user import User
+from models import User
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/v1/auth/login")
 
