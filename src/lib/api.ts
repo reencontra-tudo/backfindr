@@ -91,6 +91,23 @@ export const matchesApi = {
   reject: (id: string) => api.post(`/matches/${id}/reject`),
 };
 
+export const matchingApi = {
+  runForObject: (objectId: string) => api.post(`/matching/run/${objectId}`),
+  runAll: () => api.post('/matching/run-all'),
+  scores: (objectId: string) => api.get(`/matching/scores/${objectId}`),
+};
+
+export const adminApi = {
+  stats: () => api.get('/admin/stats'),
+};
+
+export const publicApi = {
+  getObject: (code: string) => api.get(`/objects/scan/${code}`),
+  notifyOwner: (code: string) => api.post(`/objects/scan/${code}/notify`),
+  getUserProfile: (id: string) => api.get(`/users/${id}/public`),
+  listPublic: (params?: object) => api.get('/objects/public', { params }),
+};
+
 export const chatApi = {
   history: (matchId: string) => api.get(`/chat/${matchId}/messages`),
 };
