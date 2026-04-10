@@ -6,13 +6,6 @@
   "deploy": {
     "numReplicas": 1,
     "startCommand": "uvicorn main:app --host 0.0.0.0 --port 8000",
-    "restartPolicyMaxRetries": 10,
-    "healthchecks": {
-      "readiness": {
-        "httpPath": "/health",
-        "initialDelaySeconds": 10,
-        "intervalSeconds": 10
-      }
-    }
+    "restartPolicyMaxRetries": 10
   }
 }
