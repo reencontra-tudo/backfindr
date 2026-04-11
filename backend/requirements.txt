@@ -13,6 +13,6 @@ redis==5.1.0
 httpx==0.28.1
 websockets==14.1
 pywebpush==2.0.0
-pillow==11.2.0
+pillow==12.2.0
 python-dotenv==1.0.1
 emails==0.6
