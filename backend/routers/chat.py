@@ -5,7 +5,7 @@ from fastapi import APIRouter, WebSocket, WebSocketDisconnect, Depends, HTTPExce
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 
-from core.database import get_db, get_async_session_local
+from core.database import get_db, AsyncSessionLocal
 from core.deps import get_current_user, get_current_user_ws
 from models import User, Match, ChatMessage
 
@@ -53,7 +53,7 @@ manager = ConnectionManager()
 async def chat_ws(websocket: WebSocket, match_id: str):
     token = websocket.query_params.get("token")
 
-    async with get_async_session_local()() as db:
+    async with AsyncSessionLocal() as db:
         user = await get_current_user_ws(token, db)
         if not user:
             await websocket.close(code=4001)
@@ -108,7 +108,7 @@ async def chat_ws(websocket: WebSocket, match_id: str):
                 if not content or len(content) > 2000:
                     continue
 
-                async with get_async_session_local()() as db:
+                async with AsyncSessionLocal() as db:
                     msg = ChatMessage(
                         id=uuid.uuid4(),
                         match_id=match_id,

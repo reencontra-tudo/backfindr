@@ -4,11 +4,10 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 
 from core.config import settings
-# Lazy import to avoid startup errors
-# from core.database import engine, Base
+from core.database import engine, Base
 
 # Import all models so Alembic can detect them
-# from models import User, RegisteredObject, Match, ChatMessage, PushSubscription, Notification  # noqa
+from models import User, RegisteredObject, Match, ChatMessage, PushSubscription, Notification  # noqa
 
 # Routers
 from routers.health import router as health_router
@@ -63,12 +62,11 @@ app.include_router(admin_router, prefix=PREFIX)
 
 
 # ─── Startup ──────────────────────────────────────────────────────────────────
-# Comentado temporariamente para evitar erro de conexão no startup
-# @app.on_event("startup")
-# async def startup():
-#     # Create tables if not exist (use Alembic in production)
-#     async with engine.begin() as conn:
-#         await conn.run_sync(Base.metadata.create_all)
+@app.on_event("startup")
+async def startup():
+    # Create tables if not exist (use Alembic in production)
+    async with engine.begin() as conn:
+        await conn.run_sync(Base.metadata.create_all)
 
 
 @app.get("/")

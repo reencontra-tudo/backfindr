@@ -21,7 +21,7 @@ from fastapi import APIRouter, Depends, BackgroundTasks, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, and_, or_
 
-from core.database import get_db, get_async_session_local
+from core.database import get_db, AsyncSessionLocal
 from core.deps import get_current_user
 from models import User, RegisteredObject, Match, Notification
 from routers.notifications import send_push_to_user
@@ -223,7 +223,7 @@ async def run_matching_for_object(object_id: str, db: AsyncSession) -> List[Matc
 # ─── Background task ──────────────────────────────────────────────────────────
 async def run_full_matching():
     """Roda matching completo em background — chamado periodicamente."""
-    async with get_async_session_local()() as db:
+    async with AsyncSessionLocal() as db:
         result = await db.execute(
             select(RegisteredObject).where(
                 RegisteredObject.status.in_(['lost', 'found'])
