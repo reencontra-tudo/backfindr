@@ -1,0 +1,15 @@
+{
+  "buildCommand": "cd backend && pip install -r requirements.txt",
+  "outputDirectory": "backend",
+  "functions": {
+    "backend/main.py": {
+      "runtime": "python3.11"
+    }
+  },
+  "rewrites": [
+    {
+      "source": "/api/(.*)",
+      "destination": "/backend/main.py"
+    }
+  ]
+}
