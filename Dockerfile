@@ -20,5 +20,5 @@ ENV PYTHONPATH=/app:$PYTHONPATH
 EXPOSE 8000
 
 CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000"]
-# Build: Fri Apr 10 10:50:00 EDT 2026 - Force rebuild
-# Rebuild trigger Fri Apr 10 10:33:41 EDT 2026
+# Build: Fri Apr 10 15:45:00 EDT 2026 - Force rebuild with cache clear
+# Rebuild trigger Fri Apr 10 15:45:00 EDT 2026
