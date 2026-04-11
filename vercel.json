@@ -1,17 +1,19 @@
 {
-  "framework": "nextjs",
-  "rewrites": [
+  "version": 2,
+  "builds": [
     {
-      "source": "/api/v1/health",
-      "destination": "/api/health"
-    },
+      "src": "main.py",
+      "use": "@vercel/python",
+      "config": {
+        "maxLambdaSize": "15mb",
+        "runtime": "python3.11"
+      }
+    }
+  ],
+  "routes": [
     {
-      "source": "/api/v1/auth/register",
-      "destination": "/api/auth/register"
-    },
-    {
-      "source": "/api/v1/auth/login",
-      "destination": "/api/auth/login"
+      "src": "/(.*)",
+      "dest": "main.py"
     }
   ]
 }
