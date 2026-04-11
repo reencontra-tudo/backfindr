@@ -2,35 +2,14 @@ services:
   - type: web
     name: backfindr-backend
     runtime: python
-    plan: standard
-    buildCommand: pip install -r requirements.txt
-    startCommand: uvicorn main:app --host 0.0.0.0 --port $PORT
+    plan: free
+    buildCommand: cd backend && pip install -r requirements.txt
+    startCommand: cd backend && uvicorn main:app --host 0.0.0.0 --port $PORT
     envVars:
       - key: DATABASE_URL
-        scope: service
-        value: ${backfindr_db.DATABASE_URL}
-      - key: REDIS_URL
-        scope: service
-        value: ${backfindr_redis.REDIS_URL}
-      - key: MAPBOX_ACCESS_TOKEN
-        scope: service
-        sync: false
-      - key: STRIPE_SECRET_KEY
-        scope: service
-        sync: false
-      - key: STRIPE_PUBLISHABLE_KEY
-        scope: service
-        sync: false
-      - key: JWT_SECRET
         scope: service
         sync: false
       - key: ENVIRONMENT
         value: production
-
-  - type: pserv
-    name: backfindr-db
-    plan: standard
-
-  - type: redis
-    name: backfindr-redis
-    plan: free
+      - key: DEBUG
+        value: "false"
