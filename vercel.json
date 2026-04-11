@@ -1,15 +1,14 @@
 {
   "framework": "nextjs",
   "functions": {
-    "api/index.py": {
-      "runtime": "python3.11",
-      "maxDuration": 30
+    "api/**/*.py": {
+      "runtime": "python3.11"
     }
   },
   "rewrites": [
     {
       "source": "/api/v1/:path*",
-      "destination": "/api/index"
+      "destination": "/api/index.py"
     }
   ],
   "env": {
