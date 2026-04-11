@@ -1,17 +1,17 @@
 {
   "framework": "nextjs",
-  "functions": {
-    "api/**/*.py": {
-      "runtime": "python3.11"
-    }
-  },
   "rewrites": [
     {
-      "source": "/api/v1/:path*",
-      "destination": "/api/index.py"
+      "source": "/api/v1/health",
+      "destination": "/api/health"
+    },
+    {
+      "source": "/api/v1/auth/register",
+      "destination": "/api/auth/register"
+    },
+    {
+      "source": "/api/v1/auth/login",
+      "destination": "/api/auth/login"
     }
-  ],
-  "env": {
-    "PYTHONPATH": "."
-  }
+  ]
 }
