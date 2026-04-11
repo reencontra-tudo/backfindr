@@ -1,0 +1,10 @@
+{
+  "buildCommand": "next build",
+  "outputDirectory": ".next",
+  "framework": "nextjs",
+  "nodeVersion": "20.x",
+  "env": {
+    "NEXT_PUBLIC_API_URL": "@backfindr_api_url"
+  },
+  "envPrefix": "NEXT_PUBLIC_"
+}
