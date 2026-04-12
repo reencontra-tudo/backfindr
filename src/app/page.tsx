@@ -85,13 +85,13 @@ async function fetchRealActivities(): Promise<ActivityItem[]> {
 
 // ─── Live Feed ────────────────────────────────────────────────────────────────
 function LiveFeed() {
-  const [items, setItems] = useState(ACTIVITIES.slice(0, 4));
+  const [items, setItems] = useState(FALLBACK_ACTIVITIES.slice(0, 4));
   const [entering, setEntering] = useState<number | null>(null);
   const counterRef = useRef(4);
 
   useEffect(() => {
     const interval = setInterval(() => {
-      const next = ACTIVITIES[counterRef.current % ACTIVITIES.length];
+      const next = FALLBACK_ACTIVITIES[counterRef.current % FALLBACK_ACTIVITIES.length];
       counterRef.current++;
       setEntering(next.id);
       setItems(prev => [next, ...prev.slice(0, 3)]);
