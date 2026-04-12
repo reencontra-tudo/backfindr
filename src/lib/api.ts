@@ -2,7 +2,7 @@ import axios, { AxiosInstance, InternalAxiosRequestConfig } from 'axios';
 import Cookies from 'js-cookie';
 import { AuthTokens } from '@/types';
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL ?? '';
+const API_URL = 'https://backfindr.vercel.app';
 
 export const api: AxiosInstance = axios.create({
   baseURL: `${API_URL}/api/v1`,
