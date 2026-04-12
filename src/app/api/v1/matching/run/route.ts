@@ -4,28 +4,42 @@ import { query } from '@/lib/db';
 import { verifyToken, extractTokenFromHeader } from '@/lib/jwt';
 import { successResponse, unauthorizedResponse, internalErrorResponse } from '@/lib/response';
 
-// Função simplificada de matching (em produção seria mais sofisticada com IA)
+// Função de matching por similaridade de texto e localização
 async function calculateMatchScore(lostObject: any, foundObject: any): Promise<number> {
   let score = 0;
 
-  // Tipo deve ser igual
-  if (lostObject.type === foundObject.type) score += 40;
+  // Categoria igual (se disponível)
+  if (lostObject.category && foundObject.category && lostObject.category === foundObject.category) {
+    score += 30;
+  }
 
-  // Localização próxima (simplificado)
+  // Localização próxima
   if (lostObject.latitude && foundObject.latitude) {
-    const latDiff = Math.abs(lostObject.latitude - foundObject.latitude);
-    const lonDiff = Math.abs(lostObject.longitude - foundObject.longitude);
+    const latDiff = Math.abs(parseFloat(lostObject.latitude) - parseFloat(foundObject.latitude));
+    const lonDiff = Math.abs(parseFloat(lostObject.longitude) - parseFloat(foundObject.longitude));
     const distance = Math.sqrt(latDiff * latDiff + lonDiff * lonDiff);
 
     if (distance < 0.05) score += 40; // ~5km
     else if (distance < 0.1) score += 20;
+    else if (distance < 0.2) score += 10;
+  } else {
+    // Sem localização, dar pontuação parcial
+    score += 20;
   }
 
-  // Descrição similar (simplificado)
+  // Título similar
+  if (lostObject.title && foundObject.title) {
+    const lostWords = lostObject.title.toLowerCase().split(/\s+/);
+    const foundWords = foundObject.title.toLowerCase().split(/\s+/);
+    const commonWords = lostWords.filter((w: string) => w.length > 2 && foundWords.includes(w)).length;
+    if (commonWords > 0) score += Math.min(20, commonWords * 10);
+  }
+
+  // Descrição similar
   if (lostObject.description && foundObject.description) {
-    const lostWords = lostObject.description.toLowerCase().split(' ');
-    const foundWords = foundObject.description.toLowerCase().split(' ');
-    const commonWords = lostWords.filter((w: string) => foundWords.includes(w)).length;
+    const lostWords = lostObject.description.toLowerCase().split(/\s+/);
+    const foundWords = foundObject.description.toLowerCase().split(/\s+/);
+    const commonWords = lostWords.filter((w: string) => w.length > 3 && foundWords.includes(w)).length;
     const similarity = (commonWords / Math.max(lostWords.length, foundWords.length)) * 20;
     score += similarity;
   }
@@ -56,7 +70,7 @@ export async function POST(request: NextRequest) {
       return successResponse({ detail: 'objectId is required' }, 400);
     }
 
-    // Buscar objeto
+    // Buscar objeto do usuário
     const objectResult = await query(
       'SELECT * FROM objects WHERE id = $1 AND user_id = $2',
       [objectId, payload.sub]
@@ -68,19 +82,27 @@ export async function POST(request: NextRequest) {
 
     const object = objectResult.rows[0];
 
-    // Buscar objetos com status oposto
+    // Buscar objetos com status oposto (se lost, buscar found e vice-versa)
     const oppositeStatus = object.status === 'lost' ? 'found' : 'lost';
-    const candidatesResult = await query(
-      `SELECT * FROM objects WHERE status = $1 AND type = $2 AND id != $3`,
-      [oppositeStatus, object.type, objectId]
-    );
+    
+    // Buscar candidatos com status oposto, excluindo o próprio objeto
+    let candidateQuery = `SELECT * FROM objects WHERE status = $1 AND id != $2`;
+    const candidateParams: any[] = [oppositeStatus, objectId];
+    
+    // Se tiver categoria, filtrar por categoria
+    if (object.category) {
+      candidateQuery += ` AND (category = $3 OR category IS NULL)`;
+      candidateParams.push(object.category);
+    }
+    
+    const candidatesResult = await query(candidateQuery, candidateParams);
 
     const matches: any[] = [];
 
     for (const candidate of candidatesResult.rows) {
       const score = await calculateMatchScore(object, candidate);
 
-      if (score >= 60) {
+      if (score >= 50) {
         // Verificar se match já existe
         const existingMatch = await query(
           `SELECT id FROM matches 
@@ -109,6 +131,7 @@ export async function POST(request: NextRequest) {
     return successResponse({
       message: `Matching completed. Found ${matches.length} potential matches.`,
       matches,
+      candidates_checked: candidatesResult.rows.length,
     });
   } catch (error) {
     return internalErrorResponse(error);
