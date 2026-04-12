@@ -1,3 +1,4 @@
+export const dynamic = 'force-dynamic';
 import { NextRequest } from 'next/server';
 import { verifyToken, createAccessToken, createRefreshToken } from '@/lib/jwt';
 import { successResponse, errorResponse, internalErrorResponse } from '@/lib/response';

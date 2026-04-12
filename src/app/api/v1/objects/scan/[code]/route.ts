@@ -1,3 +1,4 @@
+export const dynamic = 'force-dynamic';
 import { NextRequest } from 'next/server';
 import { query } from '@/lib/db';
 import { successResponse, notFoundResponse, internalErrorResponse } from '@/lib/response';
