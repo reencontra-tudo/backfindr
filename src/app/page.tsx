@@ -1,44 +1,89 @@
 'use client';
 
 import Link from 'next/link';
-import { useState, useEffect, useRef, useCallback } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { ArrowRight, MapPin, QrCode, Zap, Shield, Globe, ChevronRight } from 'lucide-react';
 
-// ─── Live activity data ────────────────────────────────────────────────────────
-const ACTIVITIES = [
-  { id: 1, type: 'lost',    emoji: '📱', text: 'iPhone 15 Pro preto perdido',     city: 'Metrô Paulista, SP',   time: 'agora' },
-  { id: 2, type: 'found',   emoji: '👛', text: 'Carteira encontrada com docs',    city: 'Pinheiros, SP',        time: '1 min' },
-  { id: 3, type: 'match',   emoji: '⚡', text: 'Match 94% confirmado pela IA',    city: 'Brooklin, SP',         time: '2 min' },
-  { id: 4, type: 'lost',    emoji: '🐾', text: 'Labrador caramelo desaparecido',  city: 'Ibirapuera, SP',       time: '3 min' },
-  { id: 5, type: 'found',   emoji: '🔑', text: 'Chaves encontradas no estacionamento', city: 'Vila Mariana, SP', time: '5 min' },
-  { id: 6, type: 'match',   emoji: '⚡', text: 'Objeto devolvido ao dono',        city: 'Moema, SP',            time: '7 min' },
-  { id: 7, type: 'lost',    emoji: '💻', text: 'MacBook Air prata desaparecido',  city: 'Faria Lima, SP',       time: '9 min' },
-  { id: 8, type: 'found',   emoji: '📄', text: 'RG e CNH encontrados',            city: 'Centro, RJ',           time: '11 min' },
-  { id: 9, type: 'match',   emoji: '⚡', text: 'Match 88% — carteira localizada', city: 'Copacabana, RJ',       time: '12 min' },
-  { id: 10, type: 'lost',   emoji: '🎒', text: 'Mochila azul com notebook',       city: 'Lapa, SP',             time: '14 min' },
-  { id: 11, type: 'found',  emoji: '💍', text: 'Anel de ouro encontrado',         city: 'Higienópolis, SP',     time: '16 min' },
-  { id: 12, type: 'match',  emoji: '⚡', text: 'Pet reunido com o dono',          city: 'Perdizes, SP',         time: '18 min' },
+// ─── Fallback data — used when API has < 4 objects ────────────────────────────
+const FALLBACK_ACTIVITIES = [
+  { id: 'f1', type: 'lost',  emoji: '📱', text: 'iPhone 15 Pro preto perdido',      city: 'Metrô Paulista, SP',    time: 'agora' },
+  { id: 'f2', type: 'found', emoji: '👛', text: 'Carteira encontrada com docs',     city: 'Pinheiros, SP',         time: '1 min' },
+  { id: 'f3', type: 'match', emoji: '⚡', text: 'Match 94% confirmado pela IA',     city: 'Brooklin, SP',          time: '2 min' },
+  { id: 'f4', type: 'lost',  emoji: '🐾', text: 'Labrador caramelo desaparecido',   city: 'Ibirapuera, SP',        time: '3 min' },
+  { id: 'f5', type: 'found', emoji: '🔑', text: 'Chaves encontradas no estac.',     city: 'Vila Mariana, SP',      time: '5 min' },
+  { id: 'f6', type: 'match', emoji: '⚡', text: 'Objeto devolvido ao dono',         city: 'Moema, SP',             time: '7 min' },
+  { id: 'f7', type: 'lost',  emoji: '💻', text: 'MacBook Air prata desaparecido',   city: 'Faria Lima, SP',        time: '9 min' },
+  { id: 'f8', type: 'found', emoji: '📄', text: 'RG e CNH encontrados',             city: 'Centro, RJ',            time: '11 min' },
 ];
 
-const TYPE_COLOR = {
-  lost:  'text-red-400',
-  found: 'text-teal-400',
-  match: 'text-yellow-400',
+const CATEGORY_EMOJI: Record<string, string> = {
+  phone: '📱', wallet: '👛', keys: '🔑', bag: '🎒', pet: '🐾',
+  bike: '🚲', document: '📄', jewelry: '💍', electronics: '💻',
+  clothing: '👕', other: '📦',
 };
 
-const TYPE_BG = {
+const TYPE_BG: Record<string, string> = {
   lost:  'bg-red-500/10 border-red-500/20',
   found: 'bg-teal-500/10 border-teal-500/20',
   match: 'bg-yellow-500/10 border-yellow-500/20',
 };
 
-const TYPE_LABEL = {
+const TYPE_COLOR: Record<string, string> = {
+  lost:  'text-red-400',
+  found: 'text-teal-400',
+  match: 'text-yellow-400',
+};
+
+const TYPE_LABEL: Record<string, string> = {
   lost:  'Perdido',
   found: 'Achado',
   match: 'Match IA',
 };
 
-// ─── Live Feed Component ───────────────────────────────────────────────────────
+interface ActivityItem {
+  id: string;
+  type: string;
+  emoji: string;
+  text: string;
+  city: string;
+  time: string;
+}
+
+// ─── Fetch real objects from API ──────────────────────────────────────────────
+async function fetchRealActivities(): Promise<ActivityItem[]> {
+  try {
+    const res = await fetch('/api/v1/objects/public?size=20&status=lost', {
+      next: { revalidate: 60 },
+    });
+    if (!res.ok) return [];
+    const data = await res.json();
+    const items = data?.items ?? [];
+
+    return items.map((obj: {
+      id: string;
+      title: string;
+      category: string;
+      status: string;
+      location_addr?: string;
+      created_at: string;
+    }) => {
+      const mins = Math.floor((Date.now() - new Date(obj.created_at).getTime()) / 60000);
+      const time = mins < 1 ? 'agora' : mins < 60 ? `${mins} min` : `${Math.floor(mins / 60)}h`;
+      return {
+        id: obj.id,
+        type: obj.status,
+        emoji: CATEGORY_EMOJI[obj.category] ?? '📦',
+        text: obj.title,
+        city: obj.location_addr ?? 'São Paulo, SP',
+        time,
+      };
+    });
+  } catch {
+    return [];
+  }
+}
+
+// ─── Live Feed ────────────────────────────────────────────────────────────────
 function LiveFeed() {
   const [items, setItems] = useState(ACTIVITIES.slice(0, 4));
   const [entering, setEntering] = useState<number | null>(null);

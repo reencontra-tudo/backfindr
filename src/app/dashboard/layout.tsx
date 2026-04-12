@@ -15,6 +15,7 @@ const NAV = [
   { href: '/dashboard/search', icon: Search, label: 'Buscar Achados' },
   { href: '/dashboard/matches', icon: QrCode, label: 'Matches', badge: 2 },
   { href: '/dashboard/notifications', icon: Bell, label: 'Notificações' },
+  { href: '/dashboard/billing', icon: Settings, label: 'Plano' },
   { href: '/dashboard/settings', icon: Settings, label: 'Configurações' },
 ];
 
