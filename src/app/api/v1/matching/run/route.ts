@@ -102,7 +102,7 @@ export async function POST(request: NextRequest) {
     for (const candidate of candidatesResult.rows) {
       const score = await calculateMatchScore(object, candidate);
 
-      if (score >= 50) {
+      if (score >= 40) {
         // Verificar se match já existe
         const existingMatch = await query(
           `SELECT id FROM matches 
