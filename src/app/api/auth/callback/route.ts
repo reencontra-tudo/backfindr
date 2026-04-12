@@ -1,48 +1,109 @@
 export const dynamic = 'force-dynamic';
 import { NextRequest, NextResponse } from 'next/server';
-
-const API_URL = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:8000';
+import { query } from '@/lib/db';
+import { createAccessToken, createRefreshToken } from '@/lib/jwt';
 
 export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url);
   const code = searchParams.get('code');
   const error = searchParams.get('error');
+  const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://backfindr.vercel.app';
 
   if (error || !code) {
-    return NextResponse.redirect(new URL('/auth/login?error=oauth_denied', request.url));
+    return NextResponse.redirect(`${appUrl}/auth/login?error=oauth_denied`);
   }
 
   try {
-    const response = await fetch(`${API_URL}/api/v1/auth/google/callback`, {
+    const clientId = process.env.GOOGLE_CLIENT_ID;
+    const clientSecret = process.env.GOOGLE_CLIENT_SECRET;
+    const redirectUri = `${appUrl}/api/auth/callback`;
+
+    if (!clientId || !clientSecret) {
+      return NextResponse.redirect(`${appUrl}/auth/login?error=google_not_configured`);
+    }
+
+    // Trocar código por access token
+    const tokenResponse = await fetch('https://oauth2.googleapis.com/token', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ code, redirect_uri: `${request.nextUrl.origin}/api/auth/callback` }),
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      body: new URLSearchParams({
+        code,
+        client_id: clientId,
+        client_secret: clientSecret,
+        redirect_uri: redirectUri,
+        grant_type: 'authorization_code',
+      }).toString(),
     });
 
-    if (!response.ok) throw new Error('OAuth failed');
+    const tokenData = await tokenResponse.json();
+    if (!tokenData.access_token) {
+      console.error('Google token error:', tokenData);
+      return NextResponse.redirect(`${appUrl}/auth/login?error=google_token_failed`);
+    }
 
-    const { access_token, refresh_token } = await response.json();
+    // Buscar dados do usuário
+    const userResponse = await fetch('https://www.googleapis.com/oauth2/v2/userinfo', {
+      headers: { Authorization: `Bearer ${tokenData.access_token}` },
+    });
+    const userData = await userResponse.json();
 
-    const redirectResponse = NextResponse.redirect(new URL('/dashboard', request.url));
+    if (!userData.id) {
+      return NextResponse.redirect(`${appUrl}/auth/login?error=google_user_failed`);
+    }
 
-    redirectResponse.cookies.set('access_token', access_token, {
+    const email = userData.email;
+    const name = userData.name || 'Usuário Google';
+    const googleId = userData.id;
+    const avatarUrl = userData.picture;
+
+    if (!email) {
+      return NextResponse.redirect(`${appUrl}/auth/login?error=google_no_email`);
+    }
+
+    // Verificar se usuário já existe
+    const userResult = await query(
+      'SELECT id, email, name FROM users WHERE email = $1 OR google_id = $2',
+      [email, googleId]
+    );
+
+    let user;
+    if (userResult.rows.length > 0) {
+      user = userResult.rows[0];
+      await query(
+        'UPDATE users SET google_id = $1, avatar_url = $2, updated_at = NOW() WHERE id = $3',
+        [googleId, avatarUrl, user.id]
+      );
+    } else {
+      const insertResult = await query(
+        `INSERT INTO users (email, name, google_id, avatar_url, is_verified, plan, created_at, updated_at)
+         VALUES ($1, $2, $3, $4, true, 'free', NOW(), NOW())
+         RETURNING id, email, name`,
+        [email, name, googleId, avatarUrl]
+      );
+      user = insertResult.rows[0];
+    }
+
+    const accessToken = createAccessToken(user.id, user.email);
+    const refreshToken = createRefreshToken(user.id, user.email);
+
+    const redirectResponse = NextResponse.redirect(`${appUrl}/dashboard`);
+    redirectResponse.cookies.set('access_token', accessToken, {
       httpOnly: false,
-      secure: process.env.NODE_ENV === 'production',
+      secure: true,
       sameSite: 'lax',
-      maxAge: 60 * 60 * 24, // 1 day
+      maxAge: 60 * 60 * 24,
       path: '/',
     });
-
-    redirectResponse.cookies.set('refresh_token', refresh_token, {
+    redirectResponse.cookies.set('refresh_token', refreshToken, {
       httpOnly: false,
-      secure: process.env.NODE_ENV === 'production',
+      secure: true,
       sameSite: 'lax',
-      maxAge: 60 * 60 * 24 * 30, // 30 days
+      maxAge: 60 * 60 * 24 * 30,
       path: '/',
     });
-
     return redirectResponse;
-  } catch {
-    return NextResponse.redirect(new URL('/auth/login?error=oauth_failed', request.url));
+  } catch (err) {
+    console.error('Google OAuth error:', err);
+    return NextResponse.redirect(`${appUrl}/auth/login?error=oauth_failed`);
   }
 }

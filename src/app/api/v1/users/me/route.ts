@@ -22,7 +22,7 @@ export async function GET(request: NextRequest) {
 
     // Buscar usuário
     const result = await query(
-      'SELECT id, email, name, phone, created_at, updated_at FROM users WHERE id = $1',
+      'SELECT id, email, name, phone, plan, is_verified, avatar_url, created_at, updated_at FROM users WHERE id = $1',
       [payload.sub]
     );
 
@@ -37,6 +37,9 @@ export async function GET(request: NextRequest) {
       email: user.email,
       name: user.name,
       phone: user.phone,
+      plan: user.plan || 'free',
+      is_verified: user.is_verified || false,
+      avatar_url: user.avatar_url,
       created_at: user.created_at,
       updated_at: user.updated_at,
     });

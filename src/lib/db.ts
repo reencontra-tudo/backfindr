@@ -1,22 +1,57 @@
 import { Pool, PoolClient } from 'pg';
 
-// Parse the DATABASE_URL to ensure correct port and SSL settings
+// Parse DATABASE_URL manually to handle special characters in password
+function parseConnectionString(connectionString: string) {
+  try {
+    // URL class handles percent-encoded characters properly
+    const url = new URL(connectionString);
+    return {
+      host: url.hostname,
+      port: parseInt(url.port || '6543', 10),
+      database: url.pathname.replace(/^\//, ''),
+      user: decodeURIComponent(url.username),
+      password: decodeURIComponent(url.password),
+    };
+  } catch {
+    return null;
+  }
+}
+
 function createPool() {
   const connectionString = process.env.DATABASE_URL;
-  
+
   if (!connectionString) {
     throw new Error('DATABASE_URL environment variable is not set');
   }
 
-  // Force SSL and correct settings for Supabase Pooler (port 6543)
+  const parsed = parseConnectionString(connectionString);
+
+  if (parsed) {
+    // Use individual parameters to avoid URL parsing issues with special chars
+    return new Pool({
+      host: parsed.host,
+      port: parsed.port,
+      database: parsed.database,
+      user: parsed.user,
+      password: parsed.password,
+      ssl: {
+        rejectUnauthorized: false,
+      },
+      max: 1, // Serverless: limit connections
+      idleTimeoutMillis: 30000,
+      connectionTimeoutMillis: 15000,
+    });
+  }
+
+  // Fallback: use connectionString directly
   return new Pool({
     connectionString,
     ssl: {
       rejectUnauthorized: false,
     },
-    max: 1, // Serverless: limit connections
+    max: 1,
     idleTimeoutMillis: 30000,
-    connectionTimeoutMillis: 10000,
+    connectionTimeoutMillis: 15000,
   });
 }
 
