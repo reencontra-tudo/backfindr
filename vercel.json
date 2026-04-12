@@ -2,11 +2,10 @@
   "framework": "nextjs",
   "buildCommand": "npm run build",
   "outputDirectory": ".next",
-  "regions": ["sfo1"],
+  "regions": ["iad1"],
   "functions": {
     "src/app/api/**/*.ts": {
-      "memory": 3008,
-      "maxDuration": 60
+      "maxDuration": 30
     }
   }
 }
