@@ -43,12 +43,19 @@ function BillingContent() {
   const handleUpgrade = async () => {
     setCheckoutLoading(true);
     try {
-      const { data } = await api.post('/api/stripe/checkout', {
-        price_id: process.env.NEXT_PUBLIC_STRIPE_PRO_PRICE_ID,
-        success_url: `${window.location.origin}/dashboard/billing?success=true`,
-        cancel_url: `${window.location.origin}/dashboard/billing`,
+      // Chama a API route do Next.js diretamente (não o backend FastAPI)
+      const res = await fetch('/api/stripe/checkout', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          price_id: process.env.NEXT_PUBLIC_STRIPE_PRO_PRICE_ID,
+          success_url: `${window.location.origin}/dashboard/billing?success=true`,
+          cancel_url: `${window.location.origin}/dashboard/billing`,
+        }),
       });
-      window.location.href = data.url;
+      const data = await res.json();
+      if (data.url) window.location.href = data.url;
+      else toast.error(data.error ?? 'Erro ao iniciar checkout');
     } catch (e) {
       toast.error(parseApiError(e));
     } finally {
@@ -90,7 +97,7 @@ function BillingContent() {
 
           <div className="grid grid-cols-2 gap-3">
             {[
-              { label: 'Objetos', value: status?.features.max_objects === -1 ? 'Ilimitados' : `Até ${status?.features.max_objects}` },
+              { label: 'Objetos', value: status?.features.max_objects === -1 ? 'Ilimitados' : `Até ${status?.features.max_objects ?? 3}` },
               { label: 'IA de matching', value: status?.features.ai_matching ? 'Ativo' : 'Inativo' },
               { label: 'Push notifications', value: status?.features.push_notifications ? 'Ativo' : 'Inativo' },
               { label: 'Suporte prioritário', value: status?.features.priority_support ? 'Ativo' : 'Inativo' },
