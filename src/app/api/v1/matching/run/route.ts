@@ -98,9 +98,11 @@ export async function POST(request: NextRequest) {
     const candidatesResult = await query(candidateQuery, candidateParams);
 
     const matches: any[] = [];
+    const debugScores: any[] = [];
 
     for (const candidate of candidatesResult.rows) {
       const score = await calculateMatchScore(object, candidate);
+      debugScores.push({ candidateId: candidate.id, title: candidate.title, score });
 
       if (score >= 40) {
         // Verificar se match já existe
@@ -132,6 +134,7 @@ export async function POST(request: NextRequest) {
       message: `Matching completed. Found ${matches.length} potential matches.`,
       matches,
       candidates_checked: candidatesResult.rows.length,
+      debug_scores: debugScores,
     });
   } catch (error) {
     return internalErrorResponse(error);
