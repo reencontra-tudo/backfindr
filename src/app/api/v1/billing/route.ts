@@ -5,7 +5,7 @@ import { verifyToken } from '@/lib/jwt';
 import { successResponse, errorResponse, internalErrorResponse } from '@/lib/response';
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || '', {
-  apiVersion: '2024-12-18.acacia',
+  apiVersion: '2024-06-20',
 });
 
 // GET /api/v1/billing — status do plano atual
