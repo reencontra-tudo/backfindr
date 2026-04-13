@@ -40,6 +40,8 @@ function normalizeObject(row: Record<string, unknown>) {
     pet_breed: row.breed,
     is_legacy: row.is_legacy,
     source: row.source,
+    reward_amount: row.reward_amount ? parseFloat(String(row.reward_amount)) : null,
+    reward_description: row.reward_description || null,
     created_at: row.created_at,
     updated_at: row.updated_at,
   };
@@ -73,7 +75,8 @@ export async function GET(request: NextRequest) {
 
     const result = await query(
       `SELECT id, title, description, status, category, type, location, latitude, longitude,
-              qr_code, images, color, brand, breed, is_legacy, source, user_id, created_at, updated_at
+              qr_code, images, color, brand, breed, is_legacy, source, user_id,
+              reward_amount, reward_description, created_at, updated_at
        FROM objects
        ${whereClause}
        ORDER BY created_at DESC
@@ -112,7 +115,7 @@ export async function POST(request: NextRequest) {
     if (!payload) return unauthorizedResponse();
 
     const body = await request.json();
-    const { title, description, status, type, category, location, latitude, longitude, images } = body;
+    const { title, description, status, type, category, location, latitude, longitude, images, reward_amount, reward_description } = body;
 
     if (!title || (!type && !category)) {
       return successResponse({ detail: 'Title and type/category are required' }, 400);
@@ -122,10 +125,10 @@ export async function POST(request: NextRequest) {
     const qrCode = `${Math.random().toString(36).substring(2, 10).toUpperCase()}`;
 
     const result = await query(
-      `INSERT INTO objects (user_id, title, description, status, category, type, location, latitude, longitude, qr_code, images, is_public, created_at, updated_at)
-       VALUES ($1, $2, $3, $4, $5, $5, $6, $7, $8, $9, $10, true, NOW(), NOW())
-       RETURNING id, title, description, status, category, type, location, latitude, longitude, qr_code, images, created_at, updated_at`,
-      [payload.sub, title, description || null, status || 'lost', cat, location || null, latitude || null, longitude || null, qrCode, JSON.stringify(images || [])]
+      `INSERT INTO objects (user_id, title, description, status, category, type, location, latitude, longitude, qr_code, images, is_public, reward_amount, reward_description, created_at, updated_at)
+       VALUES ($1, $2, $3, $4, $5, $5, $6, $7, $8, $9, $10, true, $11, $12, NOW(), NOW())
+       RETURNING id, title, description, status, category, type, location, latitude, longitude, qr_code, images, reward_amount, reward_description, created_at, updated_at`,
+      [payload.sub, title, description || null, status || 'lost', cat, location || null, latitude || null, longitude || null, qrCode, JSON.stringify(images || []), reward_amount || null, reward_description || null]
     );
 
     return successResponse(normalizeObject(result.rows[0] as Record<string, unknown>), 201);

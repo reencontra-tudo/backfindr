@@ -1,7 +1,7 @@
 'use client';
 import { useEffect, useState, useRef, useCallback } from 'react';
 import Link from 'next/link';
-import { MapPin, Search, X, ChevronRight, SlidersHorizontal, LocateFixed } from 'lucide-react';
+import { MapPin, Search, X, ChevronRight, SlidersHorizontal, LocateFixed, Gift } from 'lucide-react';
 import { toast } from 'sonner';
 import { objectsApi, parseApiError } from '@/lib/api';
 import { RegisteredObject } from '@/types';
@@ -426,6 +426,14 @@ export default function MapPage() {
                   <X className="w-4 h-4" />
                 </button>
               </div>
+              {selected.reward_amount && selected.reward_amount > 0 && (
+                <div className="mt-3 flex items-center gap-2 bg-yellow-500/10 border border-yellow-500/20 rounded-xl px-3 py-2">
+                  <Gift className="w-4 h-4 text-yellow-400 flex-shrink-0" />
+                  <span className="text-yellow-400 text-xs font-semibold">
+                    Recompensa: R$ {selected.reward_amount.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                  </span>
+                </div>
+              )}
               <Link
                 href={`/scan/${selected.unique_code}`}
                 className="mt-3 flex items-center justify-center gap-2 w-full bg-teal-500 hover:bg-teal-400 text-white text-sm font-semibold py-2.5 rounded-xl transition-all"
@@ -474,6 +482,9 @@ export default function MapPage() {
                         <p className={`text-xs ${STATUS_COLOR[obj.status].split(' ')[0]}`}>{STATUS_LABEL[obj.status]}</p>
                         <span className="text-white/20 text-xs">·</span>
                         <p className="text-white/30 text-xs truncate">{CATEGORY_LABEL[obj.category] ?? 'Outro'}</p>
+                        {obj.reward_amount && obj.reward_amount > 0 && (
+                          <Gift className="w-3 h-3 text-yellow-400 flex-shrink-0" title="Recompensa oferecida" />
+                        )}
                       </div>
                     </div>
                     <ChevronRight className="w-3.5 h-3.5 text-white/20 flex-shrink-0" />

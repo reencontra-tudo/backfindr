@@ -8,7 +8,7 @@ import { z } from 'zod';
 import { toast } from 'sonner';
 import {
   ChevronLeft, ChevronRight, Loader2, Upload,
-  MapPin, Package, Info, Check
+  MapPin, Package, Info, Check, Gift
 } from 'lucide-react';
 import { objectsApi, parseApiError } from '@/lib/api';
 import { compressImages } from '@/lib/compressImage';
@@ -27,6 +27,8 @@ const schema = z.object({
   pet_breed: z.string().optional(),
   pet_microchip: z.string().optional(),
   pet_color: z.string().optional(),
+  reward_amount: z.number().min(0).optional().nullable(),
+  reward_description: z.string().max(500).optional().nullable(),
 });
 
 type FormData = z.infer<typeof schema>;
@@ -60,6 +62,7 @@ export default function NewObjectPage() {
   const [submitting, setSubmitting] = useState(false);
   const [photos, setPhotos] = useState<File[]>([]);
   const [compressing, setCompressing] = useState(false);
+  const [offerReward, setOfferReward] = useState(false);
 
   const {
     register,
@@ -97,23 +100,43 @@ export default function NewObjectPage() {
   const onSubmit = async (data: FormData) => {
     setSubmitting(true);
     try {
-      const form = new FormData();
-      form.append('title', data.title);
-      form.append('description', data.description);
-      form.append('category', data.category);
-      form.append('status', data.status);
-      if (data.lat && data.lng) {
-        form.append('location', JSON.stringify({ lat: data.lat, lng: data.lng, address: data.address }));
-      }
-      if (isPet) {
-        if (data.pet_species) form.append('pet_species', data.pet_species);
-        if (data.pet_breed) form.append('pet_breed', data.pet_breed);
-        if (data.pet_microchip) form.append('pet_microchip', data.pet_microchip);
-        if (data.pet_color) form.append('pet_color', data.pet_color);
-      }
-      photos.forEach((f) => form.append('photos', f));
+      const payload: Record<string, unknown> = {
+        title: data.title,
+        description: data.description,
+        category: data.category,
+        status: data.status,
+        latitude: data.lat || null,
+        longitude: data.lng || null,
+        location: data.address || null,
+      };
 
-      const res = await objectsApi.create(form);
+      if (isPet) {
+        if (data.pet_species) payload.pet_species = data.pet_species;
+        if (data.pet_breed) payload.pet_breed = data.pet_breed;
+        if (data.pet_microchip) payload.pet_microchip = data.pet_microchip;
+        if (data.pet_color) payload.pet_color = data.pet_color;
+      }
+
+      if (offerReward && data.reward_amount) {
+        payload.reward_amount = data.reward_amount;
+        if (data.reward_description) payload.reward_description = data.reward_description;
+      }
+
+      // Upload de fotos como base64 se houver
+      if (photos.length > 0) {
+        const photoUrls: string[] = [];
+        for (const photo of photos) {
+          const base64 = await new Promise<string>((resolve) => {
+            const reader = new FileReader();
+            reader.onload = (e) => resolve(e.target?.result as string);
+            reader.readAsDataURL(photo);
+          });
+          photoUrls.push(base64);
+        }
+        payload.images = photoUrls;
+      }
+
+      const res = await objectsApi.create(payload);
       toast.success('Objeto registrado com sucesso! 🎉');
       router.push(`/dashboard/objects/${res.data.id}`);
     } catch (err) {
@@ -268,7 +291,7 @@ export default function NewObjectPage() {
               )}
             </div>
 
-            {/* Pet fields — F20 */}
+            {/* Pet fields */}
             {isPet && (
               <div className="space-y-4 pt-2 border-t border-surface-border">
                 <p className="text-brand-400 text-sm font-medium flex items-center gap-2">
@@ -316,6 +339,69 @@ export default function NewObjectPage() {
                     />
                   </div>
                 </div>
+              </div>
+            )}
+
+            {/* Reward section — apenas para status 'lost' */}
+            {status === 'lost' && (
+              <div className="pt-2 border-t border-surface-border">
+                <button
+                  type="button"
+                  onClick={() => setOfferReward((v) => !v)}
+                  className={`w-full p-4 rounded-xl border text-left transition-all flex items-center gap-4 ${
+                    offerReward
+                      ? 'border-yellow-500/50 bg-yellow-500/5 text-yellow-400'
+                      : 'border-surface-border glass text-slate-400 hover:text-white hover:border-slate-500'
+                  }`}
+                >
+                  <Gift className={`w-5 h-5 flex-shrink-0 ${offerReward ? 'text-yellow-400' : 'text-slate-500'}`} />
+                  <div className="flex-1">
+                    <p className="font-medium text-white text-sm">Oferecer recompensa</p>
+                    <p className="text-xs text-slate-400 mt-0.5">
+                      Aumenta as chances de recuperação — quem encontrar verá o valor
+                    </p>
+                  </div>
+                  <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center flex-shrink-0 ${
+                    offerReward ? 'border-yellow-400 bg-yellow-400/20' : 'border-slate-600'
+                  }`}>
+                    {offerReward && <Check className="w-3 h-3 text-yellow-400" />}
+                  </div>
+                </button>
+
+                {offerReward && (
+                  <div className="mt-3 space-y-3 p-4 bg-yellow-500/5 border border-yellow-500/20 rounded-xl">
+                    <div>
+                      <label className="block text-xs text-slate-300 mb-1.5">
+                        Valor da recompensa (R$) *
+                      </label>
+                      <div className="relative">
+                        <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-sm">R$</span>
+                        <input
+                          type="number"
+                          min="0"
+                          step="0.01"
+                          {...register('reward_amount', { valueAsNumber: true })}
+                          placeholder="0,00"
+                          className="w-full bg-surface border border-yellow-500/30 rounded-xl pl-9 pr-4 py-2.5 text-slate-100 placeholder-slate-500 text-sm outline-none focus:border-yellow-500 transition-colors"
+                        />
+                      </div>
+                      {errors.reward_amount && (
+                        <p className="text-red-400 text-xs mt-1">{errors.reward_amount.message}</p>
+                      )}
+                    </div>
+                    <div>
+                      <label className="block text-xs text-slate-300 mb-1.5">
+                        Mensagem para quem encontrar <span className="text-slate-500">(opcional)</span>
+                      </label>
+                      <textarea
+                        {...register('reward_description')}
+                        rows={2}
+                        placeholder="Ex: Recompensa garantida para quem devolver. Entre em contato pelo app."
+                        className="w-full bg-surface border border-yellow-500/30 rounded-xl px-4 py-2.5 text-slate-100 placeholder-slate-500 text-sm outline-none focus:border-yellow-500 transition-colors resize-none"
+                      />
+                    </div>
+                  </div>
+                )}
               </div>
             )}
 

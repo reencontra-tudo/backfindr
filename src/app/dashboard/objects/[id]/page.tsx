@@ -6,7 +6,7 @@ import Link from 'next/link';
 import {
   ChevronLeft, QrCode, MapPin, Calendar, Tag,
   Share2, Trash2, Edit2, Download, CheckCircle2,
-  AlertTriangle, Clock, Package, ExternalLink, Copy
+  AlertTriangle, Clock, Package, ExternalLink, Copy, Gift
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
@@ -284,6 +284,26 @@ export default function ObjectDetailPage() {
                     <p className="text-slate-200 text-sm font-mono">{obj.pet_microchip}</p>
                   </div>
                 )}
+              </div>
+            </div>
+          )}
+
+          {/* Reward badge */}
+          {obj.reward_amount && obj.reward_amount > 0 && (
+            <div className="glass rounded-2xl p-5 border border-yellow-500/20 bg-yellow-500/5">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl bg-yellow-500/10 border border-yellow-500/20 flex items-center justify-center flex-shrink-0">
+                  <Gift className="w-5 h-5 text-yellow-400" />
+                </div>
+                <div>
+                  <p className="text-yellow-400 font-semibold text-sm">Recompensa oferecida</p>
+                  <p className="text-white font-bold text-xl">
+                    R$ {obj.reward_amount.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                  </p>
+                  {obj.reward_description && (
+                    <p className="text-slate-400 text-xs mt-1">{obj.reward_description}</p>
+                  )}
+                </div>
               </div>
             </div>
           )}

@@ -49,6 +49,8 @@ export async function GET(request: NextRequest) {
         images,
         is_legacy,
         source,
+        reward_amount,
+        reward_description,
         created_at,
         updated_at
       FROM objects
@@ -114,6 +116,8 @@ export async function GET(request: NextRequest) {
       pet_breed: row.breed,
       is_legacy: row.is_legacy,
       source: row.source,
+      reward_amount: row.reward_amount ? parseFloat(String(row.reward_amount)) : null,
+      reward_description: row.reward_description || null,
       created_at: row.created_at,
       updated_at: row.updated_at,
     }));

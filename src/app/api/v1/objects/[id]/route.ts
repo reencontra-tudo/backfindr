@@ -36,6 +36,8 @@ function normalizeObject(row: Record<string, unknown>) {
     pet_breed: row.breed,
     is_legacy: row.is_legacy,
     source: row.source,
+    reward_amount: row.reward_amount ? parseFloat(String(row.reward_amount)) : null,
+    reward_description: row.reward_description || null,
     created_at: row.created_at,
     updated_at: row.updated_at,
   };
@@ -52,7 +54,8 @@ export async function GET(
     if (!payload) return unauthorizedResponse();
     const result = await query(
       `SELECT id, title, description, status, category, type, location, latitude, longitude,
-              qr_code, images, color, brand, breed, is_legacy, source, user_id, created_at, updated_at
+              qr_code, images, color, brand, breed, is_legacy, source, user_id,
+              reward_amount, reward_description, created_at, updated_at
        FROM objects WHERE id = $1 AND user_id = $2`,
       [params.id, payload.sub]
     );
@@ -73,7 +76,7 @@ export async function PATCH(
     const payload = verifyToken(token);
     if (!payload) return unauthorizedResponse();
     const body = await request.json();
-    const { title, description, status, category, type, location, latitude, longitude, images } = body;
+    const { title, description, status, category, type, location, latitude, longitude, images, reward_amount, reward_description } = body;
     const result = await query(
       `UPDATE objects
        SET title = COALESCE($1, title),
@@ -85,12 +88,18 @@ export async function PATCH(
            latitude = COALESCE($6, latitude),
            longitude = COALESCE($7, longitude),
            images = COALESCE($8, images),
+           reward_amount = COALESCE($9, reward_amount),
+           reward_description = COALESCE($10, reward_description),
            updated_at = NOW()
-       WHERE id = $9 AND user_id = $10
+       WHERE id = $11 AND user_id = $12
        RETURNING id, title, description, status, category, type, location, latitude, longitude,
-                 qr_code, images, color, brand, breed, is_legacy, source, user_id, created_at, updated_at`,
+                 qr_code, images, color, brand, breed, is_legacy, source, user_id,
+                 reward_amount, reward_description, created_at, updated_at`,
       [title, description, status, category || type, location, latitude, longitude,
-       images ? JSON.stringify(images) : null, params.id, payload.sub]
+       images ? JSON.stringify(images) : null,
+       reward_amount !== undefined ? reward_amount : null,
+       reward_description !== undefined ? reward_description : null,
+       params.id, payload.sub]
     );
     if (result.rows.length === 0) return notFoundResponse();
     return successResponse(normalizeObject(result.rows[0] as Record<string, unknown>));

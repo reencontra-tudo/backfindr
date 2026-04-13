@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useParams } from 'next/navigation';
 import Link from 'next/link';
-import { MapPin, Phone, MessageCircle, AlertTriangle, CheckCircle2, Package, ArrowRight } from 'lucide-react';
+import { MapPin, Phone, MessageCircle, AlertTriangle, CheckCircle2, Package, ArrowRight, Gift } from 'lucide-react';
 import { api, parseApiError } from '@/lib/api';
 import { RegisteredObject } from '@/types';
 import ShareModal from '@/components/ShareModal';
@@ -183,6 +183,24 @@ export default function ScanPage() {
                           <p className="text-slate-500 text-xs">Cor</p>
                           <p className="text-slate-200">{obj.pet_color}</p>
                         </div>
+                      )}
+                    </div>
+                  </div>
+                )}
+
+                {/* Reward badge */}
+                {obj.reward_amount && obj.reward_amount > 0 && (
+                  <div className="bg-yellow-500/10 border border-yellow-500/30 rounded-xl p-4 mb-6 flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-xl bg-yellow-500/10 border border-yellow-500/20 flex items-center justify-center flex-shrink-0">
+                      <Gift className="w-5 h-5 text-yellow-400" />
+                    </div>
+                    <div>
+                      <p className="text-yellow-400 font-semibold text-sm">Recompensa oferecida</p>
+                      <p className="text-white font-bold text-lg">
+                        R$ {obj.reward_amount.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                      </p>
+                      {obj.reward_description && (
+                        <p className="text-slate-400 text-xs mt-0.5">{obj.reward_description}</p>
                       )}
                     </div>
                   </div>
