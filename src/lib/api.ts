@@ -2,7 +2,8 @@ import axios, { AxiosInstance, InternalAxiosRequestConfig } from 'axios';
 import Cookies from 'js-cookie';
 import { AuthTokens } from '@/types';
 
-const API_URL = 'https://backfindr.vercel.app';
+// URL relativa: funciona em todos os domínios (backfindr.app, backfindr.com, backfindr.com.br, etc.)
+const API_URL = '';
 
 export const api: AxiosInstance = axios.create({
   baseURL: `${API_URL}/api/v1`,
