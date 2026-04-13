@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from 'next';
 import { Syne, DM_Sans } from 'next/font/google';
 import { Toaster } from 'sonner';
 import Script from 'next/script';
+import AssistantWidget from '@/components/AssistantWidget';
 import './globals.css';
 
 const syne = Syne({
@@ -112,6 +113,9 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
             },
           }}
         />
+
+        {/* Assistente Findr — disponível em toda a plataforma */}
+        <AssistantWidget />
 
         {/* Register Service Worker */}
         <Script id="register-sw" strategy="afterInteractive">
