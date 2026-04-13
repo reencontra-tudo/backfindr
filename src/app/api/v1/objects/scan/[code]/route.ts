@@ -8,19 +8,39 @@ export async function GET(
   { params }: { params: { code: string } }
 ) {
   try {
-    // Buscar objeto pelo QR code (público)
     const result = await query(
-      `SELECT id, title, description, status, type, location, latitude, longitude, qr_code, created_at 
-       FROM objects 
+      `SELECT id, title, description, status, category, type, location, latitude, longitude,
+              qr_code, images, color, brand, breed, user_id, is_legacy, source, created_at, updated_at
+       FROM objects
        WHERE qr_code = $1`,
       [params.code]
     );
 
-    if (result.rows.length === 0) {
-      return notFoundResponse();
-    }
+    if (result.rows.length === 0) return notFoundResponse();
 
-    return successResponse(result.rows[0]);
+    const row = result.rows[0] as Record<string, unknown>;
+    const lat = row.latitude ? parseFloat(String(row.latitude)) : null;
+    const lng = row.longitude ? parseFloat(String(row.longitude)) : null;
+    let location = null;
+    if (lat && lng && !Number.isNaN(lat) && !Number.isNaN(lng)) {
+      location = { lat, lng, address: (row.location as string) || undefined };
+    } else if (row.location && typeof row.location === 'string') {
+      try { const p = JSON.parse(row.location as string); if (p.lat && p.lng) location = p; } catch { /* não é JSON */ }
+    }
+    let photos: string[] = [];
+    try {
+      if (Array.isArray(row.images)) photos = row.images as string[];
+      else if (typeof row.images === 'string') photos = JSON.parse(row.images as string);
+    } catch { photos = []; }
+
+    return successResponse({
+      id: row.id, title: row.title, description: row.description || '',
+      status: row.status, category: row.category || row.type || 'other',
+      unique_code: row.qr_code, owner_id: row.user_id, photos, location,
+      color: row.color, brand: row.brand, pet_breed: row.breed,
+      is_legacy: row.is_legacy, source: row.source,
+      created_at: row.created_at, updated_at: row.updated_at,
+    });
   } catch (error) {
     return internalErrorResponse(error);
   }

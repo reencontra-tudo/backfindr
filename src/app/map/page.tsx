@@ -17,6 +17,7 @@ export default function MapPage() {
   const [statusFilter, setStatusFilter] = useState('');
   const [selected, setSelected] = useState<RegisteredObject | null>(null);
   const [showList, setShowList] = useState(false);
+  const [mapLoaded, setMapLoaded] = useState(false);
   const mapContainer = useRef<HTMLDivElement>(null);
   const mapRef = useRef<unknown>(null);
 
@@ -43,12 +44,15 @@ export default function MapPage() {
         map.addLayer({ id:'clusters', type:'circle', source:'objects', filter:['has','point_count'], paint:{ 'circle-color':'#14b8a6', 'circle-radius':['step',['get','point_count'],20,10,30,50,40], 'circle-opacity':0.85 } });
         map.addLayer({ id:'cluster-count', type:'symbol', source:'objects', filter:['has','point_count'], layout:{ 'text-field':'{point_count_abbreviated}', 'text-size':12 }, paint:{ 'text-color':'#0f172a' } });
         map.addLayer({ id:'unclustered-point', type:'circle', source:'objects', filter:['!',['has','point_count']], paint:{ 'circle-color':['match',['get','status'],'lost','#ef4444','found','#14b8a6','returned','#22c55e','#f97316'], 'circle-radius':8, 'circle-stroke-width':2, 'circle-stroke-color':'#080b0f' } });
+        setMapLoaded(true);
       });
       mapRef.current = map;
     });
   }, []);
 
+  // Atualizar pontos no mapa quando objetos ou mapa carregam
   useEffect(() => {
+    if (!mapLoaded) return;
     const map = mapRef.current as { getSource?: (id:string) => { setData?: (d:unknown)=>void }|undefined }|null;
     if (!map?.getSource) return;
     const source = map.getSource('objects');
@@ -57,7 +61,7 @@ export default function MapPage() {
       .filter(o => o.location?.lat && o.location?.lng)
       .map(o => ({ type:'Feature' as const, geometry:{ type:'Point' as const, coordinates:[o.location!.lng, o.location!.lat] }, properties:{ id:o.id, title:o.title, status:o.status } }));
     source.setData({ type:'FeatureCollection', features });
-  }, [objects]);
+  }, [objects, mapLoaded]);
 
   const filtered = objects.filter(o =>
     (search ? o.title.toLowerCase().includes(search.toLowerCase()) : true) &&
