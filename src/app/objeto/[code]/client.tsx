@@ -2,10 +2,11 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
-import { MapPin, QrCode, MessageCircle, CheckCircle2, Share2, ChevronRight, Shield } from 'lucide-react';
+import { MapPin, QrCode, MessageCircle, CheckCircle2, ChevronRight, Shield } from 'lucide-react';
 import { toast } from 'sonner';
 import { api, parseApiError } from '@/lib/api';
 import { RegisteredObject } from '@/types';
+import ShareModal from '@/components/ShareModal';
 
 const CATEGORY_LABEL: Record<string, string> = {
   phone: 'Celular', wallet: 'Carteira', keys: 'Chaves', bag: 'Bolsa',
@@ -34,15 +35,7 @@ export default function PublicObjectClient({ obj }: { obj: RegisteredObject }) {
     }
   };
 
-  const share = () => {
-    const url = window.location.href;
-    if (navigator.share) {
-      navigator.share({ title: obj.title, url });
-    } else {
-      navigator.clipboard.writeText(url);
-      toast.success('Link copiado!');
-    }
-  };
+  const shareUrl = typeof window !== 'undefined' ? window.location.href : `https://backfindr.app/objeto/${obj.unique_code}`;
 
   if (obj.status === 'returned') {
     return (
@@ -69,9 +62,14 @@ export default function PublicObjectClient({ obj }: { obj: RegisteredObject }) {
           </div>
           <span className="text-white font-semibold text-[15px]">Backfindr</span>
         </Link>
-        <button onClick={share} className="flex items-center gap-1.5 text-white/40 hover:text-white text-sm transition-colors">
-          <Share2 className="w-4 h-4" /> Compartilhar
-        </button>
+        <ShareModal
+          url={shareUrl}
+          title={obj.title}
+          description={obj.description ?? ''}
+          imageUrl={obj.photos?.[0]}
+          buttonLabel="Compartilhar"
+          buttonClassName="flex items-center gap-1.5 text-white/40 hover:text-white text-sm transition-colors"
+        />
       </nav>
 
       <div className="max-w-lg mx-auto px-5 py-10">

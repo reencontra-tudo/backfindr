@@ -6,6 +6,7 @@ import {
   Plus, Search, Filter, Package, AlertTriangle,
   CheckCircle2, Clock, ChevronRight, QrCode, LayoutGrid, List
 } from 'lucide-react';
+import ShareModal from '@/components/ShareModal';
 import { toast } from 'sonner';
 import { formatDistanceToNow } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
@@ -49,21 +50,22 @@ const STATUS_LABEL: Record<string, string> = {
 // ─── Object Card ─────────────────────────────────────────────────────────────
 
 function ObjectCard({ obj, view }: { obj: RegisteredObject; view: 'grid' | 'list' }) {
+  const shareUrl = `https://backfindr.app/objeto/${obj.unique_code}`;
+
   if (view === 'list') {
     return (
-      <Link
-        href={`/dashboard/objects/${obj.id}`}
-        className="flex items-center gap-4 p-4 glass rounded-xl hover:border-brand-500/30 transition-all group"
-      >
-        <div className="w-11 h-11 rounded-xl bg-surface-border flex items-center justify-center text-2xl flex-shrink-0">
-          {CATEGORY_EMOJI[obj.category] ?? '📦'}
-        </div>
-        <div className="flex-1 min-w-0">
-          <p className="text-white font-medium text-sm truncate group-hover:text-brand-300 transition-colors">
-            {obj.title}
-          </p>
-          <p className="text-slate-500 text-xs mt-0.5 truncate">{obj.description}</p>
-        </div>
+      <div className="flex items-center gap-4 p-4 glass rounded-xl hover:border-brand-500/30 transition-all group">
+        <Link href={`/dashboard/objects/${obj.id}`} className="flex items-center gap-4 flex-1 min-w-0">
+          <div className="w-11 h-11 rounded-xl bg-surface-border flex items-center justify-center text-2xl flex-shrink-0">
+            {CATEGORY_EMOJI[obj.category] ?? '📦'}
+          </div>
+          <div className="flex-1 min-w-0">
+            <p className="text-white font-medium text-sm truncate group-hover:text-brand-300 transition-colors">
+              {obj.title}
+            </p>
+            <p className="text-slate-500 text-xs mt-0.5 truncate">{obj.description}</p>
+          </div>
+        </Link>
         <span className={`hidden sm:inline-flex items-center gap-1.5 text-xs font-medium px-2.5 py-1 rounded-full border flex-shrink-0 ${STATUS_COLOR[obj.status]}`}>
           {STATUS_ICON[obj.status]}
           {STATUS_LABEL[obj.status]}
@@ -71,16 +73,25 @@ function ObjectCard({ obj, view }: { obj: RegisteredObject; view: 'grid' | 'list
         <p className="text-slate-600 text-xs flex-shrink-0 hidden md:block">
           {formatDistanceToNow(new Date(obj.created_at), { addSuffix: true, locale: ptBR })}
         </p>
-        <ChevronRight className="w-4 h-4 text-slate-600 group-hover:text-brand-400 transition-colors flex-shrink-0" />
-      </Link>
+        <div className="flex items-center gap-1 flex-shrink-0">
+          <ShareModal
+            url={shareUrl}
+            title={obj.title}
+            description={obj.description ?? ''}
+            imageUrl={obj.photos?.[0]}
+            buttonLabel=""
+            buttonClassName="p-1.5 rounded-lg hover:bg-white/[0.06] text-slate-500 hover:text-slate-300 transition-colors"
+          />
+          <Link href={`/dashboard/objects/${obj.id}`}>
+            <ChevronRight className="w-4 h-4 text-slate-600 group-hover:text-brand-400 transition-colors" />
+          </Link>
+        </div>
+      </div>
     );
   }
 
   return (
-    <Link
-      href={`/dashboard/objects/${obj.id}`}
-      className="glass rounded-2xl p-5 hover:border-brand-500/30 transition-all group flex flex-col"
-    >
+    <div className="glass rounded-2xl p-5 hover:border-brand-500/30 transition-all group flex flex-col relative">
       {obj.photos?.[0] ? (
         // eslint-disable-next-line @next/next/no-img-element
         <img
@@ -110,11 +121,21 @@ function ObjectCard({ obj, view }: { obj: RegisteredObject; view: 'grid' | 'list
           <QrCode className="w-3 h-3" />
           <span className="text-xs font-mono">{obj.unique_code.slice(0, 8)}</span>
         </div>
-        <p className="text-slate-600 text-xs">
-          {formatDistanceToNow(new Date(obj.created_at), { addSuffix: true, locale: ptBR })}
-        </p>
+        <div className="flex items-center gap-1">
+          <ShareModal
+            url={shareUrl}
+            title={obj.title}
+            description={obj.description ?? ''}
+            imageUrl={obj.photos?.[0]}
+            buttonLabel=""
+            buttonClassName="p-1 rounded-lg hover:bg-white/[0.06] text-slate-600 hover:text-slate-300 transition-colors"
+          />
+          <Link href={`/dashboard/objects/${obj.id}`} onClick={(e) => e.stopPropagation()} className="p-1 rounded-lg hover:bg-white/[0.06] text-slate-600 hover:text-brand-400 transition-colors">
+            <ChevronRight className="w-3.5 h-3.5" />
+          </Link>
+        </div>
       </div>
-    </Link>
+    </div>
   );
 }
 

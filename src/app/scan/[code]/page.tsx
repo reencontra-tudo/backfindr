@@ -6,6 +6,7 @@ import Link from 'next/link';
 import { MapPin, Phone, MessageCircle, AlertTriangle, CheckCircle2, Package, ArrowRight } from 'lucide-react';
 import { api, parseApiError } from '@/lib/api';
 import { RegisteredObject } from '@/types';
+import ShareModal from '@/components/ShareModal';
 
 const CATEGORY_EMOJI: Record<string, string> = {
   phone: '📱', wallet: '👛', keys: '🔑', bag: '🎒', pet: '🐾',
@@ -96,13 +97,21 @@ export default function ScanPage() {
     <div className="min-h-screen bg-surface flex flex-col">
       {/* Header */}
       <div className="gradient-brand py-1" />
-      <nav className="glass border-b border-surface-border px-6 h-14 flex items-center">
+      <nav className="glass border-b border-surface-border px-6 h-14 flex items-center justify-between">
         <Link href="/" className="flex items-center gap-2">
           <div className="w-7 h-7 rounded-lg gradient-brand flex items-center justify-center">
             <MapPin className="w-3.5 h-3.5 text-white" />
           </div>
           <span className="font-display font-bold text-white text-sm">Backfindr</span>
         </Link>
+        <ShareModal
+          url={typeof window !== 'undefined' ? window.location.href : `https://backfindr.app/scan/${code}`}
+          title={obj.title}
+          description={obj.description ?? ''}
+          imageUrl={obj.photos?.[0]}
+          buttonLabel="Compartilhar"
+          buttonClassName="flex items-center gap-1.5 text-slate-400 hover:text-white text-sm transition-colors"
+        />
       </nav>
 
       <div className="flex-1 flex items-center justify-center px-4 py-12">
