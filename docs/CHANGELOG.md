@@ -37,6 +37,42 @@ Registro cronológico de todas as alterações significativas na plataforma.
   - CTA Final: "Depois que perde, não adianta cadastrar."
   - Seção emocional: "Celular, mochila, cachorro… E não tinha nada pra te ajudar."
 
+### Redesign Premium da Home Page
+- Adicionado mockup interativo no Hero com notificação flutuante animada e badge de scan
+- Adicionada seção emocional com cards de Celular, Mochila e Pet
+- Adicionada seção dedicada para Pets com benefícios e CTA exclusivo
+- Adicionada seção Empresas com 4 métricas e CTA para vendas
+- Implementadas animações fade-in ao rolar em todas as seções com delays escalonados
+- CTA Final com gradiente radial e glow teal
+- Footer atualizado com link para o Mapa
+- Navbar atualizada com link "Para pets"
+
+### Documentação Viva (`/docs`)
+- Criada estrutura `/docs` no repositório com:
+  - `OVERVIEW.md`: visão geral da plataforma (stack, domínios, banco, funcionalidades)
+  - `CHANGELOG.md`: registro cronológico de todas as alterações
+  - `PENDENCIAS.md`: roadmap de melhorias com status e prioridade
+
+### Painel Business (B2B)
+- Criada rota `/api/v1/business/stats` com analytics de ativos por status, categoria e recuperações
+- Criada página `/dashboard/business` com:
+  - 4 cards de resumo (total de ativos, taxa de recuperação, QR scaneados, matches)
+  - Gráfico de barras por status
+  - Breakdown por categoria
+  - Lista dos 10 ativos mais recentes
+  - CTA para suporte dedicado
+- Link "Painel Business" adicionado ao sidebar do dashboard (visível apenas para plano `business`)
+- Tipo `User.plan` atualizado para incluir `'business'`
+
+### Otimização do Matching Geoespacial
+- Substituída a fórmula de diferença de graus (imprecisa) pela **fórmula de Haversine**
+- Adicionado filtro geoespacial em SQL: candidatos agora são pré-filtrados por raio de **50km** antes do scoring em JavaScript
+- Resultado: redução drástica no número de comparações (de todos os objetos para apenas os próximos)
+- Sem dependência de PostGIS — funciona em qualquer PostgreSQL padrão
+
+### Limpeza de Código
+- Removido hook `useChat.ts` legado (WebSocket não utilizado em nenhuma página)
+
 ---
 
 ## Próximas Entregas Planejadas

@@ -8,10 +8,10 @@
 
 | # | Melhoria | Status | Descrição |
 |---|----------|--------|-----------|
-| 1 | **Redesign Premium da Home Page** | 🟡 Em andamento | Mockup 3D, glassmorphism, seção de pets, animações elegantes |
-| 2 | **Estabilidade do Chat** | 🟡 Parcialmente resolvido | O chat já usa HTTP polling a cada 3s (não WebSocket) na página de chat. O hook `useChat.ts` ainda referencia WebSocket mas não é usado na página principal. Avaliar remover o hook legado para evitar confusão |
-| 3 | **Plano Business (funcionalidades)** | 🔴 Pendente | A página de pricing já exibe o plano Business (R$ 149/mês), mas as funcionalidades do painel B2B (gestão em lote, relatórios, até 10 usuários) ainda não estão implementadas no dashboard |
-| 4 | **PostGIS para Matching** | 🔴 Pendente | Substituir cálculo matemático de distância por queries PostGIS nativas |
+| 1 | **Redesign Premium da Home Page** | ✅ Concluído | Mockup interativo no Hero, seção emocional, seção Pets, seção Empresas, animações fade-in |
+| 2 | **Estabilidade do Chat** | ✅ Concluído | Chat usa HTTP polling a cada 3s. Hook `useChat.ts` legado (WebSocket) removido do repositório |
+| 3 | **Painel Business (funcionalidades)** | ✅ Concluído | Painel `/dashboard/business` criado com analytics de ativos, breakdown por status/categoria e lista de ativos recentes. Visível apenas para plano `business` |
+| 4 | **Matching Geoespacial** | ✅ Concluído | Fórmula de Haversine implementada em SQL. Candidatos pré-filtrados por raio de 50km antes do scoring. Sem dependência de PostGIS |
 
 ---
 
@@ -47,3 +47,8 @@
 | ✅ | Todos os domínios configurados no Vercel e GoDaddy | 2026-04-13 |
 | ✅ | Registros DNS do Resend adicionados no GoDaddy | 2026-04-13 |
 | ✅ | Copy da Home Page atualizado com textos de impacto | 2026-04-13 |
+| ✅ | Redesign premium da Home Page (Hero, Pets, Empresas, animações) | 2026-04-13 |
+| ✅ | Painel Business criado no dashboard | 2026-04-13 |
+| ✅ | Matching geoespacial otimizado com Haversine em SQL | 2026-04-13 |
+| ✅ | Hook `useChat.ts` legado removido | 2026-04-13 |
+| ✅ | Documentação viva `/docs` criada no repositório | 2026-04-13 |
