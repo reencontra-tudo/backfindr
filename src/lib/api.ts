@@ -78,7 +78,12 @@ export const authApi = {
 export const objectsApi = {
   list: (params?: object) => api.get('/objects', { params }),
   get: (id: string) => api.get(`/objects/${id}`),
-  create: (form: FormData) => api.post('/objects', form, { headers: { 'Content-Type': 'multipart/form-data' } }),
+  create: (payload: FormData | Record<string, unknown>) => {
+    if (payload instanceof FormData) {
+      return api.post('/objects', payload, { headers: { 'Content-Type': 'multipart/form-data' } });
+    }
+    return api.post('/objects', payload);
+  },
   update: (id: string, payload: object) => api.patch(`/objects/${id}`, payload),
   delete: (id: string) => api.delete(`/objects/${id}`),
   scan: (code: string) => api.get(`/objects/scan/${code}`),
