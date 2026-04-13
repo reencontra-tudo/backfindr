@@ -122,23 +122,33 @@ export default function NewObjectPage() {
         if (data.reward_description) payload.reward_description = data.reward_description;
       }
 
-      // Upload de fotos como base64 se houver
+      // 1. Criar o objeto (sem imagens para evitar limite de payload)
+      const res = await objectsApi.create(payload);
+      const objectId = res.data.id;
+
+      // 2. Upload de fotos em etapa separada (evita limite de 4MB do Vercel)
       if (photos.length > 0) {
-        const photoUrls: string[] = [];
-        for (const photo of photos) {
-          const base64 = await new Promise<string>((resolve) => {
-            const reader = new FileReader();
-            reader.onload = (e) => resolve(e.target?.result as string);
-            reader.readAsDataURL(photo);
-          });
-          photoUrls.push(base64);
+        try {
+          const photoUrls: string[] = [];
+          for (const photo of photos) {
+            const base64 = await new Promise<string>((resolve) => {
+              const reader = new FileReader();
+              reader.onload = (e) => resolve(e.target?.result as string);
+              reader.readAsDataURL(photo);
+            });
+            photoUrls.push(base64);
+          }
+          await objectsApi.uploadImages(objectId, photoUrls);
+          toast.success('Objeto registrado com fotos! 🎉');
+        } catch {
+          // Upload de fotos falhou, mas objeto foi criado
+          toast.success('Objeto registrado! (fotos não puderam ser salvas)');
         }
-        payload.images = photoUrls;
+      } else {
+        toast.success('Objeto registrado com sucesso! 🎉');
       }
 
-      const res = await objectsApi.create(payload);
-      toast.success('Objeto registrado com sucesso! 🎉');
-      router.push(`/dashboard/objects/${res.data.id}`);
+      router.push(`/dashboard/objects/${objectId}`);
     } catch (err) {
       toast.error(parseApiError(err));
     } finally {

@@ -475,9 +475,19 @@ export default function MapPage() {
           {selected && (
             <div className="absolute bottom-4 left-4 right-4 bg-[#0d1117]/95 backdrop-blur-xl border border-white/[0.08] rounded-2xl p-4 shadow-2xl">
               <div className="flex items-start gap-3">
-                <div className="w-10 h-10 rounded-xl bg-white/[0.06] flex items-center justify-center text-xl flex-shrink-0">
-                  {EMOJI[selected.category] ?? '📦'}
-                </div>
+                {/* Foto do objeto ou emoji da categoria */}
+                {selected.photos?.[0] ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img
+                    src={selected.photos[0]}
+                    alt={selected.title}
+                    className="w-14 h-14 rounded-xl object-cover flex-shrink-0 border border-white/[0.08]"
+                  />
+                ) : (
+                  <div className="w-14 h-14 rounded-xl bg-white/[0.06] flex items-center justify-center text-2xl flex-shrink-0">
+                    {EMOJI[selected.category] ?? '📦'}
+                  </div>
+                )}
                 <div className="flex-1 min-w-0">
                   <p className="text-white font-semibold text-sm">{selected.title}</p>
                   <div className="flex items-center gap-2 mt-1">

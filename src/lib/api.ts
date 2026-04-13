@@ -86,6 +86,8 @@ export const objectsApi = {
   },
   update: (id: string, payload: object) => api.patch(`/objects/${id}`, payload),
   delete: (id: string) => api.delete(`/objects/${id}`),
+  uploadImages: (id: string, images: string[]) => api.post(`/objects/${id}/images`, { images }),
+  deleteImages: (id: string) => api.delete(`/objects/${id}/images`),
   scan: (code: string) => api.get(`/objects/scan/${code}`),
   notify: (code: string) => api.post(`/objects/scan/${code}/notify`),
   listPublic: (params?: object) => api.get('/objects/public', { params }),

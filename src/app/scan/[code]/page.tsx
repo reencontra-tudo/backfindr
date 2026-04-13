@@ -153,9 +153,18 @@ export default function ScanPage() {
               <div className="p-6">
                 {/* Object info */}
                 <div className="flex items-start gap-4 mb-6">
-                  <div className="w-16 h-16 rounded-2xl bg-surface flex items-center justify-center text-4xl flex-shrink-0 border border-surface-border">
-                    {CATEGORY_EMOJI[obj.category] ?? '📦'}
-                  </div>
+                  {obj.photos?.[0] ? (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img
+                      src={obj.photos[0]}
+                      alt={obj.title}
+                      className="w-16 h-16 rounded-2xl object-cover flex-shrink-0 border border-surface-border"
+                    />
+                  ) : (
+                    <div className="w-16 h-16 rounded-2xl bg-surface flex items-center justify-center text-4xl flex-shrink-0 border border-surface-border">
+                      {CATEGORY_EMOJI[obj.category] ?? '📦'}
+                    </div>
+                  )}
                   <div className="flex-1 min-w-0">
                     <p className="text-slate-400 text-xs mb-0.5">{CATEGORY_LABEL[obj.category]}</p>
                     <h1 className="font-display text-xl font-bold text-white leading-tight">{obj.title}</h1>
