@@ -214,15 +214,15 @@ export default function HomePage() {
               </div>
 
               <h1 className="font-bold tracking-[-0.04em] leading-[0.92] mb-6" style={{ fontSize: 'clamp(42px, 7vw, 80px)' }}>
-                <span className="text-white">Seu objeto</span><br />
-                <span className="text-white">perdido tem</span><br />
+                <span className="text-white">Se você perder,</span><br />
+                <span className="text-white">já pode ser</span><br />
                 <span style={{ background: 'linear-gradient(135deg, #2dd4bf 0%, #14b8a6 40%, #0d9488 100%)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text' }}>
-                  alguém procurando.
+                  tarde demais.
                 </span>
               </h1>
 
               <p className="text-white/40 text-lg max-w-md leading-relaxed mb-4 font-light">
-                QR Code único em cada objeto. IA que cruza perdidos com achados automaticamente. Chat mediado para devolução segura.
+                Proteja seus itens e seu pet com um QR Code. Se alguém encontrar, você é avisado na hora.
               </p>
 
               <p className="text-white/25 text-sm mb-10">
@@ -233,7 +233,7 @@ export default function HomePage() {
                 <Link href="/auth/register"
                   className="flex items-center gap-2 bg-teal-500 hover:bg-teal-400 text-white text-sm font-semibold px-6 py-3.5 rounded-lg transition-all duration-200 justify-center"
                   style={{ boxShadow: '0 0 0 1px rgba(20,184,166,0.5),0 8px 32px rgba(20,184,166,0.2)' }}>
-                  Registrar objeto grátis <ArrowRight className="w-4 h-4" strokeWidth={2.5} />
+                  Criar meu QR grátis <ArrowRight className="w-4 h-4" strokeWidth={2.5} />
                 </Link>
                 <Link href="/map"
                   className="flex items-center gap-2 border border-white/10 hover:border-white/20 bg-white/[0.04] hover:bg-white/[0.07] text-white/70 hover:text-white text-sm px-6 py-3.5 rounded-lg transition-all duration-200 justify-center">
@@ -299,7 +299,7 @@ export default function HomePage() {
         <div className="max-w-6xl mx-auto flex items-center gap-3">
           <div className="w-2 h-2 rounded-full bg-teal-400 animate-pulse flex-shrink-0" />
           <p className="text-teal-300 text-sm">
-            <span className="font-semibold">Sem QR Code, seu objeto é irrecuperável.</span>
+            <span className="font-semibold">Você só lembra disso depois que perde.</span>
             {' '}<span className="text-white/40">Registrar leva 2 minutos e é gratuito.</span>
           </p>
           <Link href="/auth/register" className="ml-auto flex-shrink-0 text-teal-400 hover:text-teal-300 text-sm font-medium flex items-center gap-1 transition-colors">
@@ -313,13 +313,13 @@ export default function HomePage() {
         <div className="max-w-5xl mx-auto">
           <div className="mb-16">
             <p className="text-[11px] text-teal-500 uppercase tracking-[0.15em] font-semibold mb-4">Como funciona</p>
-            <h2 className="text-4xl font-bold tracking-tight text-white max-w-sm leading-tight">Três passos.<br />Um objeto recuperado.</h2>
+            <h2 className="text-4xl font-bold tracking-tight text-white max-w-sm leading-tight">Simples assim.<br />Um objeto recuperado.</h2>
           </div>
           <div className="grid md:grid-cols-3 gap-px bg-white/[0.06] rounded-2xl overflow-hidden">
             {[
-              { step: '01', icon: <QrCode className="w-5 h-5 text-teal-400" />, title: 'Registre', desc: 'Fotos, descrição e localização. QR Code único e permanente gerado em segundos.' },
-              { step: '02', icon: <Zap className="w-5 h-5 text-teal-400" />, title: 'IA encontra', desc: 'Nossa IA cruza automaticamente objetos perdidos com achados. Você é notificado na hora.' },
-              { step: '03', icon: <Shield className="w-5 h-5 text-teal-400" />, title: 'Recupere', desc: 'Chat mediado para devolução segura. Seu contato nunca é exposto.' },
+              { step: '01', icon: <QrCode className="w-5 h-5 text-teal-400" />, title: 'Crie seu QR Code', desc: 'Fotos, descrição e localização. QR Code único e permanente gerado em segundos.' },
+              { step: '02', icon: <Zap className="w-5 h-5 text-teal-400" />, title: 'Cole no seu item', desc: 'Coleira, mochila, carteira, chaves. Qualquer objeto que você não quer perder.' },
+              { step: '03', icon: <Shield className="w-5 h-5 text-teal-400" />, title: 'Alguém encontrou → você é avisado', desc: 'Chat mediado para devolução segura. Seu contato nunca é exposto.' },
             ].map(item => (
               <div key={item.step} className="bg-[#080b0f] p-8 hover:bg-white/[0.02] transition-colors">
                 <div className="flex items-start justify-between mb-8">
@@ -340,8 +340,8 @@ export default function HomePage() {
           <div className="grid md:grid-cols-2 gap-16 items-center">
             <div>
               <p className="text-[11px] text-teal-500 uppercase tracking-[0.15em] font-semibold mb-4">Tecnologia real</p>
-              <h2 className="text-3xl font-bold tracking-tight text-white leading-tight mb-6">Não é só cadastro.<br />É recuperação ativa.</h2>
-              <p className="text-white/40 text-sm leading-relaxed mb-10">A maioria das plataformas é passiva — você cadastra e espera. O Backfindr age: a IA roda matching contínuo, o QR Code notifica em tempo real, e o chat fecha o loop até a devolução.</p>
+              <h2 className="text-3xl font-bold tracking-tight text-white leading-tight mb-6">Celular, mochila, cachorro…<br />E não tinha nada pra te ajudar.</h2>
+              <p className="text-white/40 text-sm leading-relaxed mb-10">A maioria das plataformas é passiva — você cadastra e espera. O Backfindr age: a IA roda matching contínuo, o QR Code notifica em tempo real, e o chat fecha o loop até a devolução. <strong className="text-white/70">Agora tem.</strong></p>
               <div className="space-y-6">
                 {[
                   { icon: <Globe className="w-4 h-4" />, title: 'QR Code permanente', desc: 'Funciona sem app, em qualquer país, para sempre.' },
@@ -422,13 +422,13 @@ export default function HomePage() {
       <section className="py-24 px-5 border-t border-white/[0.06]">
         <div className="max-w-2xl mx-auto text-center">
           <h2 className="text-4xl font-bold tracking-tight text-white mb-4">
-            Cada minuto sem QR Code<br />é risco desnecessário.
+            Depois que perde,<br />não adianta cadastrar.
           </h2>
           <p className="text-white/40 text-sm mb-8">Registre agora. Grátis. Leva 2 minutos.</p>
           <Link href="/auth/register"
             className="inline-flex items-center gap-2 bg-teal-500 hover:bg-teal-400 text-white font-semibold px-8 py-4 rounded-lg transition-all text-sm"
             style={{ boxShadow: '0 0 0 1px rgba(20,184,166,0.5),0 8px 32px rgba(20,184,166,0.2)' }}>
-            Proteger meus objetos agora <ArrowRight className="w-4 h-4" strokeWidth={2.5} />
+            Criar meu QR agora <ArrowRight className="w-4 h-4" strokeWidth={2.5} />
           </Link>
           <p className="text-white/20 text-xs mt-4">Sem cartão de crédito · Gratuito para sempre</p>
         </div>
