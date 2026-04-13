@@ -150,25 +150,41 @@ export default function ScanPage() {
                 </div>
               </div>
 
-              <div className="p-6">
-                {/* Object info */}
-                <div className="flex items-start gap-4 mb-6">
-                  {obj.photos?.[0] ? (
-                    // eslint-disable-next-line @next/next/no-img-element
-                    <img
-                      src={obj.photos[0]}
-                      alt={obj.title}
-                      className="w-16 h-16 rounded-2xl object-cover flex-shrink-0 border border-surface-border"
-                    />
-                  ) : (
-                    <div className="w-16 h-16 rounded-2xl bg-surface flex items-center justify-center text-4xl flex-shrink-0 border border-surface-border">
-                      {CATEGORY_EMOJI[obj.category] ?? '📦'}
+              {/* Hero image / placeholder */}
+              {obj.photos && obj.photos.length > 0 ? (
+                <div className="relative">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img
+                    src={obj.photos[0]}
+                    alt={obj.title}
+                    className="w-full h-52 object-cover"
+                  />
+                  {obj.photos.length > 1 && (
+                    <div className="absolute bottom-2 right-2 flex gap-1.5">
+                      {obj.photos.slice(1).map((url, i) => (
+                        // eslint-disable-next-line @next/next/no-img-element
+                        <img
+                          key={i}
+                          src={url}
+                          alt={`${obj.title} ${i + 2}`}
+                          className="w-12 h-12 rounded-lg object-cover border-2 border-white/20"
+                        />
+                      ))}
                     </div>
                   )}
-                  <div className="flex-1 min-w-0">
-                    <p className="text-slate-400 text-xs mb-0.5">{CATEGORY_LABEL[obj.category]}</p>
-                    <h1 className="font-display text-xl font-bold text-white leading-tight">{obj.title}</h1>
-                  </div>
+                </div>
+              ) : (
+                <div className="w-full h-36 bg-gradient-to-br from-brand-500/10 to-brand-900/20 flex flex-col items-center justify-center gap-2 border-b border-surface-border">
+                  <span className="text-5xl">{CATEGORY_EMOJI[obj.category] ?? '📦'}</span>
+                  <span className="text-slate-500 text-xs">Sem foto cadastrada</span>
+                </div>
+              )}
+
+              <div className="p-6">
+                {/* Object info */}
+                <div className="mb-5">
+                  <p className="text-slate-400 text-xs mb-0.5">{CATEGORY_LABEL[obj.category]}</p>
+                  <h1 className="font-display text-xl font-bold text-white leading-tight">{obj.title}</h1>
                 </div>
 
                 <div className="bg-surface rounded-xl p-4 mb-6 border border-surface-border">

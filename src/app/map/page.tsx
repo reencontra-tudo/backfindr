@@ -471,51 +471,63 @@ export default function MapPage() {
             </div>
           )}
 
-          {/* Selected object popup */}
+          {/* Selected object popup — fixado na parte inferior, nunca cortado */}
           {selected && (
-            <div className="absolute bottom-4 left-4 right-4 bg-[#0d1117]/95 backdrop-blur-xl border border-white/[0.08] rounded-2xl p-4 shadow-2xl">
-              <div className="flex items-start gap-3">
-                {/* Foto do objeto ou emoji da categoria */}
-                {selected.photos?.[0] ? (
-                  // eslint-disable-next-line @next/next/no-img-element
-                  <img
-                    src={selected.photos[0]}
-                    alt={selected.title}
-                    className="w-14 h-14 rounded-xl object-cover flex-shrink-0 border border-white/[0.08]"
-                  />
-                ) : (
-                  <div className="w-14 h-14 rounded-xl bg-white/[0.06] flex items-center justify-center text-2xl flex-shrink-0">
-                    {EMOJI[selected.category] ?? '📦'}
+            <div
+              className="absolute left-0 right-0 bottom-0 z-10 bg-[#0d1117]/97 backdrop-blur-xl border-t border-white/[0.08] shadow-2xl"
+              style={{ maxHeight: '55%' }}
+            >
+              {/* Drag handle */}
+              <div className="flex justify-center pt-2 pb-1">
+                <div className="w-8 h-1 rounded-full bg-white/20" />
+              </div>
+
+              <div className="px-4 pb-4 overflow-y-auto" style={{ maxHeight: 'calc(55vh - 24px)' }}>
+                <div className="flex items-start gap-3 mb-3">
+                  {/* Foto do objeto ou emoji da categoria */}
+                  {selected.photos?.[0] ? (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img
+                      src={selected.photos[0]}
+                      alt={selected.title}
+                      className="w-14 h-14 rounded-xl object-cover flex-shrink-0 border border-white/[0.08]"
+                    />
+                  ) : (
+                    <div className="w-14 h-14 rounded-xl bg-white/[0.06] flex items-center justify-center text-2xl flex-shrink-0">
+                      {EMOJI[selected.category] ?? '📦'}
+                    </div>
+                  )}
+                  <div className="flex-1 min-w-0">
+                    <p className="text-white font-semibold text-sm leading-snug">{selected.title}</p>
+                    <div className="flex flex-wrap items-center gap-1.5 mt-1">
+                      <span className={`text-xs font-medium px-2 py-0.5 rounded-full border ${STATUS_COLOR[selected.status]}`}>
+                        {STATUS_LABEL[selected.status]}
+                      </span>
+                      <span className="text-white/30 text-xs">{CATEGORY_LABEL[selected.category] ?? 'Outro'}</span>
+                    </div>
+                    <p className="text-white/40 text-xs mt-1.5 line-clamp-2 leading-relaxed">{selected.description}</p>
+                  </div>
+                  <button onClick={() => setSelected(null)} className="text-white/30 hover:text-white transition-colors flex-shrink-0 p-1">
+                    <X className="w-4 h-4" />
+                  </button>
+                </div>
+
+                {selected.reward_amount && selected.reward_amount > 0 && (
+                  <div className="mb-3 flex items-center gap-2 bg-yellow-500/10 border border-yellow-500/20 rounded-xl px-3 py-2">
+                    <Gift className="w-4 h-4 text-yellow-400 flex-shrink-0" />
+                    <span className="text-yellow-400 text-xs font-semibold">
+                      Recompensa: R$ {selected.reward_amount.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                    </span>
                   </div>
                 )}
-                <div className="flex-1 min-w-0">
-                  <p className="text-white font-semibold text-sm">{selected.title}</p>
-                  <div className="flex items-center gap-2 mt-1">
-                    <span className={`text-xs font-medium px-2 py-0.5 rounded-full border ${STATUS_COLOR[selected.status]}`}>
-                      {STATUS_LABEL[selected.status]}
-                    </span>
-                    <span className="text-white/30 text-xs">{CATEGORY_LABEL[selected.category] ?? 'Outro'}</span>
-                  </div>
-                  <p className="text-white/40 text-xs mt-1 line-clamp-2">{selected.description}</p>
-                </div>
-                <button onClick={() => setSelected(null)} className="text-white/30 hover:text-white transition-colors flex-shrink-0">
-                  <X className="w-4 h-4" />
-                </button>
+
+                <Link
+                  href={`/scan/${selected.unique_code}`}
+                  className="flex items-center justify-center gap-2 w-full bg-teal-500 hover:bg-teal-400 active:bg-teal-600 text-white text-sm font-semibold py-3 rounded-xl transition-all"
+                >
+                  Ver detalhes / Contactar dono
+                </Link>
               </div>
-              {selected.reward_amount && selected.reward_amount > 0 && (
-                <div className="mt-3 flex items-center gap-2 bg-yellow-500/10 border border-yellow-500/20 rounded-xl px-3 py-2">
-                  <Gift className="w-4 h-4 text-yellow-400 flex-shrink-0" />
-                  <span className="text-yellow-400 text-xs font-semibold">
-                    Recompensa: R$ {selected.reward_amount.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
-                  </span>
-                </div>
-              )}
-              <Link
-                href={`/scan/${selected.unique_code}`}
-                className="mt-3 flex items-center justify-center gap-2 w-full bg-teal-500 hover:bg-teal-400 text-white text-sm font-semibold py-2.5 rounded-xl transition-all"
-              >
-                Ver detalhes / Contactar dono
-              </Link>
             </div>
           )}
         </div>
