@@ -36,10 +36,10 @@ Custo estimado: **menos de R$ 0,01 por conversa** (modelo `gpt-4o-mini`).
 
 | # | Melhoria | Status | Descrição |
 |---|----------|--------|-----------|
-| 5 | **Compressão de Imagens** | 🔴 Pendente | Comprimir fotos de objetos antes do upload para reduzir custos de storage |
-| 6 | **Filtros Avançados no Mapa** | 🔴 Pendente | Filtro por data de perda, raio de distância e tipo de objeto |
-| 7 | **Gamificação / Recompensas** | 🔴 Pendente | Sistema para o dono do objeto oferecer recompensa pela devolução |
-| 8 | **Impressão de Etiquetas** | 🔴 Pendente | Geração de PDF para impressão de etiquetas com QR Code |
+| 5 | **Compressão de Imagens** | ✅ Concluído | Compressão automática client-side com Canvas API (max 1200px, JPEG 82%) antes do upload |
+| 6 | **Filtros Avançados no Mapa** | ✅ Concluído | Filtros por status, categoria, período e raio de distância com geolocalização do usuário |
+| 7 | **Gamificação / Recompensas** | ✅ Concluído | Campos `reward_amount` e `reward_description` no banco, formulário, dashboard, scan e mapa |
+| 8 | **Impressão de Etiquetas** | ✅ Concluído | Botão "Imprimir etiqueta 85×55mm" no dashboard — abre janela de impressão com QR Code e dados |
 | 9 | **Compartilhamento Social** | ✅ Concluído | ShareModal com WhatsApp, Facebook, X, Instagram, TikTok, Telegram, Email e cópia de link. Disponível em objeto público, scan e dashboard |
 | 10 | **Bot Assistente Findr** | ✅ Concluído | Widget flutuante em toda a plataforma. Fluxo guiado ativo. Slot OpenAI preparado (ver ação necessária acima) |
 
@@ -72,3 +72,8 @@ Custo estimado: **menos de R$ 0,01 por conversa** (modelo `gpt-4o-mini`).
 | ✅ | Compartilhamento social (WhatsApp, Facebook, X, Instagram, TikTok, Telegram, Email) | 2026-04-13 |
 | ✅ | Bot assistente Findr com fluxo guiado e slot OpenAI | 2026-04-13 |
 | ✅ | Documentação viva `/docs` criada no repositório | 2026-04-13 |
+| ✅ | Compressão automática de imagens client-side (Canvas API) | 2026-04-13 |
+| ✅ | Filtros avançados no mapa (status, categoria, período, raio) | 2026-04-13 |
+| ✅ | Sistema de recompensas completo (banco + APIs + UI) | 2026-04-13 |
+| ✅ | Popup de resumo ao tocar em pontos do mapa | 2026-04-13 |
+| ✅ | Impressão de etiquetas 85×55mm com QR Code | 2026-04-13 |

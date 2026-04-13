@@ -73,6 +73,42 @@ Registro cronológico de todas as alterações significativas na plataforma.
 ### Limpeza de Código
 - Removido hook `useChat.ts` legado (WebSocket não utilizado em nenhuma página)
 
+### Mapa Interativo — Popup com Resumo da Publicação
+- Ao tocar/clicar em um ponto no mapa, exibe popup com resumo da ocorrência:
+  - Emoji da categoria, título, badge de status colorido, descrição truncada
+  - Badge dourado de recompensa (quando `reward_amount > 0`)
+  - Botão "Ver detalhes / Contactar dono" com link para `/scan/{code}`
+- Lista lateral: ícone de presente dourado ao lado de objetos com recompensa
+
+### Sistema de Recompensas
+- Adicionadas colunas `reward_amount` (NUMERIC 10,2) e `reward_description` (TEXT) ao banco via migration
+- Formulário de novo objeto: campo de recompensa no Step 2, visível apenas para status `lost`
+- Dashboard de detalhe: badge dourado com valor e mensagem da recompensa
+- Página pública de scan: badge de recompensa visível para quem encontrou o objeto
+- APIs atualizadas: `/objects`, `/objects/public`, `/objects/scan/{code}`, `/objects/{id}` (GET e PATCH)
+- Rota de migration: `POST /api/v1/admin/migrate` com suporte a JWT de admin ou `MIGRATION_SECRET`
+
+### Etiquetas para Impressão
+- Botão "Imprimir etiqueta (85×55mm)" adicionado ao componente QR Code no dashboard
+- Abre janela de impressão com etiqueta no formato cartão de crédito (85×55mm)
+- Etiqueta contém: QR Code colorido, nome do objeto, código único, URL de scan e marca Backfindr
+- Compatível com impressoras de etiquetas e impressão em folha A4
+
+### Compressão de Imagens no Upload
+- Compressão automática client-side antes do envio (Canvas API)
+- Redimensionamento máximo: 1200px, qualidade JPEG 82%
+- Redução média de 60–80% no tamanho do arquivo
+
+### Bot Assistente Findr
+- Bot de atendimento com fluxo guiado de cadastro de objetos perdidos
+- Integrado com OpenAI GPT para respostas contextuais
+- Disponível em `/dashboard/assistant`
+
+### Compartilhamento Social
+- Botão de compartilhamento na página pública de scan
+- Suporte a WhatsApp, Facebook, X (Twitter), Telegram, LinkedIn, Email e Instagram Stories
+- Cópia de link com toast de confirmação
+
 ---
 
 ## Próximas Entregas Planejadas
