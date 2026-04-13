@@ -53,6 +53,64 @@ function QRCodeDisplay({ code, title }: { code: string; title: string }) {
     link.click();
   };
 
+  const printLabel = () => {
+    const printWindow = window.open('', '_blank', 'width=400,height=600');
+    if (!printWindow) return;
+    printWindow.document.write(`
+      <!DOCTYPE html>
+      <html lang="pt-BR">
+      <head>
+        <meta charset="UTF-8" />
+        <title>Etiqueta — ${title}</title>
+        <style>
+          @page { size: 85mm 55mm; margin: 0; }
+          * { box-sizing: border-box; margin: 0; padding: 0; }
+          body {
+            font-family: 'Helvetica Neue', Arial, sans-serif;
+            width: 85mm; height: 55mm;
+            display: flex; align-items: center; justify-content: center;
+            background: #fff;
+          }
+          .card {
+            width: 83mm; height: 53mm;
+            border: 1.5px solid #14b8a6;
+            border-radius: 4mm;
+            display: flex; align-items: center; gap: 3mm;
+            padding: 3mm 4mm;
+            overflow: hidden;
+          }
+          .qr img { width: 40mm; height: 40mm; display: block; }
+          .info { flex: 1; overflow: hidden; }
+          .brand { font-size: 7pt; font-weight: 700; color: #14b8a6; letter-spacing: 0.05em; text-transform: uppercase; }
+          .title { font-size: 9pt; font-weight: 700; color: #0f172a; margin-top: 1mm; line-height: 1.2; word-break: break-word; }
+          .code { font-size: 6.5pt; font-family: monospace; color: #64748b; margin-top: 2mm; letter-spacing: 0.08em; }
+          .cta { font-size: 6pt; color: #475569; margin-top: 1.5mm; line-height: 1.3; }
+          .url { font-size: 6pt; color: #14b8a6; font-weight: 600; word-break: break-all; }
+        </style>
+      </head>
+      <body>
+        <div class="card">
+          <div class="qr">
+            <img src="${qrImageUrl}" alt="QR" />
+          </div>
+          <div class="info">
+            <div class="brand">Backfindr</div>
+            <div class="title">${title}</div>
+            <div class="code">${code}</div>
+            <div class="cta">Encontrou? Escaneie o QR Code ou acesse:</div>
+            <div class="url">${scanUrl}</div>
+          </div>
+        </div>
+      </body>
+      </html>
+    `);
+    printWindow.document.close();
+    printWindow.onload = () => {
+      printWindow.focus();
+      printWindow.print();
+    };
+  };
+
   return (
     <div className="glass rounded-2xl p-6 flex flex-col items-center gap-4">
       <div className="flex items-center gap-2 self-start">
@@ -100,6 +158,13 @@ function QRCodeDisplay({ code, title }: { code: string; title: string }) {
           Copiar link
         </button>
       </div>
+      <button
+        onClick={printLabel}
+        className="w-full flex items-center justify-center gap-1.5 bg-brand-500/10 hover:bg-brand-500/20 border border-brand-500/20 text-brand-400 hover:text-brand-300 text-xs font-medium py-2.5 rounded-lg transition-all"
+      >
+        <Download className="w-3.5 h-3.5" />
+        Imprimir etiqueta (85×55mm)
+      </button>
     </div>
   );
 }
