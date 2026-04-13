@@ -4,6 +4,23 @@
 
 ---
 
+## ⚠️ AÇÃO NECESSÁRIA — Chave OpenAI
+
+O **bot Findr** foi implementado e está em produção, mas opera com fluxo guiado pré-programado.
+Para ativar respostas com **IA real** e cadastro totalmente conversacional:
+
+1. Acesse: https://platform.openai.com/api-keys
+2. Crie uma nova chave de API
+3. Adicione como variável de ambiente no Vercel:
+   - URL: https://vercel.com/marcosmakarara-6287s-projects/backfindr/settings/environment-variables
+   - Nome: `OPENAI_API_KEY`
+   - Valor: `sk-...` (sua chave)
+4. Faça redeploy do projeto
+
+Custo estimado: **menos de R$ 0,01 por conversa** (modelo `gpt-4o-mini`).
+
+---
+
 ## Melhorias de Alta Prioridade
 
 | # | Melhoria | Status | Descrição |
@@ -23,7 +40,8 @@
 | 6 | **Filtros Avançados no Mapa** | 🔴 Pendente | Filtro por data de perda, raio de distância e tipo de objeto |
 | 7 | **Gamificação / Recompensas** | 🔴 Pendente | Sistema para o dono do objeto oferecer recompensa pela devolução |
 | 8 | **Impressão de Etiquetas** | 🔴 Pendente | Geração de PDF para impressão de etiquetas com QR Code |
-| 9 | **Compartilhamento Social** | 🔴 Pendente | Botão para compartilhar objeto perdido em grupos de WhatsApp/Facebook |
+| 9 | **Compartilhamento Social** | ✅ Concluído | ShareModal com WhatsApp, Facebook, X, Instagram, TikTok, Telegram, Email e cópia de link. Disponível em objeto público, scan e dashboard |
+| 10 | **Bot Assistente Findr** | ✅ Concluído | Widget flutuante em toda a plataforma. Fluxo guiado ativo. Slot OpenAI preparado (ver ação necessária acima) |
 
 ---
 
@@ -31,9 +49,9 @@
 
 | # | Melhoria | Status | Descrição |
 |---|----------|--------|-----------|
-| 10 | **Acessibilidade** | 🔴 Pendente | Aumentar contraste de textos secundários para leitura sob luz solar |
-| 11 | **Landing Page para Pets** | 🔴 Pendente | Página separada com foco exclusivo em pets e coleiras com QR Code |
-| 12 | **Monetização de Dados (B2G)** | 🔴 Pendente | Venda de insights anonimizados para prefeituras e shoppings |
+| 11 | **Acessibilidade** | 🔴 Pendente | Aumentar contraste de textos secundários para leitura sob luz solar |
+| 12 | **Landing Page para Pets** | 🔴 Pendente | Página separada com foco exclusivo em pets e coleiras com QR Code |
+| 13 | **Monetização de Dados (B2G)** | 🔴 Pendente | Venda de insights anonimizados para prefeituras e shoppings |
 
 ---
 
@@ -51,4 +69,6 @@
 | ✅ | Painel Business criado no dashboard | 2026-04-13 |
 | ✅ | Matching geoespacial otimizado com Haversine em SQL | 2026-04-13 |
 | ✅ | Hook `useChat.ts` legado removido | 2026-04-13 |
+| ✅ | Compartilhamento social (WhatsApp, Facebook, X, Instagram, TikTok, Telegram, Email) | 2026-04-13 |
+| ✅ | Bot assistente Findr com fluxo guiado e slot OpenAI | 2026-04-13 |
 | ✅ | Documentação viva `/docs` criada no repositório | 2026-04-13 |
