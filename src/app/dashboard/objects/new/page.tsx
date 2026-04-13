@@ -11,6 +11,7 @@ import {
   MapPin, Package, Info, Check
 } from 'lucide-react';
 import { objectsApi, parseApiError } from '@/lib/api';
+import { compressImages } from '@/lib/compressImage';
 import { ObjectCategory, ObjectStatus } from '@/types';
 
 // ─── Schema ──────────────────────────────────────────────────────────────────
@@ -58,6 +59,7 @@ export default function NewObjectPage() {
   const [step, setStep] = useState(0);
   const [submitting, setSubmitting] = useState(false);
   const [photos, setPhotos] = useState<File[]>([]);
+  const [compressing, setCompressing] = useState(false);
 
   const {
     register,
@@ -74,9 +76,22 @@ export default function NewObjectPage() {
   const nextStep = () => setStep((s) => Math.min(s + 1, STEPS.length - 1));
   const prevStep = () => setStep((s) => Math.max(s - 1, 0));
 
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files ?? []).slice(0, 5);
-    setPhotos(files);
+    if (files.length === 0) return;
+    setCompressing(true);
+    try {
+      const compressed = await compressImages(files);
+      setPhotos(compressed);
+      const saved = files.reduce((acc, f) => acc + f.size, 0) - compressed.reduce((acc, f) => acc + f.size, 0);
+      if (saved > 10_000) {
+        toast.success(`Fotos otimizadas! Economia de ${(saved / 1024).toFixed(0)} KB`);
+      }
+    } catch {
+      setPhotos(files);
+    } finally {
+      setCompressing(false);
+    }
   };
 
   const onSubmit = async (data: FormData) => {
@@ -309,14 +324,26 @@ export default function NewObjectPage() {
               <label className="block text-sm font-medium text-slate-300 mb-1.5">
                 Fotos <span className="text-slate-500">(até 5)</span>
               </label>
-              <label className="flex flex-col items-center justify-center w-full h-32 border-2 border-dashed border-surface-border rounded-xl cursor-pointer hover:border-brand-500/50 transition-colors">
-                <Upload className="w-6 h-6 text-slate-500 mb-2" />
-                <span className="text-slate-500 text-sm">
-                  {photos.length > 0
-                    ? `${photos.length} foto(s) selecionada(s)`
-                    : 'Clique ou arraste as fotos aqui'}
-                </span>
-                <input type="file" multiple accept="image/*" onChange={handleFileChange} className="hidden" />
+              <label className={`flex flex-col items-center justify-center w-full h-32 border-2 border-dashed rounded-xl transition-colors ${
+                compressing ? 'border-brand-500/50 cursor-wait' : 'border-surface-border cursor-pointer hover:border-brand-500/50'
+              }`}>
+                {compressing ? (
+                  <>
+                    <Loader2 className="w-6 h-6 text-brand-400 mb-2 animate-spin" />
+                    <span className="text-brand-400 text-sm">Otimizando fotos...</span>
+                  </>
+                ) : (
+                  <>
+                    <Upload className="w-6 h-6 text-slate-500 mb-2" />
+                    <span className="text-slate-500 text-sm">
+                      {photos.length > 0
+                        ? `${photos.length} foto(s) selecionada(s) ✓`
+                        : 'Clique ou arraste as fotos aqui'}
+                    </span>
+                    <span className="text-slate-600 text-xs mt-1">Compressão automática aplicada</span>
+                  </>
+                )}
+                <input type="file" multiple accept="image/*" onChange={handleFileChange} className="hidden" disabled={compressing} />
               </label>
             </div>
           </div>
