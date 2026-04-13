@@ -1,4 +1,4 @@
-export interface User { id:string; name:string; email:string; phone?:string; avatar_url?:string; plan:'free'|'pro'; created_at:string; }
+export interface User { id:string; name:string; email:string; phone?:string; avatar_url?:string; plan:'free'|'pro'|'business'; created_at:string; }
 export interface AuthTokens { access_token:string; refresh_token:string; token_type:string; }
 export type ObjectStatus = 'lost'|'found'|'returned'|'stolen';
 export type ObjectCategory = 'phone'|'wallet'|'keys'|'bag'|'pet'|'bike'|'document'|'jewelry'|'electronics'|'clothing'|'other';

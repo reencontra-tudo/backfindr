@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import {
   MapPin, LayoutDashboard, Package, Search,
-  QrCode, Bell, Settings, LogOut, Plus, Menu, X, CreditCard
+  QrCode, Bell, Settings, LogOut, Plus, Menu, X, CreditCard, Building2
 } from 'lucide-react';
 import { useAuthStore } from '@/hooks/useAuth';
 
@@ -89,6 +89,32 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             </Link>
           );
         })}
+
+        {/* Business nav — only for business plan */}
+        {user?.plan === 'business' && (
+          <>
+            <div className="px-3 pt-3 pb-1">
+              <p className="text-white/20 text-[10px] font-semibold uppercase tracking-wider">Business</p>
+            </div>
+            {[{ href: '/dashboard/business', icon: Building2, label: 'Painel Business' }].map(({ href, icon: Icon, label }) => {
+              const active = pathname === href || pathname.startsWith(href);
+              return (
+                <Link
+                  key={href}
+                  href={href}
+                  className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition-all ${
+                    active
+                      ? 'bg-teal-500/10 text-teal-400 border border-teal-500/20'
+                      : 'text-white/40 hover:text-white hover:bg-white/[0.05]'
+                  }`}
+                >
+                  <Icon className="w-4 h-4 flex-shrink-0" />
+                  <span className="flex-1">{label}</span>
+                </Link>
+              );
+            })}
+          </>
+        )}
       </nav>
 
       {/* User */}
