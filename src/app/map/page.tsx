@@ -483,7 +483,7 @@ export default function MapPage() {
                         <span className="text-white/20 text-xs">·</span>
                         <p className="text-white/30 text-xs truncate">{CATEGORY_LABEL[obj.category] ?? 'Outro'}</p>
                         {obj.reward_amount && obj.reward_amount > 0 && (
-                          <Gift className="w-3 h-3 text-yellow-400 flex-shrink-0" title="Recompensa oferecida" />
+                          <Gift className="w-3 h-3 text-yellow-400 flex-shrink-0" />
                         )}
                       </div>
                     </div>
