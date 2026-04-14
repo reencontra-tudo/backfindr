@@ -3,6 +3,7 @@ import { Syne, DM_Sans } from 'next/font/google';
 import { Toaster } from 'sonner';
 import Script from 'next/script';
 import AssistantWidget from '@/components/AssistantWidget';
+import { PostHogProvider } from '@/providers/PostHogProvider';
 import './globals.css';
 
 const syne = Syne({
@@ -100,6 +101,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <link rel="apple-touch-startup-image" href="/icons/icon-512x512.png" />
       </head>
       <body className="bg-[#080b0f] text-white font-body antialiased">
+        <PostHogProvider>
         {children}
         <Toaster
           position="top-right"
@@ -129,6 +131,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
             }
           `}
         </Script>
+        </PostHogProvider>
       </body>
     </html>
   );

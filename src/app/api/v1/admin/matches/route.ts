@@ -1,0 +1,22 @@
+import { NextRequest, NextResponse } from 'next/server';
+import { requireAdmin, backendHeaders, forwardParams } from '@/lib/adminGuard';
+
+const API = process.env.NEXT_PUBLIC_API_URL ?? '';
+
+// ─── GET /api/v1/admin/matches ────────────────────────────────────────────────
+export async function GET(req: NextRequest) {
+  const auth = await requireAdmin(req);
+  if (auth instanceof NextResponse) return auth;
+
+  const qs = forwardParams(req, ['page', 'size', 'status', 'min_score']);
+
+  try {
+    const res = await fetch(`${API}/api/v1/admin/matches${qs}`, {
+      headers: backendHeaders(req),
+    });
+    const data = await res.json();
+    return NextResponse.json(data, { status: res.status });
+  } catch {
+    return NextResponse.json({ detail: 'Erro ao buscar matches' }, { status: 500 });
+  }
+}
