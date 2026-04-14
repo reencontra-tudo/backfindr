@@ -1,19 +1,19 @@
 'use client';
-
 import Link from 'next/link';
+import Image from 'next/image';
 import { useState, useEffect, useRef } from 'react';
-import { ArrowRight, MapPin, QrCode, Zap, Shield, Globe, ChevronRight, Bell, Scan, Heart, Briefcase, Smartphone } from 'lucide-react';
+import { ArrowRight, QrCode, Bell, Scan, Heart } from 'lucide-react';
 
-// ─── Fallback data ────────────────────────────────────────────────────────────
+// ─── Fallback activities ──────────────────────────────────────────────────────
 const FALLBACK_ACTIVITIES = [
-  { id: 'f1', type: 'lost',  emoji: '📱', text: 'iPhone 15 Pro preto perdido',      city: 'Metrô Paulista, SP',    time: 'agora' },
-  { id: 'f2', type: 'found', emoji: '👛', text: 'Carteira encontrada com docs',     city: 'Pinheiros, SP',         time: '1 min' },
-  { id: 'f3', type: 'match', emoji: '⚡', text: 'Match 94% confirmado pela IA',     city: 'Brooklin, SP',          time: '2 min' },
-  { id: 'f4', type: 'lost',  emoji: '🐾', text: 'Labrador caramelo desaparecido',   city: 'Ibirapuera, SP',        time: '3 min' },
-  { id: 'f5', type: 'found', emoji: '🔑', text: 'Chaves encontradas no estac.',     city: 'Vila Mariana, SP',      time: '5 min' },
-  { id: 'f6', type: 'match', emoji: '⚡', text: 'Objeto devolvido ao dono',         city: 'Moema, SP',             time: '7 min' },
-  { id: 'f7', type: 'lost',  emoji: '💻', text: 'MacBook Air prata desaparecido',   city: 'Faria Lima, SP',        time: '9 min' },
-  { id: 'f8', type: 'found', emoji: '📄', text: 'RG e CNH encontrados',             city: 'Centro, RJ',            time: '11 min' },
+  { id: 'f1', type: 'lost',  emoji: '📱', text: 'iPhone 15 Pro preto perdido',      city: 'Metrô Paulista, SP',  time: 'agora' },
+  { id: 'f2', type: 'found', emoji: '👛', text: 'Carteira encontrada com docs',     city: 'Pinheiros, SP',       time: '1 min' },
+  { id: 'f3', type: 'match', emoji: '⚡', text: 'Match 94% confirmado pela IA',     city: 'Brooklin, SP',        time: '2 min' },
+  { id: 'f4', type: 'lost',  emoji: '🐾', text: 'Labrador caramelo desaparecido',   city: 'Ibirapuera, SP',      time: '3 min' },
+  { id: 'f5', type: 'found', emoji: '🔑', text: 'Chaves encontradas no estac.',     city: 'Vila Mariana, SP',    time: '5 min' },
+  { id: 'f6', type: 'match', emoji: '⚡', text: 'Objeto devolvido ao dono',         city: 'Moema, SP',           time: '7 min' },
+  { id: 'f7', type: 'lost',  emoji: '💻', text: 'MacBook Air prata desaparecido',   city: 'Faria Lima, SP',      time: '9 min' },
+  { id: 'f8', type: 'found', emoji: '📄', text: 'RG e CNH encontrados',             city: 'Centro, RJ',          time: '11 min' },
 ];
 
 const CATEGORY_EMOJI: Record<string, string> = {
@@ -22,110 +22,40 @@ const CATEGORY_EMOJI: Record<string, string> = {
   clothing: '👕', other: '📦',
 };
 
-const TYPE_BG: Record<string, string> = {
-  lost:  'bg-red-500/10 border-red-500/20',
-  found: 'bg-teal-500/10 border-teal-500/20',
-  match: 'bg-yellow-500/10 border-yellow-500/20',
-};
-const TYPE_COLOR: Record<string, string> = {
-  lost:  'text-red-400',
-  found: 'text-teal-400',
-  match: 'text-yellow-400',
-};
-const TYPE_LABEL: Record<string, string> = {
-  lost:  'Perdido',
-  found: 'Achado',
-  match: 'Match IA',
-};
-
 interface ActivityItem {
   id: string; type: string; emoji: string; text: string; city: string; time: string;
 }
 
-async function fetchRealActivities(): Promise<ActivityItem[]> {
-  try {
-    const res = await fetch('/api/v1/objects/public?size=20&status=lost', { next: { revalidate: 60 } });
-    if (!res.ok) return [];
-    const data = await res.json();
-    const items = data?.items ?? [];
-    return items.map((obj: { id: string; title: string; category: string; status: string; location_addr?: string; created_at: string }) => {
-      const mins = Math.floor((Date.now() - new Date(obj.created_at).getTime()) / 60000);
-      const time = mins < 1 ? 'agora' : mins < 60 ? `${mins} min` : `${Math.floor(mins / 60)}h`;
-      return { id: obj.id, type: obj.status, emoji: CATEGORY_EMOJI[obj.category] ?? '📦', text: obj.title, city: obj.location_addr ?? 'São Paulo, SP', time };
-    });
-  } catch { return []; }
-}
-
-// ─── Live Feed ────────────────────────────────────────────────────────────────
-function LiveFeed() {
-  const [items, setItems] = useState(FALLBACK_ACTIVITIES.slice(0, 4));
-  const [entering, setEntering] = useState<string | null>(null);
-  const counterRef = useRef(4);
-  useEffect(() => {
-    const interval = setInterval(() => {
-      const next = FALLBACK_ACTIVITIES[counterRef.current % FALLBACK_ACTIVITIES.length];
-      counterRef.current++;
-      setEntering(next.id);
-      setItems(prev => [next, ...prev.slice(0, 3)]);
-      setTimeout(() => setEntering(null), 600);
-    }, 3500);
-    return () => clearInterval(interval);
-  }, []);
-  return (
-    <div className="space-y-2">
-      {items.map((item, i) => (
-        <div key={`${item.id}-${i}`}
-          className={`flex items-center gap-3 p-3 rounded-xl border transition-all duration-500 ${entering === item.id ? 'opacity-0 -translate-y-2' : 'opacity-100 translate-y-0'} ${TYPE_BG[item.type as keyof typeof TYPE_BG]} bg-white/[0.02]`}>
-          <span className="text-xl flex-shrink-0">{item.emoji}</span>
-          <div className="flex-1 min-w-0">
-            <p className="text-white text-[13px] font-medium truncate">{item.text}</p>
-            <p className="text-white/30 text-xs mt-0.5">{item.city}</p>
-          </div>
-          <div className="flex flex-col items-end gap-1 flex-shrink-0">
-            <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full border ${TYPE_BG[item.type as keyof typeof TYPE_BG]} ${TYPE_COLOR[item.type as keyof typeof TYPE_COLOR]}`}>
-              {TYPE_LABEL[item.type as keyof typeof TYPE_LABEL]}
-            </span>
-            <span className="text-white/20 text-[10px]">{item.time}</span>
-          </div>
-        </div>
-      ))}
-    </div>
-  );
-}
-
-// ─── Counter ──────────────────────────────────────────────────────────────────
+// ─── Counter ─────────────────────────────────────────────────────────────────
 function Counter({ target, suffix = '' }: { target: number; suffix?: string }) {
   const [count, setCount] = useState(0);
   const ref = useRef<HTMLSpanElement>(null);
-  const started = useRef(false);
   useEffect(() => {
     const observer = new IntersectionObserver(([entry]) => {
-      if (entry.isIntersecting && !started.current) {
-        started.current = true;
-        const steps = 60;
-        const increment = target / steps;
-        let current = 0;
-        const timer = setInterval(() => {
-          current = Math.min(current + increment, target);
-          setCount(Math.floor(current));
-          if (current >= target) clearInterval(timer);
-        }, 1800 / steps);
-      }
-    }, { threshold: 0.5 });
+      if (!entry.isIntersecting) return;
+      observer.disconnect();
+      let start = 0;
+      const step = Math.ceil(target / 60);
+      const t = setInterval(() => {
+        start += step;
+        if (start >= target) { setCount(target); clearInterval(t); }
+        else setCount(start);
+      }, 16);
+    });
     if (ref.current) observer.observe(ref.current);
     return () => observer.disconnect();
   }, [target]);
   return <span ref={ref} className="tabular-nums">{count.toLocaleString('pt-BR')}{suffix}</span>;
 }
 
-// ─── FadeIn wrapper ───────────────────────────────────────────────────────────
+// ─── FadeIn ───────────────────────────────────────────────────────────────────
 function FadeIn({ children, delay = 0, className = '' }: { children: React.ReactNode; delay?: number; className?: string }) {
-  const ref = useRef<HTMLDivElement>(null);
   const [visible, setVisible] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
   useEffect(() => {
     const observer = new IntersectionObserver(([entry]) => {
       if (entry.isIntersecting) { setVisible(true); observer.disconnect(); }
-    }, { threshold: 0.1 });
+    });
     if (ref.current) observer.observe(ref.current);
     return () => observer.disconnect();
   }, []);
@@ -136,60 +66,22 @@ function FadeIn({ children, delay = 0, className = '' }: { children: React.React
   );
 }
 
-// ─── Hero Mockup ──────────────────────────────────────────────────────────────
-function HeroMockup() {
-  const [notifVisible, setNotifVisible] = useState(false);
-  const [scanVisible, setScanVisible] = useState(false);
-  useEffect(() => {
-    const t1 = setTimeout(() => setNotifVisible(true), 800);
-    const t2 = setTimeout(() => setScanVisible(true), 1600);
-    return () => { clearTimeout(t1); clearTimeout(t2); };
-  }, []);
+// ─── Ticker ───────────────────────────────────────────────────────────────────
+function LiveTicker({ items }: { items: ActivityItem[] }) {
+  const TYPE_COLOR: Record<string, string> = { lost: 'text-red-400', found: 'text-teal-400', match: 'text-yellow-400' };
+  const TYPE_LABEL: Record<string, string> = { lost: 'Perdido', found: 'Achado', match: 'Match IA' };
+  const doubled = [...items, ...items];
   return (
-    <div className="relative w-full max-w-sm mx-auto">
-      {/* Main card — produto */}
-      <div className="rounded-2xl border border-white/[0.1] bg-white/[0.03] backdrop-blur-sm p-5 space-y-3"
-        style={{ boxShadow: '0 0 80px rgba(20,184,166,0.08), 0 0 0 1px rgba(20,184,166,0.06)' }}>
-        <div className="flex items-center justify-between mb-4">
-          <div className="flex items-center gap-2">
-            <div className="w-2 h-2 rounded-full bg-teal-400 animate-pulse" />
-            <span className="text-white text-sm font-semibold">Atividade ao vivo</span>
+    <div className="overflow-hidden py-3 border-y border-white/[0.06] bg-white/[0.02]">
+      <div className="flex gap-6 w-max" style={{ animation: 'ticker 30s linear infinite' }}>
+        {doubled.map((item, i) => (
+          <div key={i} className="flex items-center gap-2 px-3 py-1 rounded-full border border-white/[0.08] bg-white/[0.03] flex-shrink-0">
+            <span className="text-sm">{item.emoji}</span>
+            <span className={`text-xs font-semibold ${TYPE_COLOR[item.type] ?? 'text-white/60'}`}>{TYPE_LABEL[item.type] ?? item.type}</span>
+            <span className="text-xs text-white/50 max-w-[160px] truncate">{item.text}</span>
+            <span className="text-[10px] text-white/30">{item.city}</span>
           </div>
-          <span className="text-white/20 text-xs">em tempo real</span>
-        </div>
-        <LiveFeed />
-        <div className="mt-4 pt-4 border-t border-white/[0.06] grid grid-cols-3 gap-3">
-          {[{ v: '12.8k+', l: 'Objetos' }, { v: '3.2k+', l: 'Recuperados' }, { v: '98%', l: 'Com QR Code' }].map(m => (
-            <div key={m.l} className="text-center p-2 rounded-lg border border-white/[0.06] bg-white/[0.02]">
-              <p className="text-white text-sm font-bold">{m.v}</p>
-              <p className="text-white/30 text-[10px] mt-0.5">{m.l}</p>
-            </div>
-          ))}
-        </div>
-      </div>
-
-      {/* Floating notification */}
-      <div className={`absolute -top-4 -right-4 bg-[#0f1a1a] border border-teal-500/30 rounded-xl px-3 py-2.5 flex items-center gap-2.5 transition-all duration-700 ${notifVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}
-        style={{ boxShadow: '0 4px 24px rgba(20,184,166,0.2)', minWidth: '180px' }}>
-        <div className="w-7 h-7 rounded-lg bg-teal-500/20 flex items-center justify-center flex-shrink-0">
-          <Bell className="w-3.5 h-3.5 text-teal-400" />
-        </div>
-        <div>
-          <p className="text-teal-300 text-[11px] font-bold">Objeto encontrado!</p>
-          <p className="text-white/40 text-[10px]">iPhone 15 Pro · agora</p>
-        </div>
-      </div>
-
-      {/* Floating scan badge */}
-      <div className={`absolute -bottom-4 -left-4 bg-[#0f1a1a] border border-white/[0.12] rounded-xl px-3 py-2.5 flex items-center gap-2.5 transition-all duration-700 ${scanVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}
-        style={{ boxShadow: '0 4px 24px rgba(0,0,0,0.4)', minWidth: '160px' }}>
-        <div className="w-7 h-7 rounded-lg bg-white/[0.08] flex items-center justify-center flex-shrink-0">
-          <Scan className="w-3.5 h-3.5 text-white/60" />
-        </div>
-        <div>
-          <p className="text-white text-[11px] font-bold">QR escaneado</p>
-          <p className="text-white/40 text-[10px]">Match 96% · IA ativa</p>
-        </div>
+        ))}
       </div>
     </div>
   );
@@ -199,185 +91,217 @@ function HeroMockup() {
 function Navbar() {
   const [scrolled, setScrolled] = useState(false);
   useEffect(() => {
-    const h = () => setScrolled(window.scrollY > 8);
-    window.addEventListener('scroll', h, { passive: true });
+    const h = () => setScrolled(window.scrollY > 20);
+    window.addEventListener('scroll', h);
     return () => window.removeEventListener('scroll', h);
   }, []);
   return (
-    <header className={`fixed top-0 inset-x-0 z-50 transition-all duration-500 ${scrolled ? 'bg-[#080b0f]/90 backdrop-blur-xl border-b border-white/[0.06]' : 'bg-transparent'}`}>
-      <nav className="max-w-6xl mx-auto px-5 h-14 flex items-center justify-between">
-        <Link href="/" className="flex items-center gap-2.5">
-          <div className="w-7 h-7 rounded-lg bg-teal-500 flex items-center justify-center">
-            <MapPin className="w-3.5 h-3.5 text-white" strokeWidth={2.5} />
-          </div>
-          <span className="text-white font-semibold tracking-tight text-[15px]">Backfindr</span>
+    <nav className={`fixed top-0 inset-x-0 z-50 flex items-center justify-between px-5 py-4 transition-all duration-300 ${scrolled ? 'bg-[#07090e]/90 backdrop-blur-md border-b border-white/[0.06]' : ''}`}>
+      <Link href="/" className="flex items-center gap-2">
+        <div className="w-7 h-7 rounded-lg bg-teal-500 flex items-center justify-center">
+          <QrCode className="w-4 h-4 text-white" strokeWidth={2.5} />
+        </div>
+        <span className="font-bold text-white text-sm tracking-tight">Backfindr</span>
+      </Link>
+      <div className="hidden md:flex items-center gap-7">
+        {([['Como funciona', '#how'], ['Pets', '#pets'], ['Preços', '/pricing'], ['Blog', '/blog']] as [string, string][]).map(([label, href]) => (
+          <Link key={label} href={href} className="text-white/40 hover:text-white text-sm transition-colors">{label}</Link>
+        ))}
+      </div>
+      <div className="flex items-center gap-3">
+        <Link href="/auth/login" className="text-white/50 hover:text-white text-sm transition-colors hidden sm:block">Entrar</Link>
+        <Link href="/auth/register" className="bg-teal-500 hover:bg-teal-400 text-white text-sm font-semibold px-4 py-2 rounded-lg transition-colors">
+          Criar QR grátis
         </Link>
-        <div className="hidden md:flex items-center gap-7">
-          {[['Como funciona', '#how'], ['Para pets', '#pets'], ['Empresas', '#business'], ['Preços', '/pricing']].map(([label, href]) => (
-            <a key={label} href={href} className="text-[13px] text-white/40 hover:text-white/80 transition-colors">{label}</a>
-          ))}
-        </div>
-        <div className="flex items-center gap-3">
-          <Link href="/auth/login" className="text-[13px] text-white/50 hover:text-white transition-colors px-2">Entrar</Link>
-          <Link href="/auth/register" className="flex items-center gap-1.5 text-[13px] font-medium bg-white text-black px-4 py-1.5 rounded-md hover:bg-white/90 transition-all">
-            Começar grátis <ChevronRight className="w-3.5 h-3.5" strokeWidth={2.5} />
-          </Link>
-        </div>
-      </nav>
-    </header>
+      </div>
+    </nav>
   );
 }
 
-// ─── Page ─────────────────────────────────────────────────────────────────────
+// ─── Main Page ────────────────────────────────────────────────────────────────
 export default function HomePage() {
+  const [activities, setActivities] = useState<ActivityItem[]>(FALLBACK_ACTIVITIES);
+
+  useEffect(() => {
+    fetch('/api/v1/objects/public?size=20&status=lost')
+      .then(r => r.ok ? r.json() : null)
+      .then(data => {
+        const items = data?.items ?? [];
+        if (items.length > 0) {
+          setActivities(items.slice(0, 8).map((obj: { id: string; title: string; category: string; status: string; location_addr?: string; created_at: string }) => {
+            const mins = Math.floor((Date.now() - new Date(obj.created_at).getTime()) / 60000);
+            const time = mins < 1 ? 'agora' : mins < 60 ? `${mins} min` : `${Math.floor(mins / 60)}h`;
+            return { id: obj.id, type: obj.status, emoji: CATEGORY_EMOJI[obj.category] ?? '📦', text: obj.title, city: obj.location_addr ?? 'São Paulo, SP', time };
+          }));
+        }
+      })
+      .catch(() => {});
+  }, []);
+
   return (
-    <div className="min-h-screen bg-[#080b0f] text-white selection:bg-teal-500/30">
+    <div className="min-h-screen bg-[#07090e] text-white selection:bg-teal-500/30">
+      <style>{`
+        @keyframes ticker { from { transform: translateX(0) } to { transform: translateX(-50%) } }
+        @keyframes floatup { 0%,100% { transform: translateY(0) } 50% { transform: translateY(-8px) } }
+        @keyframes notif-in { from { opacity: 0; transform: translateY(12px) } to { opacity: 1; transform: translateY(0) } }
+      `}</style>
+
       <Navbar />
 
-      {/* ── Hero ─────────────────────────────────────────────────────────── */}
-      <section className="relative min-h-screen flex flex-col items-center justify-center px-5 pt-14 overflow-hidden">
-        {/* Background glow */}
-        <div className="absolute inset-0 pointer-events-none" style={{ background: 'radial-gradient(ellipse 80% 50% at 50% -10%, rgba(20,184,166,0.14) 0%, transparent 70%)' }} />
-        {/* Grid */}
-        <div className="absolute inset-0 pointer-events-none opacity-[0.025]" style={{ backgroundImage: 'linear-gradient(rgba(255,255,255,1) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,1) 1px,transparent 1px)', backgroundSize: '72px 72px' }} />
+      {/* ── HERO ─────────────────────────────────────────────────────────── */}
+      <section className="relative min-h-screen flex flex-col justify-center px-5 pt-20 pb-10 overflow-hidden">
+        <div className="absolute inset-0 pointer-events-none" style={{ background: 'radial-gradient(ellipse 90% 60% at 50% -5%, rgba(15,40,80,0.9) 0%, rgba(7,9,14,1) 65%)' }} />
+        <div className="absolute inset-0 pointer-events-none opacity-[0.03]" style={{ backgroundImage: 'linear-gradient(rgba(255,255,255,1) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,1) 1px,transparent 1px)', backgroundSize: '60px 60px' }} />
 
         <div className="relative z-10 w-full max-w-6xl mx-auto">
-          <div className="grid md:grid-cols-2 gap-16 items-center">
+          <div className="grid lg:grid-cols-2 gap-12 items-center">
 
-            {/* Left — copy */}
+            {/* LEFT — copy */}
             <div>
-              <div className="inline-flex items-center gap-2 mb-8 px-3 py-1.5 rounded-full border border-white/10 bg-white/[0.04]">
-                <span className="w-1.5 h-1.5 rounded-full bg-teal-400 animate-pulse" />
-                <span className="text-[11px] text-white/50 tracking-wide uppercase font-medium">
-                  Ativo agora em São Paulo
+              <div className="inline-flex items-center gap-2 mb-6 px-3 py-1.5 rounded-full border border-red-500/30 bg-red-500/10">
+                <span className="w-1.5 h-1.5 rounded-full bg-red-400 animate-pulse" />
+                <span className="text-[11px] text-red-300 tracking-wide uppercase font-semibold">
+                  Seu pet pode sumir hoje
                 </span>
               </div>
 
-              <h1 className="font-bold tracking-[-0.04em] leading-[0.92] mb-6" style={{ fontSize: 'clamp(42px, 7vw, 80px)' }}>
-                <span className="text-white">Proteja o que</span><br />
-                <span className="text-white">importa antes</span><br />
-                <span style={{ background: 'linear-gradient(135deg, #2dd4bf 0%, #14b8a6 40%, #0d9488 100%)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text' }}>
-                  que desapareça.
+              <h1 className="font-extrabold tracking-[-0.04em] leading-[0.9] mb-5" style={{ fontSize: 'clamp(40px, 6.5vw, 76px)' }}>
+                <span className="text-white">Se você perder,</span><br />
+                <span style={{ background: 'linear-gradient(135deg, #38bdf8 0%, #2dd4bf 50%, #14b8a6 100%)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text' }}>
+                  já pode ser tarde.
                 </span>
               </h1>
 
-              <p className="text-white/40 text-lg max-w-md leading-relaxed mb-4 font-light">
-                Crie um QR Code para seus itens e pets. Se alguém encontrar, você é avisado na hora.
+              <p className="text-white/50 text-base max-w-sm leading-relaxed mb-8 font-light">
+                Você só precisa de um QR.
               </p>
 
-              <p className="text-white/25 text-sm mb-10">
-                Mais de <span className="text-teal-400 font-semibold">12.847 objetos</span> registrados · <span className="text-teal-400 font-semibold">3.291 recuperados</span>
-              </p>
+              <Link href="/auth/register"
+                className="inline-flex items-center gap-2 bg-teal-500 hover:bg-teal-400 text-white font-bold px-8 py-4 rounded-xl text-base transition-all duration-200"
+                style={{ boxShadow: '0 0 0 1px rgba(20,184,166,0.5),0 12px 40px rgba(20,184,166,0.25)' }}>
+                Criar meu QR grátis <ArrowRight className="w-5 h-5" strokeWidth={2.5} />
+              </Link>
+              <p className="text-white/25 text-xs mt-3">Leva menos de 30 segundos · Gratuito para sempre</p>
 
-              <div className="flex flex-col sm:flex-row gap-3">
-                <Link href="/auth/register"
-                  className="flex items-center gap-2 bg-teal-500 hover:bg-teal-400 text-white text-sm font-semibold px-6 py-3.5 rounded-lg transition-all duration-200 justify-center"
-                  style={{ boxShadow: '0 0 0 1px rgba(20,184,166,0.5),0 8px 32px rgba(20,184,166,0.2)' }}>
-                  Criar meu QR grátis <ArrowRight className="w-4 h-4" strokeWidth={2.5} />
-                </Link>
-                <Link href="/map"
-                  className="flex items-center gap-2 text-white/50 hover:text-white text-sm font-medium px-6 py-3.5 rounded-lg border border-white/[0.08] hover:border-white/20 transition-all justify-center">
-                  <MapPin className="w-4 h-4" /> Ver mapa ao vivo
-                </Link>
+              <div className="flex items-center gap-3 mt-8">
+                <div className="flex -space-x-2">
+                  {(['bg-teal-500','bg-blue-500','bg-purple-500','bg-amber-500'] as string[]).map((c,i) => (
+                    <div key={i} className={`w-7 h-7 rounded-full border-2 border-[#07090e] ${c} flex items-center justify-center text-[10px] font-bold text-white`}>
+                      {['M','A','R','C'][i]}
+                    </div>
+                  ))}
+                </div>
+                <p className="text-white/40 text-xs">
+                  <span className="text-white font-semibold">12.847</span> objetos protegidos ·{' '}
+                  <span className="text-teal-400 font-semibold">3.291</span> recuperados
+                </p>
               </div>
             </div>
 
-            {/* Right — hero mockup */}
-            <div className="hidden md:block">
-              <HeroMockup />
+            {/* RIGHT — hero image */}
+            <div className="relative flex items-center justify-center" style={{ animation: 'floatup 4s ease-in-out infinite' }}>
+              <div className="relative w-full max-w-md">
+                <Image
+                  src="/img_hero.png"
+                  alt="Dispositivo escaneando QR Code"
+                  width={520}
+                  height={420}
+                  className="w-full rounded-2xl"
+                  priority
+                />
+                <div className="absolute top-4 right-4 bg-[#0a1628]/95 border border-teal-500/40 rounded-xl px-3 py-2.5 flex items-center gap-2.5 shadow-xl"
+                  style={{ animation: 'notif-in 0.6s ease 0.8s both' }}>
+                  <div className="w-7 h-7 rounded-lg bg-teal-500/20 flex items-center justify-center flex-shrink-0">
+                    <Bell className="w-3.5 h-3.5 text-teal-400" />
+                  </div>
+                  <div>
+                    <p className="text-[11px] font-semibold text-white">Item Encontrado!</p>
+                    <p className="text-[10px] text-white/50">Clique para falar agora</p>
+                  </div>
+                </div>
+                <div className="absolute bottom-4 left-4 bg-[#0a1628]/95 border border-white/20 rounded-xl px-3 py-2.5 flex items-center gap-2.5 shadow-xl"
+                  style={{ animation: 'notif-in 0.6s ease 1.2s both' }}>
+                  <div className="w-7 h-7 rounded-lg bg-white/10 flex items-center justify-center flex-shrink-0">
+                    <Scan className="w-3.5 h-3.5 text-white/70" />
+                  </div>
+                  <div>
+                    <p className="text-[11px] font-semibold text-white">Achou? Escaneie!</p>
+                    <p className="text-[10px] text-white/50">QR Code identificado</p>
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
+        </div>
+      </section>
 
-          {/* Stats bar */}
-          <div className="mt-20 pt-8 border-t border-white/[0.06] grid grid-cols-3 gap-8 max-w-lg mx-auto text-center">
-            {[
+      {/* ── TICKER ───────────────────────────────────────────────────────── */}
+      <LiveTicker items={activities} />
+
+      {/* ── 3 PASSOS ─────────────────────────────────────────────────────── */}
+      <section id="how" className="py-24 px-5">
+        <div className="max-w-5xl mx-auto">
+          <FadeIn>
+            <p className="text-center text-white/30 text-xs uppercase tracking-widest font-semibold mb-3">Simples assim</p>
+            <h2 className="text-center text-3xl font-bold text-white mb-4">Crie → Cole → Receba alerta</h2>
+            <p className="text-center text-white/40 text-sm mb-14">Quando acontece, cada minuto importa.</p>
+          </FadeIn>
+          <div className="grid md:grid-cols-3 gap-6">
+            {([
+              { img: '/img_step1.png', num: '1', title: 'Crie seu QR', desc: 'Cadastre seu item ou pet em 30 segundos. Gratuito.' },
+              { img: '/img_step2.png', num: '2', title: 'Cole e Proteja', desc: 'Imprima a etiqueta e cole no item. Resistente e discreto.' },
+              { img: '/img_step3.png', num: '3', title: 'Receba o Alerta', desc: 'Quem achar escaneia e você é notificado na hora.' },
+            ] as { img: string; num: string; title: string; desc: string }[]).map((step, i) => (
+              <FadeIn key={step.num} delay={i * 120}>
+                <div className="rounded-2xl border border-white/[0.08] bg-white/[0.03] overflow-hidden hover:border-teal-500/30 transition-colors">
+                  <div className="relative h-44 overflow-hidden">
+                    <Image src={step.img} alt={step.title} fill className="object-cover" />
+                    <div className="absolute inset-0 bg-gradient-to-t from-[#07090e] via-transparent to-transparent" />
+                    <div className="absolute top-3 left-3 w-7 h-7 rounded-full bg-teal-500 flex items-center justify-center text-xs font-bold text-white">
+                      {step.num}
+                    </div>
+                  </div>
+                  <div className="p-5">
+                    <h3 className="font-bold text-white mb-1">{step.title}</h3>
+                    <p className="text-white/40 text-sm">{step.desc}</p>
+                  </div>
+                </div>
+              </FadeIn>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* ── JÁ AJUDANDO ──────────────────────────────────────────────────── */}
+      <section className="py-16 px-5 border-y border-white/[0.06] bg-white/[0.015]">
+        <div className="max-w-4xl mx-auto">
+          <FadeIn>
+            <p className="text-center text-white/30 text-xs uppercase tracking-widest font-semibold mb-8">Já ajudando a recuperar itens</p>
+          </FadeIn>
+          <div className="grid grid-cols-3 gap-6 mb-10 text-center">
+            {([
               { value: 12847, suffix: '+', label: 'Objetos registrados' },
               { value: 3291,  suffix: '+', label: 'Recuperações confirmadas' },
               { value: 98,    suffix: '%', label: 'Taxa com QR Code' },
-            ].map(s => (
-              <div key={s.label}>
-                <p className="text-2xl font-bold text-white tracking-tight"><Counter target={s.value} suffix={s.suffix} /></p>
-                <p className="text-[11px] text-white/30 mt-1 leading-tight">{s.label}</p>
-              </div>
-            ))}
-          </div>
-        </div>
-
-        <div className="absolute bottom-0 inset-x-0 h-32 bg-gradient-to-t from-[#080b0f] to-transparent pointer-events-none" />
-      </section>
-
-      {/* ── Urgency strip ─────────────────────────────────────────────────── */}
-      <section className="border-y border-white/[0.06] bg-teal-500/[0.04] py-4 px-5 overflow-hidden">
-        <div className="max-w-6xl mx-auto flex items-center gap-3">
-          <div className="w-2 h-2 rounded-full bg-teal-400 animate-pulse flex-shrink-0" />
-          <p className="text-teal-300 text-sm">
-            <span className="font-semibold">Você só lembra disso depois que perde.</span>
-            {' '}<span className="text-white/40">Registrar leva 2 minutos e é gratuito.</span>
-          </p>
-          <Link href="/auth/register" className="ml-auto flex-shrink-0 text-teal-400 hover:text-teal-300 text-sm font-medium flex items-center gap-1 transition-colors">
-            Começar <ArrowRight className="w-3.5 h-3.5" />
-          </Link>
-        </div>
-      </section>
-
-      {/* ── How it works ─────────────────────────────────────────────────── */}
-      <section id="how" className="py-32 px-5">
-        <div className="max-w-5xl mx-auto">
-          <FadeIn>
-            <div className="mb-16">
-              <p className="text-[11px] text-teal-500 uppercase tracking-[0.15em] font-semibold mb-4">Como funciona</p>
-              <h2 className="text-4xl font-bold tracking-tight text-white max-w-sm leading-tight">Simples assim.<br />Um objeto recuperado.</h2>
-            </div>
-          </FadeIn>
-          <div className="grid md:grid-cols-3 gap-px bg-white/[0.06] rounded-2xl overflow-hidden">
-            {[
-              { step: '01', icon: <QrCode className="w-5 h-5 text-teal-400" />, title: 'Crie seu QR Code', desc: 'Cadastre o item ou pet em segundos. QR Code único e permanente gerado na hora.' },
-              { step: '02', icon: <Zap className="w-5 h-5 text-teal-400" />, title: 'Cole e proteja', desc: 'Use na mochila, coleira, carteira ou documento. Funciona sem app, em qualquer lugar.' },
-              { step: '03', icon: <Shield className="w-5 h-5 text-teal-400" />, title: 'Receba o alerta', desc: 'Quem encontrar escaneia. Você recebe o aviso imediatamente. Chat mediado para devolução segura.' },
-            ].map((item, idx) => (
-              <FadeIn key={item.step} delay={idx * 120}>
-                <div className="h-full bg-[#080b0f] p-8 hover:bg-white/[0.025] transition-all duration-300 group cursor-default"
-                  style={{ boxShadow: 'inset 0 0 0 0 rgba(20,184,166,0)' }}>
-                  <div className="flex items-start justify-between mb-8">
-                    <div className="w-9 h-9 rounded-lg border border-white/10 flex items-center justify-center bg-white/[0.04] group-hover:border-teal-500/30 group-hover:bg-teal-500/[0.08] transition-all duration-300">{item.icon}</div>
-                    <span className="text-[11px] font-mono text-white/20">{item.step}</span>
-                  </div>
-                  <h3 className="text-white font-semibold mb-2 text-[15px]">{item.title}</h3>
-                  <p className="text-white/40 text-sm leading-relaxed">{item.desc}</p>
-                </div>
+            ] as { value: number; suffix: string; label: string }[]).map((s, i) => (
+              <FadeIn key={s.label} delay={i * 100}>
+                <p className="text-3xl font-extrabold text-teal-400 tracking-tight"><Counter target={s.value} suffix={s.suffix} /></p>
+                <p className="text-xs text-white/30 mt-1">{s.label}</p>
               </FadeIn>
             ))}
           </div>
-        </div>
-      </section>
-
-      {/* ── Emotional section ─────────────────────────────────────────────── */}
-      <section className="py-24 px-5 border-t border-white/[0.06]" style={{ background: 'linear-gradient(180deg, transparent 0%, rgba(20,184,166,0.03) 50%, transparent 100%)' }}>
-        <div className="max-w-4xl mx-auto text-center">
-          <FadeIn>
-            <h2 className="text-4xl md:text-5xl font-bold tracking-tight text-white mb-4 leading-tight">
-              Você só pensa nisso<br />
-              <span style={{ background: 'linear-gradient(135deg, #2dd4bf, #0d9488)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text' }}>
-                depois que perde.
-              </span>
-            </h2>
-            <p className="text-white/30 text-lg mb-16">Quando acontece, cada minuto importa.</p>
-          </FadeIn>
-
-          <div className="grid md:grid-cols-3 gap-6">
-            {[
-              { icon: <Smartphone className="w-8 h-8 text-white/60" />, label: 'Celular', sub: 'Perdido no transporte público', color: 'border-red-500/20 bg-red-500/[0.04]' },
-              { icon: <span className="text-3xl">🎒</span>, label: 'Mochila', sub: 'Esquecida no restaurante', color: 'border-yellow-500/20 bg-yellow-500/[0.04]' },
-              { icon: <span className="text-3xl">🐕</span>, label: 'Pet', sub: 'Fugiu pelo portão aberto', color: 'border-teal-500/20 bg-teal-500/[0.04]' },
-            ].map((item, idx) => (
-              <FadeIn key={item.label} delay={idx * 150}>
-                <div className={`rounded-2xl border p-8 flex flex-col items-center gap-4 ${item.color}`}>
-                  <div className="w-16 h-16 rounded-2xl bg-white/[0.04] border border-white/[0.08] flex items-center justify-center">
-                    {item.icon}
-                  </div>
+          <div className="grid md:grid-cols-3 gap-4">
+            {([
+              { emoji: '🐕', text: 'Cachorro recuperado em 2 horas', sub: 'via QR na coleira' },
+              { emoji: '👛', text: 'Carteira encontrada após scan', sub: 'contato imediato' },
+              { emoji: '⚡', text: 'Contato feito imediatamente', sub: 'match IA 94%' },
+            ] as { emoji: string; text: string; sub: string }[]).map((c, i) => (
+              <FadeIn key={i} delay={i * 80}>
+                <div className="flex items-center gap-3 p-4 rounded-xl border border-white/[0.08] bg-white/[0.03]">
+                  <span className="text-2xl">{c.emoji}</span>
                   <div>
-                    <p className="text-white font-semibold text-lg">{item.label}</p>
-                    <p className="text-white/30 text-sm mt-1">{item.sub}</p>
+                    <p className="text-sm font-semibold text-white">{c.text}</p>
+                    <p className="text-xs text-white/40">{c.sub}</p>
                   </div>
                 </div>
               </FadeIn>
@@ -386,211 +310,78 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* ── Features / Proof ─────────────────────────────────────────────── */}
-      <section className="py-24 px-5 border-t border-white/[0.06]">
+      {/* ── PETS ─────────────────────────────────────────────────────────── */}
+      <section id="pets" className="py-24 px-5 overflow-hidden">
         <div className="max-w-5xl mx-auto">
-          <div className="grid md:grid-cols-2 gap-16 items-center">
-            <FadeIn>
-              <div>
-                <p className="text-[11px] text-teal-500 uppercase tracking-[0.15em] font-semibold mb-4">Feito para funcionar no mundo real</p>
-                <h2 className="text-3xl font-bold tracking-tight text-white leading-tight mb-6">Celular, mochila, cachorro…<br />E não tinha nada pra te ajudar.</h2>
-                <p className="text-white/40 text-sm leading-relaxed mb-10">A maioria das plataformas é passiva — você cadastra e espera. O Backfindr age: a IA roda matching contínuo, o QR Code notifica em tempo real, e o chat fecha o loop até a devolução. <strong className="text-white/70">Agora tem.</strong></p>
-                <div className="space-y-6">
-                  {[
-                    { icon: <Globe className="w-4 h-4" />, title: 'QR Code permanente', desc: 'Funciona sem app, em qualquer país, para sempre.' },
-                    { icon: <Shield className="w-4 h-4" />, title: 'Privacidade total', desc: 'Contato nunca exposto. Comunicação 100% mediada.' },
-                    { icon: <Zap className="w-4 h-4" />, title: 'IA de matching contínuo', desc: 'Roda automaticamente. Você não precisa fazer nada.' },
-                  ].map(f => (
-                    <div key={f.title} className="flex gap-4 items-start">
-                      <div className="w-8 h-8 rounded-md border border-white/10 bg-white/[0.04] flex items-center justify-center flex-shrink-0 mt-0.5 text-teal-400">{f.icon}</div>
-                      <div>
-                        <p className="text-white text-sm font-medium mb-0.5">{f.title}</p>
-                        <p className="text-white/40 text-sm">{f.desc}</p>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </FadeIn>
-
-            {/* Visual proof card */}
-            <FadeIn delay={200}>
-              <div className="rounded-2xl border border-white/[0.08] bg-white/[0.02] p-6 space-y-3"
-                style={{ boxShadow: '0 0 80px rgba(20,184,166,0.06), 0 0 0 1px rgba(20,184,166,0.04)' }}>
-                {/* Notification row */}
-                <div className="flex items-center gap-3 p-3.5 rounded-xl border border-teal-500/20 bg-teal-500/[0.06]">
-                  <div className="w-8 h-8 rounded-full bg-teal-500/20 border border-teal-500/30 flex items-center justify-center flex-shrink-0">
-                    <Bell className="w-4 h-4 text-teal-400" />
+          <div className="relative rounded-3xl border border-white/[0.08] bg-gradient-to-br from-[#0a1628] to-[#07090e] overflow-hidden">
+            <div className="grid md:grid-cols-2 gap-0 items-center">
+              <div className="p-10 md:p-14">
+                <FadeIn>
+                  <div className="inline-flex items-center gap-2 mb-5 px-3 py-1.5 rounded-full border border-amber-500/30 bg-amber-500/10">
+                    <Heart className="w-3 h-3 text-amber-400" />
+                    <span className="text-[11px] text-amber-300 font-semibold uppercase tracking-wide">Proteção para pets</span>
                   </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-teal-300 text-[13px] font-medium">Objeto encontrado!</p>
-                    <p className="text-white/40 text-xs">iPhone 15 Pro · Metrô Paulista · agora</p>
-                  </div>
-                  <div className="w-2 h-2 rounded-full bg-teal-400 flex-shrink-0 animate-pulse" />
-                </div>
-                {/* Match row */}
-                <div className="flex items-center gap-3 p-3.5 rounded-xl border border-yellow-500/20 bg-yellow-500/[0.04]">
-                  <div className="w-8 h-8 rounded-lg bg-yellow-500/20 flex items-center justify-center flex-shrink-0">
-                    <Zap className="w-4 h-4 text-yellow-400" />
-                  </div>
-                  <div>
-                    <p className="text-yellow-300 text-[13px] font-medium">Match 96% — Carteira</p>
-                    <p className="text-white/40 text-xs">IA identificou objeto compatível</p>
-                  </div>
-                </div>
-                {/* Scan row */}
-                <div className="flex items-center gap-3 p-3.5 rounded-xl border border-white/[0.08] bg-white/[0.04]">
-                  <div className="w-8 h-8 rounded-lg bg-white/[0.08] flex items-center justify-center flex-shrink-0">
-                    <QrCode className="w-4 h-4 text-white/60" />
-                  </div>
-                  <div>
-                    <p className="text-white text-[13px] font-medium">QR Code escaneado</p>
-                    <p className="text-white/40 text-xs">2x hoje · São Paulo, BR</p>
-                  </div>
-                </div>
-                {/* Chat row */}
-                <div className="flex items-center gap-3 p-3.5 rounded-xl border border-white/[0.08] bg-white/[0.04]">
-                  <div className="w-8 h-8 rounded-lg bg-white/[0.08] flex items-center justify-center flex-shrink-0">
-                    <Shield className="w-4 h-4 text-white/60" />
-                  </div>
-                  <div>
-                    <p className="text-white text-[13px] font-medium">Chat mediado iniciado</p>
-                    <p className="text-white/40 text-xs">Devolução combinada · privacidade garantida</p>
-                  </div>
-                </div>
-                <div className="grid grid-cols-3 gap-2 pt-1">
-                  {[{ v: '2.4h', l: 'Tempo médio' }, { v: '98%', l: 'Com QR' }, { v: '47k+', l: 'Usuários' }].map(m => (
-                    <div key={m.l} className="text-center p-2.5 rounded-lg border border-white/[0.06] bg-white/[0.02]">
-                      <p className="text-white text-sm font-bold">{m.v}</p>
-                      <p className="text-white/30 text-[10px] mt-0.5">{m.l}</p>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </FadeIn>
-          </div>
-        </div>
-      </section>
-
-      {/* ── Pets section ─────────────────────────────────────────────────── */}
-      <section id="pets" className="py-24 px-5 border-t border-white/[0.06]" style={{ background: 'linear-gradient(135deg, rgba(20,184,166,0.04) 0%, transparent 60%)' }}>
-        <div className="max-w-5xl mx-auto">
-          <div className="grid md:grid-cols-2 gap-16 items-center">
-            <FadeIn>
-              <div>
-                <div className="inline-flex items-center gap-2 mb-6 px-3 py-1.5 rounded-full border border-teal-500/20 bg-teal-500/[0.06]">
-                  <Heart className="w-3.5 h-3.5 text-teal-400" />
-                  <span className="text-[11px] text-teal-400 tracking-wide uppercase font-medium">Para pets</span>
-                </div>
-                <h2 className="text-4xl font-bold tracking-tight text-white leading-tight mb-4">
-                  Seu pet pode<br />sumir hoje.
-                </h2>
-                <p className="text-white/40 text-sm leading-relaxed mb-8">
-                  Coloque um QR Code na coleira. Se alguém encontrar seu pet, escaneia e você recebe o alerta imediatamente — com localização e contato mediado. Sem expor seu número.
-                </p>
-                <div className="space-y-3 mb-10">
-                  {[
-                    'QR Code resistente à água na coleira',
-                    'Alerta imediato quando escaneado',
-                    'Chat seguro com quem encontrou',
-                    'Funciona sem app para quem achar',
-                  ].map(item => (
-                    <div key={item} className="flex items-center gap-3">
-                      <div className="w-4 h-4 rounded-full bg-teal-500/20 border border-teal-500/30 flex items-center justify-center flex-shrink-0">
-                        <div className="w-1.5 h-1.5 rounded-full bg-teal-400" />
-                      </div>
-                      <span className="text-white/60 text-sm">{item}</span>
-                    </div>
-                  ))}
-                </div>
-                <Link href="/auth/register?type=pet"
-                  className="inline-flex items-center gap-2 bg-teal-500 hover:bg-teal-400 text-white text-sm font-semibold px-6 py-3.5 rounded-lg transition-all duration-200"
-                  style={{ boxShadow: '0 0 0 1px rgba(20,184,166,0.5),0 8px 32px rgba(20,184,166,0.2)' }}>
-                  <Heart className="w-4 h-4" /> Criar QR para meu pet
-                </Link>
-              </div>
-            </FadeIn>
-
-            <FadeIn delay={200}>
-              <div className="rounded-2xl border border-teal-500/10 bg-teal-500/[0.03] p-8 text-center"
-                style={{ boxShadow: '0 0 60px rgba(20,184,166,0.06)' }}>
-                <div className="text-8xl mb-6">🐕</div>
-                <div className="space-y-3">
-                  <div className="p-3.5 rounded-xl border border-teal-500/20 bg-teal-500/[0.06] text-left">
-                    <p className="text-teal-300 text-sm font-medium">QR escaneado — Labrador caramelo</p>
-                    <p className="text-white/40 text-xs mt-0.5">Ibirapuera, SP · há 3 minutos</p>
-                  </div>
-                  <div className="p-3.5 rounded-xl border border-white/[0.08] bg-white/[0.04] text-left">
-                    <p className="text-white text-sm font-medium">Notificação enviada ao dono</p>
-                    <p className="text-white/40 text-xs mt-0.5">Chat mediado disponível · privacidade garantida</p>
-                  </div>
-                </div>
-              </div>
-            </FadeIn>
-          </div>
-        </div>
-      </section>
-
-      {/* ── Business section ─────────────────────────────────────────────── */}
-      <section id="business" className="py-24 px-5 border-t border-white/[0.06]">
-        <div className="max-w-5xl mx-auto">
-          <FadeIn>
-            <div className="rounded-2xl border border-white/[0.08] bg-white/[0.02] p-10 md:p-14"
-              style={{ boxShadow: '0 0 80px rgba(20,184,166,0.04)' }}>
-              <div className="grid md:grid-cols-2 gap-12 items-center">
-                <div>
-                  <div className="inline-flex items-center gap-2 mb-6 px-3 py-1.5 rounded-full border border-white/10 bg-white/[0.04]">
-                    <Briefcase className="w-3.5 h-3.5 text-white/50" />
-                    <span className="text-[11px] text-white/50 tracking-wide uppercase font-medium">Para empresas</span>
-                  </div>
-                  <h2 className="text-3xl font-bold tracking-tight text-white leading-tight mb-4">
-                    Gerencie equipamentos,<br />frotas e patrimônio.
+                  <h2 className="text-3xl md:text-4xl font-extrabold text-white leading-tight mb-4">
+                    Seu pet pode<br />sumir hoje.
                   </h2>
-                  <p className="text-white/40 text-sm leading-relaxed mb-8">
-                    Registre notebooks, câmeras, ferramentas e qualquer ativo da empresa. Relatórios, rastreamento e painel B2B para equipes de qualquer tamanho.
-                  </p>
-                  <a href="mailto:business@backfindr.com"
-                    className="inline-flex items-center gap-2 border border-white/[0.12] hover:border-white/30 text-white text-sm font-medium px-6 py-3 rounded-lg transition-all duration-200">
-                    Falar com vendas <ArrowRight className="w-4 h-4" />
-                  </a>
-                </div>
-                <div className="grid grid-cols-2 gap-3">
-                  {[
-                    { v: 'Até 10', l: 'usuários por conta' },
-                    { v: 'API', l: 'integração própria' },
-                    { v: 'SLA', l: 'garantido em contrato' },
-                    { v: 'R$ 149', l: 'por mês, tudo incluído' },
-                  ].map(m => (
-                    <div key={m.l} className="p-4 rounded-xl border border-white/[0.07] bg-white/[0.03] text-center">
-                      <p className="text-white font-bold text-lg">{m.v}</p>
-                      <p className="text-white/30 text-xs mt-1 leading-tight">{m.l}</p>
-                    </div>
-                  ))}
-                </div>
+                  <p className="text-white/40 text-sm mb-6">Proteja agora.</p>
+                  <div className="grid grid-cols-2 gap-3 mb-8">
+                    {([
+                      { v: '94%', l: 'recuperados com QR' },
+                      { v: '<2h', l: 'tempo médio de retorno' },
+                      { v: '1 em 3', l: 'pets some ao menos 1x' },
+                      { v: '0 custo', l: 'para criar a etiqueta' },
+                    ] as { v: string; l: string }[]).map(s => (
+                      <div key={s.l} className="p-3 rounded-xl border border-white/[0.08] bg-white/[0.03]">
+                        <p className="text-lg font-extrabold text-amber-400">{s.v}</p>
+                        <p className="text-[11px] text-white/40 mt-0.5">{s.l}</p>
+                      </div>
+                    ))}
+                  </div>
+                  <Link href="/auth/register"
+                    className="inline-flex items-center gap-2 bg-amber-500 hover:bg-amber-400 text-white font-bold px-7 py-3.5 rounded-xl text-sm transition-colors"
+                    style={{ boxShadow: '0 8px 30px rgba(245,158,11,0.25)' }}>
+                    Criar QR para meu pet <ArrowRight className="w-4 h-4" />
+                  </Link>
+                  <p className="text-white/25 text-xs mt-2">Leva menos de 30 segundos</p>
+                </FadeIn>
+              </div>
+              <div className="relative h-72 md:h-full min-h-[320px]">
+                <Image src="/img_pet.png" alt="Pet protegido com QR Code" fill className="object-cover object-center" />
+                <div className="absolute inset-0 bg-gradient-to-r from-[#0a1628] via-transparent to-transparent hidden md:block" />
               </div>
             </div>
-          </FadeIn>
+          </div>
         </div>
       </section>
 
-      {/* ── Testimonials ─────────────────────────────────────────────────── */}
-      <section className="py-24 px-5 border-t border-white/[0.06]">
+      {/* ── DEPOIMENTOS ──────────────────────────────────────────────────── */}
+      <section className="py-16 px-5 border-t border-white/[0.06]">
         <div className="max-w-4xl mx-auto">
           <FadeIn>
-            <p className="text-center text-[11px] text-white/30 uppercase tracking-[0.15em] mb-12">Histórias reais</p>
+            <p className="text-center text-white/30 text-xs uppercase tracking-widest font-semibold mb-10">O que dizem nossos usuários</p>
           </FadeIn>
-          <div className="grid md:grid-cols-3 gap-4">
-            {[
-              { text: 'Meu cachorro fugiu e em 2 horas alguém escaneou a placa. Incrível.', name: 'Ana Paula R.', location: 'São Paulo, SP' },
-              { text: 'Esqueci a carteira no metrô. No dia seguinte recebi uma notificação. Recuperei tudo.', name: 'Ricardo M.', location: 'Rio de Janeiro, RJ' },
-              { text: 'Uso para registrar todos os equipamentos da empresa. Zero perda em 6 meses.', name: 'Carla S.', location: 'Belo Horizonte, MG' },
-            ].map((t, idx) => (
-              <FadeIn key={t.name} delay={idx * 100}>
-                <div className="h-full p-5 rounded-xl border border-white/[0.07] bg-white/[0.03] hover:bg-white/[0.05] transition-colors">
-                  <p className="text-white/60 text-sm leading-relaxed mb-5">"{t.text}"</p>
-                  <div>
-                    <p className="text-white text-[13px] font-medium">{t.name}</p>
-                    <p className="text-white/30 text-xs mt-0.5">{t.location}</p>
+          <div className="grid md:grid-cols-2 gap-5">
+            {([
+              { name: 'Mariana S.', city: 'São Paulo, SP', text: 'Meu cachorro sumiu de manhã. Às 14h já estava de volta. O QR na coleira salvou tudo.', stars: 5 },
+              { name: 'Rafael T.', city: 'Rio de Janeiro, RJ', text: 'Perdi a carteira no metrô. Alguém escaneou o QR e me ligou em 20 minutos. Inacreditável.', stars: 5 },
+            ] as { name: string; city: string; text: string; stars: number }[]).map((t, i) => (
+              <FadeIn key={i} delay={i * 100}>
+                <div className="p-6 rounded-2xl border border-white/[0.08] bg-white/[0.03]">
+                  <div className="flex gap-0.5 mb-3">
+                    {Array.from({ length: t.stars }).map((_, j) => (
+                      <span key={j} className="text-amber-400 text-sm">★</span>
+                    ))}
+                  </div>
+                  <p className="text-white/70 text-sm leading-relaxed mb-4">&ldquo;{t.text}&rdquo;</p>
+                  <div className="flex items-center gap-2">
+                    <div className="w-7 h-7 rounded-full bg-teal-500/20 flex items-center justify-center text-xs font-bold text-teal-400">
+                      {t.name[0]}
+                    </div>
+                    <div>
+                      <p className="text-xs font-semibold text-white">{t.name}</p>
+                      <p className="text-[10px] text-white/30">{t.city}</p>
+                    </div>
                   </div>
                 </div>
               </FadeIn>
@@ -599,38 +390,39 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* ── CTA final ────────────────────────────────────────────────────── */}
-      <section className="py-32 px-5 border-t border-white/[0.06]" style={{ background: 'radial-gradient(ellipse 60% 40% at 50% 100%, rgba(20,184,166,0.08) 0%, transparent 70%)' }}>
+      {/* ── CTA FINAL ────────────────────────────────────────────────────── */}
+      <section className="py-24 px-5">
         <div className="max-w-2xl mx-auto text-center">
           <FadeIn>
-            <h2 className="text-4xl md:text-5xl font-bold tracking-tight text-white mb-4 leading-tight">
+            <h2 className="text-3xl md:text-4xl font-extrabold text-white mb-4 leading-tight">
               Depois que perde,<br />não adianta cadastrar.
             </h2>
-            <p className="text-white/40 text-sm mb-10">Registre agora. Grátis. Leva menos de 30 segundos.</p>
+            <p className="text-white/40 text-sm mb-8">Proteja agora. É gratuito.</p>
             <Link href="/auth/register"
-              className="inline-flex items-center gap-2 bg-teal-500 hover:bg-teal-400 text-white font-semibold px-10 py-4 rounded-lg transition-all text-sm"
-              style={{ boxShadow: '0 0 0 1px rgba(20,184,166,0.5),0 8px 40px rgba(20,184,166,0.25)' }}>
-              Criar meu QR agora <ArrowRight className="w-4 h-4" strokeWidth={2.5} />
+              className="inline-flex items-center gap-2 bg-teal-500 hover:bg-teal-400 text-white font-bold px-10 py-4 rounded-xl text-base transition-all"
+              style={{ boxShadow: '0 0 0 1px rgba(20,184,166,0.4),0 12px 40px rgba(20,184,166,0.2)' }}>
+              Criar meu QR agora <ArrowRight className="w-5 h-5" strokeWidth={2.5} />
             </Link>
-            <p className="text-white/20 text-xs mt-4">Sem cartão de crédito · Gratuito para sempre</p>
+            <p className="text-white/25 text-xs mt-3">Leva menos de 30 segundos</p>
           </FadeIn>
         </div>
       </section>
 
-      {/* ── Footer ───────────────────────────────────────────────────────── */}
-      <footer className="border-t border-white/[0.06] py-8 px-5">
-        <div className="max-w-6xl mx-auto flex flex-col md:flex-row items-center justify-between gap-4">
+      {/* ── FOOTER ───────────────────────────────────────────────────────── */}
+      <footer className="border-t border-white/[0.06] py-10 px-5">
+        <div className="max-w-5xl mx-auto flex flex-col md:flex-row items-center justify-between gap-6">
           <div className="flex items-center gap-2">
-            <div className="w-5 h-5 rounded-md bg-teal-500 flex items-center justify-center"><MapPin className="w-2.5 h-2.5 text-white" strokeWidth={2.5} /></div>
-            <span className="text-white text-sm font-semibold">Backfindr</span>
+            <div className="w-6 h-6 rounded-md bg-teal-500 flex items-center justify-center">
+              <QrCode className="w-3.5 h-3.5 text-white" strokeWidth={2.5} />
+            </div>
+            <span className="font-bold text-white text-sm">Backfindr</span>
           </div>
-          <p className="text-white/20 text-xs">© 2026 Backfindr. Todos os direitos reservados.</p>
-          <div className="flex gap-6 text-xs text-white/30">
-            <a href="/privacy" className="hover:text-white transition-colors">Privacidade</a>
-            <a href="/terms" className="hover:text-white transition-colors">Termos</a>
-            <a href="/pricing" className="hover:text-white transition-colors">Preços</a>
-            <a href="/map" className="hover:text-white transition-colors">Mapa</a>
+          <div className="flex flex-wrap items-center gap-6 text-xs text-white/30">
+            {([['Como funciona', '#how'], ['Pets', '#pets'], ['Preços', '/pricing'], ['Blog', '/blog'], ['Mapa', '/map'], ['Privacidade', '/privacy'], ['Termos', '/terms']] as [string, string][]).map(([l, h]) => (
+              <Link key={l} href={h} className="hover:text-white/60 transition-colors">{l}</Link>
+            ))}
           </div>
+          <p className="text-xs text-white/20">© 2026 Backfindr</p>
         </div>
       </footer>
     </div>
