@@ -279,9 +279,13 @@ export default function HomePage() {
 
         const seen = new Set<string>();
         const mapped = items
-          .filter((obj: { id: string }) => {
-            if (seen.has(obj.id)) return false;
+          .filter((obj: { id: string; title: string; status: string; created_at: string }) => {
+            // Deduplica por ID e por combinação título+status+dia (registros duplicados no banco)
+            const day = obj.created_at ? obj.created_at.slice(0, 10) : '';
+            const fingerprint = `${obj.title.toLowerCase().trim()}|${obj.status}|${day}`;
+            if (seen.has(obj.id) || seen.has(fingerprint)) return false;
             seen.add(obj.id);
+            seen.add(fingerprint);
             return true;
           })
           .slice(0, 8)
