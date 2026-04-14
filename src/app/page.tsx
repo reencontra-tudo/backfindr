@@ -261,42 +261,57 @@ export default function HomePage() {
         const items = data?.items ?? [];
         if (!Array.isArray(items) || items.length === 0) return;
 
-        const mapped = items.slice(0, 8).map((obj: {
-          id: string;
-          title: string;
-          category: string;
-          status: string;
-          location_addr?: string;
-          created_at: string;
-        }) => {
-          const mins = Math.floor((Date.now() - new Date(obj.created_at).getTime()) / 60000);
-          const time =
-            mins < 1 ? 'agora' : mins < 60 ? `${mins} min` : `${Math.floor(mins / 60)}h`;
+        const formatTime = (created_at: string): string => {
+          const mins = Math.floor((Date.now() - new Date(created_at).getTime()) / 60000);
+          if (mins < 1) return 'agora';
+          if (mins < 60) return `${mins} min`;
+          const hours = Math.floor(mins / 60);
+          if (hours < 24) return `${hours}h`;
+          const days = Math.floor(hours / 24);
+          if (days < 7) return `${days} dia${days > 1 ? 's' : ''}`;
+          const weeks = Math.floor(days / 7);
+          if (weeks < 5) return `${weeks} sem`;
+          const months = Math.floor(days / 30);
+          if (months < 12) return `há ${months} ${months === 1 ? 'mês' : 'meses'}`;
+          const years = Math.floor(days / 365);
+          return `há ${years} ${years === 1 ? 'ano' : 'anos'}`;
+        };
 
-          const type = (obj.status === 'found' || obj.status === 'match' ? obj.status : 'lost') as ActivityType;
-
-          return {
-            id: obj.id,
-            type,
-            emoji: CATEGORY_EMOJI[obj.category] ?? '📦',
-            text: obj.title,
-            city: obj.location_addr ?? 'São Paulo, SP',
-            time,
-          };
-        });
+        const seen = new Set<string>();
+        const mapped = items
+          .filter((obj: { id: string }) => {
+            if (seen.has(obj.id)) return false;
+            seen.add(obj.id);
+            return true;
+          })
+          .slice(0, 8)
+          .map((obj: {
+            id: string;
+            title: string;
+            category: string;
+            status: string;
+            location_addr?: string;
+            created_at: string;
+          }) => {
+            const type = (obj.status === 'found' || obj.status === 'match' ? obj.status : 'lost') as ActivityType;
+            return {
+              id: obj.id,
+              type,
+              emoji: CATEGORY_EMOJI[obj.category] ?? '📦',
+              text: obj.title,
+              city: obj.location_addr ?? 'São Paulo, SP',
+              time: formatTime(obj.created_at),
+            };
+          });
 
         setActivities(mapped);
       })
       .catch(() => {});
   }, []);
 
-  const heroCards = activities
-    .filter((item, index, self) => self.findIndex((a) => a.id === item.id) === index)
-    .slice(0, 3);
-
-  const liveCards = activities
-    .filter((item, index, self) => self.findIndex((a) => a.id === item.id) === index)
-    .slice(0, 6);
+  // Deduplicação já feita na origem (setActivities); fatias diretas
+  const heroCards = activities.slice(0, 3);
+  const liveCards = activities.slice(0, 6);
 
   return (
     <div className="min-h-screen bg-[#07090e] text-white selection:bg-teal-500/30">
