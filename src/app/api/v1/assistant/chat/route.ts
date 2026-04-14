@@ -109,12 +109,12 @@ async function getOpenAIResponse(messages: Message[], systemPrompt: string): Pro
 
 // ─── Buscar objetos do usuário no banco ───────────────────────────────────────
 async function fetchUserObjects(userId: string): Promise<UserObject[]> {
-  const result = await query<UserObject>(
+  const result = await query(
     `SELECT title, status, category, created_at, qr_code, reward_amount, description
      FROM objects WHERE user_id = $1 ORDER BY created_at DESC LIMIT 20`,
     [userId]
   );
-  return result.rows;
+  return result.rows as UserObject[];
 }
 
 // ─── Handler ──────────────────────────────────────────────────────────────────
@@ -137,8 +137,8 @@ export async function POST(req: NextRequest) {
     if (payload?.sub) {
       try {
         userObjects = await fetchUserObjects(payload.sub);
-        const userResult = await query<{ name: string }>('SELECT name FROM users WHERE id = $1', [payload.sub]);
-        userName = userResult.rows[0]?.name;
+        const userResult = await query('SELECT name FROM users WHERE id = $1', [payload.sub]);
+        userName = (userResult.rows[0] as { name: string } | undefined)?.name;
       } catch (err) {
         console.error('Erro ao buscar objetos do usuário para o Findr:', err);
         userObjects = [];
