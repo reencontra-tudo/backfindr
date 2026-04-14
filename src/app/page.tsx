@@ -154,10 +154,7 @@ function Navbar() {
             className="h-10 w-10 rounded-xl object-cover shadow-lg"
             priority
           />
-          <div className="leading-tight">
-            <p className="text-sm font-bold tracking-tight text-white">Backfindr</p>
-            <p className="text-[11px] text-white/40">Encontre. Conecte. Recupere.</p>
-          </div>
+          <p className="text-sm font-bold tracking-tight text-white">Backfindr</p>
         </Link>
 
         <div className="hidden items-center gap-7 md:flex">
@@ -292,7 +289,13 @@ export default function HomePage() {
       .catch(() => {});
   }, []);
 
-  const heroCards = activities.slice(0, 3);
+  const heroCards = activities
+    .filter((item, index, self) => self.findIndex((a) => a.id === item.id) === index)
+    .slice(0, 3);
+
+  const liveCards = activities
+    .filter((item, index, self) => self.findIndex((a) => a.id === item.id) === index)
+    .slice(0, 6);
 
   return (
     <div className="min-h-screen bg-[#07090e] text-white selection:bg-teal-500/30">
@@ -326,20 +329,6 @@ export default function HomePage() {
                 <span className="text-[11px] font-semibold uppercase tracking-[0.18em] text-teal-300">
                   rede ativa de perdidos e achados
                 </span>
-              </div>
-
-              <div className="mb-6 flex items-center gap-3">
-                <Image
-                  src="/branding/logo-backfindr.jpeg"
-                  alt="Backfindr"
-                  width={52}
-                  height={52}
-                  className="h-12 w-12 rounded-2xl object-cover shadow-xl"
-                />
-                <div className="leading-tight">
-                  <p className="text-lg font-bold tracking-tight text-white">Backfindr</p>
-                  <p className="text-sm text-white/38">Encontre. Conecte. Recupere.</p>
-                </div>
               </div>
 
               <h1
@@ -532,7 +521,7 @@ export default function HomePage() {
             </FadeIn>
 
             <div className="grid gap-4">
-              {activities.slice(0, 6).map((item, index) => (
+              {liveCards.map((item, index) => (
                 <FadeIn key={item.id} delay={index * 70}>
                   <div className="rounded-2xl border border-white/[0.08] bg-white/[0.03] p-4 transition-colors hover:border-teal-500/25">
                     <div className="mb-3 flex items-start justify-between gap-3">
