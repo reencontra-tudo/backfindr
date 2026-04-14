@@ -7,3 +7,4 @@ out/
 __pycache__/
 *.pyc
 uploads/
+docs/CREDENTIALS_LOCAL.txt

@@ -1,7 +1,17 @@
 # Backfindr — Visão Geral da Plataforma
 
 > Documento de referência técnica e de produto. Atualizado a cada avanço significativo.
-> Última atualização: 2026-04-13
+> Última atualização: 2026-04-14
+
+---
+
+## Credenciais e Tokens de Acesso
+
+| Serviço | Token / Chave | Observação |
+|---------|--------------|------------|
+| **Vercel API Token** | `vcp_36mc8Lb2k...cpN0buKwr` | Nome: `Backfindr-Manus-Deploy` — Sem expiração — Scope: `marcosmakarara-6287's projects` — **Valor completo salvo localmente** |
+| **GitHub Token** | `ghp_1d9jevp1...45zqzf` | Org: `reencontra-tudo`, Repo: `backfindr` — **Valor completo salvo localmente** |
+| **Repositório GitHub** | `https://github.com/reencontra-tudo/backfindr` | Branch principal: `main` |
 
 ---
 

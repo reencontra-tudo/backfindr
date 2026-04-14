@@ -66,6 +66,9 @@ Custo estimado: **menos de R$ 0,01 por conversa** (modelo `gpt-4o-mini`).
 | ✅ | Registros DNS do Resend adicionados no GoDaddy | 2026-04-13 |
 | ✅ | Copy da Home Page atualizado com textos de impacto | 2026-04-13 |
 | ✅ | Redesign premium da Home Page (Hero, Pets, Empresas, animações) | 2026-04-13 |
+| ✅ | Erro de build corrigido: Resend fora do módulo + useSearchParams sem Suspense | 2026-04-14 |
+| ✅ | Deploy da homepage redesenhada (commit 787f313) — Production Ready | 2026-04-14 |
+| ✅ | Token Vercel API criado (Backfindr-Manus-Deploy) e salvo no OVERVIEW | 2026-04-14 |
 | ✅ | Painel Business criado no dashboard | 2026-04-13 |
 | ✅ | Matching geoespacial otimizado com Haversine em SQL | 2026-04-13 |
 | ✅ | Hook `useChat.ts` legado removido | 2026-04-13 |
