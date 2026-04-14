@@ -6,6 +6,7 @@ import { useState, useEffect, useRef } from 'react';
 import {
   ArrowRight,
   Bell,
+  ChevronRight,
   Heart,
   MapPin,
   Radar,
@@ -364,10 +365,11 @@ export default function HomePage() {
                   <ArrowRight className="h-5 w-5" strokeWidth={2.5} />
                 </Link>
                 <Link
-                  href="#ao-vivo"
+                  href="/map"
                   className="inline-flex items-center justify-center gap-2 rounded-2xl border border-white/[0.12] bg-white/[0.03] px-7 py-4 text-base font-semibold text-white/85 transition-colors hover:border-white/[0.2] hover:bg-white/[0.06]"
                 >
-                  Ver acontecendo agora
+                  <MapPin className="h-5 w-5" />
+                  Ver mapa ao vivo
                 </Link>
               </div>
 
@@ -521,6 +523,24 @@ export default function HomePage() {
             </FadeIn>
 
             <div className="grid gap-4">
+              <FadeIn>
+                <Link
+                  href="/map"
+                  className="flex items-center justify-between gap-3 rounded-2xl border border-teal-500/25 bg-teal-500/[0.06] p-4 transition-colors hover:border-teal-500/50 hover:bg-teal-500/[0.1]"
+                >
+                  <div className="flex items-center gap-3">
+                    <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-teal-500/15">
+                      <MapPin className="h-5 w-5 text-teal-400" />
+                    </div>
+                    <div>
+                      <p className="text-sm font-semibold text-white">Mapa interativo ao vivo</p>
+                      <p className="text-xs text-white/40">Veja todas as ocorrências no mapa público</p>
+                    </div>
+                  </div>
+                  <ChevronRight className="h-4 w-4 flex-shrink-0 text-teal-400" />
+                </Link>
+              </FadeIn>
+
               {liveCards.map((item, index) => (
                 <FadeIn key={item.id} delay={index * 70}>
                   <div className="rounded-2xl border border-white/[0.08] bg-white/[0.03] p-4 transition-colors hover:border-teal-500/25">
