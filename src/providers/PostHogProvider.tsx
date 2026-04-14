@@ -2,7 +2,7 @@
 
 import posthog from 'posthog-js';
 import { PostHogProvider as PHProvider } from 'posthog-js/react';
-import { useEffect } from 'react';
+import { useEffect, Suspense } from 'react';
 import { usePathname, useSearchParams } from 'next/navigation';
 
 // ─── Init ─────────────────────────────────────────────────────────────────────
@@ -18,7 +18,7 @@ if (typeof window !== 'undefined' && process.env.NEXT_PUBLIC_POSTHOG_KEY) {
 }
 
 // ─── Page view tracker ────────────────────────────────────────────────────────
-function PageViewTracker() {
+function PageViewTrackerInner() {
   const pathname     = usePathname();
   const searchParams = useSearchParams();
 
@@ -29,6 +29,14 @@ function PageViewTracker() {
   }, [pathname, searchParams]);
 
   return null;
+}
+
+function PageViewTracker() {
+  return (
+    <Suspense fallback={null}>
+      <PageViewTrackerInner />
+    </Suspense>
+  );
 }
 
 // ─── Provider ─────────────────────────────────────────────────────────────────

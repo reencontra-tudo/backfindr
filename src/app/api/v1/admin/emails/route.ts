@@ -3,8 +3,11 @@ import { requireAdmin, backendHeaders } from '@/lib/adminGuard';
 import { z } from 'zod';
 import { Resend } from 'resend';
 
-const API    = process.env.NEXT_PUBLIC_API_URL ?? '';
-const resend = new Resend(process.env.RESEND_API_KEY);
+const API = process.env.NEXT_PUBLIC_API_URL ?? '';
+
+function getResend() {
+  return new Resend(process.env.RESEND_API_KEY ?? 're_placeholder');
+}
 
 const CampaignSchema = z.object({
   type:    z.enum(['webjetos_reativacao', 'custom', 'transacional']),
@@ -73,7 +76,7 @@ export async function POST(req: NextRequest) {
   // ── Modo teste: enviar para um único e-mail ──
   if (campaign.test_email) {
     try {
-      const { data, error } = await resend.emails.send({
+      const { data, error } = await getResend().emails.send({
         from:    `Backfindr <noreply@backfindr.com>`,
         to:      [campaign.test_email],
         subject: `[TESTE] ${campaign.subject}`,
@@ -122,7 +125,7 @@ export async function POST(req: NextRequest) {
             .replace(/{{nome}}/g, user.name.split(' ')[0])
             .replace(/{{email}}/g, user.email);
 
-          const { error } = await resend.emails.send({
+          const { error } = await getResend().emails.send({
             from:    `Backfindr <noreply@backfindr.com>`,
             to:      [user.email],
             subject: campaign.subject,
