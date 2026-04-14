@@ -20,6 +20,7 @@ const NAV = [
   { section: 'Negócio', items: [
     { href: '/admin/b2b',         icon: Building2,       label: 'B2B',         badge: null },
     { href: '/admin/financeiro',  icon: CreditCard,      label: 'Financeiro',  badge: null },
+    { href: '/admin/planos',      icon: Settings,        label: 'Planos & Pag.',badge: null },
     { href: '/admin/emails',      icon: Mail,            label: 'E-mails',     badge: null },
   ]},
   { section: 'Operações', items: [

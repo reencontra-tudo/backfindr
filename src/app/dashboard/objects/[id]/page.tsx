@@ -6,7 +6,7 @@ import Link from 'next/link';
 import {
   ChevronLeft, QrCode, MapPin, Calendar, Tag,
   Share2, Trash2, Edit2, Download, CheckCircle2,
-  AlertTriangle, Clock, Package, ExternalLink, Copy, Gift
+  AlertTriangle, Clock, Package, ExternalLink, Copy, Gift, Zap, Star
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
@@ -189,6 +189,49 @@ export default function ObjectDetailPage() {
   const [obj, setObj] = useState<RegisteredObject | null>(null);
   const [loading, setLoading] = useState(true);
   const [deleting, setDeleting] = useState(false);
+  const [boostLoading, setBoostLoading] = useState<string | null>(null);
+  const [activeBoost, setActiveBoost] = useState<{ type: string; expires_at: string } | null>(null);
+
+  // Buscar boost ativo do objeto
+  useEffect(() => {
+    if (!id) return;
+    const token = typeof window !== 'undefined'
+      ? (localStorage.getItem('token') || sessionStorage.getItem('token'))
+      : null;
+    if (!token) return;
+    fetch(`/api/v1/boost?object_id=${id}`, {
+      headers: { 'Authorization': `Bearer ${token}` },
+    })
+      .then(r => r.json())
+      .then(data => { if (data.active_boost) setActiveBoost(data.active_boost); })
+      .catch(() => {});
+  }, [id]);
+
+  const handleBoost = async (type: '7d' | '30d' | 'alert') => {
+    const token = typeof window !== 'undefined'
+      ? (localStorage.getItem('token') || sessionStorage.getItem('token'))
+      : null;
+    if (!token) { window.location.href = '/auth/login'; return; }
+    setBoostLoading(type);
+    try {
+      const res = await fetch('/api/v1/boost', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+        body: JSON.stringify({ object_id: id, type }),
+      });
+      const data = await res.json();
+      if (data.boost) {
+        setActiveBoost(data.boost);
+        toast.success(data.test_mode ? '🚀 Boost ativado (modo teste)!' : '🚀 Boost ativado!');
+      } else if (data.checkout_url) {
+        window.location.href = data.checkout_url;
+      }
+    } catch {
+      toast.error('Erro ao ativar boost. Tente novamente.');
+    } finally {
+      setBoostLoading(null);
+    }
+  };
 
   useEffect(() => {
     objectsApi.get(id)
@@ -449,6 +492,56 @@ export default function ObjectDetailPage() {
               })}
             </div>
           </div>
+          {/* Boost Card — apenas para objetos perdidos/roubados */}
+          {(obj.status === 'lost' || obj.status === 'stolen') && (
+            <div className="glass rounded-2xl p-5 border border-orange-500/20 bg-orange-500/5">
+              <div className="flex items-center gap-2 mb-3">
+                <Zap className="w-4 h-4 text-orange-400" />
+                <h3 className="font-display font-semibold text-white text-sm">Boost — Aumentar visibilidade</h3>
+              </div>
+
+              {activeBoost ? (
+                <div className="flex items-center gap-2 bg-green-500/10 border border-green-500/20 rounded-xl px-3 py-2.5 mb-3">
+                  <Star className="w-4 h-4 text-green-400" />
+                  <div>
+                    <p className="text-green-400 text-xs font-semibold">Boost ativo</p>
+                    <p className="text-white/50 text-xs">
+                      Expira em {new Date(activeBoost.expires_at).toLocaleDateString('pt-BR')}
+                    </p>
+                  </div>
+                </div>
+              ) : (
+                <p className="text-white/40 text-xs mb-3">
+                  Coloque sua publicação em destaque no mapa e no feed para mais pessoas verem.
+                </p>
+              )}
+
+              <div className="space-y-2">
+                {([
+                  { type: '7d'    as const, label: 'Boost 7 dias',   price: 'R$ 9,90',  desc: 'Destaque por 7 dias' },
+                  { type: '30d'   as const, label: 'Boost 30 dias',  price: 'R$ 24,90', desc: 'Destaque por 30 dias + notificação' },
+                  { type: 'alert' as const, label: 'Alerta de Área', price: 'R$ 14,90', desc: 'Notificação para usuários próximos' },
+                ]).map(b => (
+                  <button
+                    key={b.type}
+                    onClick={() => handleBoost(b.type)}
+                    disabled={boostLoading === b.type || !!activeBoost}
+                    className="w-full flex items-center justify-between px-3 py-2.5 rounded-lg text-sm border border-orange-500/20 bg-orange-500/5 hover:bg-orange-500/10 text-orange-300 hover:text-orange-200 disabled:opacity-40 disabled:cursor-not-allowed transition-all"
+                  >
+                    <div className="text-left">
+                      <p className="font-medium text-xs">{b.label}</p>
+                      <p className="text-orange-400/60 text-xs">{b.desc}</p>
+                    </div>
+                    <span className="font-bold text-xs flex-shrink-0">
+                      {boostLoading === b.type ? (
+                        <div className="w-3.5 h-3.5 border border-current/30 border-t-current rounded-full animate-spin" />
+                      ) : b.price}
+                    </span>
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
       </div>
     </div>
