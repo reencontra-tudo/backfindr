@@ -1,12 +1,5 @@
 export const dynamic = 'force-dynamic';
-// Aumentar o limite do body para suportar imagens base64 (até 10MB)
-export const config = {
-  api: {
-    bodyParser: {
-      sizeLimit: '10mb',
-    },
-  },
-};
+export const maxDuration = 60;
 
 import { NextRequest } from 'next/server';
 import { query } from '@/lib/db';

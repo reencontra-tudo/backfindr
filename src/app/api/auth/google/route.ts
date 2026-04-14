@@ -9,7 +9,10 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ error: 'Google OAuth not configured' }, { status: 500 });
   }
 
-  const redirectUri = `${request.nextUrl.origin}/api/auth/callback`;
+  // Usar NEXT_PUBLIC_APP_URL para garantir consistência com o callback
+  // request.nextUrl.origin pode retornar URLs internas do Vercel em produção
+  const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://backfindr.vercel.app';
+  const redirectUri = `${appUrl}/api/auth/callback`;
   const scope = 'openid email profile';
   const state = Math.random().toString(36).substring(7) + Date.now().toString(36);
 
