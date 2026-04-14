@@ -1,7 +1,7 @@
 'use client';
 import { useEffect, useState, useRef, useCallback, useMemo } from 'react';
 import Link from 'next/link';
-import { MapPin, Search, X, ChevronRight, SlidersHorizontal, LocateFixed, Gift } from 'lucide-react';
+import { MapPin, Search, X, ChevronRight, SlidersHorizontal, LocateFixed, Gift, Newspaper, ExternalLink } from 'lucide-react';
 import { toast } from 'sonner';
 import { objectsApi, parseApiError } from '@/lib/api';
 import { RegisteredObject } from '@/types';
@@ -60,6 +60,14 @@ interface Filters {
 // Número máximo de itens visíveis na lista lateral (virtualização simples)
 const LIST_PAGE_SIZE = 40;
 
+interface NewsItem {
+  title: string;
+  link: string;
+  source: string;
+  pubDate: string;
+  description: string;
+}
+
 export default function MapPage() {
   const [objects, setObjects] = useState<RegisteredObject[]>([]);
   const [loading, setLoading] = useState(true);
@@ -72,6 +80,26 @@ export default function MapPage() {
   const [mapLoaded, setMapLoaded] = useState(false);
   const [userLocation, setUserLocation] = useState<{ lat: number; lng: number } | null>(null);
   const [listPage, setListPage] = useState(1);
+  const [showNews, setShowNews] = useState(false);
+  const [news, setNews] = useState<NewsItem[]>([]);
+  const [newsLoading, setNewsLoading] = useState(false);
+  const [newsLoaded, setNewsLoaded] = useState(false);
+
+  // ─── Carregar notícias ao abrir o painel ─────────────────────────────────
+  const loadNews = useCallback(async () => {
+    if (newsLoaded || newsLoading) return;
+    setNewsLoading(true);
+    try {
+      const res = await fetch('/api/v1/news');
+      const data = await res.json();
+      if (data.success) setNews(data.news ?? []);
+    } catch {
+      // silencioso
+    } finally {
+      setNewsLoading(false);
+      setNewsLoaded(true);
+    }
+  }, [newsLoaded, newsLoading]);
 
   const mapContainer = useRef<HTMLDivElement>(null);
   const mapRef = useRef<unknown>(null);
@@ -330,6 +358,24 @@ export default function MapPage() {
           <LocateFixed className="w-3.5 h-3.5" />
         </button>
 
+        {/* Notícias toggle */}
+        <button
+          onClick={() => {
+            setShowNews(v => {
+              if (!v) loadNews();
+              return !v;
+            });
+          }}
+          className={`relative p-2 rounded-lg text-sm font-medium transition-all flex-shrink-0 ${
+            showNews
+              ? 'bg-amber-500/10 text-amber-400 border border-amber-500/20'
+              : 'bg-white/[0.04] text-white/50 border border-white/[0.08] hover:text-amber-400 hover:border-amber-500/20'
+          }`}
+          title="Notícias relacionadas"
+        >
+          <Newspaper className="w-3.5 h-3.5" />
+        </button>
+
         <Link href="/auth/register" className="bg-teal-500 hover:bg-teal-400 text-white text-xs font-semibold px-3 py-2 rounded-lg transition-all flex-shrink-0 hidden sm:block">
           Registrar
         </Link>
@@ -451,6 +497,60 @@ export default function MapPage() {
           </span>
         )}
       </div>
+
+      {/* Painel de notícias — colapsável */}
+      {showNews && (
+        <div className="flex-shrink-0 border-b border-white/[0.06] bg-[#0a0d12] overflow-hidden" style={{ maxHeight: '40vh' }}>
+          <div className="flex items-center justify-between px-4 py-2.5 border-b border-white/[0.06]">
+            <div className="flex items-center gap-2">
+              <Newspaper className="w-3.5 h-3.5 text-amber-400" />
+              <span className="text-white/70 text-xs font-semibold uppercase tracking-wide">Notícias recentes</span>
+              <span className="text-white/25 text-[10px]">via Google News</span>
+            </div>
+            <button onClick={() => setShowNews(false)} className="text-white/30 hover:text-white transition-colors p-1">
+              <X className="w-3.5 h-3.5" />
+            </button>
+          </div>
+          <div className="overflow-y-auto" style={{ maxHeight: 'calc(40vh - 40px)' }}>
+            {newsLoading ? (
+              <div className="flex flex-col gap-2 p-3">
+                {Array.from({ length: 4 }).map((_, i) => (
+                  <div key={i} className="h-12 bg-white/[0.04] rounded-xl animate-pulse" />
+                ))}
+              </div>
+            ) : news.length === 0 ? (
+              <div className="text-center py-8 text-white/30 text-sm">Nenhuma notícia encontrada</div>
+            ) : (
+              <div className="divide-y divide-white/[0.04]">
+                {news.map((item, idx) => (
+                  <a
+                    key={idx}
+                    href={item.link}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex items-start gap-3 px-4 py-3 hover:bg-white/[0.03] transition-colors group"
+                  >
+                    <div className="flex-1 min-w-0">
+                      <p className="text-white/80 text-xs font-medium leading-snug group-hover:text-white transition-colors line-clamp-2">
+                        {item.title}
+                      </p>
+                      <div className="flex items-center gap-2 mt-1">
+                        <span className="text-amber-400/60 text-[10px] font-medium">{item.source}</span>
+                        {item.pubDate && (
+                          <span className="text-white/20 text-[10px]">
+                            {new Date(item.pubDate).toLocaleDateString('pt-BR', { day: '2-digit', month: 'short' })}
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                    <ExternalLink className="w-3 h-3 text-white/20 group-hover:text-white/50 transition-colors flex-shrink-0 mt-0.5" />
+                  </a>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+      )}
 
       {/* Map + list layout */}
       <div className="flex-1 flex flex-col md:flex-row overflow-hidden">
