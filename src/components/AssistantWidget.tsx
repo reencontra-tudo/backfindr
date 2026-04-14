@@ -2,6 +2,7 @@
 
 import { useState, useRef, useEffect, useCallback } from 'react';
 import { MessageCircle, X, Send, Loader2, Bot, ChevronDown } from 'lucide-react';
+import Cookies from 'js-cookie';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -68,9 +69,12 @@ export default function AssistantWidget() {
     setLoading(true);
 
     try {
+      const token = Cookies.get('access_token');
+      const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+      if (token) headers['Authorization'] = `Bearer ${token}`;
       const res = await fetch('/api/v1/assistant/chat', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers,
         body: JSON.stringify({
           messages: newMessages.map(m => ({ role: m.role, content: m.content })),
           context: {
