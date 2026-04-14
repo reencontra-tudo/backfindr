@@ -147,24 +147,63 @@ function buildSystemPrompt(
 }
 
 // ─── Guided Flow (fallback sem OpenAI) ───────────────────────────────────────
+const APP_URL = 'https://backfindr.com';
+
 function getGuidedResponse(messages: Message[]): string {
   const lastMsg = messages[messages.length - 1]?.content?.toLowerCase() ?? '';
-  if (messages.length === 1) {
-    return `Olá! Sou o **Findr**, seu assistente no Backfindr 👋\n\nPosso te ajudar com:\n• 📦 **Cadastrar** um objeto perdido ou achado\n• 🔔 **Verificar** notificações e matches\n• 🔍 **Entender** como o matching funciona\n• ❓ **Tirar dúvidas** sobre a plataforma\n\nO que você precisa hoje?`;
+
+  // Navegação
+  if (/mapa/.test(lastMsg) && /ir|abrir|ver|acessar/.test(lastMsg)) {
+    return `Mapa ao vivo 👇\n\n${APP_URL}/map`;
   }
-  if (/notifica|novidade|atualiza|aconteceu/.test(lastMsg)) {
-    return `Para ver suas notificações mais recentes, acesse:\n👉 **[Notificações no Dashboard](https://backfindr.vercel.app/dashboard?tab=notifications)**`;
+  if (/dashboard|painel|meus objetos/.test(lastMsg)) {
+    return `Seus objetos 👇\n\n${APP_URL}/dashboard`;
   }
-  if (/match|compatib|encontrou|achou/.test(lastMsg)) {
-    return `Para ver seus matches, acesse:\n👉 **[Matches no Dashboard](https://backfindr.vercel.app/dashboard?tab=matches)**`;
+  if (/notifica/.test(lastMsg)) {
+    return `Suas notificações 👇\n\n${APP_URL}/dashboard?tab=notifications`;
   }
-  if (/perdi|achei|cadastr|registr|roubaram/.test(lastMsg)) {
-    return `Vamos registrar seu objeto agora!\n👉 **[Cadastrar objeto](https://backfindr.vercel.app/dashboard/new)**\n\nOu me diga o que perdeu e eu te ajudo a descrever melhor.`;
+  if (/match|compatib/.test(lastMsg)) {
+    return `Seus matches 👇\n\n${APP_URL}/dashboard?tab=matches`;
   }
-  if (/plano|preço|pagar|quanto custa/.test(lastMsg)) {
-    return `Temos 3 planos:\n\n| Plano | Preço | Destaques |\n|---|---|---|\n| **Grátis** | R$ 0 | 3 objetos, QR Code |\n| **Pro** | R$ 29/mês | 50 objetos, matching IA |\n| **Business** | R$ 149/mês | Ilimitado, API |\n\nQuer saber mais sobre algum?`;
+
+  // Perdeu — categorias
+  if (/perdi|sumiu|desapareceu|roubaram|furtaram/.test(lastMsg)) {
+    if (/pet|cachorro|gato|animal/.test(lastMsg)) {
+      return `Registra agora 👇\n\n${APP_URL}/dashboard/new\n\nQuanto antes, maior a chance de alguém te encontrar 🙏`;
+    }
+    if (/celular|telefone|iphone|android/.test(lastMsg)) {
+      return `Registra agora 👇\n\n${APP_URL}/dashboard/new\n\nIsso já aumenta a chance de alguém te encontrar.`;
+    }
+    if (/carro|moto|veículo/.test(lastMsg)) {
+      return `Registra agora 👇\n\n${APP_URL}/dashboard/new\n\nQuanto antes, mais rápido a rede pode ajudar.`;
+    }
+    if (/document|rg|cpf|passaporte|carteira/.test(lastMsg)) {
+      return `Registra agora 👇\n\n${APP_URL}/dashboard/new\n\nDocumentos encontrados aparecem aqui com frequência.`;
+    }
+    return `Registra agora 👇\n\n${APP_URL}/dashboard/new\n\nLeva menos de 1 minuto e já ajuda bastante.`;
   }
-  return `Posso te ajudar! Acesse o **[Dashboard](https://backfindr.vercel.app/dashboard)** para gerenciar seus objetos, ou me diga com mais detalhes o que precisa. 😊`;
+
+  // Encontrou
+  if (/achei|encontrei/.test(lastMsg)) {
+    return `Boa atitude 🙏\n\nRegistra aqui 👇\n\n${APP_URL}/dashboard/new\n\nAssim o dono consegue te encontrar.`;
+  }
+
+  // Como funciona
+  if (/como funciona|o que é|como usar/.test(lastMsg)) {
+    return `É simples:\n\nvocê registra → alguém encontra → você recebe aviso\n\nFaz aqui 👇\n\n${APP_URL}`;
+  }
+
+  // Gratuito
+  if (/gratu|grátis|custo|preço|plano|pago/.test(lastMsg)) {
+    return `Sim 🙏\n\nPode usar sem custo pra começar.\n\nFaz aqui 👇\n\n${APP_URL}`;
+  }
+
+  // Emocional
+  if (/desespera|angustia|triste|chorando|preciso muito/.test(lastMsg)) {
+    return `Imagino como deve estar sendo 😔\n\nVamos tentar aumentar as chances 👇\n\n${APP_URL}\n\nEstou torcendo pra dar certo 🙏`;
+  }
+
+  return `Me diz uma coisa 👇\n\nVocê perdeu ou encontrou algo?`;
 }
 
 // ─── OpenAI Integration ───────────────────────────────────────────────────────
