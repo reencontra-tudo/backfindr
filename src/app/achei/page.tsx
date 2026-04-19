@@ -89,7 +89,6 @@ function AcheiPage() {
           <h1 className="text-2xl font-bold text-white mb-2">Encontrou algo?</h1>
           <p className="text-white/50 text-sm leading-relaxed">
             Descreva o objeto que você encontrou e veja se o dono já está procurando na nossa rede.
-            <span className="text-white/30"> Não precisa criar conta para pesquisar.</span>
           </p>
         </div>
 
