@@ -82,7 +82,7 @@ function LoginForm() {
           <h1 className="text-2xl font-bold text-white tracking-tight mb-1">Entrar</h1>
           <p className="text-white/40 text-sm">
             Não tem conta?{' '}
-            <Link href="/auth/register" className="text-teal-400 hover:text-teal-300 transition-colors">Criar grátis</Link>
+            <Link href={`/auth/register${planSlug ? `?plan=${planSlug}` : ''}`} className="text-teal-400 hover:text-teal-300 transition-colors">{planSlug && planSlug !== 'free' ? `Criar conta` : 'Criar grátis'}</Link>
           </p>
         </div>
 
