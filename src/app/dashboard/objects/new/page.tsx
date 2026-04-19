@@ -1,7 +1,7 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
+import { useState, useEffect, Suspense } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -56,10 +56,21 @@ const STATUSES: { value: ObjectStatus; label: string; desc: string; color: strin
 
 const STEPS = ['Categoria', 'Status', 'Detalhes', 'Localização'];
 
+// ─── Intent map ────────────────────────────────────────────────────────────────
+const INTENT_MAP: Record<string, { category?: string; status?: string; startStep?: number }> = {
+  lost:    { status: 'lost',  startStep: 1 },
+  found:   { status: 'found', startStep: 1 },
+  protect: { status: 'lost',  startStep: 0 },
+  pet:     { category: 'pet', status: 'lost', startStep: 1 },
+};
+
 // ─── Component ────────────────────────────────────────────────────────────────
-export default function NewObjectPage() {
+function NewObjectForm() {
   const router = useRouter();
-  const [step, setStep] = useState(0);
+  const searchParams = useSearchParams();
+  const intent = searchParams.get('intent') ?? '';
+  const intentPreset = INTENT_MAP[intent] ?? {};
+  const [step, setStep] = useState(intentPreset.startStep ?? 0);
   const [submitting, setSubmitting] = useState(false);
   const [photos, setPhotos] = useState<File[]>([]);
   const [previews, setPreviews] = useState<string[]>([]);
@@ -74,6 +85,13 @@ export default function NewObjectPage() {
     return () => urls.forEach(u => URL.revokeObjectURL(u));
   }, [photos]);
 
+  // Pré-selecionar categoria e status com base no intent (roda uma vez após mount)
+  useEffect(() => {
+    if (intentPreset.category) setValue('category', intentPreset.category as ObjectCategory);
+    if (intentPreset.status)   setValue('status',   intentPreset.status as ObjectStatus);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   const {
     register,
     handleSubmit,
@@ -85,6 +103,17 @@ export default function NewObjectPage() {
   const category = watch('category');
   const status = watch('status');
   const isPet = category === 'pet';
+
+  // Pré-preencher raça com SRD quando categoria for pet (se campo ainda estiver vazio)
+  useEffect(() => {
+    if (isPet) {
+      const currentBreed = watch('pet_breed');
+      if (!currentBreed || currentBreed.trim() === '') {
+        setValue('pet_breed', 'SRD');
+      }
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isPet]);
 
   const nextStep = () => setStep((s) => Math.min(s + 1, STEPS.length - 1));
   const prevStep = () => setStep((s) => Math.max(s - 1, 0));
@@ -353,10 +382,12 @@ export default function NewObjectPage() {
                     </select>
                   </div>
                   <div>
-                    <label className="block text-xs text-slate-400 mb-1">Raça</label>
+                    <label className="block text-xs text-slate-400 mb-1">
+                      Raça <span className="text-slate-600">(SRD = sem raça definida)</span>
+                    </label>
                     <input
                       {...register('pet_breed')}
-                      placeholder="Ex: Labrador"
+                      placeholder="Ex: Labrador, Poodle, SRD..."
                       className="w-full bg-surface border border-surface-border rounded-xl px-3 py-2.5 text-slate-100 placeholder-slate-500 text-sm outline-none focus:border-brand-500 transition-colors"
                     />
                   </div>
@@ -597,5 +628,13 @@ export default function NewObjectPage() {
         </div>
       </form>
     </div>
+  );
+}
+
+export default function NewObjectPage() {
+  return (
+    <Suspense fallback={<div className="p-8 max-w-2xl" />}>
+      <NewObjectForm />
+    </Suspense>
   );
 }
