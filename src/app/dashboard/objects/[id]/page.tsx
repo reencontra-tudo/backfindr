@@ -37,7 +37,8 @@ const STATUS_CONFIG: Record<string, { label: string; icon: React.ReactNode; colo
 
 // ─── QR Code component (uses qr-server API — no extra dep) ───────────────────
 
-function QRCodeDisplay({ code, title }: { code: string; title: string }) {
+function QRCodeDisplay({ code, title, status }: { code: string; title: string; status: string }) {
+  const isLost = status === 'lost' || status === 'stolen';
   const scanUrl = `${process.env.NEXT_PUBLIC_APP_URL ?? 'https://backfindr.com.br'}/scan/${code}`;
   const qrImageUrl = `https://api.qrserver.com/v1/create-qr-code/?size=240x240&data=${encodeURIComponent(scanUrl)}&color=14b8a6&bgcolor=0f172a&margin=12`;
 
@@ -139,7 +140,10 @@ function QRCodeDisplay({ code, title }: { code: string; title: string }) {
       </div>
 
       <p className="text-slate-500 text-xs text-center leading-relaxed">
-        Cole este QR Code no objeto físico. Qualquer pessoa que escanear iniciará o processo de devolução.
+        {isLost
+          ? 'Compartilhe este link ou QR Code com pessoas que possam ter visto o objeto. Quem escanear será direcionado para a página de devolução.'
+          : 'Cole este QR Code no objeto físico. Qualquer pessoa que escanear iniciará o processo de devolução.'
+        }
       </p>
 
       <div className="flex gap-2 w-full">
@@ -456,7 +460,7 @@ export default function ObjectDetailPage() {
 
         {/* Right — QR Code + quick actions */}
         <div className="space-y-4">
-          <QRCodeDisplay code={obj.unique_code} title={obj.title} />
+          <QRCodeDisplay code={obj.unique_code} title={obj.title} status={obj.status} />
 
           {/* Change status */}
           <div className="glass rounded-2xl p-5">

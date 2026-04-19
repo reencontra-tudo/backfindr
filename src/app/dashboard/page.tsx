@@ -96,6 +96,7 @@ export default function DashboardPage() {
       {showOnboarding && (
         <OnboardingChecklist
           objectsCount={objects.length}
+          objectStatuses={objects.map(o => o.status)}
           onDismiss={() => setShowOnboarding(false)}
         />
       )}
