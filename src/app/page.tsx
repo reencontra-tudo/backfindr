@@ -374,21 +374,35 @@ export default function HomePage() {
                 Explore primeiro. Cadastre quando fizer sentido para você.
               </p>
 
-              <div className="flex flex-col gap-3 sm:flex-row">
+              {/* Triagem de intenção — 4 cards */}
+              <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-4">
                 <Link
-                  href="/auth/register"
-                  className="inline-flex items-center justify-center gap-2 rounded-2xl bg-teal-500 px-7 py-4 text-base font-bold text-white transition-all hover:bg-teal-400"
-                  style={{ boxShadow: '0 0 0 1px rgba(20,184,166,.35), 0 16px 42px rgba(20,184,166,.22)' }}
+                  href="/auth/register?intent=lost"
+                  className="group flex flex-col items-center gap-2 rounded-2xl border border-red-500/25 bg-red-500/[0.07] px-3 py-4 text-center transition-all hover:border-red-500/50 hover:bg-red-500/[0.13]"
                 >
-                  Criar meu QR grátis
-                  <ArrowRight className="h-5 w-5" strokeWidth={2.5} />
+                  <span className="text-2xl">😟</span>
+                  <span className="text-xs font-semibold leading-tight text-white/85">Perdi algo</span>
                 </Link>
                 <Link
-                  href="/map"
-                  className="inline-flex items-center justify-center gap-2 rounded-2xl border border-white/[0.12] bg-white/[0.03] px-7 py-4 text-base font-semibold text-white/85 transition-colors hover:border-white/[0.2] hover:bg-white/[0.06]"
+                  href="/auth/register?intent=found"
+                  className="group flex flex-col items-center gap-2 rounded-2xl border border-teal-500/25 bg-teal-500/[0.07] px-3 py-4 text-center transition-all hover:border-teal-500/50 hover:bg-teal-500/[0.13]"
                 >
-                  <MapPin className="h-5 w-5" />
-                  Ver mapa ao vivo
+                  <span className="text-2xl">🙌</span>
+                  <span className="text-xs font-semibold leading-tight text-white/85">Encontrei algo</span>
+                </Link>
+                <Link
+                  href="/auth/register?intent=protect"
+                  className="group flex flex-col items-center gap-2 rounded-2xl border border-blue-500/25 bg-blue-500/[0.07] px-3 py-4 text-center transition-all hover:border-blue-500/50 hover:bg-blue-500/[0.13]"
+                >
+                  <span className="text-2xl">🔒</span>
+                  <span className="text-xs font-semibold leading-tight text-white/85">Quero proteger</span>
+                </Link>
+                <Link
+                  href="/auth/register?intent=pet"
+                  className="group flex flex-col items-center gap-2 rounded-2xl border border-amber-500/25 bg-amber-500/[0.07] px-3 py-4 text-center transition-all hover:border-amber-500/50 hover:bg-amber-500/[0.13]"
+                >
+                  <span className="text-2xl">🐾</span>
+                  <span className="text-xs font-semibold leading-tight text-white/85">Meu pet sumiu</span>
                 </Link>
               </div>
 
@@ -789,6 +803,7 @@ export default function HomePage() {
             <Link href="#como-funciona" className="transition-colors hover:text-white/65">Como funciona</Link>
             <Link href="#pets" className="transition-colors hover:text-white/65">Pets</Link>
             <Link href="/map" className="transition-colors hover:text-white/65">Mapa</Link>
+            <Link href="/faq" className="transition-colors hover:text-white/65">Ajuda</Link>
             <Link href="/privacy" className="transition-colors hover:text-white/65">Privacidade</Link>
             <Link href="/terms" className="transition-colors hover:text-white/65">Termos</Link>
           </div>

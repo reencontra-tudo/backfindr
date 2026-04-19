@@ -38,6 +38,7 @@ function RegisterForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const planSlug = searchParams.get('plan') || '';
+  const intentSlug = searchParams.get('intent') || '';
   const planInfo = PLAN_INFO[planSlug] || null;
 
   const { register: registerUser, isLoading } = useAuthStore();
@@ -90,6 +91,9 @@ function RegisterForm() {
       // Se veio de um plano pago, redirecionar para checkout
       if (planSlug && planSlug !== 'free') {
         await redirectToCheckout(planSlug);
+      } else if (intentSlug) {
+        // Veio da triagem de intenção da home — ir direto para o formulário
+        router.push(`/dashboard/objects/new?intent=${intentSlug}`);
       } else {
         router.push('/dashboard');
       }
@@ -169,11 +173,11 @@ function RegisterForm() {
           )}
 
           <div className="mb-8">
-            <h1 className="text-2xl font-bold text-white tracking-tight mb-1">Criar conta</h1>
+            <h1 className="text-2xl font-bold text-white tracking-tight mb-1">Criar sua conta grátis</h1>
             <p className="text-white/40 text-sm">
               Já tem conta?{' '}
-              <Link href={`/auth/login${planSlug ? `?plan=${planSlug}` : ''}`} className="text-teal-400 hover:text-teal-300 transition-colors">
-                Entrar
+              <Link href={`/auth/login${planSlug ? `?plan=${planSlug}` : ''}`} className="text-teal-400 hover:text-teal-300 transition-colors font-medium">
+                Entrar aqui
               </Link>
             </p>
           </div>
@@ -181,29 +185,29 @@ function RegisterForm() {
           <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
             {/* Name */}
             <div>
-              <label className="block text-[13px] text-white/50 mb-1.5">Nome completo</label>
-              <input {...register('name')} placeholder="João Silva" className={inputClass(!!errors.name)} />
+              <label className="block text-sm text-white/70 mb-1.5 font-medium">Seu nome completo</label>
+              <input {...register('name')} placeholder="Ex: João da Silva" className={inputClass(!!errors.name)} />
               {errors.name && <p className="text-red-400 text-xs mt-1">{errors.name.message}</p>}
             </div>
 
             {/* Email */}
             <div>
-              <label className="block text-[13px] text-white/50 mb-1.5">E-mail</label>
-              <input {...register('email')} type="email" placeholder="seu@email.com" className={inputClass(!!errors.email)} />
+              <label className="block text-sm text-white/70 mb-1.5 font-medium">Seu e-mail</label>
+              <input {...register('email')} type="email" placeholder="Ex: joao@gmail.com" className={inputClass(!!errors.email)} />
               {errors.email && <p className="text-red-400 text-xs mt-1">{errors.email.message}</p>}
             </div>
 
             {/* Phone */}
             <div>
-              <label className="block text-[13px] text-white/50 mb-1.5">
-                Telefone <span className="text-white/20">(opcional)</span>
+              <label className="block text-sm text-white/70 mb-1.5 font-medium">
+                Telefone <span className="text-white/30 font-normal text-xs">(opcional)</span>
               </label>
-              <input {...register('phone')} type="tel" placeholder="+55 11 99999-9999" className={inputClass(false)} />
+              <input {...register('phone')} type="tel" placeholder="Ex: (11) 99999-9999" className={inputClass(false)} />
             </div>
 
             {/* Password */}
             <div>
-              <label className="block text-[13px] text-white/50 mb-1.5">Senha</label>
+              <label className="block text-sm text-white/70 mb-1.5 font-medium">Crie uma senha</label>
               <div className="relative">
                 <input
                   {...register('password')}
@@ -227,11 +231,11 @@ function RegisterForm() {
 
             {/* Confirm password */}
             <div>
-              <label className="block text-[13px] text-white/50 mb-1.5">Confirmar senha</label>
+              <label className="block text-sm text-white/70 mb-1.5 font-medium">Repita a senha</label>
               <input
                 {...register('confirmPassword')}
                 type="password"
-                placeholder="••••••••"
+                placeholder="Digite a senha novamente"
                 className={inputClass(!!errors.confirmPassword)}
               />
               {errors.confirmPassword && <p className="text-red-400 text-xs mt-1">{errors.confirmPassword.message}</p>}
@@ -241,7 +245,7 @@ function RegisterForm() {
             <button
               type="submit"
               disabled={isProcessing}
-              className="w-full flex items-center justify-center gap-2 bg-teal-500 hover:bg-teal-400 disabled:opacity-50 disabled:cursor-not-allowed text-white font-semibold py-2.5 rounded-lg transition-all text-sm mt-2"
+              className="w-full flex items-center justify-center gap-2 bg-teal-500 hover:bg-teal-400 disabled:opacity-50 disabled:cursor-not-allowed text-white font-bold py-4 rounded-xl transition-all text-base mt-2"
               style={{ boxShadow: '0 0 0 1px rgba(20,184,166,0.4),0 4px 20px rgba(20,184,166,0.15)' }}
             >
               {isProcessing

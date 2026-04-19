@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
-import { MapPin, QrCode, MessageCircle, CheckCircle2, ChevronRight, Shield } from 'lucide-react';
+import { MapPin, QrCode, MessageCircle, CheckCircle2, ChevronRight, Shield, Phone } from 'lucide-react';
 import { toast } from 'sonner';
 import { api, parseApiError } from '@/lib/api';
 import { RegisteredObject } from '@/types';
@@ -37,16 +37,19 @@ export default function PublicObjectClient({ obj }: { obj: RegisteredObject }) {
 
   const shareUrl = typeof window !== 'undefined' ? window.location.href : `https://backfindr.app/objeto/${obj.unique_code}`;
 
+  // Objeto já devolvido
   if (obj.status === 'returned') {
     return (
       <div className="min-h-screen bg-[#080b0f] flex flex-col items-center justify-center px-5 text-center">
-        <div className="w-16 h-16 rounded-2xl bg-green-500/10 border border-green-500/20 flex items-center justify-center mb-6">
-          <CheckCircle2 className="w-8 h-8 text-green-400" />
+        <div className="w-20 h-20 rounded-3xl bg-green-500/10 border border-green-500/20 flex items-center justify-center mb-6">
+          <CheckCircle2 className="w-10 h-10 text-green-400" />
         </div>
-        <h1 className="font-display text-2xl font-bold text-white mb-2">Objeto já recuperado!</h1>
-        <p className="text-white/40 text-sm">Este objeto já foi devolvido ao seu dono.</p>
-        <Link href="/" className="mt-6 text-teal-400 hover:text-teal-300 text-sm transition-colors">
-          Conhecer o Backfindr →
+        <h1 className="text-2xl font-bold text-white mb-3">Este objeto já foi recuperado</h1>
+        <p className="text-white/50 text-base leading-relaxed max-w-xs mx-auto">
+          O dono já recebeu este item de volta. Obrigado pela boa ação! 🙏
+        </p>
+        <Link href="/" className="mt-8 inline-flex items-center gap-2 text-teal-400 hover:text-teal-300 text-sm transition-colors">
+          Conhecer o Backfindr <ChevronRight className="w-4 h-4" />
         </Link>
       </div>
     );
@@ -72,70 +75,78 @@ export default function PublicObjectClient({ obj }: { obj: RegisteredObject }) {
         />
       </nav>
 
-      <div className="max-w-lg mx-auto px-5 py-10">
+      <div className="max-w-lg mx-auto px-5 py-8">
         {sent ? (
-          /* Success */
+          /* ── Tela de sucesso ── */
           <div className="text-center py-10">
-            <div className="w-16 h-16 rounded-2xl bg-teal-500/10 border border-teal-500/20 flex items-center justify-center mx-auto mb-6">
-              <CheckCircle2 className="w-8 h-8 text-teal-400" />
+            <div className="w-20 h-20 rounded-3xl bg-teal-500/10 border border-teal-500/20 flex items-center justify-center mx-auto mb-6">
+              <CheckCircle2 className="w-10 h-10 text-teal-400" />
             </div>
-            <h1 className="text-2xl font-bold text-white mb-3">Obrigado!</h1>
-            <p className="text-white/40 text-sm leading-relaxed mb-6 max-w-xs mx-auto">
-              O dono foi notificado que você encontrou o objeto. Em breve entrarão em contato com você.
+            <h1 className="text-2xl font-bold text-white mb-3">Mensagem enviada!</h1>
+            <p className="text-white/50 text-base leading-relaxed mb-6 max-w-xs mx-auto">
+              O dono foi avisado que você encontrou o objeto. Ele vai entrar em contato em breve. Obrigado! 🙏
             </p>
             <div className="bg-white/[0.03] border border-white/[0.07] rounded-xl p-4 text-left mb-8">
               <p className="text-white/40 text-xs mb-1">Objeto encontrado</p>
-              <p className="text-white font-medium">{CATEGORY_EMOJI[obj.category]} {obj.title}</p>
+              <p className="text-white font-medium text-base">{CATEGORY_EMOJI[obj.category]} {obj.title}</p>
             </div>
-            <Link href="/auth/register" className="inline-flex items-center gap-2 text-teal-400 hover:text-teal-300 text-sm transition-colors">
-              Registre seus objetos no Backfindr <ChevronRight className="w-3.5 h-3.5" />
+            <Link
+              href="/auth/register"
+              className="inline-flex items-center gap-2 bg-teal-500 hover:bg-teal-400 text-white font-semibold px-6 py-3 rounded-xl transition-colors text-sm"
+            >
+              Proteja seus objetos também <ChevronRight className="w-4 h-4" />
             </Link>
           </div>
         ) : (
           <>
-            {/* Object card */}
-            <div className="bg-white/[0.03] border border-white/[0.07] rounded-2xl overflow-hidden mb-6">
-              {/* Top bar */}
-              <div className="bg-teal-500/[0.07] border-b border-teal-500/[0.12] px-5 py-3.5 flex items-center gap-3">
-                <div className="w-7 h-7 rounded-lg bg-teal-500/20 flex items-center justify-center">
-                  <QrCode className="w-3.5 h-3.5 text-teal-400" />
-                </div>
-                <div>
-                  <p className="text-teal-300 text-[13px] font-medium">Objeto registrado no Backfindr</p>
-                  <p className="text-white/30 text-xs">Você encontrou este item?</p>
-                </div>
+            {/* ── Instrução clara no topo ── */}
+            <div className="bg-teal-500/[0.08] border border-teal-500/[0.18] rounded-2xl px-5 py-4 mb-6 flex items-start gap-3">
+              <div className="w-8 h-8 rounded-lg bg-teal-500/20 flex items-center justify-center flex-shrink-0 mt-0.5">
+                <QrCode className="w-4 h-4 text-teal-400" />
               </div>
+              <div>
+                <p className="text-teal-300 text-sm font-semibold mb-0.5">Você escaneou um QR Code</p>
+                <p className="text-white/60 text-sm leading-relaxed">
+                  Este objeto pertence a alguém. Se você o encontrou, clique no botão abaixo para avisar o dono — é rápido e seguro.
+                </p>
+              </div>
+            </div>
 
+            {/* ── Card do objeto ── */}
+            <div className="bg-white/[0.03] border border-white/[0.07] rounded-2xl overflow-hidden mb-6">
               <div className="p-5">
-                {/* Header */}
+                {/* Foto + título */}
                 <div className="flex items-start gap-4 mb-5">
                   {obj.photos?.[0] ? (
                     // eslint-disable-next-line @next/next/no-img-element
                     <img
                       src={obj.photos[0]}
                       alt={obj.title}
-                      className="w-16 h-16 rounded-xl object-cover border border-white/[0.08] flex-shrink-0"
+                      className="w-20 h-20 rounded-xl object-cover border border-white/[0.08] flex-shrink-0"
                     />
                   ) : (
-                    <div className="w-16 h-16 rounded-xl bg-white/[0.06] border border-white/[0.08] flex items-center justify-center text-3xl flex-shrink-0">
+                    <div className="w-20 h-20 rounded-xl bg-white/[0.06] border border-white/[0.08] flex items-center justify-center text-4xl flex-shrink-0">
                       {CATEGORY_EMOJI[obj.category] ?? '📦'}
                     </div>
                   )}
                   <div>
-                    <p className="text-white/40 text-xs mb-0.5">{CATEGORY_LABEL[obj.category]}</p>
+                    <p className="text-white/40 text-xs mb-1">{CATEGORY_LABEL[obj.category]}</p>
                     <h1 className="text-xl font-bold text-white leading-tight">{obj.title}</h1>
                   </div>
                 </div>
 
-                {/* Description */}
-                <div className="bg-white/[0.03] border border-white/[0.06] rounded-xl p-4 mb-5">
-                  <p className="text-white/50 text-[13px] leading-relaxed">{obj.description}</p>
-                </div>
+                {/* Descrição */}
+                {obj.description && (
+                  <div className="mb-5">
+                    <p className="text-white/35 text-xs mb-1.5 uppercase tracking-wide">Descrição</p>
+                    <p className="text-white/70 text-sm leading-relaxed">{obj.description}</p>
+                  </div>
+                )}
 
-                {/* Pet details */}
-                {obj.category === 'pet' && (obj.pet_breed || obj.pet_color) && (
+                {/* Detalhes do pet */}
+                {obj.category === 'pet' && (obj.pet_breed || obj.pet_color || obj.pet_species) && (
                   <div className="bg-white/[0.03] border border-white/[0.06] rounded-xl p-4 mb-5">
-                    <p className="text-white/30 text-xs mb-3">🐾 Informações do pet</p>
+                    <p className="text-white/40 text-xs mb-3">🐾 Informações do animal</p>
                     <div className="grid grid-cols-2 gap-3">
                       {obj.pet_species && (
                         <div>
@@ -159,31 +170,32 @@ export default function PublicObjectClient({ obj }: { obj: RegisteredObject }) {
                   </div>
                 )}
 
-                {/* CTA */}
+                {/* ── Botão principal — grande e claro ── */}
                 <button
                   onClick={notifyOwner}
                   disabled={loading}
-                  className="w-full flex items-center justify-center gap-2 bg-teal-500 hover:bg-teal-400 disabled:opacity-60 text-white font-semibold py-3.5 rounded-xl transition-all text-[15px]"
+                  className="w-full flex items-center justify-center gap-3 bg-teal-500 hover:bg-teal-400 active:bg-teal-600 disabled:opacity-60 text-white font-bold py-4 rounded-xl transition-all text-base"
                   style={{ boxShadow: '0 0 0 1px rgba(20,184,166,0.5), 0 8px 24px rgba(20,184,166,0.2)' }}
                 >
                   <MessageCircle className="w-5 h-5" />
-                  {loading ? 'Notificando...' : 'Encontrei este objeto!'}
+                  {loading ? 'Enviando aviso...' : 'Avisar o dono que encontrei'}
                 </button>
 
-                {/* Privacy note */}
-                <div className="flex items-start gap-2 mt-4">
-                  <Shield className="w-3.5 h-3.5 text-white/20 flex-shrink-0 mt-0.5" />
-                  <p className="text-white/25 text-xs leading-relaxed">
-                    Ao clicar, o dono é notificado de forma anônima. Seu contato só será compartilhado se você autorizar.
+                {/* Nota de privacidade — texto maior e mais claro */}
+                <div className="flex items-start gap-2.5 mt-4 bg-white/[0.02] rounded-xl p-3">
+                  <Shield className="w-4 h-4 text-teal-400/60 flex-shrink-0 mt-0.5" />
+                  <p className="text-white/45 text-xs leading-relaxed">
+                    <span className="text-white/70 font-medium">Seus dados estão protegidos.</span>{' '}
+                    O dono recebe apenas um aviso. Seu nome e telefone não são revelados automaticamente — você decide o que compartilhar.
                   </p>
                 </div>
               </div>
             </div>
 
-            {/* All photos */}
+            {/* Fotos adicionais */}
             {obj.photos && obj.photos.length > 1 && (
               <div className="mb-6">
-                <p className="text-white/30 text-xs mb-3 uppercase tracking-wider">Fotos do objeto</p>
+                <p className="text-white/30 text-xs mb-3 uppercase tracking-wider">Mais fotos do objeto</p>
                 <div className="grid grid-cols-3 gap-2">
                   {obj.photos.map((url: string, i: number) => (
                     // eslint-disable-next-line @next/next/no-img-element
@@ -198,15 +210,15 @@ export default function PublicObjectClient({ obj }: { obj: RegisteredObject }) {
               </div>
             )}
 
-            {/* Backfindr promo */}
-            <div className="border border-white/[0.06] rounded-xl p-4 flex items-center justify-between">
+            {/* Promo — linguagem simples */}
+            <div className="border border-white/[0.06] rounded-xl p-4 flex items-center justify-between gap-3">
               <div>
-                <p className="text-white text-sm font-medium">Registre seus objetos</p>
-                <p className="text-white/30 text-xs mt-0.5">Grátis · QR Code único · Recuperação garantida</p>
+                <p className="text-white text-sm font-semibold">Proteja seus objetos também</p>
+                <p className="text-white/35 text-xs mt-0.5">Gratuito · Fácil de usar · QR Code para tudo</p>
               </div>
               <Link
                 href="/auth/register"
-                className="flex items-center gap-1 bg-teal-500 hover:bg-teal-400 text-white text-xs font-semibold px-3 py-2 rounded-lg transition-all flex-shrink-0"
+                className="flex items-center gap-1 bg-teal-500 hover:bg-teal-400 text-white text-xs font-bold px-3 py-2.5 rounded-lg transition-all flex-shrink-0 whitespace-nowrap"
               >
                 Criar conta <ChevronRight className="w-3 h-3" />
               </Link>

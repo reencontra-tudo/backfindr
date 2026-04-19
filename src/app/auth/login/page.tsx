@@ -81,31 +81,31 @@ function LoginForm() {
         </Link>
 
         <div className="mb-8">
-          <h1 className="text-2xl font-bold text-white tracking-tight mb-1">Entrar</h1>
+          <h1 className="text-2xl font-bold text-white tracking-tight mb-1">Entrar na sua conta</h1>
           <p className="text-white/40 text-sm">
             Não tem conta?{' '}
-            <Link href={`/auth/register${planSlug ? `?plan=${planSlug}` : ''}`} className="text-teal-400 hover:text-teal-300 transition-colors">{planSlug && planSlug !== 'free' ? `Criar conta` : 'Criar grátis'}</Link>
+            <Link href={`/auth/register${planSlug ? `?plan=${planSlug}` : ''}`} className="text-teal-400 hover:text-teal-300 transition-colors font-medium">{planSlug && planSlug !== 'free' ? `Criar conta` : 'Criar conta grátis'}</Link>
           </p>
         </div>
 
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
           <div>
-            <label className="block text-[13px] text-white/50 mb-1.5">E-mail</label>
-            <input {...register('email')} type="email" autoComplete="email" placeholder="seu@email.com" className={inputClass(!!errors.email)} />
+            <label className="block text-sm text-white/70 mb-1.5 font-medium">Seu e-mail</label>
+            <input {...register('email')} type="email" autoComplete="email" placeholder="Ex: joao@gmail.com" className={inputClass(!!errors.email)} />
             {errors.email && <p className="text-red-400 text-xs mt-1">{errors.email.message}</p>}
           </div>
 
           <div>
             <div className="flex items-center justify-between mb-1.5">
-              <label className="text-[13px] text-white/50">Senha</label>
-              <Link href="/auth/forgot-password" className="text-[12px] text-white/30 hover:text-white/60 transition-colors">Esqueceu?</Link>
+              <label className="text-sm text-white/70 font-medium">Sua senha</label>
+              <Link href="/auth/forgot-password" className="text-xs text-teal-400/70 hover:text-teal-300 transition-colors">Esqueceu a senha?</Link>
             </div>
             <div className="relative">
               <input
                 {...register('password')}
                 type={showPass ? 'text' : 'password'}
                 autoComplete="current-password"
-                placeholder="••••••••"
+                placeholder="Digite sua senha"
                 className={inputClass(!!errors.password) + ' pr-10'}
               />
               <button type="button" onClick={() => setShowPass(!showPass)} className="absolute right-3 top-1/2 -translate-y-1/2 text-white/30 hover:text-white/60 transition-colors">
@@ -124,7 +124,7 @@ function LoginForm() {
           <button
             type="submit"
             disabled={isProcessing}
-            className="w-full flex items-center justify-center gap-2 bg-teal-500 hover:bg-teal-400 disabled:opacity-50 disabled:cursor-not-allowed text-white font-semibold py-2.5 rounded-lg transition-all text-sm mt-2"
+            className="w-full flex items-center justify-center gap-2 bg-teal-500 hover:bg-teal-400 disabled:opacity-50 disabled:cursor-not-allowed text-white font-bold py-4 rounded-xl transition-all text-base mt-2"
             style={{ boxShadow: '0 0 0 1px rgba(20,184,166,0.4),0 4px 20px rgba(20,184,166,0.15)' }}
           >
             {isLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <><span>Entrar</span><ArrowRight className="w-4 h-4" strokeWidth={2.5} /></>}
@@ -138,7 +138,7 @@ function LoginForm() {
           <button
             type="button"
             onClick={() => window.location.href = '/api/auth/google'}
-            className="w-full flex items-center justify-center gap-2.5 border border-white/[0.08] bg-white/[0.04] hover:bg-white/[0.07] text-white/60 hover:text-white text-sm py-2.5 rounded-lg transition-all"
+            className="w-full flex items-center justify-center gap-2.5 border border-white/[0.08] bg-white/[0.04] hover:bg-white/[0.07] text-white/70 hover:text-white text-sm py-3.5 rounded-xl transition-all"
           >
             <svg className="w-4 h-4" viewBox="0 0 24 24">
               <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
