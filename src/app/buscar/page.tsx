@@ -1,23 +1,9 @@
 'use client';
 
 import { useState, useEffect, useCallback, Suspense } from 'react';
-import { useSearchParams, useRouter } from 'next/navigation';
+import { useSearchParams } from 'next/navigation';
 import Link from 'next/link';
-import { MapPin, Search, ArrowRight, AlertTriangle, CheckCircle, Package, Loader2, ChevronDown } from 'lucide-react';
-
-const CATEGORIES = [
-  { value: '', label: 'Qualquer categoria' },
-  { value: 'pet', label: 'Pet / Animal' },
-  { value: 'phone', label: 'Celular' },
-  { value: 'wallet', label: 'Carteira' },
-  { value: 'keys', label: 'Chaves' },
-  { value: 'bag', label: 'Bolsa / Mochila' },
-  { value: 'bike', label: 'Bicicleta' },
-  { value: 'document', label: 'Documento' },
-  { value: 'jewelry', label: 'Joia / Relógio' },
-  { value: 'electronics', label: 'Eletrônico' },
-  { value: 'other', label: 'Outro' },
-];
+import { MapPin, Search, ArrowRight, AlertTriangle, CheckCircle, Package, Loader2 } from 'lucide-react';
 
 const STATUS_LABEL: Record<string, { label: string; color: string; icon: React.ReactNode }> = {
   lost:    { label: 'Perdido',  color: 'text-red-400 bg-red-500/10 border-red-500/20',    icon: <AlertTriangle className="w-3 h-3" /> },
@@ -41,23 +27,20 @@ interface ObjectItem {
 
 function BuscarPage() {
   const searchParams = useSearchParams();
-  const router = useRouter();
 
   const [keyword, setKeyword] = useState(searchParams.get('q') || '');
-  const [category, setCategory] = useState(searchParams.get('category') || '');
   const [results, setResults] = useState<ObjectItem[]>([]);
   const [total, setTotal] = useState(0);
   const [loading, setLoading] = useState(false);
   const [searched, setSearched] = useState(false);
 
-  const doSearch = useCallback(async (kw: string, cat: string) => {
+  const doSearch = useCallback(async (kw: string) => {
     setLoading(true);
     setSearched(true);
     try {
       const params = new URLSearchParams();
-      params.set('status', 'found'); // quem perdeu quer ver objetos ACHADOS
+      params.set('status', 'found');
       if (kw.trim()) params.set('keyword', kw.trim());
-      if (cat) params.set('category', cat);
       params.set('size', '20');
       const res = await fetch(`/api/v1/objects/public?${params.toString()}`);
       const data = await res.json();
@@ -70,20 +53,17 @@ function BuscarPage() {
     }
   }, []);
 
-  // Busca automática se vier com parâmetros da URL
   useEffect(() => {
     const q = searchParams.get('q') || '';
-    const cat = searchParams.get('category') || '';
-    if (q || cat) {
+    if (q) {
       setKeyword(q);
-      setCategory(cat);
-      doSearch(q, cat);
+      doSearch(q);
     }
   }, []);
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
-    doSearch(keyword, category);
+    doSearch(keyword);
   };
 
   return (
@@ -117,23 +97,8 @@ function BuscarPage() {
               onChange={e => setKeyword(e.target.value)}
               placeholder="Ex: carteira preta, celular Samsung, cachorro golden..."
               className="w-full bg-white/[0.04] border border-white/[0.08] rounded-xl px-4 py-3.5 text-white placeholder-white/25 text-sm outline-none focus:border-teal-500/60 focus:bg-white/[0.06] transition-all"
+              autoFocus
             />
-          </div>
-
-          <div>
-            <label className="block text-sm text-white/70 font-medium mb-1.5">Categoria</label>
-            <div className="relative">
-              <select
-                value={category}
-                onChange={e => setCategory(e.target.value)}
-                className="w-full appearance-none bg-white/[0.04] border border-white/[0.08] rounded-xl px-4 py-3.5 text-white text-sm outline-none focus:border-teal-500/60 transition-all pr-10"
-              >
-                {CATEGORIES.map(c => (
-                  <option key={c.value} value={c.value} className="bg-[#0f1318]">{c.label}</option>
-                ))}
-              </select>
-              <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-white/30 pointer-events-none" />
-            </div>
           </div>
 
           <button
@@ -167,7 +132,7 @@ function BuscarPage() {
                   Publique um alerta — se alguém achar, você será notificado na hora.
                 </p>
                 <Link
-                  href={`/auth/register?intent=lost${category ? `&category=${category}` : ''}`}
+                  href="/auth/register?intent=lost"
                   className="inline-flex items-center gap-2 bg-teal-500 hover:bg-teal-400 text-white font-bold px-6 py-3.5 rounded-xl transition-all text-sm"
                   style={{ boxShadow: '0 0 0 1px rgba(20,184,166,0.4),0 4px 20px rgba(20,184,166,0.15)' }}
                 >
@@ -229,7 +194,7 @@ function BuscarPage() {
                     Publique um alerta gratuito. Se alguém achar o seu objeto, você recebe uma notificação na hora.
                   </p>
                   <Link
-                    href={`/auth/register?intent=lost${category ? `&category=${category}` : ''}`}
+                    href="/auth/register?intent=lost"
                     className="inline-flex items-center gap-2 bg-teal-500 hover:bg-teal-400 text-white font-bold px-6 py-3 rounded-xl transition-all text-sm"
                   >
                     <span>Publicar alerta gratuito</span>
