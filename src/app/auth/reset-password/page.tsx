@@ -36,7 +36,7 @@ function ResetForm() {
     if (!token) { toast.error('Token inválido'); return; }
     setLoading(true);
     try {
-      await api.post('/auth/reset-password', { token, password: data.password });
+      await api.post('/auth/reset-password', { token, new_password: data.password });
       setDone(true);
       setTimeout(() => router.push('/auth/login'), 2500);
     } catch (e) {
