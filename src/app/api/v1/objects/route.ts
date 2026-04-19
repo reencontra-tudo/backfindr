@@ -4,6 +4,13 @@ import { query } from '@/lib/db';
 import { verifyToken, extractTokenFromHeader } from '@/lib/jwt';
 import { successResponse, unauthorizedResponse, internalErrorResponse } from '@/lib/response';
 
+// Limites de objetos por plano
+const PLAN_MAX_OBJECTS: Record<string, number> = {
+  free:     3,
+  pro:      50,
+  business: 500,
+};
+
 // Helper para normalizar um row do banco para o formato RegisteredObject
 function normalizeObject(row: Record<string, unknown>) {
   const lat = row.latitude ? parseFloat(String(row.latitude)) : null;
@@ -113,6 +120,46 @@ export async function POST(request: NextRequest) {
 
     const payload = verifyToken(token);
     if (!payload) return unauthorizedResponse();
+
+    // ── Verificar limite de objetos por plano ──────────────────────────────
+    const userResult = await query(
+      `SELECT plan, plan_expires_at FROM users WHERE id = $1`,
+      [payload.sub]
+    );
+
+    if (userResult.rows.length === 0) return unauthorizedResponse();
+
+    const userRow = userResult.rows[0] as { plan: string; plan_expires_at: string | null };
+    const rawPlan = userRow.plan || 'free';
+
+    // Verificar se o plano pago ainda está ativo
+    const isPaidActive = rawPlan !== 'free' && (
+      !userRow.plan_expires_at || new Date(userRow.plan_expires_at) > new Date()
+    );
+    const effectivePlan = isPaidActive ? rawPlan : 'free';
+    const maxObjects = PLAN_MAX_OBJECTS[effectivePlan] ?? PLAN_MAX_OBJECTS['free'];
+
+    // Contar objetos ativos do usuário (excluindo deletados/arquivados)
+    const countResult = await query(
+      `SELECT COUNT(*) as count FROM objects WHERE user_id = $1 AND status != 'deleted'`,
+      [payload.sub]
+    );
+    const currentCount = parseInt(countResult.rows[0].count);
+
+    if (currentCount >= maxObjects) {
+      return successResponse(
+        {
+          error: 'limit_reached',
+          message: `Você atingiu o limite de ${maxObjects} objeto${maxObjects !== 1 ? 's' : ''} do plano ${effectivePlan}. Faça upgrade para adicionar mais.`,
+          current_count: currentCount,
+          max_objects: maxObjects,
+          plan: effectivePlan,
+          upgrade_url: '/pricing',
+        },
+        403
+      );
+    }
+    // ──────────────────────────────────────────────────────────────────────
 
     const body = await request.json();
     const { title, description, status, type, category, location, latitude, longitude, images, reward_amount, reward_description } = body;
