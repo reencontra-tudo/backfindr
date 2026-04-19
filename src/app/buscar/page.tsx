@@ -241,14 +241,6 @@ function BuscarPage() {
           </>
         )}
 
-        {/* Estado inicial — antes de pesquisar */}
-        {!searched && !loading && (
-          <div className="text-center py-8">
-            <p className="text-white/25 text-sm">
-              Digite o que você perdeu e clique em "Buscar na rede" para ver se alguém já encontrou.
-            </p>
-          </div>
-        )}
       </div>
     </div>
   );

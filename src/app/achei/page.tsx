@@ -2,7 +2,7 @@
 
 import { useState, useCallback, Suspense } from 'react';
 import Link from 'next/link';
-import { MapPin, Search, ArrowRight, AlertTriangle, Package, Loader2, ChevronDown, Heart } from 'lucide-react';
+import { MapPin, Search, ArrowRight, AlertTriangle, Package, Loader2, ChevronDown } from 'lucide-react';
 
 const CATEGORIES = [
   { value: '', label: 'Qualquer categoria' },
@@ -80,12 +80,6 @@ function AcheiPage() {
       <div className="max-w-2xl mx-auto px-5 py-8">
         {/* Título */}
         <div className="mb-8">
-          <div className="flex items-center gap-2 mb-3">
-            <div className="w-8 h-8 rounded-xl bg-teal-500/15 border border-teal-500/20 flex items-center justify-center">
-              <Heart className="w-4 h-4 text-teal-400" />
-            </div>
-            <span className="text-teal-400 text-sm font-medium">Boa ação</span>
-          </div>
           <h1 className="text-2xl font-bold text-white mb-2">Encontrou algo?</h1>
           <p className="text-white/50 text-sm leading-relaxed">
             Descreva o objeto que você encontrou e veja se o dono já está procurando na nossa rede.
@@ -224,14 +218,6 @@ function AcheiPage() {
           </>
         )}
 
-        {/* Estado inicial */}
-        {!searched && !loading && (
-          <div className="text-center py-8">
-            <p className="text-white/25 text-sm">
-              Digite o que você encontrou e clique no botão para ver se o dono está procurando.
-            </p>
-          </div>
-        )}
       </div>
     </div>
   );
