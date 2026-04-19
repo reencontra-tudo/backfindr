@@ -10,6 +10,7 @@ import {
   ChevronLeft, ChevronRight, Loader2, Upload,
   MapPin, Package, Info, Check, Gift
 } from 'lucide-react';
+import axios from 'axios';
 import { objectsApi, parseApiError } from '@/lib/api';
 import { compressImages } from '@/lib/compressImage';
 import { ObjectCategory, ObjectStatus } from '@/types';
@@ -150,7 +151,19 @@ export default function NewObjectPage() {
 
       router.push(`/dashboard/objects/${objectId}`);
     } catch (err) {
-      toast.error(parseApiError(err));
+      // Tratar erro de limite de plano com redirecionamento para upgrade
+      if (axios.isAxiosError(err) && err.response?.data?.error === 'limit_reached') {
+        const msg = err.response.data.message ?? 'Limite de objetos atingido.';
+        toast.error(msg, {
+          action: {
+            label: 'Ver planos',
+            onClick: () => router.push('/pricing'),
+          },
+          duration: 8000,
+        });
+      } else {
+        toast.error(parseApiError(err));
+      }
     } finally {
       setSubmitting(false);
     }

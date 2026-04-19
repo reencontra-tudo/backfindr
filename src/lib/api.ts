@@ -63,7 +63,14 @@ export const setTokens = (t: AuthTokens) => {
 };
 export const clearTokens = () => { Cookies.remove('access_token'); Cookies.remove('refresh_token'); };
 export const parseApiError = (e: unknown): string => {
-  if (axios.isAxiosError(e)) return e.response?.data?.detail ?? e.message;
+  if (axios.isAxiosError(e)) {
+    const data = e.response?.data;
+    // Tratar erro de limite de objetos por plano
+    if (data?.error === 'limit_reached') {
+      return data.message ?? 'Limite de objetos atingido. Faça upgrade do seu plano em /pricing.';
+    }
+    return data?.detail ?? data?.message ?? data?.error ?? e.message;
+  }
   if (e instanceof Error) return e.message;
   return 'Erro desconhecido';
 };
