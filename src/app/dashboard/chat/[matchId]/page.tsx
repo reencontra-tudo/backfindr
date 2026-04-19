@@ -115,7 +115,7 @@ export default function ChatPage() {
     if (!content || sending) return;
     setSending(true);
     try {
-      await api.post(`/chat/${matchId}/messages`, { content });
+      await api.post(`/chat/${matchId}/messages`, { message: content });
       setInput('');
       await loadMessages(true);
       inputRef.current?.focus();

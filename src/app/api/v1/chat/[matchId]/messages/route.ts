@@ -53,7 +53,7 @@ export async function GET(
 
     return successResponse({
       match_id: params.matchId,
-      messages: messagesResult.rows,
+      messages: messagesResult.rows.map((r: { id: string; match_id: string; sender_id: string; message: string; created_at: string; sender_name?: string; is_system?: boolean }) => ({ ...r, content: r.message })),
       total: messagesResult.rows.length,
     });
   } catch (error) {
@@ -114,7 +114,8 @@ export async function POST(
       [params.matchId, payload.sub, message]
     );
 
-    return successResponse(result.rows[0], 201);
+    const row = result.rows[0];
+    return successResponse({ ...row, content: row.message }, 201);
   } catch (error) {
     return internalErrorResponse(error);
   }
