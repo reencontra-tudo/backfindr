@@ -28,8 +28,10 @@ function ResetForm() {
   const [loading, setLoading] = useState(false);
   const [done, setDone] = useState(false);
 
+  const [confirmTouched, setConfirmTouched] = useState(false);
   const { register, handleSubmit, formState: { errors } } = useForm<FormData>({
     resolver: zodResolver(schema),
+    mode: 'onBlur',
   });
 
   const onSubmit = async (data: FormData) => {
@@ -98,8 +100,13 @@ function ResetForm() {
         </div>
         <div>
           <label className="block text-[13px] text-white/50 mb-1.5">Confirmar senha</label>
-          <input {...register('confirm')} type="password" placeholder="••••••••" className={inputClass(!!errors.confirm)} />
-          {errors.confirm && <p className="text-red-400 text-xs mt-1">{errors.confirm.message}</p>}
+          <input
+            {...register('confirm', { onBlur: () => setConfirmTouched(true) })}
+            type="password"
+            placeholder="••••••••"
+            className={inputClass(!!(errors.confirm && confirmTouched))}
+          />
+          {errors.confirm && confirmTouched && <p className="text-red-400 text-xs mt-1">{errors.confirm.message}</p>}
         </div>
         <button type="submit" disabled={loading}
           className="w-full flex items-center justify-center gap-2 bg-teal-500 hover:bg-teal-400 disabled:opacity-50 text-white font-semibold py-2.5 rounded-lg transition-all text-sm"
