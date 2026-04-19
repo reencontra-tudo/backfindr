@@ -3,19 +3,9 @@
 import { useState, Suspense } from 'react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { useForm } from 'react-hook-form';
-import { zodResolver } from '@hookform/resolvers/zod';
-import { z } from 'zod';
 import { toast } from 'sonner';
 import { MapPin, Eye, EyeOff, ArrowRight, Loader2, CheckCircle2, AlertTriangle } from 'lucide-react';
 import { api, parseApiError } from '@/lib/api';
-
-const schema = z.object({
-  password: z.string().min(8, 'Mínimo 8 caracteres'),
-  confirm: z.string(),
-}).refine(d => d.password === d.confirm, { message: 'Senhas não conferem', path: ['confirm'] });
-
-type FormData = z.infer<typeof schema>;
 
 const inputClass = (err: boolean) =>
   `w-full bg-white/[0.04] border ${err ? 'border-red-500/60' : 'border-white/[0.08]'} rounded-lg px-3.5 py-2.5 text-white placeholder-white/20 text-sm outline-none focus:border-teal-500/60 transition-all`;
@@ -24,21 +14,27 @@ function ResetForm() {
   const router = useRouter();
   const params = useSearchParams();
   const token = params.get('token');
+
   const [showPass, setShowPass] = useState(false);
   const [loading, setLoading] = useState(false);
   const [done, setDone] = useState(false);
 
+  const [password, setPassword] = useState('');
+  const [confirm, setConfirm] = useState('');
   const [confirmTouched, setConfirmTouched] = useState(false);
-  const { register, handleSubmit, formState: { errors } } = useForm<FormData>({
-    resolver: zodResolver(schema),
-    mode: 'onBlur',
-  });
+  const [passwordTouched, setPasswordTouched] = useState(false);
 
-  const onSubmit = async (data: FormData) => {
+  const passwordError = passwordTouched && password.length > 0 && password.length < 8 ? 'Mínimo 8 caracteres' : '';
+  const confirmError = confirmTouched && confirm !== password ? 'Senhas não conferem' : '';
+
+  const onSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
     if (!token) { toast.error('Token inválido'); return; }
+    if (password.length < 8) { toast.error('A senha deve ter no mínimo 8 caracteres'); return; }
+    if (password !== confirm) { toast.error('As senhas não conferem'); return; }
     setLoading(true);
     try {
-      await api.post('/auth/reset-password', { token, new_password: data.password });
+      await api.post('/auth/reset-password', { token, new_password: password });
       setDone(true);
       setTimeout(() => router.push('/auth/login'), 2500);
     } catch (e) {
@@ -81,32 +77,36 @@ function ResetForm() {
         <h1 className="text-2xl font-bold text-white tracking-tight mb-1">Nova senha</h1>
         <p className="text-white/40 text-sm">Escolha uma senha forte para sua conta.</p>
       </div>
-      <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+      <form onSubmit={onSubmit} className="space-y-4">
         <div>
           <label className="block text-[13px] text-white/50 mb-1.5">Nova senha</label>
           <div className="relative">
             <input
-              {...register('password')}
               type={showPass ? 'text' : 'password'}
+              value={password}
+              onChange={e => setPassword(e.target.value)}
+              onBlur={() => setPasswordTouched(true)}
               placeholder="Mínimo 8 caracteres"
-              className={inputClass(!!errors.password) + ' pr-10'}
+              className={inputClass(!!passwordError) + ' pr-10'}
             />
             <button type="button" onClick={() => setShowPass(!showPass)}
               className="absolute right-3 top-1/2 -translate-y-1/2 text-white/30 hover:text-white/60 transition-colors">
               {showPass ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
             </button>
           </div>
-          {errors.password && <p className="text-red-400 text-xs mt-1">{errors.password.message}</p>}
+          {passwordError && <p className="text-red-400 text-xs mt-1">{passwordError}</p>}
         </div>
         <div>
           <label className="block text-[13px] text-white/50 mb-1.5">Confirmar senha</label>
           <input
-            {...register('confirm', { onBlur: () => setConfirmTouched(true) })}
             type="password"
+            value={confirm}
+            onChange={e => setConfirm(e.target.value)}
+            onBlur={() => setConfirmTouched(true)}
             placeholder="••••••••"
-            className={inputClass(!!(errors.confirm && confirmTouched))}
+            className={inputClass(!!confirmError)}
           />
-          {errors.confirm && confirmTouched && <p className="text-red-400 text-xs mt-1">{errors.confirm.message}</p>}
+          {confirmError && <p className="text-red-400 text-xs mt-1">{confirmError}</p>}
         </div>
         <button type="submit" disabled={loading}
           className="w-full flex items-center justify-center gap-2 bg-teal-500 hover:bg-teal-400 disabled:opacity-50 text-white font-semibold py-2.5 rounded-lg transition-all text-sm"

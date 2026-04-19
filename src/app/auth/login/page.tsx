@@ -24,6 +24,7 @@ function LoginForm() {
   const { login, isLoading } = useAuthStore();
   const [showPass, setShowPass] = useState(false);
   const [checkoutLoading, setCheckoutLoading] = useState(false);
+  const [loginError, setLoginError] = useState('');
 
   const { register, handleSubmit, formState: { errors } } = useForm<FormData>({ resolver: zodResolver(schema) });
 
@@ -46,6 +47,7 @@ function LoginForm() {
   }
 
   const onSubmit = async (data: FormData) => {
+    setLoginError('');
     try {
       await login(data.email, data.password);
       toast.success('Bem-vindo de volta!');
@@ -55,7 +57,7 @@ function LoginForm() {
         router.push('/dashboard');
       }
     } catch {
-      toast.error('E-mail ou senha incorretos.');
+      setLoginError('E-mail ou senha incorretos. Verifique seus dados.');
     }
   };
 
@@ -112,6 +114,12 @@ function LoginForm() {
             </div>
             {errors.password && <p className="text-red-400 text-xs mt-1">{errors.password.message}</p>}
           </div>
+
+          {loginError && (
+            <div className="flex items-center gap-2 bg-red-500/10 border border-red-500/20 rounded-lg px-3.5 py-2.5">
+              <span className="text-red-400 text-sm">{loginError}</span>
+            </div>
+          )}
 
           <button
             type="submit"

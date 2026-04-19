@@ -43,6 +43,7 @@ function RegisterForm() {
   const { register: registerUser, isLoading } = useAuthStore();
   const [showPass, setShowPass] = useState(false);
   const [checkoutLoading, setCheckoutLoading] = useState(false);
+  const [confirmValue, setConfirmValue] = useState('');
   const [confirmTouched, setConfirmTouched] = useState(false);
 
   const { register, handleSubmit, watch, formState: { errors } } = useForm<FormData>({ resolver: zodResolver(schema), mode: 'onBlur' });
@@ -50,6 +51,7 @@ function RegisterForm() {
   const password = watch('password', '');
   const strengthScore = [password.length >= 8, /[A-Z]/.test(password), /[0-9]/.test(password), /[^A-Za-z0-9]/.test(password)].filter(Boolean).length;
   const strengthColor = ['bg-red-500', 'bg-orange-500', 'bg-yellow-500', 'bg-teal-500'][strengthScore - 1] ?? 'bg-white/10';
+  const confirmError = confirmTouched && confirmValue !== password ? 'Senhas não conferem' : '';
 
   async function redirectToCheckout(slug: string) {
     setCheckoutLoading(true);
@@ -230,12 +232,15 @@ function RegisterForm() {
             <div>
               <label className="block text-[13px] text-white/50 mb-1.5">Confirmar senha</label>
               <input
-                {...register('confirmPassword', { onBlur: () => setConfirmTouched(true) })}
+                {...register('confirmPassword')}
                 type="password"
                 placeholder="••••••••"
-                className={inputClass(!!(errors.confirmPassword && confirmTouched))}
+                value={confirmValue}
+                onChange={e => setConfirmValue(e.target.value)}
+                onBlur={() => setConfirmTouched(true)}
+                className={inputClass(!!confirmError)}
               />
-              {errors.confirmPassword && confirmTouched && <p className="text-red-400 text-xs mt-1">{errors.confirmPassword.message}</p>}
+              {confirmError && <p className="text-red-400 text-xs mt-1">{confirmError}</p>}
             </div>
 
             {/* Submit */}
