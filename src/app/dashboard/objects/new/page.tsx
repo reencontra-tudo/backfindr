@@ -94,6 +94,7 @@ export default function NewObjectPage() {
   };
 
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    e.stopPropagation();
     const files = Array.from(e.target.files ?? []).slice(0, 5);
     if (files.length === 0) return;
     setCompressing(true);
@@ -218,7 +219,10 @@ export default function NewObjectPage() {
         ))}
       </div>
 
-      <form onSubmit={handleSubmit(onSubmit)}>
+      <form
+        onSubmit={handleSubmit(onSubmit)}
+        onKeyDown={(e) => { if (e.key === 'Enter' && step < STEPS.length - 1) e.preventDefault(); }}
+      >
         {/* Step 0 — Category */}
         {step === 0 && (
           <div className="space-y-4">
