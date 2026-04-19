@@ -4,6 +4,7 @@ import bcryptjs from 'bcryptjs';
 import { query } from '@/lib/db';
 import { createAccessToken, createRefreshToken } from '@/lib/jwt';
 import { successResponse, errorResponse, conflictResponse, internalErrorResponse } from '@/lib/response';
+import { sendWelcomeEmail } from '@/lib/email';
 
 export async function POST(request: NextRequest) {
   try {
@@ -41,6 +42,9 @@ export async function POST(request: NextRequest) {
     );
 
     const user = result.rows[0];
+
+    // Enviar e-mail de boas-vindas (não bloqueia o cadastro se falhar)
+    sendWelcomeEmail({ name: user.name, email: user.email }).catch(() => {});
 
     // Gerar tokens
     const accessToken = createAccessToken(user.id, user.email);

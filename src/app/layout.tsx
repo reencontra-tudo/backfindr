@@ -39,8 +39,8 @@ export const metadata: Metadata = {
   authors: [{ name: 'Backfindr' }],
   creator: 'Backfindr',
   publisher: 'Backfindr',
-  metadataBase: new URL('https://backfindr.com.br'),
-  alternates: { canonical: 'https://backfindr.com.br' },
+  metadataBase: new URL('https://www.backfindr.com'),
+  alternates: { canonical: 'https://www.backfindr.com' },
 
   openGraph: {
     title: 'Backfindr — Recupere o que perdeu',

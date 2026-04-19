@@ -192,7 +192,7 @@ function NewObjectForm() {
         toast.success('Objeto registrado com sucesso! 🎉');
       }
 
-      router.push(`/dashboard/objects/${objectId}`);
+      router.push(`/dashboard/objects/${objectId}/sucesso`);
     } catch (err) {
       // Tratar erro de limite de plano com redirecionamento para upgrade
       if (axios.isAxiosError(err) && err.response?.data?.error === 'limit_reached') {
