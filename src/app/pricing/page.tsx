@@ -7,7 +7,7 @@ import { Check, Zap, Building2, Gift, ArrowRight, Star, Shield, Globe, Clock, Ma
 interface Plan {
   slug: string;
   name: string;
-  price_brl: number;
+  price_brl: number | string;
   max_objects: number;
   features: string[];
   is_active: boolean;
@@ -69,7 +69,10 @@ export default function PricingPage() {
     fetch('/api/v1/plans')
       .then(r => r.json())
       .then(data => {
-        if (data.plans?.length > 0) setPlans(data.plans);
+        if (data.plans?.length > 0) {
+          // Normalizar price_brl para number (a API pode retornar como string)
+          setPlans(data.plans.map((p: Plan) => ({ ...p, price_brl: parseFloat(String(p.price_brl)) })));
+        }
       })
       .catch(() => {})
       .finally(() => setLoading(false));
