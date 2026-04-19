@@ -8,6 +8,7 @@ export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url);
     const status = searchParams.get('status') || ''; // vazio = todos os status
     const category = searchParams.get('category');
+    const keyword = searchParams.get('keyword') || searchParams.get('q') || '';
     const limit = Math.min(parseInt(searchParams.get('size') || searchParams.get('limit') || '200'), 500);
     const page = parseInt(searchParams.get('page') || '1');
     const offset = (page - 1) * limit;
@@ -27,6 +28,12 @@ export async function GET(request: NextRequest) {
     if (category) {
       params.push(category);
       conditions.push(`category = $${params.length}`);
+    }
+
+    // Busca por texto (case-insensitive) em título, descrição, cor, marca e raça
+    if (keyword && keyword.trim().length > 0) {
+      params.push(`%${keyword.trim().toLowerCase()}%`);
+      conditions.push(`(LOWER(title) LIKE $${params.length} OR LOWER(description) LIKE $${params.length} OR LOWER(color) LIKE $${params.length} OR LOWER(brand) LIKE $${params.length} OR LOWER(breed) LIKE $${params.length})`);
     }
 
     const whereClause = conditions.length > 0 ? `WHERE ${conditions.join(' AND ')}` : '';
@@ -74,6 +81,10 @@ export async function GET(request: NextRequest) {
     if (category) {
       countParams.push(category);
       countConditions.push(`category = $${countParams.length}`);
+    }
+    if (keyword && keyword.trim().length > 0) {
+      countParams.push(`%${keyword.trim().toLowerCase()}%`);
+      countConditions.push(`(LOWER(title) LIKE $${countParams.length} OR LOWER(description) LIKE $${countParams.length} OR LOWER(color) LIKE $${countParams.length} OR LOWER(brand) LIKE $${countParams.length} OR LOWER(breed) LIKE $${countParams.length})`);
     }
     const countWhere = countConditions.length > 0 ? `WHERE ${countConditions.join(' AND ')}` : '';
     const countResult = await query(`SELECT COUNT(*) as count FROM objects ${countWhere}`, countParams);

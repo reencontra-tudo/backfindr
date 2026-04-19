@@ -374,21 +374,23 @@ export default function HomePage() {
                 Explore primeiro. Cadastre quando fizer sentido para você.
               </p>
 
-              {/* Triagem de intenção — 4 cards */}
+              {/* Triagem de intenção — 4 cards (valor antes do cadastro) */}
               <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-4">
                 <Link
-                  href="/auth/register?intent=lost"
+                  href="/buscar"
                   className="group flex flex-col items-center gap-2 rounded-2xl border border-red-500/25 bg-red-500/[0.07] px-3 py-4 text-center transition-all hover:border-red-500/50 hover:bg-red-500/[0.13]"
                 >
                   <span className="text-2xl">😟</span>
                   <span className="text-xs font-semibold leading-tight text-white/85">Perdi algo</span>
+                  <span className="text-[10px] text-white/35 leading-tight">buscar na rede</span>
                 </Link>
                 <Link
-                  href="/auth/register?intent=found"
+                  href="/achei"
                   className="group flex flex-col items-center gap-2 rounded-2xl border border-teal-500/25 bg-teal-500/[0.07] px-3 py-4 text-center transition-all hover:border-teal-500/50 hover:bg-teal-500/[0.13]"
                 >
                   <span className="text-2xl">🙌</span>
                   <span className="text-xs font-semibold leading-tight text-white/85">Encontrei algo</span>
+                  <span className="text-[10px] text-white/35 leading-tight">ver se há dono</span>
                 </Link>
                 <Link
                   href="/auth/register?intent=protect"
@@ -396,13 +398,15 @@ export default function HomePage() {
                 >
                   <span className="text-2xl">🔒</span>
                   <span className="text-xs font-semibold leading-tight text-white/85">Quero proteger</span>
+                  <span className="text-[10px] text-white/35 leading-tight">gerar QR Code</span>
                 </Link>
                 <Link
-                  href="/auth/register?intent=pet"
+                  href="/buscar?category=pet"
                   className="group flex flex-col items-center gap-2 rounded-2xl border border-amber-500/25 bg-amber-500/[0.07] px-3 py-4 text-center transition-all hover:border-amber-500/50 hover:bg-amber-500/[0.13]"
                 >
                   <span className="text-2xl">🐾</span>
                   <span className="text-xs font-semibold leading-tight text-white/85">Meu pet sumiu</span>
+                  <span className="text-[10px] text-white/35 leading-tight">buscar pets achados</span>
                 </Link>
               </div>
 
