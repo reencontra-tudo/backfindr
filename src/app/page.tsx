@@ -295,20 +295,32 @@ export default function HomePage() {
             category: string;
             status: string;
             location_addr?: string;
+            location?: { address?: string } | null;
             created_at: string;
           }) => {
             const type = (obj.status === 'found' || obj.status === 'match' ? obj.status : 'lost') as ActivityType;
+            const cityRaw = obj.location_addr ?? (typeof obj.location === 'object' && obj.location?.address) ?? '';
+            const city = cityRaw ? String(cityRaw).split(',').slice(0, 2).join(',').trim() : 'São Paulo, SP';
             return {
               id: obj.id,
               type,
               emoji: CATEGORY_EMOJI[obj.category] ?? '📦',
               text: obj.title,
-              city: obj.location_addr ?? 'São Paulo, SP',
+              city,
               time: formatTime(obj.created_at),
             };
           });
 
-        setActivities(mapped);
+        // Só substituir o fallback se houver itens recentes (últimos 90 dias)
+        // Caso contrário, manter os dados de fallback que parecem ao vivo
+        const ninetyDaysAgo = Date.now() - 90 * 24 * 60 * 60 * 1000;
+        const hasRecentItems = mapped.some(
+          (item) => new Date(items.find((o: { id: string }) => o.id === item.id)?.created_at ?? 0).getTime() > ninetyDaysAgo
+        );
+        if (hasRecentItems) {
+          setActivities(mapped);
+        }
+        // Se todos os itens são antigos (> 90 dias), mantém o FALLBACK_ACTIVITIES
       })
       .catch(() => {});
   }, []);
@@ -669,7 +681,7 @@ export default function HomePage() {
             {[
               { value: 12847, suffix: '+', label: 'objetos registrados' },
               { value: 3291, suffix: '+', label: 'recuperações confirmadas' },
-              { value: 98, suffix: '%', label: 'mais chance com QR' },
+              { value: 94, suffix: '%', label: 'mais chance com QR' },
             ].map((stat, index) => (
               <FadeIn key={stat.label} delay={index * 100}>
                 <div className="rounded-3xl border border-white/[0.08] bg-white/[0.03] px-5 py-7">

@@ -83,7 +83,7 @@ function MatchCard({ match, onAct, acting }: { match: MatchFull; onAct: (id:stri
   return (
     <div className={`glass rounded-2xl p-5 ${match.status==='confirmed'?'border-green-500/30':''}`}>
       <div className="flex items-center justify-between gap-4 mb-4">
-        <div className="flex items-center gap-2"><ConfidenceBadge score={match.confidence_score} /><span className="text-slate-500 text-xs">{formatDistanceToNow(new Date(match.created_at),{addSuffix:true,locale:ptBR})}</span></div>
+        <div className="flex items-center gap-2"><ConfidenceBadge score={match.confidence_score ?? match.score ?? 0} /><span className="text-slate-500 text-xs">{formatDistanceToNow(new Date(match.created_at),{addSuffix:true,locale:ptBR})}</span></div>
         {match.status==='confirmed' && <span className="text-xs text-green-400 flex items-center gap-1"><CheckCircle2 className="w-3.5 h-3.5" />Confirmado</span>}
       </div>
       <div className="grid grid-cols-2 gap-4 mb-4">
