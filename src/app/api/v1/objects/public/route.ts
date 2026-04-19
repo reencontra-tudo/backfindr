@@ -58,11 +58,16 @@ export async function GET(request: NextRequest) {
         source,
         reward_amount,
         reward_description,
+        is_boosted,
+        boost_expires_at,
         created_at,
         updated_at
       FROM objects
       ${whereClause}
-      ORDER BY created_at DESC
+      ORDER BY
+        CASE WHEN is_boosted = true AND (boost_expires_at IS NULL OR boost_expires_at > NOW()) THEN 0 ELSE 1 END ASC,
+        boost_expires_at DESC NULLS LAST,
+        created_at DESC
       LIMIT $${params.length + 1} OFFSET $${params.length + 2}
     `;
     params.push(limit, offset);
@@ -127,6 +132,7 @@ export async function GET(request: NextRequest) {
       pet_breed: row.breed,
       is_legacy: row.is_legacy,
       source: row.source,
+      is_boosted: row.is_boosted ?? false,
       reward_amount: row.reward_amount ? parseFloat(String(row.reward_amount)) : null,
       reward_description: row.reward_description || null,
       created_at: row.created_at,

@@ -25,6 +25,8 @@ interface ActivityItem {
   text: string;
   city: string;
   time: string;
+  unique_code?: string | null;
+  isRecent?: boolean;
 }
 
 const FALLBACK_ACTIVITIES: ActivityItem[] = [
@@ -259,6 +261,7 @@ export default function HomePage() {
             title: string;
             category: string;
             status: string;
+            unique_code?: string | null;
             location_addr?: string;
             location?: { address?: string } | null;
             created_at: string;
@@ -266,6 +269,8 @@ export default function HomePage() {
             const type = (obj.status === 'found' || obj.status === 'match' ? obj.status : 'lost') as ActivityType;
             const cityRaw = obj.location_addr ?? (typeof obj.location === 'object' && obj.location?.address) ?? '';
             const city = cityRaw ? String(cityRaw).split(',').slice(0, 2).join(',').trim() : 'São Paulo, SP';
+            const thirtyDaysAgo = Date.now() - 30 * 24 * 60 * 60 * 1000;
+            const isRecent = new Date(obj.created_at).getTime() > thirtyDaysAgo;
             return {
               id: obj.id,
               type,
@@ -273,6 +278,8 @@ export default function HomePage() {
               text: obj.title,
               city,
               time: formatTime(obj.created_at),
+              unique_code: obj.unique_code ?? null,
+              isRecent,
             };
           });
 
@@ -480,9 +487,14 @@ export default function HomePage() {
                 </Link>
               </FadeIn>
 
-              {liveCards.map((item, index) => (
-                <FadeIn key={item.id} delay={index * 70}>
-                  <div className="rounded-2xl border border-white/[0.08] bg-white/[0.03] p-4 transition-colors hover:border-teal-500/25">
+              {liveCards.map((item, index) => {
+                const isClickable = item.isRecent && item.unique_code;
+                const cardContent = (
+                  <div className={`rounded-2xl border bg-white/[0.03] p-4 transition-all ${
+                    isClickable
+                      ? 'border-white/[0.08] hover:border-teal-500/40 hover:bg-teal-500/[0.04] cursor-pointer'
+                      : 'border-white/[0.08]'
+                  }`}>
                     <div className="mb-2 flex items-start justify-between gap-3">
                       <div className="flex items-center gap-3">
                         <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-white/[0.05] text-lg flex-shrink-0">
@@ -498,14 +510,32 @@ export default function HomePage() {
                         <span className="text-[11px] text-white/32">{item.time}</span>
                       </div>
                     </div>
-                    <p className="text-xs text-white/45">
-                      {item.type === 'lost' && 'Registro publicado na rede e visível para quem pode ajudar.'}
-                      {item.type === 'found' && 'Objeto localizado e pronto para gerar contato com segurança.'}
-                      {item.type === 'match' && 'A plataforma detectou uma conexão forte entre registros.'}
-                    </p>
+                    <div className="flex items-center justify-between gap-2">
+                      <p className="text-xs text-white/45">
+                        {item.type === 'lost' && 'Registro publicado na rede e visível para quem pode ajudar.'}
+                        {item.type === 'found' && 'Objeto localizado e pronto para gerar contato com segurança.'}
+                        {item.type === 'match' && 'A plataforma detectou uma conexão forte entre registros.'}
+                      </p>
+                      {isClickable && (
+                        <span className="flex-shrink-0 text-[10px] font-semibold text-teal-400 flex items-center gap-1">
+                          Ver <ChevronRight className="h-3 w-3" />
+                        </span>
+                      )}
+                    </div>
                   </div>
-                </FadeIn>
-              ))}
+                );
+                return (
+                  <FadeIn key={item.id} delay={index * 70}>
+                    {isClickable ? (
+                      <Link href={`/objeto/${item.unique_code}`}>
+                        {cardContent}
+                      </Link>
+                    ) : (
+                      cardContent
+                    )}
+                  </FadeIn>
+                );
+              })}
             </div>
           </div>
         </div>
