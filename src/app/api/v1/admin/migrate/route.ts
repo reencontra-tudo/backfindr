@@ -213,6 +213,11 @@ export async function POST(req: NextRequest) {
       name: 'create_subscriptions_user_index',
       sql: `CREATE INDEX IF NOT EXISTS idx_subscriptions_user_id ON subscriptions(user_id)`,
     },
+    // ── Ativar pagamentos ─────────────────────────────────────────────────────
+    {
+      name: 'enable_payments',
+      sql: `UPDATE payment_settings SET value = 'true', updated_at = NOW() WHERE key = 'payments_enabled'`,
+    },
   ];
 
   const results: { name: string; status: string; error?: string }[] = [];
