@@ -1,4 +1,5 @@
 import { NextRequest } from 'next/server';
+import { MercadoPagoConfig, Preference } from 'mercadopago';
 import { query } from '@/lib/db';
 import { verifyToken, extractTokenFromHeader } from '@/lib/jwt';
 import { successResponse, errorResponse, internalErrorResponse } from '@/lib/response';
@@ -10,6 +11,12 @@ const DEFAULT_PRICES: Record<string, number> = {
   '7d':    9.90,
   '30d':   24.90,
   'alert': 14.90,
+};
+
+const BOOST_META: Record<string, { title: string; days: number; boost_type: string }> = {
+  '7d':    { title: 'Boost 7 dias',   days: 7,  boost_type: 'boost_7' },
+  '30d':   { title: 'Boost 30 dias',  days: 30, boost_type: 'boost_30' },
+  'alert': { title: 'Alerta de Área', days: 7,  boost_type: 'alert_area' },
 };
 
 async function getBoostPrices(): Promise<Record<string, number>> {
@@ -95,11 +102,11 @@ export async function POST(req: NextRequest) {
       paymentsEnabled = settingResult.rows[0]?.value === 'true';
     } catch { /* tabela não existe ainda */ }
 
+    const meta = BOOST_META[type];
+
     if (!paymentsEnabled) {
       // Modo teste: aprovar automaticamente sem cobrança
-      const daysMap: Record<string, number> = { '7d': 7, '30d': 30, 'alert': 7 };
-      const days = daysMap[type] || 7;
-      const expiresAt = new Date(Date.now() + days * 24 * 60 * 60 * 1000);
+      const expiresAt = new Date(Date.now() + meta.days * 24 * 60 * 60 * 1000);
 
       const boostResult = await query(
         `INSERT INTO boosts (object_id, user_id, type, status, amount_paid, provider, starts_at, expires_at)
@@ -121,10 +128,54 @@ export async function POST(req: NextRequest) {
       });
     }
 
-    // Modo produção: redirecionar para checkout (Stripe ou MP)
-    // TODO: implementar checkout real quando chaves forem configuradas
+    // Modo produção: criar preferência no Mercado Pago
+    const mpToken = process.env.MP_ACCESS_TOKEN;
+    if (!mpToken) {
+      return errorResponse('Pagamento não configurado', 503);
+    }
+
+    const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://www.backfindr.com';
+    const mpClient = new MercadoPagoConfig({ accessToken: mpToken });
+    const preference = new Preference(mpClient);
+
+    const mpResponse = await preference.create({
+      body: {
+        items: [{
+          id: `boost_${meta.boost_type}`,
+          title: meta.title,
+          description: `${meta.title} para "${objResult.rows[0].title}" — visibilidade por ${meta.days} dias`,
+          quantity: 1,
+          unit_price: amount,
+          currency_id: 'BRL',
+        }],
+        metadata: {
+          type: 'boost',
+          boost_type: meta.boost_type,
+          object_id: String(object_id),
+          user_id: String(payload.sub),
+          days: String(meta.days),
+        },
+        back_urls: {
+          success: `${appUrl}/checkout/success?type=boost&ref=${meta.boost_type}&object_id=${object_id}`,
+          failure: `${appUrl}/checkout/failure`,
+          pending: `${appUrl}/checkout/pending`,
+        },
+        auto_return: 'approved',
+        notification_url: `${appUrl}/api/v1/webhooks/mercadopago`,
+        statement_descriptor: 'BACKFINDR',
+        payment_methods: {
+          excluded_payment_types: [],
+          installments: 1,
+        },
+      },
+    });
+
+    const isSandbox = mpToken.startsWith('TEST-');
+    const checkoutUrl = isSandbox ? mpResponse.sandbox_init_point : mpResponse.init_point;
+
     return successResponse({
-      checkout_url: `/pricing?boost=true&object_id=${object_id}&type=${type}`,
+      checkout_url: checkoutUrl,
+      preference_id: mpResponse.id,
       amount,
       test_mode: false,
     });
