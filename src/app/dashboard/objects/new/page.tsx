@@ -217,7 +217,7 @@ export default function NewObjectPage() {
                 <button
                   key={cat.value}
                   type="button"
-                  onClick={() => setValue('category', cat.value)}
+                  onClick={() => { setValue('category', cat.value); nextStep(); }}
                   className={`p-4 rounded-xl border text-left transition-all ${
                     category === cat.value
                       ? 'border-brand-500 bg-brand-500/10 text-white'
@@ -522,12 +522,13 @@ export default function NewObjectPage() {
             Voltar
           </button>
 
-          {step < STEPS.length - 1 ? (
+          {step === 0 ? (
+            <span />
+          ) : step < STEPS.length - 1 ? (
             <button
               type="button"
               onClick={nextStep}
-              disabled={step === 0 && !category}
-              className="flex items-center gap-2 px-6 py-2.5 bg-brand-500 hover:bg-brand-400 disabled:opacity-40 disabled:cursor-not-allowed text-white font-semibold rounded-xl transition-all glow-teal text-sm"
+              className="flex items-center gap-2 px-6 py-2.5 bg-brand-500 hover:bg-brand-400 text-white font-semibold rounded-xl transition-all glow-teal text-sm"
             >
               Continuar
               <ChevronRight className="w-4 h-4" />
