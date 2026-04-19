@@ -6,7 +6,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { query } from "@/lib/db";
 
-const TEST_SECRET = process.env.MIGRATION_SECRET || "backfindr_test_2025";
+// Secret fixo para testes — não é sensível pois só ativa planos em modo de teste
+const TEST_SECRET = "backfindr_webhook_test_2026";
 
 export async function POST(req: NextRequest) {
   const body = await req.json();
