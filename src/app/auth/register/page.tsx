@@ -1,14 +1,15 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect, Suspense } from 'react';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { toast } from 'sonner';
-import { MapPin, Eye, EyeOff, ArrowRight, Loader2, Check, ChevronRight } from 'lucide-react';
+import { MapPin, Eye, EyeOff, ArrowRight, Loader2, Check, Zap, Building2 } from 'lucide-react';
 import { useAuthStore } from '@/hooks/useAuth';
+import Cookies from 'js-cookie';
 
 const schema = z.object({
   name: z.string().min(2, 'Nome muito curto'),
@@ -28,10 +29,20 @@ const BENEFITS = [
   'Matching automático por IA',
 ];
 
-export default function RegisterPage() {
+const PLAN_INFO: Record<string, { name: string; price: string; icon: React.ReactNode; color: string }> = {
+  pro:      { name: 'Pro',      price: 'R$ 29,00/mês',  icon: <Zap className="w-4 h-4" />,      color: 'text-teal-400 bg-teal-500/10 border-teal-500/30' },
+  business: { name: 'Business', price: 'R$ 149,00/mês', icon: <Building2 className="w-4 h-4" />, color: 'text-yellow-400 bg-yellow-500/10 border-yellow-500/30' },
+};
+
+function RegisterForm() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const planSlug = searchParams.get('plan') || '';
+  const planInfo = PLAN_INFO[planSlug] || null;
+
   const { register: registerUser, isLoading } = useAuthStore();
   const [showPass, setShowPass] = useState(false);
+  const [checkoutLoading, setCheckoutLoading] = useState(false);
 
   const { register, handleSubmit, watch, formState: { errors } } = useForm<FormData>({ resolver: zodResolver(schema) });
 
@@ -39,11 +50,49 @@ export default function RegisterPage() {
   const strengthScore = [password.length >= 8, /[A-Z]/.test(password), /[0-9]/.test(password), /[^A-Za-z0-9]/.test(password)].filter(Boolean).length;
   const strengthColor = ['bg-red-500', 'bg-orange-500', 'bg-yellow-500', 'bg-teal-500'][strengthScore - 1] ?? 'bg-white/10';
 
+  async function redirectToCheckout(slug: string) {
+    setCheckoutLoading(true);
+    try {
+      // O token é armazenado em cookie pelo setTokens após o login
+      const token = Cookies.get('access_token');
+      if (!token) {
+        router.push('/dashboard');
+        return;
+      }
+      const res = await fetch('/api/v1/checkout/mercadopago', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+        },
+        body: JSON.stringify({ type: 'plan', plan_slug: slug }),
+      });
+      const data = await res.json();
+      if (data.url) {
+        window.location.href = data.url;
+      } else {
+        toast.error(data.error || 'Erro ao criar checkout. Tente novamente.');
+        router.push('/dashboard');
+      }
+    } catch {
+      toast.error('Erro ao processar pagamento. Tente novamente.');
+      router.push('/dashboard');
+    } finally {
+      setCheckoutLoading(false);
+    }
+  }
+
   const onSubmit = async (data: FormData) => {
     try {
-      await registerUser({ name: data.name, email: data.email, password: data.password, phone: data.phone });
+      const result = await registerUser({ name: data.name, email: data.email, password: data.password, phone: data.phone });
       toast.success('Conta criada com sucesso!');
-      router.push('/dashboard');
+
+      // Se veio de um plano pago, redirecionar para checkout
+      if (planSlug && planSlug !== 'free') {
+        await redirectToCheckout(planSlug);
+      } else {
+        router.push('/dashboard');
+      }
     } catch {
       toast.error('Erro ao criar conta. Verifique os dados.');
     }
@@ -51,6 +100,11 @@ export default function RegisterPage() {
 
   const inputClass = (hasError: boolean) =>
     `w-full bg-white/[0.04] border ${hasError ? 'border-red-500/60' : 'border-white/[0.08]'} rounded-lg px-3.5 py-2.5 text-white placeholder-white/20 text-sm outline-none focus:border-teal-500/60 focus:bg-white/[0.06] transition-all`;
+
+  const isProcessing = isLoading || checkoutLoading;
+  const buttonLabel = planInfo
+    ? `Criar conta e assinar ${planInfo.name}`
+    : 'Criar conta grátis';
 
   return (
     <div className="min-h-screen bg-[#080b0f] flex">
@@ -101,11 +155,24 @@ export default function RegisterPage() {
             <span className="text-white font-semibold text-[15px]">Backfindr</span>
           </Link>
 
+          {/* Banner de plano selecionado */}
+          {planInfo && (
+            <div className={`flex items-center gap-3 border rounded-xl px-4 py-3 mb-6 ${planInfo.color}`}>
+              <div className={`p-1.5 rounded-lg ${planInfo.color}`}>
+                {planInfo.icon}
+              </div>
+              <div>
+                <p className="text-xs text-white/40">Você está assinando</p>
+                <p className="font-semibold text-sm text-white">Plano {planInfo.name} — {planInfo.price}</p>
+              </div>
+            </div>
+          )}
+
           <div className="mb-8">
             <h1 className="text-2xl font-bold text-white tracking-tight mb-1">Criar conta</h1>
             <p className="text-white/40 text-sm">
               Já tem conta?{' '}
-              <Link href="/auth/login" className="text-teal-400 hover:text-teal-300 transition-colors">
+              <Link href={`/auth/login${planSlug ? `?plan=${planSlug}` : ''}`} className="text-teal-400 hover:text-teal-300 transition-colors">
                 Entrar
               </Link>
             </p>
@@ -168,11 +235,14 @@ export default function RegisterPage() {
             {/* Submit */}
             <button
               type="submit"
-              disabled={isLoading}
+              disabled={isProcessing}
               className="w-full flex items-center justify-center gap-2 bg-teal-500 hover:bg-teal-400 disabled:opacity-50 disabled:cursor-not-allowed text-white font-semibold py-2.5 rounded-lg transition-all text-sm mt-2"
               style={{ boxShadow: '0 0 0 1px rgba(20,184,166,0.4),0 4px 20px rgba(20,184,166,0.15)' }}
             >
-              {isLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <><span>Criar conta grátis</span><ArrowRight className="w-4 h-4" strokeWidth={2.5} /></>}
+              {isProcessing
+                ? <Loader2 className="w-4 h-4 animate-spin" />
+                : <><span>{buttonLabel}</span><ArrowRight className="w-4 h-4" strokeWidth={2.5} /></>
+              }
             </button>
 
             <p className="text-white/20 text-xs text-center leading-relaxed">
@@ -185,5 +255,13 @@ export default function RegisterPage() {
         </div>
       </div>
     </div>
+  );
+}
+
+export default function RegisterPage() {
+  return (
+    <Suspense fallback={<div className="min-h-screen bg-[#080b0f]" />}>
+      <RegisterForm />
+    </Suspense>
   );
 }

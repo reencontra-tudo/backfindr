@@ -2,12 +2,13 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
+import Cookies from 'js-cookie';
 import { Check, Zap, Building2, Gift, ArrowRight, Star, Shield, Globe, Clock, MapPin } from 'lucide-react';
 
 interface Plan {
   slug: string;
   name: string;
-  price_brl: number | string;
+  price_brl: number;
   max_objects: number;
   features: string[];
   is_active: boolean;
@@ -93,7 +94,7 @@ export default function PricingPage() {
 
     try {
       const token = typeof window !== 'undefined'
-        ? (localStorage.getItem('token') || sessionStorage.getItem('token'))
+        ? Cookies.get('access_token')
         : null;
 
       if (!token) {
@@ -196,7 +197,7 @@ export default function PricingPage() {
                     ) : (
                       <>
                         <span className="text-white/40 text-sm">R$</span>
-                        <span className="text-3xl font-bold">{plan.price_brl.toFixed(2).replace('.', ',')}</span>
+                        <span className="text-3xl font-bold">{Number(plan.price_brl).toFixed(2).replace('.', ',')}</span>
                         <span className="text-white/30 text-sm">/mês</span>
                       </>
                     )}

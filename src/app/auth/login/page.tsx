@@ -1,14 +1,15 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, Suspense } from 'react';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { toast } from 'sonner';
 import { MapPin, Eye, EyeOff, ArrowRight, Loader2 } from 'lucide-react';
 import { useAuthStore } from '@/hooks/useAuth';
+import Cookies from 'js-cookie';
 
 const schema = z.object({
   email: z.string().email('E-mail inválido'),
@@ -16,25 +17,54 @@ const schema = z.object({
 });
 type FormData = z.infer<typeof schema>;
 
-export default function LoginPage() {
+function LoginForm() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const planSlug = searchParams.get('plan') || '';
   const { login, isLoading } = useAuthStore();
   const [showPass, setShowPass] = useState(false);
+  const [checkoutLoading, setCheckoutLoading] = useState(false);
 
   const { register, handleSubmit, formState: { errors } } = useForm<FormData>({ resolver: zodResolver(schema) });
+
+  async function redirectToCheckout(slug: string) {
+    setCheckoutLoading(true);
+    try {
+      const token = Cookies.get('access_token');
+      if (!token) { router.push('/dashboard'); return; }
+      const res = await fetch('/api/v1/checkout/mercadopago', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+        body: JSON.stringify({ type: 'plan', plan_slug: slug }),
+      });
+      const data = await res.json();
+      if (data.url) { window.location.href = data.url; }
+      else { toast.error(data.error || 'Erro ao criar checkout.'); router.push('/dashboard'); }
+    } catch {
+      toast.error('Erro ao processar pagamento.'); router.push('/dashboard');
+    } finally { setCheckoutLoading(false); }
+  }
 
   const onSubmit = async (data: FormData) => {
     try {
       await login(data.email, data.password);
       toast.success('Bem-vindo de volta!');
-      router.push('/dashboard');
+      if (planSlug && planSlug !== 'free') {
+        await redirectToCheckout(planSlug);
+      } else {
+        router.push('/dashboard');
+      }
     } catch {
       toast.error('E-mail ou senha incorretos.');
     }
   };
 
-  const inputClass = (hasError: boolean) =>
+  const isProcessing = isLoading || checkoutLoading;
+
+  const inputClass2 = (hasError: boolean) =>
     `w-full bg-white/[0.04] border ${hasError ? 'border-red-500/60' : 'border-white/[0.08]'} rounded-lg px-3.5 py-2.5 text-white placeholder-white/20 text-sm outline-none focus:border-teal-500/60 focus:bg-white/[0.06] transition-all`;
+
+  const inputClass = inputClass2;
 
   return (
     <div className="min-h-screen bg-[#080b0f] flex items-center justify-center px-5">
@@ -85,7 +115,7 @@ export default function LoginPage() {
 
           <button
             type="submit"
-            disabled={isLoading}
+            disabled={isProcessing}
             className="w-full flex items-center justify-center gap-2 bg-teal-500 hover:bg-teal-400 disabled:opacity-50 disabled:cursor-not-allowed text-white font-semibold py-2.5 rounded-lg transition-all text-sm mt-2"
             style={{ boxShadow: '0 0 0 1px rgba(20,184,166,0.4),0 4px 20px rgba(20,184,166,0.15)' }}
           >
@@ -113,5 +143,14 @@ export default function LoginPage() {
         </form>
       </div>
     </div>
+  );
+}
+
+
+export default function LoginPage() {
+  return (
+    <Suspense fallback={<div className="min-h-screen bg-[#080b0f]" />}>
+      <LoginForm />
+    </Suspense>
   );
 }
