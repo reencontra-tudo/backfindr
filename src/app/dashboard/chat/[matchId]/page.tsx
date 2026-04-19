@@ -87,7 +87,7 @@ export default function ChatPage() {
   const loadMessages = useCallback(async (silent = false) => {
     try {
       const { data } = await api.get(`/chat/${matchId}/messages`);
-      setMessages(data?.items ?? []);
+      setMessages(data?.messages ?? []);
     } catch (e) {
       if (!silent) toast.error(parseApiError(e));
     }
@@ -95,10 +95,10 @@ export default function ChatPage() {
 
   useEffect(() => {
     matchesApi.list().then(({ data }) => {
-      const m = (data?.items ?? []).find((m: Match) => m.id === matchId);
+      const m = (data?.matches ?? []).find((m: Match) => m.id === matchId);
       if (m) {
         setMatch(m);
-        objectsApi.get(m.object_id).then(({ data }) => setObject(data));
+        objectsApi.get(m.lost_object_id).then(({ data }) => setObject(data));
       }
     });
     loadMessages();
@@ -149,7 +149,7 @@ export default function ChatPage() {
                 </Link>
               </div>
               <p className="text-xs text-white/30">
-                Match #{matchId.slice(0, 8)} · {match ? Math.round(match.confidence_score * 100) : 0}% confiança
+                Match #{matchId.slice(0, 8)} · {match ? Math.round((match.confidence_score ?? match.score ?? 0) * 100) : 0}% confiança
               </p>
             </>
           ) : (

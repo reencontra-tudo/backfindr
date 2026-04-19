@@ -18,7 +18,7 @@ interface Notification {
   id: string;
   type: NotifType;
   title: string;
-  body: string;
+  message: string;
   read: boolean;
   url?: string;
   created_at: string;
@@ -54,14 +54,14 @@ export default function NotificationsPage() {
     }
 
     api.get('/notifications')
-      .then(({ data }) => setNotifications(data?.items ?? []))
+      .then(({ data }) => setNotifications(data?.notifications ?? []))
       .catch((err) => toast.error(parseApiError(err)))
       .finally(() => setLoading(false));
   }, []);
 
   const markRead = async (id: string) => {
     try {
-      await api.patch(`/notifications/${id}/read`);
+      await api.patch(`/notifications/${id}`);
       setNotifications((prev) => prev.map((n) => n.id === id ? { ...n, read: true } : n));
     } catch {}
   };
@@ -181,7 +181,7 @@ export default function NotificationsPage() {
                     <div className="w-2 h-2 bg-brand-500 rounded-full flex-shrink-0 mt-1" />
                   )}
                 </div>
-                <p className="text-slate-400 text-xs mt-0.5 leading-relaxed">{notif.body}</p>
+                <p className="text-slate-400 text-xs mt-0.5 leading-relaxed">{notif.message}</p>
                 <p className="text-slate-600 text-xs mt-1">
                   {formatDistanceToNow(new Date(notif.created_at), { addSuffix: true, locale: ptBR })}
                 </p>

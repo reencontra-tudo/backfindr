@@ -102,8 +102,8 @@ export const objectsApi = {
 
 export const matchesApi = {
   list: () => api.get('/matches'),
-  confirm: (id: string) => api.post(`/matches/${id}/confirm`),
-  reject: (id: string) => api.post(`/matches/${id}/reject`),
+  confirm: (id: string) => api.post(`/matches/${id}`, { action: 'confirm' }),
+  reject: (id: string) => api.post(`/matches/${id}`, { action: 'reject' }),
 };
 
 export const matchingApi = {
@@ -129,7 +129,7 @@ export const chatApi = {
 
 export const notificationsApi = {
   list: () => api.get('/notifications'),
-  markRead: (id: string) => api.patch(`/notifications/${id}/read`),
+  markRead: (id: string) => api.patch(`/notifications/${id}`),
   markAllRead: () => api.post('/notifications/read-all'),
   delete: (id: string) => api.delete(`/notifications/${id}`),
   subscribe: (sub: object) => api.post('/notifications/subscribe', sub),

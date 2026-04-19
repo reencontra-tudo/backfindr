@@ -58,7 +58,7 @@ export default function DashboardPage() {
         matchesApi.list(),
       ]);
       setObjects(objRes.data?.items ?? []);
-      setMatches(matchRes.data?.items ?? []);
+      setMatches(matchRes.data?.matches ?? []);
     } catch (e) { console.error(parseApiError(e)); }
     finally { setLoading(false); }
   }, []);

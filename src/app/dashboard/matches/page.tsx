@@ -27,10 +27,10 @@ export default function MatchesPage() {
     const load = async () => {
       try {
         const { data } = await matchesApi.list();
-        const items: Match[] = data?.items ?? [];
+        const items: Match[] = data?.matches ?? [];
         const enriched = await Promise.all(items.map(async (m) => {
           try {
-            const [a, b] = await Promise.all([objectsApi.get(m.object_id), objectsApi.get(m.matched_object_id)]);
+            const [a, b] = await Promise.all([objectsApi.get(m.lost_object_id), objectsApi.get(m.found_object_id)]);
             return { ...m, object: a.data, matched_object: b.data };
           } catch { return m; }
         }));
