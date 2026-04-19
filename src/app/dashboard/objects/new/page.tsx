@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -8,7 +8,7 @@ import { z } from 'zod';
 import { toast } from 'sonner';
 import {
   ChevronLeft, ChevronRight, Loader2, Upload,
-  MapPin, Package, Info, Check, Gift
+  MapPin, Package, Info, Check, Gift, X
 } from 'lucide-react';
 import axios from 'axios';
 import { objectsApi, parseApiError } from '@/lib/api';
@@ -62,8 +62,17 @@ export default function NewObjectPage() {
   const [step, setStep] = useState(0);
   const [submitting, setSubmitting] = useState(false);
   const [photos, setPhotos] = useState<File[]>([]);
+  const [previews, setPreviews] = useState<string[]>([]);
   const [compressing, setCompressing] = useState(false);
+
   const [offerReward, setOfferReward] = useState(false);
+
+  useEffect(() => {
+    if (photos.length === 0) { setPreviews([]); return; }
+    const urls = photos.map(f => URL.createObjectURL(f));
+    setPreviews(urls);
+    return () => urls.forEach(u => URL.revokeObjectURL(u));
+  }, [photos]);
 
   const {
     register,
@@ -79,6 +88,10 @@ export default function NewObjectPage() {
 
   const nextStep = () => setStep((s) => Math.min(s + 1, STEPS.length - 1));
   const prevStep = () => setStep((s) => Math.max(s - 1, 0));
+
+  const removePhoto = (index: number) => {
+    setPhotos(prev => prev.filter((_, i) => i !== index));
+  };
 
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files ?? []).slice(0, 5);
@@ -454,6 +467,34 @@ export default function NewObjectPage() {
                 )}
                 <input type="file" multiple accept="image/*" onChange={handleFileChange} className="hidden" disabled={compressing} />
               </label>
+
+              {/* Thumbnails das fotos selecionadas */}
+              {previews.length > 0 && (
+                <div className="flex flex-wrap gap-2 mt-3">
+                  {previews.map((url, i) => (
+                    <div key={i} className="relative w-16 h-16 rounded-lg overflow-hidden border border-surface-border group">
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img src={url} alt={`Foto ${i + 1}`} className="w-full h-full object-cover" />
+                      <button
+                        type="button"
+                        onClick={() => removePhoto(i)}
+                        className="absolute top-0.5 right-0.5 w-5 h-5 bg-black/70 hover:bg-red-500 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all"
+                      >
+                        <X className="w-3 h-3 text-white" />
+                      </button>
+                      {i === 0 && (
+                        <span className="absolute bottom-0 left-0 right-0 bg-brand-500/80 text-white text-[9px] text-center py-0.5 font-medium">Principal</span>
+                      )}
+                    </div>
+                  ))}
+                  {previews.length < 5 && (
+                    <label className="w-16 h-16 rounded-lg border-2 border-dashed border-surface-border hover:border-brand-500/50 flex items-center justify-center cursor-pointer transition-colors">
+                      <Upload className="w-4 h-4 text-slate-600" />
+                      <input type="file" multiple accept="image/*" onChange={handleFileChange} className="hidden" />
+                    </label>
+                  )}
+                </div>
+              )}
             </div>
           </div>
         )}
