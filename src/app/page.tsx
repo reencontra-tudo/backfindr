@@ -13,6 +13,7 @@ import {
   Search,
   ShieldCheck,
   Sparkles,
+  AlertTriangle,
 } from 'lucide-react';
 
 type ActivityType = 'lost' | 'found' | 'match';
@@ -216,41 +217,6 @@ function LiveTicker({ items }: { items: ActivityItem[] }) {
   );
 }
 
-function HeroActivityCard({ item }: { item: ActivityItem }) {
-  const badgeClass =
-    item.type === 'lost'
-      ? 'bg-red-500/12 text-red-300 border-red-500/25'
-      : item.type === 'found'
-      ? 'bg-teal-500/12 text-teal-300 border-teal-500/25'
-      : 'bg-amber-500/12 text-amber-300 border-amber-500/25';
-
-  const badgeLabel = item.type === 'lost' ? 'Perdido' : item.type === 'found' ? 'Achado' : 'Match IA';
-
-  return (
-    <div className="rounded-2xl border border-white/[0.08] bg-white/[0.04] p-4 backdrop-blur-sm">
-      <div className="mb-3 flex items-start justify-between gap-3">
-        <div className="flex items-center gap-2">
-          <span className="text-xl">{item.emoji}</span>
-          <div>
-            <p className="text-sm font-semibold text-white">{item.text}</p>
-            <p className="text-xs text-white/38">{item.city}</p>
-          </div>
-        </div>
-        <span className={`rounded-full border px-2 py-1 text-[10px] font-semibold uppercase tracking-wide ${badgeClass}`}>
-          {badgeLabel}
-        </span>
-      </div>
-      <div className="flex items-center justify-between text-xs text-white/35">
-        <span>{item.time}</span>
-        <span className="inline-flex items-center gap-1">
-          <Radar className="h-3.5 w-3.5" />
-          atividade ao vivo
-        </span>
-      </div>
-    </div>
-  );
-}
-
 export default function HomePage() {
   const [activities, setActivities] = useState<ActivityItem[]>(FALLBACK_ACTIVITIES);
 
@@ -280,7 +246,6 @@ export default function HomePage() {
         const seen = new Set<string>();
         const mapped = items
           .filter((obj: { id: string; title: string; status: string; created_at: string }) => {
-            // Deduplica por ID e por combinação título+status+dia (registros duplicados no banco)
             const day = obj.created_at ? obj.created_at.slice(0, 10) : '';
             const fingerprint = `${obj.title.toLowerCase().trim()}|${obj.status}|${day}`;
             if (seen.has(obj.id) || seen.has(fingerprint)) return false;
@@ -311,8 +276,6 @@ export default function HomePage() {
             };
           });
 
-        // Só substituir o fallback se houver itens recentes (últimos 90 dias)
-        // Caso contrário, manter os dados de fallback que parecem ao vivo
         const ninetyDaysAgo = Date.now() - 90 * 24 * 60 * 60 * 1000;
         const hasRecentItems = mapped.some(
           (item) => new Date(items.find((o: { id: string }) => o.id === item.id)?.created_at ?? 0).getTime() > ninetyDaysAgo
@@ -320,26 +283,24 @@ export default function HomePage() {
         if (hasRecentItems) {
           setActivities(mapped);
         }
-        // Se todos os itens são antigos (> 90 dias), mantém o FALLBACK_ACTIVITIES
       })
       .catch(() => {});
   }, []);
 
-  // Deduplicação já feita na origem (setActivities); fatias diretas
-  const heroCards = activities.slice(0, 3);
   const liveCards = activities.slice(0, 6);
 
   return (
     <div className="min-h-screen bg-[#07090e] text-white selection:bg-teal-500/30">
       <style>{`
         @keyframes ticker { from { transform: translateX(0) } to { transform: translateX(-50%) } }
-        @keyframes floatY { 0%,100% { transform: translateY(0) } 50% { transform: translateY(-8px) } }
         @keyframes pulseDot { 0%,100% { opacity: 1 } 50% { opacity: .45 } }
+        @keyframes pulseRing { 0% { transform: scale(1); opacity: .7 } 100% { transform: scale(2.2); opacity: 0 } }
       `}</style>
 
       <Navbar />
 
-      <section className="relative overflow-hidden px-5 pb-12 pt-28">
+      {/* ─── DOBRA 1: DECISÃO OU SAÍDA ─── */}
+      <section className="relative overflow-hidden px-5 pb-16 pt-28">
         <div
           className="pointer-events-none absolute inset-0"
           style={{
@@ -353,224 +314,152 @@ export default function HomePage() {
           backgroundSize: '56px 56px',
         }} />
 
-        <div className="relative mx-auto grid max-w-6xl items-center gap-14 lg:grid-cols-[1.02fr_.98fr]">
+        <div className="relative mx-auto max-w-3xl text-center">
           <FadeIn>
-            <div className="max-w-xl">
-              <div className="mb-6 inline-flex items-center gap-2 rounded-full border border-teal-500/25 bg-teal-500/10 px-3 py-1.5">
-                <span className="h-1.5 w-1.5 rounded-full bg-teal-400" style={{ animation: 'pulseDot 1.2s ease infinite' }} />
-                <span className="text-[11px] font-semibold uppercase tracking-[0.18em] text-teal-300">
-                  rede ativa de perdidos e achados
-                </span>
-              </div>
-
-              <h1
-                className="mb-5 font-extrabold leading-[0.94] tracking-[-0.045em] text-white"
-                style={{ fontSize: 'clamp(42px, 6.4vw, 74px)' }}
+            {/* Headline de intenção — sem narrativa institucional */}
+            <h1
+              className="mb-4 font-extrabold leading-[0.96] tracking-[-0.04em] text-white"
+              style={{ fontSize: 'clamp(36px, 5.5vw, 64px)' }}
+            >
+              Perdeu algo? Encontrou?
+              <br />
+              <span
+                style={{
+                  background: 'linear-gradient(135deg, #f87171 0%, #fb923c 40%, #fbbf24 70%, #2dd4bf 100%)',
+                  WebkitBackgroundClip: 'text',
+                  WebkitTextFillColor: 'transparent',
+                  backgroundClip: 'text',
+                }}
               >
-                Proteja o que importa
-                <br />
-                <span
-                  style={{
-                    background: 'linear-gradient(135deg, #60a5fa 0%, #2dd4bf 52%, #14b8a6 100%)',
-                    WebkitBackgroundClip: 'text',
-                    WebkitTextFillColor: 'transparent',
-                    backgroundClip: 'text',
-                  }}
-                >
-                  antes que desapareça.
-                </span>
-              </h1>
+                Foi roubado? Quer se prevenir?
+              </span>
+            </h1>
 
-              <p className="mb-8 max-w-lg text-base leading-relaxed text-white/55 md:text-lg">
-                Veja em tempo real itens perdidos, objetos encontrados e conexões acontecendo na plataforma.
-                Explore primeiro. Cadastre quando fizer sentido para você.
-              </p>
+            <p className="mx-auto mb-10 max-w-xl text-base leading-relaxed text-white/50 md:text-lg">
+              A Backfindr conecta perdas, achados e proteção preventiva em tempo real — com mapa público, QR e matching por IA.
+            </p>
 
-              {/* Triagem de intenção — 4 cards (valor antes do cadastro) */}
-              <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-4">
-                <Link
-                  href="/buscar"
-                  className="group flex flex-col items-center gap-2 rounded-2xl border border-red-500/25 bg-red-500/[0.07] px-3 py-4 text-center transition-all hover:border-red-500/50 hover:bg-red-500/[0.13]"
-                >
-                  <span className="text-2xl">😟</span>
-                  <span className="text-xs font-semibold leading-tight text-white/85">Perdi algo</span>
-                  <span className="text-[10px] text-white/35 leading-tight">buscar na rede</span>
-                </Link>
-                <Link
-                  href="/achei"
-                  className="group flex flex-col items-center gap-2 rounded-2xl border border-teal-500/25 bg-teal-500/[0.07] px-3 py-4 text-center transition-all hover:border-teal-500/50 hover:bg-teal-500/[0.13]"
-                >
-                  <span className="text-2xl">🙌</span>
-                  <span className="text-xs font-semibold leading-tight text-white/85">Encontrei algo</span>
-                  <span className="text-[10px] text-white/35 leading-tight">ver se há dono</span>
-                </Link>
-                <Link
-                  href="/auth/register?intent=protect"
-                  className="group flex flex-col items-center gap-2 rounded-2xl border border-blue-500/25 bg-blue-500/[0.07] px-3 py-4 text-center transition-all hover:border-blue-500/50 hover:bg-blue-500/[0.13]"
-                >
-                  <span className="text-2xl">🔒</span>
-                  <span className="text-xs font-semibold leading-tight text-white/85">Quero proteger</span>
-                  <span className="text-[10px] text-white/35 leading-tight">gerar QR Code</span>
-                </Link>
-                <Link
-                  href="/buscar?category=pet"
-                  className="group flex flex-col items-center gap-2 rounded-2xl border border-amber-500/25 bg-amber-500/[0.07] px-3 py-4 text-center transition-all hover:border-amber-500/50 hover:bg-amber-500/[0.13]"
-                >
-                  <span className="text-2xl">🐾</span>
-                  <span className="text-xs font-semibold leading-tight text-white/85">Meu pet sumiu</span>
-                  <span className="text-[10px] text-white/35 leading-tight">buscar pets achados</span>
-                </Link>
-              </div>
-
-              <div className="mt-7 flex flex-wrap items-center gap-4 text-sm text-white/40">
-                <span className="inline-flex items-center gap-2">
-                  <ShieldCheck className="h-4 w-4 text-teal-400" />
-                  contato protegido
-                </span>
-                <span className="inline-flex items-center gap-2">
-                  <Bell className="h-4 w-4 text-blue-400" />
-                  alerta imediato
-                </span>
-                <span className="inline-flex items-center gap-2">
-                  <MapPin className="h-4 w-4 text-amber-400" />
-                  mapa público
-                </span>
-              </div>
-
-              <div className="mt-8 flex items-center gap-4">
-                <div className="flex -space-x-2">
-                  {['M', 'A', 'R', 'C'].map((letter, index) => (
-                    <div
-                      key={letter}
-                      className={`flex h-8 w-8 items-center justify-center rounded-full border-2 border-[#07090e] text-[10px] font-bold text-white ${
-                        ['bg-teal-500', 'bg-blue-500', 'bg-violet-500', 'bg-amber-500'][index]
-                      }`}
-                    >
-                      {letter}
-                    </div>
-                  ))}
+            {/* Grid 2×2 — botões dominantes */}
+            <div className="grid grid-cols-2 gap-3 sm:gap-4 mb-6">
+              {/* PERDI ALGO — vermelho */}
+              <Link
+                href="/buscar"
+                className="group flex flex-col items-center gap-3 rounded-2xl border border-red-500/40 bg-red-500/[0.1] px-4 py-6 text-center transition-all hover:border-red-500/70 hover:bg-red-500/[0.18] hover:scale-[1.02]"
+                style={{ boxShadow: '0 0 0 1px rgba(239,68,68,0.15), 0 8px 32px rgba(239,68,68,0.08)' }}
+              >
+                <span className="text-3xl">😟</span>
+                <div>
+                  <p className="text-base font-bold text-white leading-tight">Perdi algo</p>
+                  <p className="text-xs text-white/45 mt-1 leading-tight">Publicar agora (leva 30s)</p>
                 </div>
-                <p className="text-xs text-white/38">
-                  <span className="font-semibold text-white">12.847</span> objetos protegidos ·{' '}
-                  <span className="font-semibold text-teal-400">3.291</span> recuperações registradas
-                </p>
-              </div>
+                <ArrowRight className="h-4 w-4 text-red-400 opacity-0 group-hover:opacity-100 transition-opacity" />
+              </Link>
+
+              {/* ENCONTREI ALGO — verde/teal */}
+              <Link
+                href="/achei"
+                className="group flex flex-col items-center gap-3 rounded-2xl border border-teal-500/40 bg-teal-500/[0.1] px-4 py-6 text-center transition-all hover:border-teal-500/70 hover:bg-teal-500/[0.18] hover:scale-[1.02]"
+                style={{ boxShadow: '0 0 0 1px rgba(20,184,166,0.15), 0 8px 32px rgba(20,184,166,0.08)' }}
+              >
+                <span className="text-3xl">🙌</span>
+                <div>
+                  <p className="text-base font-bold text-white leading-tight">Encontrei algo</p>
+                  <p className="text-xs text-white/45 mt-1 leading-tight">Devolver com segurança</p>
+                </div>
+                <ArrowRight className="h-4 w-4 text-teal-400 opacity-0 group-hover:opacity-100 transition-opacity" />
+              </Link>
+
+              {/* FOI ROUBADO — laranja/âmbar */}
+              <Link
+                href="/auth/register?intent=stolen"
+                className="group flex flex-col items-center gap-3 rounded-2xl border border-orange-500/40 bg-orange-500/[0.1] px-4 py-6 text-center transition-all hover:border-orange-500/70 hover:bg-orange-500/[0.18] hover:scale-[1.02]"
+                style={{ boxShadow: '0 0 0 1px rgba(249,115,22,0.15), 0 8px 32px rgba(249,115,22,0.08)' }}
+              >
+                <span className="text-3xl">🚨</span>
+                <div>
+                  <p className="text-base font-bold text-white leading-tight">Foi roubado</p>
+                  <p className="text-xs text-white/45 mt-1 leading-tight">Registrar e alertar agora</p>
+                </div>
+                <ArrowRight className="h-4 w-4 text-orange-400 opacity-0 group-hover:opacity-100 transition-opacity" />
+              </Link>
+
+              {/* QUERO ME PREVENIR — azul */}
+              <Link
+                href="/auth/register?intent=protect"
+                className="group flex flex-col items-center gap-3 rounded-2xl border border-blue-500/40 bg-blue-500/[0.1] px-4 py-6 text-center transition-all hover:border-blue-500/70 hover:bg-blue-500/[0.18] hover:scale-[1.02]"
+                style={{ boxShadow: '0 0 0 1px rgba(59,130,246,0.15), 0 8px 32px rgba(59,130,246,0.08)' }}
+              >
+                <span className="text-3xl">🔒</span>
+                <div>
+                  <p className="text-base font-bold text-white leading-tight">Quero me prevenir</p>
+                  <p className="text-xs text-white/45 mt-1 leading-tight">Criar QR grátis</p>
+                </div>
+                <ArrowRight className="h-4 w-4 text-blue-400 opacity-0 group-hover:opacity-100 transition-opacity" />
+              </Link>
             </div>
-          </FadeIn>
 
-          <FadeIn delay={80}>
-            <div className="relative">
-              <div className="absolute -left-8 top-12 hidden h-24 w-24 rounded-full bg-teal-500/20 blur-3xl md:block" />
-              <div className="absolute -right-8 bottom-10 hidden h-24 w-24 rounded-full bg-blue-500/20 blur-3xl md:block" />
-
-              <div className="rounded-[30px] border border-white/[0.08] bg-white/[0.03] p-4 shadow-2xl backdrop-blur-sm">
-                <div className="mb-4 rounded-[24px] border border-white/[0.08] bg-[#09111f] p-3">
-                  <div className="mb-3 flex items-center justify-between">
-                    <div>
-                      <p className="text-sm font-semibold text-white">Experiência em tempo real</p>
-                      <p className="text-xs text-white/40">Veja primeiro. Cadastre depois.</p>
-                    </div>
-                    <span className="inline-flex items-center gap-1 rounded-full border border-teal-500/20 bg-teal-500/10 px-2 py-1 text-[10px] font-semibold uppercase tracking-wide text-teal-300">
-                      <Sparkles className="h-3 w-3" />
-                      ao vivo
-                    </span>
-                  </div>
-
-                  <div className="grid gap-3 md:grid-cols-[1.08fr_.92fr]">
-                    <div className="relative overflow-hidden rounded-[22px] border border-white/[0.06] bg-[#0b1425]">
-                      <Image
-                        src="/branding/app-preview.jpeg"
-                        alt="Preview do aplicativo Backfindr"
-                        width={857}
-                        height={1536}
-                        className="h-full w-full object-cover"
-                        priority
-                      />
-                      <div className="pointer-events-none absolute inset-x-0 bottom-0 h-28 bg-gradient-to-t from-[#0b1425] via-[#0b1425]/55 to-transparent" />
-                    </div>
-
-                    <div className="space-y-3">
-                      <div className="rounded-[22px] border border-white/[0.06] bg-[#0b1425] p-3">
-                        <div className="mb-3 flex items-center justify-between">
-                          <div>
-                            <p className="text-xs font-semibold uppercase tracking-[0.18em] text-white/32">notícias da rede</p>
-                            <p className="text-sm text-white/72">movimento recente</p>
-                          </div>
-                          <Search className="h-4 w-4 text-white/35" />
-                        </div>
-                        <div className="space-y-3">
-                          {heroCards.map((item) => (
-                            <HeroActivityCard key={item.id} item={item} />
-                          ))}
-                        </div>
-                      </div>
-
-                      <div className="overflow-hidden rounded-[22px] border border-white/[0.06] bg-[#0b1425]">
-                        <Image
-                          src="/branding/banner-brand.jpeg"
-                          alt="Banner institucional Backfindr"
-                          width={1536}
-                          height={864}
-                          className="h-full w-full object-cover"
-                        />
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="grid gap-3 sm:grid-cols-3">
-                  {[
-                    { value: 12847, suffix: '+', label: 'objetos na rede' },
-                    { value: 3291, suffix: '+', label: 'recuperações' },
-                    { value: 94, suffix: '%', label: 'matches úteis' },
-                  ].map((item, index) => (
-                    <div key={item.label} className="rounded-2xl border border-white/[0.06] bg-white/[0.03] p-4">
-                      <p className={`text-2xl font-extrabold tracking-tight ${index === 1 ? 'text-teal-400' : 'text-white'}`}>
-                        <Counter target={item.value} suffix={item.suffix} />
-                      </p>
-                      <p className="mt-1 text-xs text-white/35">{item.label}</p>
-                    </div>
-                  ))}
-                </div>
-              </div>
+            {/* CTA secundário + microcopy */}
+            <div className="flex flex-col items-center gap-3">
+              <Link
+                href="/map"
+                className="inline-flex items-center gap-2 rounded-xl border border-white/[0.1] bg-white/[0.04] px-5 py-2.5 text-sm text-white/60 transition-all hover:border-white/[0.2] hover:text-white/90"
+              >
+                <MapPin className="h-4 w-4 text-teal-400" />
+                Ver mapa ao vivo
+              </Link>
+              <p className="text-xs text-white/28">Leva menos de 30 segundos para agir.</p>
             </div>
           </FadeIn>
         </div>
       </section>
 
+      {/* ─── TICKER AO VIVO ─── */}
       <LiveTicker items={activities} />
 
-      <section id="ao-vivo" className="px-5 py-24">
+      {/* ─── DOBRA 2: PROVA VIVA COM TENSÃO ─── */}
+      <section id="ao-vivo" className="px-5 py-20">
         <div className="mx-auto max-w-6xl">
           <FadeIn>
-            <p className="mb-3 text-center text-xs font-semibold uppercase tracking-[0.22em] text-white/28">experiência first</p>
-            <h2 className="mb-4 text-center text-3xl font-extrabold text-white md:text-4xl">
-              Veja o que está acontecendo agora
+            {/* Linha de tensão */}
+            <p className="mb-2 text-center text-xs font-semibold uppercase tracking-[0.22em] text-white/28">acontecendo agora perto de você</p>
+            <h2 className="mb-3 text-center text-3xl font-extrabold text-white md:text-4xl">
+              Isso acontece todos os dias.
             </h2>
-            <p className="mx-auto mb-12 max-w-2xl text-center text-sm leading-relaxed text-white/42 md:text-base">
-              Antes de pedir cadastro, a Backfindr mostra o movimento da rede: perdas, achados e conexões que já estão acontecendo.
+            <p className="mx-auto mb-12 max-w-xl text-center text-sm leading-relaxed text-white/42 md:text-base">
+              A diferença é quem já está preparado.
             </p>
           </FadeIn>
 
           <div className="grid gap-5 lg:grid-cols-[1.05fr_.95fr]">
+            {/* Mini mapa com CTA flutuante */}
             <FadeIn delay={40}>
-              <div className="overflow-hidden rounded-3xl border border-white/[0.08] bg-white/[0.03]">
-                <div className="relative">
-                  <div className="absolute left-4 top-4 z-10 rounded-full border border-teal-500/20 bg-[#08111f]/88 px-3 py-1.5 text-[11px] font-semibold uppercase tracking-wide text-teal-300 backdrop-blur-sm">
-                    mapa público
-                  </div>
-                  <Image
-                    src="/branding/banner-brand.jpeg"
-                    alt="Visual institucional Backfindr com mapa"
-                    width={1536}
-                    height={864}
-                    className="h-[340px] w-full object-cover md:h-[420px]"
-                  />
-                  <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-[#07090e] via-[#07090e]/15 to-transparent" />
+              <div className="relative overflow-hidden rounded-3xl border border-white/[0.08] bg-white/[0.03]">
+                <div className="absolute left-4 top-4 z-10 rounded-full border border-teal-500/20 bg-[#08111f]/88 px-3 py-1.5 text-[11px] font-semibold uppercase tracking-wide text-teal-300 backdrop-blur-sm">
+                  mapa público
+                </div>
+                <Image
+                  src="/branding/banner-brand.jpeg"
+                  alt="Mapa de ocorrências ao vivo"
+                  width={1536}
+                  height={864}
+                  className="h-[340px] w-full object-cover md:h-[420px]"
+                />
+                <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-[#07090e] via-[#07090e]/30 to-transparent" />
+                {/* CTA flutuante sobre o mapa */}
+                <div className="absolute bottom-5 left-0 right-0 flex justify-center px-5">
+                  <Link
+                    href="/auth/register?intent=protect"
+                    className="inline-flex items-center gap-2 rounded-2xl bg-teal-500/90 backdrop-blur-sm px-6 py-3 text-sm font-bold text-white transition-all hover:bg-teal-400"
+                    style={{ boxShadow: '0 8px 32px rgba(20,184,166,0.35)' }}
+                  >
+                    <ShieldCheck className="h-4 w-4" />
+                    Quero me proteger também
+                  </Link>
                 </div>
               </div>
             </FadeIn>
 
+            {/* Feed ao vivo */}
             <div className="grid gap-4">
               <FadeIn>
                 <Link
@@ -578,8 +467,9 @@ export default function HomePage() {
                   className="flex items-center justify-between gap-3 rounded-2xl border border-teal-500/25 bg-teal-500/[0.06] p-4 transition-colors hover:border-teal-500/50 hover:bg-teal-500/[0.1]"
                 >
                   <div className="flex items-center gap-3">
-                    <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-teal-500/15">
+                    <div className="relative flex h-10 w-10 items-center justify-center rounded-2xl bg-teal-500/15">
                       <MapPin className="h-5 w-5 text-teal-400" />
+                      <span className="absolute -right-1 -top-1 h-3 w-3 rounded-full bg-teal-400" style={{ animation: 'pulseDot 1.2s ease infinite' }} />
                     </div>
                     <div>
                       <p className="text-sm font-semibold text-white">Mapa interativo ao vivo</p>
@@ -593,9 +483,9 @@ export default function HomePage() {
               {liveCards.map((item, index) => (
                 <FadeIn key={item.id} delay={index * 70}>
                   <div className="rounded-2xl border border-white/[0.08] bg-white/[0.03] p-4 transition-colors hover:border-teal-500/25">
-                    <div className="mb-3 flex items-start justify-between gap-3">
+                    <div className="mb-2 flex items-start justify-between gap-3">
                       <div className="flex items-center gap-3">
-                        <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-white/[0.05] text-xl">
+                        <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-white/[0.05] text-lg flex-shrink-0">
                           {item.emoji}
                         </div>
                         <div>
@@ -603,9 +493,12 @@ export default function HomePage() {
                           <p className="text-xs text-white/38">{item.city}</p>
                         </div>
                       </div>
-                      <span className="text-[11px] text-white/32">{item.time}</span>
+                      <div className="flex items-center gap-1.5 flex-shrink-0">
+                        <span className="h-1.5 w-1.5 rounded-full bg-teal-400" style={{ animation: 'pulseDot 1.2s ease infinite' }} />
+                        <span className="text-[11px] text-white/32">{item.time}</span>
+                      </div>
                     </div>
-                    <p className="text-sm text-white/55">
+                    <p className="text-xs text-white/45">
                       {item.type === 'lost' && 'Registro publicado na rede e visível para quem pode ajudar.'}
                       {item.type === 'found' && 'Objeto localizado e pronto para gerar contato com segurança.'}
                       {item.type === 'match' && 'A plataforma detectou uma conexão forte entre registros.'}
@@ -618,10 +511,153 @@ export default function HomePage() {
         </div>
       </section>
 
-      <section id="como-funciona" className="px-5 py-24 border-t border-white/[0.06]">
+      {/* ─── DOBRA 3: BLOCO EMOCIONAL (antecipado) ─── */}
+      <section className="px-5 py-20 border-y border-white/[0.06]">
+        <div className="mx-auto max-w-4xl">
+          <FadeIn>
+            <div className="rounded-[32px] border border-white/[0.08] bg-gradient-to-br from-[#0f1a2e] to-[#07090e] p-10 md:p-16 text-center relative overflow-hidden">
+              <div className="pointer-events-none absolute inset-0 opacity-[0.04]" style={{
+                backgroundImage: 'radial-gradient(circle at 30% 50%, rgba(239,68,68,1) 0%, transparent 60%), radial-gradient(circle at 70% 50%, rgba(20,184,166,1) 0%, transparent 60%)',
+              }} />
+              <div className="relative">
+                <p className="mb-4 text-xs font-semibold uppercase tracking-[0.22em] text-white/28">você só lembra disso depois que perde</p>
+                <h2 className="mb-5 text-3xl font-extrabold leading-tight text-white md:text-4xl lg:text-5xl">
+                  Celular. Carteira. Documentos.
+                  <br />
+                  <span className="text-white/50">Chaves. Mochila. Pet.</span>
+                </h2>
+                <p className="mx-auto mb-10 max-w-lg text-base leading-relaxed text-white/45">
+                  Quando acontece, cada minuto pesa. A maioria das pessoas não tem plano — e perde o objeto para sempre.
+                </p>
+                <div className="flex flex-col items-center gap-3 sm:flex-row sm:justify-center">
+                  <Link
+                    href="/auth/register?intent=protect"
+                    className="inline-flex items-center gap-2 rounded-2xl bg-teal-500 px-8 py-4 text-sm font-bold text-white transition-all hover:bg-teal-400"
+                    style={{ boxShadow: '0 0 0 1px rgba(20,184,166,.34), 0 14px 40px rgba(20,184,166,.22)' }}
+                  >
+                    Quero me proteger agora
+                    <ArrowRight className="h-4 w-4" />
+                  </Link>
+                  <Link
+                    href="#ao-vivo"
+                    className="inline-flex items-center gap-2 rounded-2xl border border-white/[0.1] bg-white/[0.04] px-8 py-4 text-sm font-semibold text-white/70 transition-all hover:border-white/[0.2] hover:text-white"
+                  >
+                    Ver itens acontecendo ao vivo
+                  </Link>
+                </div>
+              </div>
+            </div>
+          </FadeIn>
+        </div>
+      </section>
+
+      {/* ─── DOBRA 4: ESCOLHA SEU CAMINHO (5 cards de jornada) ─── */}
+      <section className="px-5 py-20">
         <div className="mx-auto max-w-5xl">
           <FadeIn>
-            <p className="mb-3 text-center text-xs font-semibold uppercase tracking-[0.22em] text-white/28">como funciona</p>
+            <p className="mb-3 text-center text-xs font-semibold uppercase tracking-[0.22em] text-white/28">escolha seu caminho</p>
+            <h2 className="mb-4 text-center text-3xl font-extrabold text-white md:text-4xl">
+              Qual é o seu caso?
+            </h2>
+            <p className="mx-auto mb-12 max-w-xl text-center text-sm text-white/42">
+              Cada situação tem um fluxo próprio. Escolha e a plataforma guia você.
+            </p>
+          </FadeIn>
+
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            {/* Card 1 — Perdi algo */}
+            <FadeIn delay={0}>
+              <div className="flex flex-col h-full rounded-2xl border border-red-500/20 bg-red-500/[0.05] p-6 transition-all hover:border-red-500/40 hover:bg-red-500/[0.09]">
+                <span className="text-3xl mb-4">😟</span>
+                <h3 className="text-base font-bold text-white mb-2">Perdi algo</h3>
+                <p className="text-sm text-white/45 leading-relaxed flex-1 mb-5">
+                  Publique em segundos e a rede começa a procurar com você.
+                </p>
+                <Link
+                  href="/buscar"
+                  className="inline-flex items-center gap-2 rounded-xl border border-red-500/30 bg-red-500/[0.1] px-4 py-2.5 text-sm font-semibold text-red-300 transition-all hover:bg-red-500/[0.18]"
+                >
+                  Publicar item perdido <ArrowRight className="h-3.5 w-3.5" />
+                </Link>
+              </div>
+            </FadeIn>
+
+            {/* Card 2 — Encontrei algo */}
+            <FadeIn delay={60}>
+              <div className="flex flex-col h-full rounded-2xl border border-teal-500/20 bg-teal-500/[0.05] p-6 transition-all hover:border-teal-500/40 hover:bg-teal-500/[0.09]">
+                <span className="text-3xl mb-4">🙌</span>
+                <h3 className="text-base font-bold text-white mb-2">Encontrei algo</h3>
+                <p className="text-sm text-white/45 leading-relaxed flex-1 mb-5">
+                  Devolva com segurança, sem expor seu contato.
+                </p>
+                <Link
+                  href="/achei"
+                  className="inline-flex items-center gap-2 rounded-xl border border-teal-500/30 bg-teal-500/[0.1] px-4 py-2.5 text-sm font-semibold text-teal-300 transition-all hover:bg-teal-500/[0.18]"
+                >
+                  Publicar item encontrado <ArrowRight className="h-3.5 w-3.5" />
+                </Link>
+              </div>
+            </FadeIn>
+
+            {/* Card 3 — Foi roubado */}
+            <FadeIn delay={120}>
+              <div className="flex flex-col h-full rounded-2xl border border-orange-500/20 bg-orange-500/[0.05] p-6 transition-all hover:border-orange-500/40 hover:bg-orange-500/[0.09]">
+                <span className="text-3xl mb-4">🚨</span>
+                <h3 className="text-base font-bold text-white mb-2">Foi roubado</h3>
+                <p className="text-sm text-white/45 leading-relaxed flex-1 mb-5">
+                  Registre agora para gerar alerta, contexto e visibilidade.
+                </p>
+                <Link
+                  href="/auth/register?intent=stolen"
+                  className="inline-flex items-center gap-2 rounded-xl border border-orange-500/30 bg-orange-500/[0.1] px-4 py-2.5 text-sm font-semibold text-orange-300 transition-all hover:bg-orange-500/[0.18]"
+                >
+                  Registrar item roubado <ArrowRight className="h-3.5 w-3.5" />
+                </Link>
+              </div>
+            </FadeIn>
+
+            {/* Card 4 — Quero me prevenir */}
+            <FadeIn delay={180}>
+              <div className="flex flex-col h-full rounded-2xl border border-blue-500/20 bg-blue-500/[0.05] p-6 transition-all hover:border-blue-500/40 hover:bg-blue-500/[0.09]">
+                <span className="text-3xl mb-4">🔒</span>
+                <h3 className="text-base font-bold text-white mb-2">Quero me prevenir</h3>
+                <p className="text-sm text-white/45 leading-relaxed flex-1 mb-5">
+                  Crie um QR antes da perda e aumente sua chance de retorno.
+                </p>
+                <Link
+                  href="/auth/register?intent=protect"
+                  className="inline-flex items-center gap-2 rounded-xl border border-blue-500/30 bg-blue-500/[0.1] px-4 py-2.5 text-sm font-semibold text-blue-300 transition-all hover:bg-blue-500/[0.18]"
+                >
+                  Criar meu QR grátis <ArrowRight className="h-3.5 w-3.5" />
+                </Link>
+              </div>
+            </FadeIn>
+
+            {/* Card 5 — Meu pet sumiu */}
+            <FadeIn delay={240}>
+              <div className="flex flex-col h-full rounded-2xl border border-amber-500/20 bg-amber-500/[0.05] p-6 transition-all hover:border-amber-500/40 hover:bg-amber-500/[0.09] sm:col-span-2 lg:col-span-1">
+                <span className="text-3xl mb-4">🐾</span>
+                <h3 className="text-base font-bold text-white mb-2">Meu pet sumiu</h3>
+                <p className="text-sm text-white/45 leading-relaxed flex-1 mb-5">
+                  Ative a busca e amplie a chance de reencontro rapidamente.
+                </p>
+                <Link
+                  href="/buscar?category=pet"
+                  className="inline-flex items-center gap-2 rounded-xl border border-amber-500/30 bg-amber-500/[0.1] px-4 py-2.5 text-sm font-semibold text-amber-300 transition-all hover:bg-amber-500/[0.18]"
+                >
+                  Buscar pet agora <ArrowRight className="h-3.5 w-3.5" />
+                </Link>
+              </div>
+            </FadeIn>
+          </div>
+        </div>
+      </section>
+
+      {/* ─── DOBRA 5: COMO FUNCIONA (depois da escolha) ─── */}
+      <section id="como-funciona" className="px-5 py-20 border-t border-white/[0.06]">
+        <div className="mx-auto max-w-5xl">
+          <FadeIn>
+            <p className="mb-3 text-center text-xs font-semibold uppercase tracking-[0.22em] text-white/28">como a backfindr funciona</p>
             <h2 className="mb-4 text-center text-3xl font-extrabold text-white md:text-4xl">
               Crie, cole e seja avisado
             </h2>
@@ -668,13 +704,27 @@ export default function HomePage() {
               </FadeIn>
             ))}
           </div>
+
+          <FadeIn delay={300}>
+            <div className="mt-10 text-center">
+              <Link
+                href="/auth/register"
+                className="inline-flex items-center gap-2 rounded-2xl bg-teal-500 px-8 py-4 text-sm font-bold text-white transition-all hover:bg-teal-400"
+                style={{ boxShadow: '0 0 0 1px rgba(20,184,166,.34), 0 14px 40px rgba(20,184,166,.18)' }}
+              >
+                Criar meu QR grátis
+                <ArrowRight className="h-4 w-4" />
+              </Link>
+            </div>
+          </FadeIn>
         </div>
       </section>
 
-      <section className="border-y border-white/[0.06] bg-white/[0.015] px-5 py-18 md:py-20">
+      {/* ─── DOBRA 6: PROVA DE TRAÇÃO ─── */}
+      <section className="border-y border-white/[0.06] bg-white/[0.015] px-5 py-20">
         <div className="mx-auto max-w-5xl">
           <FadeIn>
-            <p className="mb-10 text-center text-xs font-semibold uppercase tracking-[0.22em] text-white/28">prova de tração</p>
+            <p className="mb-4 text-center text-xs font-semibold uppercase tracking-[0.22em] text-white/28">pessoas já estão recuperando o que parecia perdido</p>
           </FadeIn>
 
           <div className="mb-10 grid gap-6 text-center md:grid-cols-3">
@@ -694,10 +744,11 @@ export default function HomePage() {
             ))}
           </div>
 
-          <div className="grid gap-4 md:grid-cols-3">
+          <div className="grid gap-4 md:grid-cols-4">
             {[
               { emoji: '🐕', title: 'Cachorro recuperado em 2 horas', sub: 'QR na coleira facilitou o retorno' },
               { emoji: '👛', title: 'Carteira localizada após scan', sub: 'contato protegido e rápido' },
+              { emoji: '🔒', title: 'Contato protegido, devolução segura', sub: 'sem expor número pessoal' },
               { emoji: '⚡', title: 'Match gerado pela IA', sub: 'mais velocidade na conexão' },
             ].map((item, index) => (
               <FadeIn key={item.title} delay={index * 80}>
@@ -714,6 +765,7 @@ export default function HomePage() {
         </div>
       </section>
 
+      {/* ─── DOBRA 7: PETS (vertical premium) ─── */}
       <section id="pets" className="px-5 py-24">
         <div className="mx-auto max-w-5xl overflow-hidden rounded-[32px] border border-white/[0.08] bg-gradient-to-br from-[#0a1628] to-[#07090e]">
           <div className="grid items-center gap-0 md:grid-cols-2">
@@ -725,12 +777,15 @@ export default function HomePage() {
                     proteção para pets
                   </span>
                 </div>
-                <h2 className="mb-4 text-3xl font-extrabold leading-tight text-white md:text-4xl">
+                <h2 className="mb-3 text-3xl font-extrabold leading-tight text-white md:text-4xl">
                   Seu pet pode
                   <br />
                   sumir hoje.
                 </h2>
-                <p className="mb-7 max-w-md text-sm leading-relaxed text-white/45 md:text-base">
+                <p className="mb-2 text-sm text-white/45">
+                  Um QR na coleira pode mudar o desfecho.
+                </p>
+                <p className="mb-7 max-w-md text-sm leading-relaxed text-white/40 md:text-base">
                   Cole um QR na coleira e aumente a chance de retorno com um gesto simples e imediato.
                 </p>
 
@@ -773,27 +828,79 @@ export default function HomePage() {
         </div>
       </section>
 
+      {/* ─── DOBRA 8: ENCONTROU ALGO? (persona found) ─── */}
+      <section className="border-t border-white/[0.06] px-5 py-20">
+        <div className="mx-auto max-w-4xl">
+          <FadeIn>
+            <div className="rounded-[32px] border border-teal-500/15 bg-teal-500/[0.04] p-10 md:p-14 text-center">
+              <div className="mb-5 inline-flex items-center justify-center h-16 w-16 rounded-2xl bg-teal-500/10 border border-teal-500/20 text-3xl">
+                🙌
+              </div>
+              <h2 className="mb-4 text-3xl font-extrabold text-white md:text-4xl">
+                Encontrou algo e não sabe o que fazer?
+              </h2>
+              <p className="mx-auto mb-8 max-w-lg text-base leading-relaxed text-white/45">
+                A Backfindr ajuda você a devolver com segurança, sem expor seu número e sem improviso. O dono pode já estar procurando agora.
+              </p>
+              <div className="flex flex-col items-center gap-3 sm:flex-row sm:justify-center">
+                <Link
+                  href="/achei"
+                  className="inline-flex items-center gap-2 rounded-2xl bg-teal-500 px-7 py-4 text-sm font-bold text-white transition-all hover:bg-teal-400"
+                  style={{ boxShadow: '0 0 0 1px rgba(20,184,166,.34), 0 14px 40px rgba(20,184,166,.18)' }}
+                >
+                  Publicar item encontrado
+                  <ArrowRight className="h-4 w-4" />
+                </Link>
+                <Link
+                  href="/buscar"
+                  className="inline-flex items-center gap-2 rounded-2xl border border-white/[0.1] bg-white/[0.04] px-7 py-4 text-sm font-semibold text-white/70 transition-all hover:border-white/[0.2] hover:text-white"
+                >
+                  <Search className="h-4 w-4" />
+                  Ver se já existe dono na rede
+                </Link>
+              </div>
+            </div>
+          </FadeIn>
+        </div>
+      </section>
+
+      {/* ─── DOBRA 9: CTA FINAL — PANCADA ─── */}
       <section className="border-t border-white/[0.06] px-5 py-24">
         <div className="mx-auto max-w-2xl text-center">
           <FadeIn>
             <p className="mb-3 text-xs font-semibold uppercase tracking-[0.22em] text-white/28">chamada final</p>
-            <h2 className="mb-4 text-3xl font-extrabold leading-tight text-white md:text-4xl">
-              Proteja antes.
+            <h2 className="mb-4 text-3xl font-extrabold leading-tight text-white md:text-4xl lg:text-5xl">
+              Se você perder algo hoje,
               <br />
-              <span className="text-teal-400">Recupere depois.</span>
+              <span className="text-teal-400">qual é o seu plano?</span>
             </h2>
-            <p className="mb-8 text-sm text-white/45 md:text-base">
-              Faça parte da rede antes de precisar dela. É gratuito para começar.
+            <p className="mb-10 text-sm text-white/45 md:text-base">
+              Entre na rede antes de precisar dela.
             </p>
-            <Link
-              href="/auth/register"
-              className="inline-flex items-center gap-2 rounded-2xl bg-teal-500 px-10 py-4 text-base font-bold text-white transition-all hover:bg-teal-400"
-              style={{ boxShadow: '0 0 0 1px rgba(20,184,166,.34), 0 14px 40px rgba(20,184,166,.22)' }}
-            >
-              Criar meu QR agora
-              <ArrowRight className="h-5 w-5" strokeWidth={2.5} />
-            </Link>
-            <p className="mt-3 text-xs text-white/25">Leva menos de 30 segundos</p>
+            <div className="flex flex-col items-center gap-3 sm:flex-row sm:justify-center">
+              <Link
+                href="/auth/register"
+                className="inline-flex items-center gap-2 rounded-2xl bg-teal-500 px-8 py-4 text-base font-bold text-white transition-all hover:bg-teal-400"
+                style={{ boxShadow: '0 0 0 1px rgba(20,184,166,.34), 0 14px 40px rgba(20,184,166,.22)' }}
+              >
+                Criar meu QR agora
+                <ArrowRight className="h-5 w-5" strokeWidth={2.5} />
+              </Link>
+              <Link
+                href="/buscar"
+                className="inline-flex items-center gap-2 rounded-2xl border border-white/[0.1] bg-white/[0.04] px-8 py-4 text-base font-semibold text-white/70 transition-all hover:border-white/[0.2] hover:text-white"
+              >
+                Publicar item perdido
+              </Link>
+              <Link
+                href="/map"
+                className="inline-flex items-center gap-2 rounded-2xl border border-white/[0.1] bg-white/[0.04] px-8 py-4 text-base font-semibold text-white/70 transition-all hover:border-white/[0.2] hover:text-white"
+              >
+                <MapPin className="h-4 w-4 text-teal-400" />
+                Ver mapa ao vivo
+              </Link>
+            </div>
+            <p className="mt-5 text-xs text-white/25">Grátis para começar. Leva menos de 30 segundos.</p>
           </FadeIn>
         </div>
       </section>
