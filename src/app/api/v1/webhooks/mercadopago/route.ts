@@ -26,7 +26,14 @@ export async function POST(req: NextRequest) {
     // Buscar detalhes do pagamento na API do MP
     const client = getMP();
     const paymentClient = new Payment(client);
-    const payment = await paymentClient.get({ id: paymentId });
+    let payment;
+    try {
+      payment = await paymentClient.get({ id: paymentId });
+    } catch (fetchError) {
+      // Pagamento não encontrado na API do MP — retornar 200 para evitar reenvios
+      console.warn(`Pagamento ${paymentId} não encontrado na API MP:`, fetchError);
+      return NextResponse.json({ status: "payment_not_found" });
+    }
 
     if (!payment || payment.status !== "approved") {
       console.log(`Pagamento ${paymentId} não aprovado: ${payment?.status}`);
@@ -115,8 +122,10 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json({ status: "processed" });
   } catch (error) {
+    // Retornar 200 mesmo em erro para evitar loop de reenvios do MP
+    // O MP reenvia indefinidamente se receber 4xx/5xx
     console.error("Erro no webhook MP:", error);
-    return NextResponse.json({ error: "Erro interno" }, { status: 500 });
+    return NextResponse.json({ status: "error", message: "Erro interno processado" });
   }
 }
 
