@@ -43,49 +43,71 @@ export async function POST(req: NextRequest) {
 
     if (paymentType === "plan") {
       // Ativar plano do usuário
-      const planId = metadata.plan_id;
-      const planLimits: Record<string, number> = {
-        pro: 50,
-        business: 500,
-      };
+      const planSlug = metadata.plan_slug || metadata.plan_id;
 
       const expiresAt = new Date();
       expiresAt.setMonth(expiresAt.getMonth() + 1);
+      const expiresAtStr = expiresAt.toISOString();
 
+      // Atualizar usuário com o novo plano
       await query(
-        `UPDATE users SET plan = ?, plan_expires_at = ?, stripe_subscription_id = ? WHERE id = ?`,
-        [planId, expiresAt.toISOString().slice(0, 19).replace("T", " "), `mp_${paymentId}`, userId]
+        `UPDATE users
+         SET plan = $1,
+             plan_expires_at = $2,
+             mp_subscription_id = $3,
+             subscription_provider = 'mercadopago',
+             updated_at = NOW()
+         WHERE id = $4`,
+        [planSlug, expiresAtStr, `mp_${paymentId}`, userId]
       );
 
       // Registrar na tabela subscriptions
       await query(
-        `INSERT INTO subscriptions (user_id, provider, provider_subscription_id, plan_id, status, current_period_start, current_period_end, created_at)
-         VALUES (?, 'mercadopago', ?, ?, 'active', NOW(), ?, NOW())
-         ON DUPLICATE KEY UPDATE status = 'active', current_period_end = ?, updated_at = NOW()`,
-        [userId, `mp_${paymentId}`, planId, expiresAt.toISOString().slice(0, 19).replace("T", " "), expiresAt.toISOString().slice(0, 19).replace("T", " ")]
+        `INSERT INTO subscriptions
+           (user_id, plan_slug, provider, provider_sub_id, status, amount_brl, started_at, expires_at, created_at)
+         VALUES ($1, $2, 'mercadopago', $3, 'active', $4, NOW(), $5, NOW())`,
+        [
+          userId,
+          planSlug,
+          `mp_${paymentId}`,
+          payment.transaction_amount || 0,
+          expiresAtStr,
+        ]
       );
 
-      console.log(`✅ Plano ${planId} ativado para usuário ${userId}`);
+      console.log(`✅ Plano ${planSlug} ativado para usuário ${userId}`);
 
     } else if (paymentType === "boost") {
       // Ativar boost para o objeto
       const objectId = metadata.object_id;
-      const boostType = metadata.boost_type;
+      const boostType = metadata.boost_type || metadata.type || "7d";
       const days = parseInt(metadata.days || "7");
 
       const expiresAt = new Date();
       expiresAt.setDate(expiresAt.getDate() + days);
+      const expiresAtStr = expiresAt.toISOString();
 
+      // Inserir boost na tabela
       await query(
-        `INSERT INTO boosts (object_id, user_id, boost_type, payment_id, payment_provider, amount_paid, status, expires_at, created_at)
-         VALUES (?, ?, ?, ?, 'mercadopago', ?, 'active', ?, NOW())
-         ON DUPLICATE KEY UPDATE status = 'active', expires_at = ?, updated_at = NOW()`,
+        `INSERT INTO boosts
+           (object_id, user_id, type, status, amount_paid, provider, provider_ref, starts_at, expires_at, created_at)
+         VALUES ($1, $2, $3, 'active', $4, 'mercadopago', $5, NOW(), $6, NOW())`,
         [
-          objectId, userId, boostType, String(paymentId),
+          objectId,
+          userId,
+          boostType,
           payment.transaction_amount || 0,
-          expiresAt.toISOString().slice(0, 19).replace("T", " "),
-          expiresAt.toISOString().slice(0, 19).replace("T", " ")
+          String(paymentId),
+          expiresAtStr,
         ]
+      );
+
+      // Atualizar objeto como boosted
+      await query(
+        `UPDATE objects
+         SET is_boosted = true, boost_expires_at = $1, updated_at = NOW()
+         WHERE id = $2`,
+        [expiresAtStr, objectId]
       );
 
       console.log(`✅ Boost ${boostType} ativado para objeto ${objectId}`);
