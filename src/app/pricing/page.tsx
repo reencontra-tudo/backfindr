@@ -63,7 +63,7 @@ export default function PricingPage() {
   const [loading, setLoading] = useState(true);
   const [selectedPlan, setSelectedPlan] = useState<string | null>(null);
   const [checkoutLoading, setCheckoutLoading] = useState(false);
-  const [testMode] = useState(true);
+  const [testMode] = useState(false);
 
   useEffect(() => {
     fetch('/api/v1/plans')
@@ -98,22 +98,20 @@ export default function PricingPage() {
         return;
       }
 
-      if (testMode) {
-        await new Promise(r => setTimeout(r, 1200));
-        window.location.href = `/dashboard?plan_upgraded=${slug}&test=true`;
-        return;
-      }
-
-      const res = await fetch('/api/v1/billing', {
+      const res = await fetch('/api/v1/checkout/mercadopago', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${token}`,
         },
-        body: JSON.stringify({ action: 'upgrade', plan: slug }),
+        body: JSON.stringify({ type: 'plan', plan_slug: slug }),
       });
       const data = await res.json();
-      if (data.url) window.location.href = data.url;
+      if (data.url) {
+        window.location.href = data.url;
+      } else {
+        alert(data.error || 'Erro ao criar checkout. Tente novamente.');
+      }
     } catch {
       alert('Erro ao processar. Tente novamente.');
     } finally {

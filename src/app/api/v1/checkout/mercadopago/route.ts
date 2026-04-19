@@ -14,7 +14,20 @@ export async function POST(req: NextRequest) {
     const user = authHeader ? verifyToken(authHeader.replace("Bearer ", "")) : null;
 
     const body = await req.json();
-    const { type, planId, objectId, boostType } = body;
+    // Suportar ambas as nomenclaturas (planId / plan_slug, objectId / object_id, boostType / boost_type)
+    const {
+      type,
+      planId,
+      plan_slug,
+      objectId,
+      object_id,
+      boostType,
+      boost_type,
+    } = body;
+
+    const resolvedPlanId = planId || plan_slug;
+    const resolvedObjectId = objectId || object_id;
+    const resolvedBoostType = boostType || boost_type;
 
     // Definir itens baseado no tipo de checkout
     let items: Array<{
@@ -35,13 +48,13 @@ export async function POST(req: NextRequest) {
         business: { title: "Backfindr Business", price: 149.90 },
       };
 
-      const plan = planPrices[planId];
+      const plan = planPrices[resolvedPlanId];
       if (!plan) {
         return NextResponse.json({ error: "Plano inválido" }, { status: 400 });
       }
 
       items = [{
-        id: `plan_${planId}`,
+        id: `plan_${resolvedPlanId}`,
         title: plan.title,
         description: `Assinatura mensal do plano ${plan.title}`,
         quantity: 1,
@@ -51,8 +64,8 @@ export async function POST(req: NextRequest) {
 
       metadata = {
         type: "plan",
-        plan_id: planId,
-        user_id: user?.userId || "anonymous",
+        plan_id: resolvedPlanId,
+        user_id: user?.sub || "anonymous",
       };
     } else if (type === "boost") {
       // Checkout de boost para objeto
@@ -62,13 +75,13 @@ export async function POST(req: NextRequest) {
         alert_area: { title: "Alerta de Área", price: 14.90, days: 7 },
       };
 
-      const boost = boostPrices[boostType];
+      const boost = boostPrices[resolvedBoostType];
       if (!boost) {
         return NextResponse.json({ error: "Tipo de boost inválido" }, { status: 400 });
       }
 
       items = [{
-        id: `boost_${boostType}`,
+        id: `boost_${resolvedBoostType}`,
         title: boost.title,
         description: `${boost.title} para seu objeto — aumenta visibilidade por ${boost.days} dias`,
         quantity: 1,
@@ -78,9 +91,9 @@ export async function POST(req: NextRequest) {
 
       metadata = {
         type: "boost",
-        boost_type: boostType,
-        object_id: objectId || "",
-        user_id: user?.userId || "anonymous",
+        boost_type: resolvedBoostType,
+        object_id: resolvedObjectId || "",
+        user_id: user?.sub || "anonymous",
         days: String(boost.days),
       };
     } else {
@@ -97,7 +110,7 @@ export async function POST(req: NextRequest) {
         items,
         metadata,
         back_urls: {
-          success: `${appUrl}/checkout/success?type=${type}&ref=${planId || boostType}`,
+          success: `${appUrl}/checkout/success?type=${type}&ref=${resolvedPlanId || resolvedBoostType}`,
           failure: `${appUrl}/checkout/failure`,
           pending: `${appUrl}/checkout/pending`,
         },
@@ -111,8 +124,13 @@ export async function POST(req: NextRequest) {
       },
     });
 
+    // Em modo teste (credenciais TEST-), usar sandbox_init_point
+    const isSandbox = (process.env.MP_ACCESS_TOKEN || "").startsWith("TEST-");
+    const url = isSandbox ? response.sandbox_init_point : response.init_point;
+
     return NextResponse.json({
       id: response.id,
+      url,
       init_point: response.init_point,
       sandbox_init_point: response.sandbox_init_point,
     });
