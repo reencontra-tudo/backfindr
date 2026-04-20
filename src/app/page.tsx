@@ -387,7 +387,7 @@ export default function HomePage() {
             <div className="grid grid-cols-2 gap-3 sm:gap-4 mb-6">
               {/* PERDI ALGO — vermelho */}
               <Link
-                href="/buscar"
+                href="/flow/lost"
                 className="group flex flex-col items-center gap-3 rounded-2xl border border-red-500/40 bg-red-500/[0.1] px-4 py-6 text-center transition-all hover:border-red-500/70 hover:bg-red-500/[0.18] hover:scale-[1.02]"
                 style={{ boxShadow: '0 0 0 1px rgba(239,68,68,0.15), 0 8px 32px rgba(239,68,68,0.08)' }}
               >
@@ -618,7 +618,7 @@ export default function HomePage() {
                   Publique em segundos e a rede começa a procurar com você.
                 </p>
                 <Link
-                  href="/buscar"
+                  href="/flow/lost"
                   className="inline-flex items-center gap-2 rounded-xl border border-red-500/30 bg-red-500/[0.1] px-4 py-2.5 text-sm font-semibold text-red-300 transition-all hover:bg-red-500/[0.18]"
                 >
                   Publicar item perdido <ArrowRight className="h-3.5 w-3.5" />
@@ -896,7 +896,7 @@ export default function HomePage() {
                   <ArrowRight className="h-4 w-4" />
                 </Link>
                 <Link
-                  href="/buscar"
+                  href="/flow/lost"
                   className="inline-flex items-center gap-2 rounded-2xl border border-white/[0.1] bg-white/[0.04] px-7 py-4 text-sm font-semibold text-white/70 transition-all hover:border-white/[0.2] hover:text-white"
                 >
                   <Search className="h-4 w-4" />
@@ -931,7 +931,7 @@ export default function HomePage() {
                 <ArrowRight className="h-5 w-5" strokeWidth={2.5} />
               </Link>
               <Link
-                href="/buscar"
+                href="/flow/lost"
                 className="inline-flex items-center gap-2 rounded-2xl border border-white/[0.1] bg-white/[0.04] px-8 py-4 text-base font-semibold text-white/70 transition-all hover:border-white/[0.2] hover:text-white"
               >
                 Publicar item perdido
