@@ -283,11 +283,18 @@ export default function MapPage() {
           `;
 
           // Criar popup Mapbox — fora de qualquer setter de estado
+          // Usa mapboxgl.Popup diretamente (não .default.Popup) para compatibilidade
+          // com ESM em mobile/Safari onde .default pode não estar disponível
           // eslint-disable-next-line @typescript-eslint/no-explicit-any
           let popup: any;
           try {
             // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            popup = new (mapboxgl as any).default.Popup({
+            const MapboxPopup = (mapboxgl as any).Popup ?? (mapboxgl as any).default?.Popup;
+            if (!MapboxPopup) {
+              console.error('Mapbox Popup não disponível');
+              return;
+            }
+            popup = new MapboxPopup({
               closeButton: false,
               closeOnClick: false,
               anchor: 'bottom',
