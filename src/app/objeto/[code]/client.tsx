@@ -102,10 +102,10 @@ export default function PublicObjectClient({ obj }: { obj: RegisteredObject }) {
             {/* ── Instrução clara no topo ── */}
             <div className="bg-teal-500/[0.08] border border-teal-500/[0.18] rounded-2xl px-5 py-4 mb-6 flex items-start gap-3">
               <div className="w-8 h-8 rounded-lg bg-teal-500/20 flex items-center justify-center flex-shrink-0 mt-0.5">
-                <QrCode className="w-4 h-4 text-teal-400" />
+                <Shield className="w-4 h-4 text-teal-400" />
               </div>
               <div>
-                <p className="text-teal-300 text-sm font-semibold mb-0.5">Você escaneou um QR Code</p>
+                <p className="text-teal-300 text-sm font-semibold mb-0.5">Objeto registrado na rede Backfindr</p>
                 <p className="text-white/60 text-sm leading-relaxed">
                   Este objeto pertence a alguém. Se você o encontrou, clique no botão abaixo para avisar o dono — é rápido e seguro.
                 </p>

@@ -2,6 +2,8 @@
 
 import Link from 'next/link';
 import Image from 'next/image';
+import dynamic from 'next/dynamic';
+const HomeLiveMap = dynamic(() => import('@/components/HomeLiveMap'), { ssr: false });
 import { useState, useEffect, useRef } from 'react';
 import {
   ArrowRight,
@@ -475,30 +477,7 @@ export default function HomePage() {
           <div className="grid gap-5 lg:grid-cols-[1.05fr_.95fr]">
             {/* Mini mapa com CTA flutuante */}
             <FadeIn delay={40}>
-              <div className="relative overflow-hidden rounded-3xl border border-white/[0.08] bg-white/[0.03]">
-                <div className="absolute left-4 top-4 z-10 rounded-full border border-teal-500/20 bg-[#08111f]/88 px-3 py-1.5 text-[11px] font-semibold uppercase tracking-wide text-teal-300 backdrop-blur-sm">
-                  mapa público
-                </div>
-                <Image
-                  src="/branding/banner-brand.jpeg"
-                  alt="Mapa de ocorrências ao vivo"
-                  width={1536}
-                  height={864}
-                  className="h-[340px] w-full object-cover md:h-[420px]"
-                />
-                <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-[#07090e] via-[#07090e]/30 to-transparent" />
-                {/* CTA flutuante sobre o mapa */}
-                <div className="absolute bottom-5 left-0 right-0 flex justify-center px-5">
-                  <Link
-                    href="/auth/register?intent=protect"
-                    className="inline-flex items-center gap-2 rounded-2xl bg-teal-500/90 backdrop-blur-sm px-6 py-3 text-sm font-bold text-white transition-all hover:bg-teal-400"
-                    style={{ boxShadow: '0 8px 32px rgba(20,184,166,0.35)' }}
-                  >
-                    <ShieldCheck className="h-4 w-4" />
-                    Quero me proteger também
-                  </Link>
-                </div>
-              </div>
+              <HomeLiveMap />
             </FadeIn>
 
             {/* Feed ao vivo */}
