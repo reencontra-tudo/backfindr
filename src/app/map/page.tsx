@@ -296,6 +296,16 @@ export default function MapPage() {
   // Lista paginada (virtualização simples)
   const listItems = useMemo(() => filtered.slice(0, listPage * LIST_PAGE_SIZE), [filtered, listPage]);
 
+  // ─── CTA contextual: objetos perdidos num raio de 5km ─────────────────────
+  const nearbyLostCount = useMemo(() => {
+    if (!userLocation) return 0;
+    return objects.filter(o =>
+      o.status === 'lost' &&
+      o.location?.lat && o.location?.lng &&
+      haversine(userLocation.lat, userLocation.lng, o.location.lat, o.location.lng) <= 5
+    ).length;
+  }, [objects, userLocation]);
+
   return (
     <div className="h-screen flex flex-col bg-[#080b0f]">
       {/* Navbar */}
@@ -504,6 +514,46 @@ export default function MapPage() {
           </span>
         )}
       </div>
+
+      {/* CTA contextual — aparece quando localização está ativa e há objetos perdidos próximos */}
+      {userLocation && nearbyLostCount > 0 && (
+        <div className="flex-shrink-0 border-b border-teal-500/20 bg-teal-500/5 px-4 py-2.5 flex items-center gap-3">
+          <div className="w-7 h-7 rounded-lg bg-teal-500/20 flex items-center justify-center flex-shrink-0">
+            <span className="text-sm">🔍</span>
+          </div>
+          <div className="flex-1 min-w-0">
+            <p className="text-teal-300 text-xs font-semibold">
+              {nearbyLostCount} objeto{nearbyLostCount !== 1 ? 's' : ''} perdido{nearbyLostCount !== 1 ? 's' : ''} num raio de 5km
+            </p>
+            <p className="text-teal-400/50 text-[10px] leading-tight">
+              Encontrou algo? Ajude a devolver.
+            </p>
+          </div>
+          <Link
+            href="/flow/found"
+            className="flex-shrink-0 bg-teal-500 hover:bg-teal-400 text-white text-xs font-bold px-3 py-1.5 rounded-lg transition-all"
+          >
+            Registrar achado
+          </Link>
+        </div>
+      )}
+
+      {/* CTA para ativar localização — aparece quando não há localização ativa */}
+      {!userLocation && !loading && objects.length > 0 && (
+        <div className="flex-shrink-0 border-b border-white/[0.06] bg-[#0a0d12] px-4 py-2.5 flex items-center gap-3">
+          <div className="flex-1 min-w-0">
+            <p className="text-white/50 text-xs">
+              📍 Ative sua localização para ver ocorrências perto de você
+            </p>
+          </div>
+          <button
+            onClick={locateUser}
+            className="flex-shrink-0 text-teal-400 hover:text-teal-300 text-xs font-semibold border border-teal-500/30 hover:border-teal-500/50 px-3 py-1.5 rounded-lg transition-all"
+          >
+            Ativar
+          </button>
+        </div>
+      )}
 
       {/* Painel de notícias — colapsável */}
       {showNews && (

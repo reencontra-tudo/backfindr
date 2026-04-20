@@ -1,7 +1,8 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
+import { analytics } from '@/providers/PostHogProvider';
 import { ArrowRight, Loader2, CheckCircle2, MapPin, Package, Sparkles, AlertCircle } from 'lucide-react';
 import FlowLayout from '@/components/flow/FlowLayout';
 import FlowMatchCard, { MatchItem } from '@/components/flow/FlowMatchCard';
@@ -24,6 +25,13 @@ const WHERE_OPTIONS: { value: WhereOption; label: string; emoji: string }[] = [
 export default function FoundFlowClient() {
   const router = useRouter();
   const [step, setStep] = useState(1);
+
+  useEffect(() => { analytics.flowStarted('found'); }, []);
+  useEffect(() => {
+    const handleUnload = () => analytics.flowAbandoned('found', step);
+    window.addEventListener('beforeunload', handleUnload);
+    return () => window.removeEventListener('beforeunload', handleUnload);
+  }, [step]);
   const [step1, setStep1] = useState<Step1Data>({ what: '', where: '', whereType: 'rua' });
   const [matches, setMatches] = useState<MatchItem[]>([]);
   const [loadingMatches, setLoadingMatches] = useState(false);
@@ -33,6 +41,7 @@ export default function FoundFlowClient() {
     e.preventDefault();
     if (!step1.what.trim()) return;
 
+    analytics.flowStep('found', 2, 3);
     setStep(2);
     setLoadingMatches(true);
 
@@ -54,16 +63,19 @@ export default function FoundFlowClient() {
   // ─── Tela 2: Matches — alguém perdeu isso? ───────────────────────────────
   function handleMatchSelect(item: MatchItem) {
     if (item.unique_code) {
+      analytics.flowMatchClicked('found', item.unique_code);
       router.push(`/objeto/${item.unique_code}`);
     }
   }
 
   function handleContinueAnyway() {
+    analytics.flowStep('found', 3, 3);
     setStep(3);
   }
 
   // ─── Tela 3: Finalização — redireciona para /achei com dados pré-preenchidos
   function handleFinalize() {
+    analytics.flowCompleted('found', matches.length > 0);
     const params = new URLSearchParams();
     params.set('intent', 'found');
     if (step1.what) params.set('prefill_title', step1.what);

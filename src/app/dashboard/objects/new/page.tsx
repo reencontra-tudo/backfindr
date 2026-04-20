@@ -69,6 +69,11 @@ function NewObjectForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const intent = searchParams.get('intent') ?? '';
+  const prefillTitle    = searchParams.get('prefill_title')    ?? '';
+  const prefillCategory = searchParams.get('prefill_category') ?? '';
+  const prefillLocation = searchParams.get('prefill_location') ?? '';
+  const prefillBreed    = searchParams.get('prefill_breed')    ?? '';
+  const prefillColor    = searchParams.get('prefill_color')    ?? '';
   const intentPreset = INTENT_MAP[intent] ?? {};
   const [step, setStep] = useState(intentPreset.startStep ?? 0);
   const [submitting, setSubmitting] = useState(false);
@@ -85,10 +90,16 @@ function NewObjectForm() {
     return () => urls.forEach(u => URL.revokeObjectURL(u));
   }, [photos]);
 
-  // Pré-selecionar categoria e status com base no intent (roda uma vez após mount)
+  // Pré-selecionar categoria, status e campos com base no intent e prefill params
   useEffect(() => {
     if (intentPreset.category) setValue('category', intentPreset.category as ObjectCategory);
     if (intentPreset.status)   setValue('status',   intentPreset.status as ObjectStatus);
+    // Prefill vindo dos fluxos (/flow/*)
+    if (prefillTitle)    setValue('title',    prefillTitle);
+    if (prefillCategory) setValue('category', prefillCategory as ObjectCategory);
+    if (prefillLocation) setValue('address',  prefillLocation);
+    if (prefillBreed)    setValue('pet_breed', prefillBreed);
+    if (prefillColor)    setValue('pet_color', prefillColor);
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 

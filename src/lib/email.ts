@@ -199,3 +199,139 @@ export async function sendMatchAlertEmail(user: { name: string; email: string },
     console.error('[email] Exceção ao enviar alerta de match:', err);
   }
 }
+
+// ─── E-mail de reativação 24h sem match ──────────────────────────────────────
+export async function sendReactivationEmail(user: { name: string; email: string }, objectTitle: string) {
+  const firstName = user.name.split(' ')[0];
+  const searchUrl = `https://www.backfindr.com/buscar?keyword=${encodeURIComponent(objectTitle)}`;
+  const dashboardUrl = 'https://www.backfindr.com/dashboard';
+
+  const html = `
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Ainda estamos procurando por você</title>
+</head>
+<body style="margin:0;padding:0;background:#080b0f;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;">
+  <table width="100%" cellpadding="0" cellspacing="0" style="background:#080b0f;padding:40px 20px;">
+    <tr>
+      <td align="center">
+        <table width="100%" cellpadding="0" cellspacing="0" style="max-width:520px;background:#0f1318;border:1px solid rgba(255,255,255,0.08);border-radius:20px;overflow:hidden;">
+
+          <!-- Header -->
+          <tr>
+            <td style="padding:32px 32px 0;text-align:center;">
+              <div style="display:inline-flex;align-items:center;gap:10px;margin-bottom:8px;">
+                <div style="width:36px;height:36px;background:#14b8a6;border-radius:10px;display:inline-flex;align-items:center;justify-content:center;">
+                  <span style="color:white;font-size:18px;">📍</span>
+                </div>
+                <span style="color:white;font-size:18px;font-weight:700;">Backfindr</span>
+              </div>
+            </td>
+          </tr>
+
+          <!-- Body -->
+          <tr>
+            <td style="padding:28px 32px 32px;">
+              <!-- Ícone de busca ativa -->
+              <div style="text-align:center;margin-bottom:20px;">
+                <div style="display:inline-block;background:rgba(20,184,166,0.1);border:1px solid rgba(20,184,166,0.2);border-radius:50%;width:64px;height:64px;line-height:64px;text-align:center;">
+                  <span style="font-size:28px;">🔍</span>
+                </div>
+              </div>
+
+              <h1 style="color:white;font-size:22px;font-weight:700;margin:0 0 8px;text-align:center;line-height:1.3;">
+                Ainda estamos procurando, ${firstName}.
+              </h1>
+              <p style="color:rgba(255,255,255,0.55);font-size:14px;line-height:1.6;margin:0 0 24px;text-align:center;">
+                Seu alerta para <strong style="color:white;">${objectTitle}</strong> está ativo.<br/>
+                Novos itens são registrados todos os dias — o match pode acontecer a qualquer momento.
+              </p>
+
+              <!-- Dica de melhoria -->
+              <table width="100%" cellpadding="0" cellspacing="0" style="background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.07);border-radius:14px;margin-bottom:24px;">
+                <tr>
+                  <td style="padding:18px 20px;">
+                    <p style="color:rgba(255,255,255,0.35);font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:0.15em;margin:0 0 12px;">Aumente suas chances</p>
+                    <table width="100%" cellpadding="0" cellspacing="0">
+                      <tr>
+                        <td style="padding:6px 0;vertical-align:top;">
+                          <span style="font-size:16px;margin-right:10px;">✏️</span>
+                          <span style="color:rgba(255,255,255,0.7);font-size:13px;">Adicione mais detalhes à descrição do item</span>
+                        </td>
+                      </tr>
+                      <tr>
+                        <td style="padding:6px 0;vertical-align:top;">
+                          <span style="font-size:16px;margin-right:10px;">📸</span>
+                          <span style="color:rgba(255,255,255,0.7);font-size:13px;">Inclua uma foto — itens com foto têm 3x mais matches</span>
+                        </td>
+                      </tr>
+                      <tr>
+                        <td style="padding:6px 0;vertical-align:top;">
+                          <span style="font-size:16px;margin-right:10px;">📍</span>
+                          <span style="color:rgba(255,255,255,0.7);font-size:13px;">Confirme o local onde o item foi perdido</span>
+                        </td>
+                      </tr>
+                    </table>
+                  </td>
+                </tr>
+              </table>
+
+              <!-- CTAs -->
+              <table width="100%" cellpadding="0" cellspacing="0" style="margin-bottom:16px;">
+                <tr>
+                  <td align="center">
+                    <a href="${dashboardUrl}"
+                       style="display:inline-block;background:#14b8a6;color:white;font-size:14px;font-weight:700;text-decoration:none;padding:13px 28px;border-radius:12px;box-shadow:0 4px 20px rgba(20,184,166,0.25);">
+                      Atualizar meu alerta →
+                    </a>
+                  </td>
+                </tr>
+              </table>
+              <table width="100%" cellpadding="0" cellspacing="0">
+                <tr>
+                  <td align="center">
+                    <a href="${searchUrl}"
+                       style="display:inline-block;background:transparent;color:rgba(255,255,255,0.5);font-size:13px;font-weight:500;text-decoration:none;padding:10px 24px;border:1px solid rgba(255,255,255,0.1);border-radius:10px;">
+                      Buscar manualmente na rede
+                    </a>
+                  </td>
+                </tr>
+              </table>
+            </td>
+          </tr>
+
+          <!-- Footer -->
+          <tr>
+            <td style="padding:20px 32px;border-top:1px solid rgba(255,255,255,0.06);text-align:center;">
+              <p style="color:rgba(255,255,255,0.2);font-size:12px;margin:0;">
+                © 2026 Backfindr · <a href="https://www.backfindr.com" style="color:rgba(255,255,255,0.3);text-decoration:none;">www.backfindr.com</a>
+              </p>
+            </td>
+          </tr>
+
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>
+  `.trim();
+
+  try {
+    const { error } = await getResend().emails.send({
+      from: FROM,
+      to: [user.email],
+      subject: `🔍 Ainda estamos procurando por "${objectTitle}" — Backfindr`,
+      html,
+    });
+
+    if (error) {
+      console.error('[email] Erro ao enviar reativação:', error);
+    }
+  } catch (err) {
+    console.error('[email] Exceção ao enviar reativação:', err);
+  }
+}

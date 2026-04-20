@@ -37,15 +37,27 @@ const PLAN_INFO: Record<string, { name: string; price: string; icon: React.React
 function RegisterForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const planSlug = searchParams.get('plan') || '';
-  const intentSlug = searchParams.get('intent') || '';
+  const planSlug        = searchParams.get('plan')             || '';
+  const intentSlug      = searchParams.get('intent')           || '';
+  const prefillTitle    = searchParams.get('prefill_title')    || '';
+  const prefillCategory = searchParams.get('prefill_category') || '';
+  const prefillLocation = searchParams.get('prefill_location') || '';
+  const prefillBreed    = searchParams.get('prefill_breed')    || '';
+  const prefillColor    = searchParams.get('prefill_color')    || '';
+  const prefillName     = searchParams.get('prefill_name')     || '';
   const planInfo = PLAN_INFO[planSlug] || null;
 
   const { register: registerUser, isLoading } = useAuthStore();
   const [showPass, setShowPass] = useState(false);
   const [checkoutLoading, setCheckoutLoading] = useState(false);
 
-  const { register, handleSubmit, watch, formState: { errors } } = useForm<FormData>({ resolver: zodResolver(schema), mode: 'onBlur' });
+  const { register, handleSubmit, watch, setValue: setFormValue, formState: { errors } } = useForm<FormData>({ resolver: zodResolver(schema), mode: 'onBlur' });
+
+  // Pré-preencher nome se veio do fluxo /flow/protect
+  useEffect(() => {
+    if (prefillName) setFormValue('name', prefillName);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const password = watch('password', '');
   const strengthScore = [password.length >= 8, /[A-Z]/.test(password), /[0-9]/.test(password), /[^A-Za-z0-9]/.test(password)].filter(Boolean).length;
@@ -92,8 +104,15 @@ function RegisterForm() {
       if (planSlug && planSlug !== 'free') {
         await redirectToCheckout(planSlug);
       } else if (intentSlug) {
-        // Veio da triagem de intenção da home — ir direto para o formulário
-        router.push(`/dashboard/objects/new?intent=${intentSlug}`);
+        // Veio da triagem de intenção da home — ir direto para o formulário com prefill
+        const params = new URLSearchParams();
+        params.set('intent', intentSlug);
+        if (prefillTitle)    params.set('prefill_title',    prefillTitle);
+        if (prefillCategory) params.set('prefill_category', prefillCategory);
+        if (prefillLocation) params.set('prefill_location', prefillLocation);
+        if (prefillBreed)    params.set('prefill_breed',    prefillBreed);
+        if (prefillColor)    params.set('prefill_color',    prefillColor);
+        router.push(`/dashboard/objects/new?${params.toString()}`);
       } else {
         router.push('/dashboard');
       }

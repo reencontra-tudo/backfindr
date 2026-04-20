@@ -1,8 +1,9 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { ArrowRight, Loader2, CheckCircle2, MapPin, AlertCircle, Dog, Cat, Bird } from 'lucide-react';
+import { analytics } from '@/providers/PostHogProvider';
+import { ArrowRight, Loader2, CheckCircle2, MapPin, AlertCircle, Dog, Cat, Bird, Share2 } from 'lucide-react';
 import FlowLayout from '@/components/flow/FlowLayout';
 import FlowMatchCard, { MatchItem } from '@/components/flow/FlowMatchCard';
 
@@ -26,6 +27,13 @@ interface Step1Data {
 export default function PetFlowClient() {
   const router = useRouter();
   const [step, setStep] = useState(1);
+
+  useEffect(() => { analytics.flowStarted('pet'); }, []);
+  useEffect(() => {
+    const handleUnload = () => analytics.flowAbandoned('pet', step);
+    window.addEventListener('beforeunload', handleUnload);
+    return () => window.removeEventListener('beforeunload', handleUnload);
+  }, [step]);
   const [step1, setStep1] = useState<Step1Data>({
     petType: 'cachorro',
     breed: '',
@@ -38,6 +46,7 @@ export default function PetFlowClient() {
 
   async function handleStep1Submit(e: React.FormEvent) {
     e.preventDefault();
+    analytics.flowStep('pet', 2, 3);
     setStep(2);
     setLoadingMatches(true);
 
@@ -66,11 +75,13 @@ export default function PetFlowClient() {
 
   function handleMatchSelect(item: MatchItem) {
     if (item.unique_code) {
+      analytics.flowMatchClicked('pet', item.unique_code);
       router.push(`/objeto/${item.unique_code}`);
     }
   }
 
   function handleFinalize() {
+    analytics.flowCompleted('pet', matches.length > 0);
     const params = new URLSearchParams();
     params.set('intent', 'lost');
     params.set('prefill_category', 'pet');
@@ -320,6 +331,24 @@ export default function PetFlowClient() {
               <p className="text-center text-white/30 text-xs">
                 Gratuito. Seu contato fica protegido.
               </p>
+
+              {/* Compartilhar antes de publicar — aumenta viralização */}
+              <button
+                onClick={() => {
+                  const petLabel = [step1.name, step1.breed, step1.petType].filter(Boolean).join(' ');
+                  const text = `🐾 Alguém viu este pet? ${petLabel}${step1.where ? ` — ${step1.where}` : ''}. Ajude a encontrar! https://backfindr.com.br/flow/pet`;
+                  if (navigator.share) {
+                    navigator.share({ title: `Pet desaparecido: ${petLabel}`, text });
+                  } else {
+                    window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, '_blank');
+                  }
+                }}
+                className="w-full flex items-center justify-center gap-2 py-3 text-amber-400/70 hover:text-amber-400 border border-amber-500/20 hover:border-amber-500/40 rounded-xl text-sm font-medium transition-all"
+              >
+                <Share2 className="w-4 h-4" />
+                Compartilhar no WhatsApp agora
+              </button>
+
               <button
                 onClick={() => setStep(2)}
                 className="w-full py-3 text-white/40 hover:text-white/60 text-sm transition-colors"

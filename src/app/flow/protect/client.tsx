@@ -1,7 +1,8 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
+import { analytics } from '@/providers/PostHogProvider';
 import { ArrowRight, CheckCircle2, Shield, QrCode, Smartphone, Wallet, Key, Briefcase, Dog } from 'lucide-react';
 import FlowLayout from '@/components/flow/FlowLayout';
 
@@ -25,6 +26,13 @@ const ITEM_OPTIONS: ItemOption[] = [
 export default function ProtectFlowClient() {
   const router = useRouter();
   const [step, setStep] = useState(1);
+
+  useEffect(() => { analytics.flowStarted('protect'); }, []);
+  useEffect(() => {
+    const handleUnload = () => analytics.flowAbandoned('protect', step);
+    window.addEventListener('beforeunload', handleUnload);
+    return () => window.removeEventListener('beforeunload', handleUnload);
+  }, [step]);
   const [selectedItems, setSelectedItems] = useState<ItemType[]>([]);
   const [name, setName] = useState('');
 
@@ -36,10 +44,12 @@ export default function ProtectFlowClient() {
 
   function handleStep1Next() {
     if (selectedItems.length === 0) return;
+    analytics.flowStep('protect', 2, 3);
     setStep(2);
   }
 
   function handleFinalize() {
+    analytics.flowCompleted('protect', false);
     const params = new URLSearchParams();
     params.set('intent', 'protect');
     if (selectedItems.length > 0) params.set('prefill_category', selectedItems[0]);

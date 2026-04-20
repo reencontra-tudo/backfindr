@@ -1,8 +1,9 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { ArrowRight, Loader2, Search, CheckCircle2, MapPin, Clock, AlertCircle } from 'lucide-react';
+import { analytics } from '@/providers/PostHogProvider';
+import { ArrowRight, Loader2, Search, CheckCircle2, MapPin, Clock, AlertCircle, Share2 } from 'lucide-react';
 import FlowLayout from '@/components/flow/FlowLayout';
 import FlowMatchCard, { MatchItem } from '@/components/flow/FlowMatchCard';
 
@@ -24,6 +25,16 @@ const WHEN_OPTIONS: { value: WhenOption; label: string }[] = [
 export default function LostFlowClient() {
   const router = useRouter();
   const [step, setStep] = useState(1);
+
+  // Rastrear entrada no fluxo
+  useEffect(() => { analytics.flowStarted('lost'); }, []);
+
+  // Rastrear abandono ao sair da página
+  useEffect(() => {
+    const handleUnload = () => analytics.flowAbandoned('lost', step);
+    window.addEventListener('beforeunload', handleUnload);
+    return () => window.removeEventListener('beforeunload', handleUnload);
+  }, [step]);
   const [step1, setStep1] = useState<Step1Data>({ what: '', where: '', when: 'hoje' });
   const [matches, setMatches] = useState<MatchItem[]>([]);
   const [loadingMatches, setLoadingMatches] = useState(false);
@@ -34,6 +45,7 @@ export default function LostFlowClient() {
     e.preventDefault();
     if (!step1.what.trim()) return;
 
+    analytics.flowStep('lost', 2, 3);
     setStep(2);
     setLoadingMatches(true);
 
@@ -55,19 +67,20 @@ export default function LostFlowClient() {
   // ─── Tela 2: Matches encontrados ─────────────────────────────────────────
   function handleMatchSelect(item: MatchItem) {
     setSelectedMatch(item);
-    // Redireciona para a página pública do objeto
     if (item.unique_code) {
+      analytics.flowMatchClicked('lost', item.unique_code);
       router.push(`/objeto/${item.unique_code}`);
     }
   }
 
   function handleContinueAnyway() {
-    // Vai para tela 3 para finalizar publicação
+    analytics.flowStep('lost', 3, 3);
     setStep(3);
   }
 
   // ─── Tela 3: Finalização — redireciona para registro com intent ───────────
   function handleFinalize() {
+    analytics.flowCompleted('lost', matches.length > 0);
     const params = new URLSearchParams();
     params.set('intent', 'lost');
     if (step1.what) params.set('prefill_title', step1.what);
@@ -288,6 +301,23 @@ export default function LostFlowClient() {
               <p className="text-center text-white/30 text-xs">
                 Gratuito. Seu contato não fica exposto publicamente.
               </p>
+
+              {/* Compartilhar — aumenta chances de encontrar */}
+              <button
+                onClick={() => {
+                  const text = `🔍 Perdi ${step1.what}${step1.where ? ` em ${step1.where}` : ''}. Alguém viu? Backfindr conecta quem perdeu com quem achou: https://backfindr.com.br/flow/found`;
+                  if (navigator.share) {
+                    navigator.share({ title: `Perdi ${step1.what}`, text });
+                  } else {
+                    window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, '_blank');
+                  }
+                }}
+                className="w-full flex items-center justify-center gap-2 py-3 text-teal-400/70 hover:text-teal-400 border border-teal-500/20 hover:border-teal-500/40 rounded-xl text-sm font-medium transition-all"
+              >
+                <Share2 className="w-4 h-4" />
+                Compartilhar no WhatsApp
+              </button>
+
               <button
                 onClick={() => setStep(2)}
                 className="w-full py-3 text-white/40 hover:text-white/60 text-sm transition-colors"

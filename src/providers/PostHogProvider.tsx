@@ -86,6 +86,17 @@ export const analytics = {
   findrOpened:   ()               => posthog.capture('findr_opened'),
   findrQuery:    (query: string)  => posthog.capture('findr_query', { query: query.slice(0, 100) }),
 
+  // Fluxos de conversão (/flow/*)
+  flowStarted:   (flow: string)              => posthog.capture('flow_started',   { flow }),
+  flowStep:      (flow: string, step: number, total: number) =>
+    posthog.capture('flow_step',     { flow, step, total }),
+  flowCompleted: (flow: string, hasMatches: boolean) =>
+    posthog.capture('flow_completed', { flow, has_matches: hasMatches }),
+  flowAbandoned: (flow: string, step: number) =>
+    posthog.capture('flow_abandoned', { flow, at_step: step }),
+  flowMatchClicked: (flow: string, objectCode: string) =>
+    posthog.capture('flow_match_clicked', { flow, object_code: objectCode }),
+
   // Identify
   identify:      (userId: string, props?: Record<string, unknown>) => {
     posthog.identify(userId, props);

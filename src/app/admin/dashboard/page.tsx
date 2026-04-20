@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { Users, Package, Zap, TrendingUp, ArrowUpRight, ArrowDownRight, Activity, MapPin, QrCode, CheckCircle2, AlertTriangle, Clock } from 'lucide-react';
+import { Users, Package, Zap, TrendingUp, ArrowUpRight, ArrowDownRight, Activity, MapPin, QrCode, CheckCircle2, AlertTriangle, Clock, Share2, MousePointerClick, BarChart3, RefreshCw } from 'lucide-react';
 import { api } from '@/lib/api';
 
 interface Stats {
@@ -127,6 +127,64 @@ export default function AdminDashboard() {
               </div>
             );
           })}
+        </div>
+      </div>
+
+      {/* ─── Métricas dos Loops de Growth ──────────────────────────────── */}
+      <div className="bg-white/[0.02] border border-white/[0.07] rounded-2xl p-5">
+        <div className="flex items-center justify-between mb-5">
+          <div>
+            <p className="text-white font-semibold text-sm">Loops de Growth</p>
+            <p className="text-white/30 text-xs mt-0.5">Funis de conversão dos fluxos de intenção</p>
+          </div>
+          <div className="flex items-center gap-1.5 text-xs text-white/30">
+            <BarChart3 className="w-3.5 h-3.5" />
+            <span>PostHog</span>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-5">
+          {[
+            { icon: MousePointerClick, label: 'Fluxos iniciados', key: 'flow_started',   color: 'text-blue-400 bg-blue-500/10',   desc: 'Cliques nos botões da home' },
+            { icon: CheckCircle2,      label: 'Fluxos concluídos', key: 'flow_completed', color: 'text-green-400 bg-green-500/10', desc: 'Chegaram até o CTA final' },
+            { icon: Share2,            label: 'Compartilhamentos', key: 'flow_shared',    color: 'text-teal-400 bg-teal-500/10',   desc: 'Cliques em compartilhar' },
+            { icon: RefreshCw,         label: 'E-mails reativação', key: 'reactivation',  color: 'text-amber-400 bg-amber-500/10', desc: 'Enviados pelo cron 24h' },
+          ].map(({ icon: Icon, label, color, desc }) => (
+            <div key={label} className="bg-white/[0.02] border border-white/[0.06] rounded-xl p-4">
+              <div className={`w-8 h-8 rounded-lg flex items-center justify-center mb-3 ${color}`}>
+                <Icon className="w-3.5 h-3.5" />
+              </div>
+              <p className="text-white font-bold text-lg">—</p>
+              <p className="text-white/40 text-xs mt-0.5">{label}</p>
+              <p className="text-white/20 text-[10px] mt-1">{desc}</p>
+            </div>
+          ))}
+        </div>
+
+        {/* Funil por tipo de fluxo */}
+        <div className="space-y-2">
+          <p className="text-white/30 text-[11px] font-semibold uppercase tracking-wider mb-3">Conversão por fluxo</p>
+          {[
+            { label: 'Perdi algo',        color: 'bg-red-500',    href: '/flow/lost' },
+            { label: 'Encontrei algo',    color: 'bg-teal-500',   href: '/flow/found' },
+            { label: 'Quero me prevenir', color: 'bg-blue-500',   href: '/flow/protect' },
+            { label: 'Meu pet sumiu',     color: 'bg-amber-500',  href: '/flow/pet' },
+            { label: 'Foi roubado',       color: 'bg-orange-500', href: '/flow/stolen' },
+          ].map(({ label, color }) => (
+            <div key={label} className="flex items-center gap-3">
+              <div className={`w-2 h-2 rounded-full flex-shrink-0 ${color}`} />
+              <span className="text-white/40 text-xs flex-1">{label}</span>
+              <div className="w-32 h-1 bg-white/[0.06] rounded-full overflow-hidden">
+                <div className={`h-full ${color} opacity-40 rounded-full`} style={{ width: '0%' }} />
+              </div>
+              <span className="text-white/20 text-[10px] w-10 text-right">via PostHog</span>
+            </div>
+          ))}
+        </div>
+
+        <div className="mt-4 pt-4 border-t border-white/[0.06] flex items-center gap-2">
+          <Activity className="w-3.5 h-3.5 text-white/20" />
+          <p className="text-white/20 text-[11px]">Dados em tempo real via PostHog — acesse o dashboard completo em <a href="https://app.posthog.com" target="_blank" rel="noopener noreferrer" className="text-teal-400/60 hover:text-teal-400 underline transition-colors">app.posthog.com</a></p>
         </div>
       </div>
 

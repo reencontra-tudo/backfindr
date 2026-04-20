@@ -1,7 +1,8 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
+import { analytics } from '@/providers/PostHogProvider';
 import { ArrowRight, CheckCircle2, AlertTriangle, MapPin, Clock, ShieldAlert, Info } from 'lucide-react';
 import FlowLayout from '@/components/flow/FlowLayout';
 
@@ -32,6 +33,13 @@ interface Step1Data {
 export default function StolenFlowClient() {
   const router = useRouter();
   const [step, setStep] = useState(1);
+
+  useEffect(() => { analytics.flowStarted('stolen'); }, []);
+  useEffect(() => {
+    const handleUnload = () => analytics.flowAbandoned('stolen', step);
+    window.addEventListener('beforeunload', handleUnload);
+    return () => window.removeEventListener('beforeunload', handleUnload);
+  }, [step]);
   const [step1, setStep1] = useState<Step1Data>({
     what: '',
     where: '',
@@ -42,10 +50,12 @@ export default function StolenFlowClient() {
   function handleStep1Submit(e: React.FormEvent) {
     e.preventDefault();
     if (!step1.what.trim()) return;
+    analytics.flowStep('stolen', 2, 3);
     setStep(2);
   }
 
   function handleFinalize() {
+    analytics.flowCompleted('stolen', false);
     const params = new URLSearchParams();
     params.set('intent', 'stolen');
     if (step1.what) params.set('prefill_title', step1.what);

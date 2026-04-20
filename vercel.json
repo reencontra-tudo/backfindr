@@ -7,5 +7,11 @@
     "src/app/api/**/*.ts": {
       "maxDuration": 30
     }
-  }
+  },
+  "crons": [
+    {
+      "path": "/api/v1/cron/reactivation",
+      "schedule": "0 10 * * *"
+    }
+  ]
 }
