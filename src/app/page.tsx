@@ -27,6 +27,38 @@ interface ActivityItem {
   time: string;
   unique_code?: string | null;
   isRecent?: boolean;
+  is_boosted?: boolean;
+}
+
+/**
+ * Sorteio ponderado sem reposição.
+ * Itens boosted têm peso BOOST_WEIGHT; demais têm peso 1.
+ * Após o sorteio, boosted são empurrados para o topo.
+ */
+const BOOST_WEIGHT = 4;
+function weightedSample(pool: ActivityItem[], n: number): ActivityItem[] {
+  if (pool.length <= n) return [...pool];
+  const remaining = [...pool];
+  const selected: ActivityItem[] = [];
+  while (selected.length < n && remaining.length > 0) {
+    const totalWeight = remaining.reduce(
+      (sum, item) => sum + (item.is_boosted ? BOOST_WEIGHT : 1),
+      0
+    );
+    let rand = Math.random() * totalWeight;
+    let idx = 0;
+    for (let i = 0; i < remaining.length; i++) {
+      rand -= remaining[i].is_boosted ? BOOST_WEIGHT : 1;
+      if (rand <= 0) { idx = i; break; }
+    }
+    selected.push(remaining[idx]);
+    remaining.splice(idx, 1);
+  }
+  // Boosted sobem para o topo, mantendo ordem relativa entre eles
+  return [
+    ...selected.filter((i) => i.is_boosted),
+    ...selected.filter((i) => !i.is_boosted),
+  ];
 }
 
 const FALLBACK_ACTIVITIES: ActivityItem[] = [
@@ -255,7 +287,7 @@ export default function HomePage() {
             seen.add(fingerprint);
             return true;
           })
-          .slice(0, 8)
+          .slice(0, 20)
           .map((obj: {
             id: string;
             title: string;
@@ -265,6 +297,7 @@ export default function HomePage() {
             location_addr?: string;
             location?: { address?: string } | null;
             created_at: string;
+            is_boosted?: boolean;
           }) => {
             const type = (obj.status === 'found' || obj.status === 'match' ? obj.status : 'lost') as ActivityType;
             const cityRaw = obj.location_addr ?? (typeof obj.location === 'object' && obj.location?.address) ?? '';
@@ -280,6 +313,7 @@ export default function HomePage() {
               time: formatTime(obj.created_at),
               unique_code: obj.unique_code ?? null,
               isRecent,
+              is_boosted: obj.is_boosted ?? false,
             };
           });
 
@@ -294,7 +328,8 @@ export default function HomePage() {
       .catch(() => {});
   }, []);
 
-  const liveCards = activities.slice(0, 6);
+  // Sorteio ponderado: boosted têm 4× mais chance de aparecer e sobem ao topo
+  const liveCards = weightedSample(activities, 6);
 
   return (
     <div className="min-h-screen bg-[#07090e] text-white selection:bg-teal-500/30">
