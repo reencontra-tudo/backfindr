@@ -87,6 +87,10 @@ export default function MapPage() {
   const [news, setNews] = useState<NewsItem[]>([]);
   const [newsLoading, setNewsLoading] = useState(false);
   const [newsLoaded, setNewsLoaded] = useState(false);
+  // Modo acumulado: false = um popup por vez (padrão), true = até 3 simultâneos
+  const [multiMode, setMultiMode] = useState(false);
+  const multiModeRef = useRef(false);
+  useEffect(() => { multiModeRef.current = multiMode; }, [multiMode]);
 
   // ─── Carregar notícias ao abrir o painel ─────────────────────────────────
   const loadNews = useCallback(async () => {
@@ -209,6 +213,12 @@ export default function MapPage() {
             (openPopupsRef.current[existingIdx].popup as { remove: () => void }).remove();
             openPopupsRef.current.splice(existingIdx, 1);
             return;
+          }
+
+          // Modo único (padrão): fecha todos os popups abertos antes de abrir o novo
+          if (!multiModeRef.current) {
+            openPopupsRef.current.forEach(p => (p.popup as { remove: () => void }).remove());
+            openPopupsRef.current = [];
           }
 
           // Buscar o objeto completo
@@ -458,6 +468,25 @@ export default function MapPage() {
           title="Minha localização"
         >
           <LocateFixed className="w-3.5 h-3.5" />
+        </button>
+
+        {/* Modo acumulado toggle */}
+        <button
+          onClick={() => setMultiMode(v => !v)}
+          className={`relative p-2 rounded-lg text-sm font-medium transition-all flex-shrink-0 ${
+            multiMode
+              ? 'bg-teal-500/10 text-teal-400 border border-teal-500/20'
+              : 'bg-white/[0.04] text-white/50 border border-white/[0.08] hover:text-teal-400 hover:border-teal-500/20'
+          }`}
+          title={multiMode ? 'Modo acumulado ativo (até 3 popups)' : 'Modo único ativo — clique para acumular'}
+        >
+          <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+            <rect x="1" y="5" width="10" height="8" rx="2"/>
+            <rect x="5" y="1" width="10" height="8" rx="2" opacity="0.5"/>
+          </svg>
+          {multiMode && (
+            <span className="absolute -top-1 -right-1 w-3 h-3 rounded-full bg-teal-500 text-[7px] font-bold text-white flex items-center justify-center">3</span>
+          )}
         </button>
 
         {/* Notícias toggle */}
