@@ -81,9 +81,6 @@ export default function MapPage() {
   const [showFilters, setShowFilters] = useState(false);
   const [showList, setShowList] = useState(false);
   const [selected, setSelected] = useState<RegisteredObject | null>(null);
-  // Fila de popups abertos (máx 3) — cada entrada é { id, popup }
-  const openPopupsRef = useRef<Array<{ id: string; popup: unknown }>>([]);
-  const MAX_POPUPS = 3;
   const [mapLoaded, setMapLoaded] = useState(false);
   const [userLocation, setUserLocation] = useState<{ lat: number; lng: number } | null>(null);
   const [listPage, setListPage] = useState(1);
@@ -91,10 +88,7 @@ export default function MapPage() {
   const [news, setNews] = useState<NewsItem[]>([]);
   const [newsLoading, setNewsLoading] = useState(false);
   const [newsLoaded, setNewsLoaded] = useState(false);
-  // Modo acumulado: false = um popup por vez (padrão), true = até 3 simultâneos
-  const [multiMode, setMultiMode] = useState(false);
-  const multiModeRef = useRef(false);
-  useEffect(() => { multiModeRef.current = multiMode; }, [multiMode]);
+
 
   // ─── Carregar notícias ao abrir o painel ─────────────────────────────────
   const loadNews = useCallback(async () => {
@@ -205,143 +199,19 @@ export default function MapPage() {
           });
         });
 
-        // Abrir popup Mapbox ancorado ao pin ao clicar em ponto individual
-        // IMPORTANTE: toda a lógica usa objectsRef (não setObjects) para evitar
-        // efeitos colaterais dentro de setter de estado React — causa de crash em mobile
+        // Ao clicar num pin individual: atualiza o estado React (selected)
+        // O painel de detalhes é renderizado pelo React sobre o mapa — zero dependência de Popup Mapbox
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         map.on('click', 'unclustered-point', (e: any) => {
           const id = String(e.features?.[0]?.properties?.id ?? '');
           if (!id) return;
-
-          // Toggle: se já está aberto, fecha
-          const existingIdx = openPopupsRef.current.findIndex(p => p.id === id);
-          if (existingIdx !== -1) {
-            (openPopupsRef.current[existingIdx].popup as { remove: () => void }).remove();
-            openPopupsRef.current.splice(existingIdx, 1);
-            return;
-          }
-
-          // Modo único (padrão): fecha todos os popups abertos antes de abrir o novo
-          if (!multiModeRef.current) {
-            openPopupsRef.current.forEach(p => (p.popup as { remove: () => void }).remove());
-            openPopupsRef.current = [];
-          }
-
-          // Buscar o objeto via ref — acesso direto, sem setter de estado
           const obj = objectsRef.current.find(o => String(o.id) === id);
           if (!obj) return;
-
+          // Toggle: clicar no mesmo pin fecha o painel
+          setSelected(prev => (prev?.id === obj.id ? null : obj));
+          // Pan suave para centralizar o pin
           const coords = e.features[0].geometry.coordinates.slice() as [number, number];
-
-          // Construir HTML do popup
-          const statusColors: Record<string, string> = {
-            lost: 'color:#f87171;background:rgba(239,68,68,.12);border:1px solid rgba(239,68,68,.25)',
-            found: 'color:#2dd4bf;background:rgba(20,184,166,.12);border:1px solid rgba(20,184,166,.25)',
-            returned: 'color:#4ade80;background:rgba(34,197,94,.12);border:1px solid rgba(34,197,94,.25)',
-            stolen: 'color:#fb923c;background:rgba(249,115,22,.12);border:1px solid rgba(249,115,22,.25)',
-          };
-          const statusLabels: Record<string, string> = {
-            lost: 'Perdido', found: 'Achado', returned: 'Recuperado', stolen: 'Roubado',
-          };
-          const emojiMap: Record<string, string> = {
-            phone: '📱', wallet: '👛', keys: '🔑', bag: '🎒', pet: '🐾',
-            bike: '🚲', document: '📄', jewelry: '💍', electronics: '💻',
-            clothing: '👕', other: '📦',
-          };
-          const emoji = emojiMap[obj.category] ?? '📦';
-          const statusStyle = statusColors[obj.status] ?? statusColors.lost;
-          const statusLabel = statusLabels[obj.status] ?? obj.status;
-          const photoHtml = obj.photos?.[0]
-            ? `<img src="${obj.photos[0]}" alt="" style="width:48px;height:48px;border-radius:10px;object-fit:cover;flex-shrink:0;border:1px solid rgba(255,255,255,.08)" />`
-            : `<div style="width:48px;height:48px;border-radius:10px;background:rgba(255,255,255,.06);display:flex;align-items:center;justify-content:center;font-size:22px;flex-shrink:0">${emoji}</div>`;
-          const rewardHtml = obj.reward_amount && obj.reward_amount > 0
-            ? `<div style="margin:8px 0 0;padding:6px 10px;border-radius:8px;background:rgba(234,179,8,.1);border:1px solid rgba(234,179,8,.2);font-size:11px;color:#fbbf24;font-weight:600">🎁 Recompensa: R$ ${obj.reward_amount.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</div>`
-            : '';
-          const desc = obj.description
-            ? `<p style="margin:6px 0 0;font-size:11px;color:rgba(255,255,255,.4);line-height:1.45;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden">${obj.description}</p>`
-            : '';
-          const popupId = `popup-close-${id}`;
-
-          const html = `
-            <div style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;width:260px;padding:14px;background:#0f1a2e;border-radius:16px;border:1px solid rgba(20,184,166,.3);box-shadow:0 12px 40px rgba(0,0,0,.7),0 0 0 1px rgba(20,184,166,.12)">
-              <div style="display:flex;align-items:flex-start;gap:10px">
-                ${photoHtml}
-                <div style="flex:1;min-width:0">
-                  <p style="margin:0;font-size:13px;font-weight:700;color:#fff;line-height:1.3;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${obj.title}</p>
-                  <div style="display:flex;align-items:center;gap:6px;margin-top:5px;flex-wrap:wrap">
-                    <span style="font-size:10px;font-weight:600;padding:2px 8px;border-radius:20px;${statusStyle}">${statusLabel}</span>
-                  </div>
-                  ${desc}
-                </div>
-                <button id="${popupId}" style="background:none;border:none;cursor:pointer;color:rgba(255,255,255,.3);padding:2px;flex-shrink:0;line-height:1;font-size:16px;margin-top:-2px" title="Fechar">×</button>
-              </div>
-              ${rewardHtml}
-              <a href="/scan/${obj.unique_code}" style="display:flex;align-items:center;justify-content:center;gap:6px;margin-top:12px;padding:10px;background:#14b8a6;border-radius:10px;color:#fff;font-size:12px;font-weight:700;text-decoration:none" onclick="window.location.href='/scan/${obj.unique_code}';return false;">
-                Ver detalhes / Contactar dono
-              </a>
-            </div>
-          `;
-
-          // Criar popup Mapbox — fora de qualquer setter de estado
-          // Usa mapboxgl.Popup diretamente (não .default.Popup) para compatibilidade
-          // com ESM em mobile/Safari onde .default pode não estar disponível
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          let popup: any;
-          try {
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            const MapboxPopup = (mapboxgl as any).Popup ?? (mapboxgl as any).default?.Popup;
-            if (!MapboxPopup) {
-              console.error('Mapbox Popup não disponível');
-              return;
-            }
-            popup = new MapboxPopup({
-              closeButton: false,
-              closeOnClick: false,
-              anchor: 'bottom',
-              offset: [0, -14],
-              maxWidth: 'none',
-              className: 'backfindr-popup',
-              focusAfterOpen: false,
-            })
-              .setLngLat(coords)
-              .setHTML(html)
-              .addTo(map);
-
-            // Pan suave para mostrar o popup acima do pin
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            (map as any).easeTo({ center: coords, offset: [0, 100], duration: 300 });
-          } catch (err) {
-            console.error('Erro ao criar popup:', err);
-            return;
-          }
-
-          // Botão × dentro do HTML
-          popup.on('open', () => {
-            setTimeout(() => {
-              const btn = document.getElementById(popupId);
-              if (btn) {
-                btn.addEventListener('click', () => {
-                  popup.remove();
-                  openPopupsRef.current = openPopupsRef.current.filter(p => p.id !== id);
-                });
-              }
-            }, 50);
-          });
-
-          // Remover da fila quando fechado externamente
-          popup.on('close', () => {
-            openPopupsRef.current = openPopupsRef.current.filter(p => p.id !== id);
-          });
-
-          // Limite de 3: fechar o mais antigo se necessário
-          if (openPopupsRef.current.length >= MAX_POPUPS) {
-            const oldest = openPopupsRef.current.shift();
-            if (oldest) (oldest.popup as { remove: () => void }).remove();
-          }
-
-          openPopupsRef.current.push({ id, popup });
-          // Atualizar selected para compatibilidade com a lista lateral
-          setSelected(obj);
+          (map as any).easeTo({ center: coords, offset: [0, 80], duration: 250 });
         });
 
         map.on('mouseenter', 'clusters', () => { (map as any).getCanvas().style.cursor = 'pointer'; });
@@ -493,25 +363,6 @@ export default function MapPage() {
           title="Minha localização"
         >
           <LocateFixed className="w-3.5 h-3.5" />
-        </button>
-
-        {/* Modo acumulado toggle */}
-        <button
-          onClick={() => setMultiMode(v => !v)}
-          className={`relative p-2 rounded-lg text-sm font-medium transition-all flex-shrink-0 ${
-            multiMode
-              ? 'bg-teal-500/10 text-teal-400 border border-teal-500/20'
-              : 'bg-white/[0.04] text-white/50 border border-white/[0.08] hover:text-teal-400 hover:border-teal-500/20'
-          }`}
-          title={multiMode ? 'Modo acumulado ativo (até 3 popups)' : 'Modo único ativo — clique para acumular'}
-        >
-          <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-            <rect x="1" y="5" width="10" height="8" rx="2"/>
-            <rect x="5" y="1" width="10" height="8" rx="2" opacity="0.5"/>
-          </svg>
-          {multiMode && (
-            <span className="absolute -top-1 -right-1 w-3 h-3 rounded-full bg-teal-500 text-[7px] font-bold text-white flex items-center justify-center">3</span>
-          )}
         </button>
 
         {/* Notícias toggle */}
@@ -727,23 +578,63 @@ export default function MapPage() {
             </div>
           )}
 
-          {/* CSS global para remover estilos padrão do Mapbox popup e aplicar visual dark */}
-          <style>{`
-            .backfindr-popup .mapboxgl-popup-content {
-              background: transparent !important;
-              padding: 0 !important;
-              border-radius: 0 !important;
-              box-shadow: none !important;
-            }
-            .backfindr-popup .mapboxgl-popup-tip {
-              border-top-color: rgba(20,184,166,.3) !important;
-              border-bottom-color: rgba(20,184,166,.3) !important;
-            }
-            /* Garante que o popup nunca ultrapasse os limites do container */
-            .mapboxgl-popup {
-              max-width: calc(100vw - 32px) !important;
-            }
-          `}</style>
+          {/* Painel de detalhes React — sobreposto ao mapa, renderizado pelo React (não pelo Mapbox) */}
+          {selected && (
+            <div className="absolute bottom-4 left-1/2 -translate-x-1/2 z-10 w-[calc(100%-24px)] max-w-sm pointer-events-auto">
+              <div className="bg-[#0f1a2e] border border-teal-500/30 rounded-2xl shadow-2xl p-4">
+                {/* Header */}
+                <div className="flex items-start gap-3">
+                  {/* Foto ou emoji */}
+                  {selected.photos?.[0] ? (
+                    <img src={selected.photos[0]} alt="" className="w-12 h-12 rounded-xl object-cover flex-shrink-0 border border-white/10" />
+                  ) : (
+                    <div className="w-12 h-12 rounded-xl bg-white/[0.06] flex items-center justify-center text-2xl flex-shrink-0">
+                      {EMOJI[selected.category] ?? '📦'}
+                    </div>
+                  )}
+                  {/* Info */}
+                  <div className="flex-1 min-w-0">
+                    <p className="text-white font-bold text-sm leading-snug truncate">{selected.title}</p>
+                    <div className="flex items-center gap-2 mt-1.5 flex-wrap">
+                      <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full border ${STATUS_COLOR[selected.status]}`}>
+                        {STATUS_LABEL[selected.status]}
+                      </span>
+                      {selected.location?.address && (
+                        <span className="text-white/30 text-[10px] truncate">{selected.location.address}</span>
+                      )}
+                    </div>
+                    {selected.description && (
+                      <p className="text-white/40 text-[11px] mt-1.5 line-clamp-2 leading-relaxed">{selected.description}</p>
+                    )}
+                  </div>
+                  {/* Fechar */}
+                  <button
+                    onClick={() => setSelected(null)}
+                    className="text-white/30 hover:text-white transition-colors flex-shrink-0 p-1 -mt-1 -mr-1"
+                  >
+                    <X className="w-4 h-4" />
+                  </button>
+                </div>
+                {/* Recompensa */}
+                {selected.reward_amount && selected.reward_amount > 0 && (
+                  <div className="mt-3 px-3 py-2 rounded-xl bg-amber-500/10 border border-amber-500/20 flex items-center gap-2">
+                    <Gift className="w-3.5 h-3.5 text-amber-400 flex-shrink-0" />
+                    <span className="text-amber-300 text-xs font-semibold">
+                      Recompensa: R$ {selected.reward_amount.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                    </span>
+                  </div>
+                )}
+                {/* CTA */}
+                <Link
+                  href={`/objeto/${selected.unique_code}`}
+                  className="mt-3 flex items-center justify-center gap-2 w-full py-2.5 bg-teal-500 hover:bg-teal-400 rounded-xl text-white text-sm font-bold transition-colors"
+                >
+                  Ver detalhes / Contactar dono
+                  <ChevronRight className="w-4 h-4" />
+                </Link>
+              </div>
+            </div>
+          )}
         </div>
 
         {/* List — virtualização simples com load-more */}
