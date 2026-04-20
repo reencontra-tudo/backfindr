@@ -4,8 +4,9 @@ import { useEffect, useState, useCallback } from 'react';
 import Link from 'next/link';
 import {
   Package, CheckCircle2, AlertTriangle,
-  Plus, ArrowRight, Zap, QrCode
+  Plus, ArrowRight, Zap, QrCode, Star, CreditCard
 } from 'lucide-react';
+import Cookies from 'js-cookie';
 import { useAuthStore } from '@/hooks/useAuth';
 import { objectsApi, matchesApi, parseApiError } from '@/lib/api';
 import { RegisteredObject, Match } from '@/types';
@@ -29,6 +30,18 @@ const STATUS_LABEL: Record<string, string> = {
   lost:'Perdido',found:'Achado',returned:'Recuperado',stolen:'Roubado',
 };
 
+const PLAN_LABEL: Record<string, string> = {
+  free: 'Grátis',
+  pro: 'Pro',
+  business: 'Business',
+};
+
+const PLAN_COLOR: Record<string, { bg: string; border: string; text: string; icon: string }> = {
+  free:     { bg: 'bg-white/[0.03]',      border: 'border-white/[0.07]',    text: 'text-white/50',  icon: 'text-white/30' },
+  pro:      { bg: 'bg-teal-500/[0.06]',   border: 'border-teal-500/20',     text: 'text-teal-300',  icon: 'text-teal-400' },
+  business: { bg: 'bg-yellow-500/[0.06]', border: 'border-yellow-500/20',   text: 'text-yellow-300',icon: 'text-yellow-400' },
+};
+
 function StatCard({ icon, label, value, sub, color }: {
   icon: React.ReactNode; label: string; value: number|string; sub?: string; color: string;
 }) {
@@ -44,12 +57,30 @@ function StatCard({ icon, label, value, sub, color }: {
   );
 }
 
+interface PlanInfo {
+  plan: string;
+  is_paid: boolean;
+  plan_expires_at: string | null;
+  features?: { max_objects: number };
+}
+
 export default function DashboardPage() {
   const { user } = useAuthStore();
   const [objects, setObjects] = useState<RegisteredObject[]>([]);
   const [matches, setMatches] = useState<Match[]>([]);
   const [loading, setLoading] = useState(true);
   const [showOnboarding, setShowOnboarding] = useState(true);
+  const [planInfo, setPlanInfo] = useState<PlanInfo | null>(null);
+
+  // Buscar status do plano
+  useEffect(() => {
+    const token = Cookies.get('access_token');
+    if (!token) return;
+    fetch('/api/v1/billing/status', { headers: { Authorization: `Bearer ${token}` } })
+      .then(r => r.ok ? r.json() : null)
+      .then(data => { if (data?.data) setPlanInfo(data.data); })
+      .catch(() => {});
+  }, []);
 
   const load = useCallback(async () => {
     try {
@@ -73,6 +104,10 @@ export default function DashboardPage() {
   const returned = objects.filter(o => o.status === 'returned').length;
   const pending = matches.filter(m => m.status === 'pending').length;
 
+  const currentPlan = planInfo?.plan ?? user?.plan ?? 'free';
+  const planColors = PLAN_COLOR[currentPlan] ?? PLAN_COLOR['free'];
+  const isPaid = planInfo?.is_paid ?? false;
+
   return (
     <div className="p-6 md:p-8 max-w-4xl">
       {/* Header */}
@@ -91,6 +126,44 @@ export default function DashboardPage() {
           <Plus className="w-4 h-4" strokeWidth={2.5} /> Registrar
         </Link>
       </div>
+
+      {/* Card de plano ativo */}
+      <Link href="/dashboard/billing"
+        className={`flex items-center justify-between gap-3 ${planColors.bg} border ${planColors.border} rounded-xl px-4 py-3 mb-6 hover:opacity-90 transition-all`}>
+        <div className="flex items-center gap-3">
+          <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${planColors.bg} border ${planColors.border}`}>
+            {currentPlan === 'free'
+              ? <CreditCard className={`w-4 h-4 ${planColors.icon}`} />
+              : <Star className={`w-4 h-4 ${planColors.icon}`} />
+            }
+          </div>
+          <div>
+            <p className={`text-sm font-semibold ${planColors.text}`}>
+              Plano {PLAN_LABEL[currentPlan] ?? currentPlan}
+              {isPaid && <span className="ml-2 text-xs font-normal opacity-70">ativo</span>}
+            </p>
+            {currentPlan === 'free' ? (
+              <p className="text-white/30 text-xs">Faça upgrade para mais recursos</p>
+            ) : planInfo?.plan_expires_at ? (
+              <p className="text-white/30 text-xs">
+                Renova em {new Date(planInfo.plan_expires_at).toLocaleDateString('pt-BR')}
+              </p>
+            ) : (
+              <p className="text-white/30 text-xs">
+                Até {planInfo?.features?.max_objects ?? '—'} objetos registrados
+              </p>
+            )}
+          </div>
+        </div>
+        <div className="flex items-center gap-1.5">
+          {currentPlan === 'free' && (
+            <span className="text-xs font-semibold text-teal-400 bg-teal-500/10 border border-teal-500/20 px-2.5 py-1 rounded-full">
+              Upgrade
+            </span>
+          )}
+          <ArrowRight className={`w-4 h-4 ${planColors.icon}`} />
+        </div>
+      </Link>
 
       {/* Onboarding */}
       {showOnboarding && (
@@ -218,4 +291,3 @@ export default function DashboardPage() {
     </div>
   );
 }
-
