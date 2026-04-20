@@ -4,9 +4,9 @@ import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
 import Cookies from 'js-cookie';
 import {
-  Zap, ArrowRight, Loader2, Star, CreditCard,
+  Zap, ArrowRight, Loader2, CreditCard,
   Calendar, AlertTriangle, Building2, Gift, Clock, Shield,
-  ExternalLink, RefreshCw
+  ExternalLink, RefreshCw, Package, X
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { useAuthStore } from '@/hooks/useAuth';
@@ -30,6 +30,13 @@ interface BillingData {
   }>;
 }
 
+interface LostObject {
+  id: string;
+  title: string;
+  status: string;
+  category: string;
+}
+
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 const PLAN_CONFIG: Record<string, { label: string; icon: React.ReactNode; color: string; price: string }> = {
   free:     { label: 'Gratuito',  icon: <Gift className="w-5 h-5" />,      color: 'text-white/60',   price: 'R$ 0/mês' },
@@ -49,6 +56,12 @@ const STATUS_LABEL: Record<string, { label: string; color: string }> = {
   pending:   { label: 'Pendente',  color: 'text-yellow-400' },
 };
 
+const BOOST_PACKAGES = [
+  { type: '7d',    label: 'Boost 7 dias',   price: 'R$ 9,90',  desc: 'Destaque no mapa e feed por 7 dias' },
+  { type: '30d',   label: 'Boost 30 dias',  price: 'R$ 24,90', desc: 'Destaque por 30 dias + notificação' },
+  { type: 'alert', label: 'Alerta de Área', price: 'R$ 14,90', desc: 'Notificação push para usuários próximos' },
+];
+
 function formatDate(dateStr: string | null) {
   if (!dateStr) return '—';
   try {
@@ -67,6 +80,11 @@ function BillingContent() {
   const [upgradeLoading, setUpgradeLoading] = useState<string | null>(null);
   const [cancelLoading, setCancelLoading] = useState(false);
   const [showCancelConfirm, setShowCancelConfirm] = useState(false);
+  // Boost state
+  const [boostStep, setBoostStep] = useState<null | typeof BOOST_PACKAGES[0]>(null);
+  const [lostObjects, setLostObjects] = useState<LostObject[]>([]);
+  const [loadingObjects, setLoadingObjects] = useState(false);
+  const [boostLoading, setBoostLoading] = useState<string | null>(null);
 
   const fetchBilling = () => {
     const token = Cookies.get('access_token');
@@ -139,6 +157,54 @@ function BillingContent() {
       toast.error('Erro ao cancelar. Tente novamente.');
     } finally {
       setCancelLoading(false);
+    }
+  };
+
+  // ── Boost handlers ──────────────────────────────────────────────────────────
+  const openBoostSelector = async (pkg: typeof BOOST_PACKAGES[0]) => {
+    setBoostStep(pkg);
+    if (lostObjects.length > 0) return;
+    setLoadingObjects(true);
+    const token = Cookies.get('access_token');
+    if (!token) { setLoadingObjects(false); return; }
+    try {
+      const res = await fetch('/api/v1/objects?limit=50', {
+        headers: { 'Authorization': `Bearer ${token}` },
+      });
+      const data = await res.json();
+      const all: LostObject[] = data.data || data.objects || data || [];
+      setLostObjects(all.filter(o => o.status === 'lost' || o.status === 'stolen'));
+    } catch {
+      toast.error('Erro ao carregar objetos');
+    } finally {
+      setLoadingObjects(false);
+    }
+  };
+
+  const handleBoostObject = async (objectId: string) => {
+    if (!boostStep) return;
+    const token = Cookies.get('access_token');
+    if (!token) { window.location.href = '/auth/login'; return; }
+    setBoostLoading(objectId);
+    try {
+      const res = await fetch('/api/v1/boost', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+        body: JSON.stringify({ object_id: objectId, type: boostStep.type }),
+      });
+      const data = await res.json();
+      if (data.checkout_url) {
+        window.location.href = data.checkout_url;
+      } else if (data.boost) {
+        toast.success('Boost ativado com sucesso!');
+        setBoostStep(null);
+      } else {
+        toast.error(data.error || 'Erro ao ativar boost');
+      }
+    } catch {
+      toast.error('Erro ao processar. Tente novamente.');
+    } finally {
+      setBoostLoading(null);
     }
   };
 
@@ -270,7 +336,7 @@ function BillingContent() {
         )}
       </div>
 
-      {/* Upgrade CTA — apenas para free ou cancelado */}
+      {/* Upgrade (apenas para free ou cancelado) */}
       {(!isPaid || billing?.is_cancelled) && (
         <div className="border border-teal-500/20 bg-teal-500/[0.03] rounded-2xl p-6 mb-5">
           <div className="flex items-start gap-3 mb-5">
@@ -321,6 +387,94 @@ function BillingContent() {
           </p>
         </div>
       )}
+
+      {/* ── Seção de Boost ─────────────────────────────────────────────────── */}
+      <div className="border border-orange-500/20 bg-orange-500/[0.03] rounded-2xl p-6 mb-5">
+        <div className="flex items-start gap-3 mb-4">
+          <div className="w-9 h-9 rounded-xl bg-orange-500/20 flex items-center justify-center flex-shrink-0">
+            <Zap className="w-5 h-5 text-orange-400" />
+          </div>
+          <div>
+            <p className="text-white font-semibold mb-0.5">Boost — Impulsionar publicação</p>
+            <p className="text-white/40 text-xs">
+              Destaque um objeto perdido no mapa e feed para mais pessoas verem.
+              Disponível para todos os planos.
+            </p>
+          </div>
+        </div>
+
+        {/* Seletor de pacote */}
+        {!boostStep ? (
+          <div className="space-y-2">
+            {BOOST_PACKAGES.map(pkg => (
+              <button
+                key={pkg.type}
+                onClick={() => openBoostSelector(pkg)}
+                className="w-full flex items-center justify-between px-4 py-3 rounded-xl border border-orange-500/20 bg-orange-500/[0.04] hover:bg-orange-500/10 text-orange-300 transition-all"
+              >
+                <div className="text-left">
+                  <p className="font-semibold text-sm">{pkg.label}</p>
+                  <p className="text-orange-400/60 text-xs mt-0.5">{pkg.desc}</p>
+                </div>
+                <span className="font-bold text-sm flex-shrink-0">{pkg.price}</span>
+              </button>
+            ))}
+          </div>
+        ) : (
+          /* Seletor de objeto */
+          <div>
+            <div className="flex items-center justify-between mb-3">
+              <p className="text-white text-sm font-medium">
+                Escolha o objeto para{' '}
+                <span className="text-orange-400">{boostStep.label}</span>
+              </p>
+              <button
+                onClick={() => setBoostStep(null)}
+                className="text-white/30 hover:text-white/60 transition-colors"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            {loadingObjects ? (
+              <div className="flex items-center justify-center py-6">
+                <Loader2 className="w-5 h-5 text-orange-400 animate-spin" />
+              </div>
+            ) : lostObjects.length === 0 ? (
+              <div className="text-center py-6">
+                <Package
+ className="w-8 h-8 text-white/20 mx-auto mb-2" />
+                <p className="text-white/40 text-sm">Nenhum objeto perdido ou roubado encontrado.</p>
+                <p className="text-white/20 text-xs mt-1">
+                  Registre um objeto com status &quot;Perdido&quot; ou &quot;Roubado&quot; para usar o Boost.
+                </p>
+              </div>
+            ) : (
+              <div className="space-y-2">
+                {lostObjects.map(obj => (
+                  <button
+                    key={obj.id}
+                    onClick={() => handleBoostObject(obj.id)}
+                    disabled={boostLoading === obj.id}
+                    className="w-full flex items-center justify-between px-4 py-3 rounded-xl border border-white/[0.08] bg-white/[0.02] hover:bg-white/[0.05] text-white transition-all disabled:opacity-50"
+                  >
+                    <div className="text-left">
+                      <p className="font-medium text-sm">{obj.title}</p>
+                      <p className="text-white/30 text-xs mt-0.5 capitalize">
+                        {obj.status === 'lost' ? 'Perdido' : 'Roubado'}
+                      </p>
+                    </div>
+                    {boostLoading === obj.id
+                      ? <Loader2 className="w-4 h-4 animate-spin text-orange-400" />
+                      : <ArrowRight className="w-4 h-4 text-white/30" />
+                    }
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+      </div>
 
       {/* Histórico de assinaturas */}
       {billing?.subscription_history && billing.subscription_history.length > 0 && (
