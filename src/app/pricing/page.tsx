@@ -97,10 +97,6 @@ export default function PricingPage() {
       window.location.href = '/auth/register';
       return;
     }
-    if (slug === 'business') {
-      window.location.href = 'mailto:business@backfindr.com?subject=Plano Business';
-      return;
-    }
 
     setSelectedPlan(slug);
     setCheckoutLoading(true);
@@ -250,8 +246,6 @@ export default function PricingPage() {
                     }
                     const btnLabel = plan.price_brl === 0
                       ? 'Começar grátis'
-                      : plan.slug === 'business'
-                      ? 'Falar com vendas'
                       : isUpgrade
                       ? `Fazer upgrade para ${plan.name}`
                       : `Assinar ${plan.name}`;
