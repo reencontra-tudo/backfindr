@@ -59,12 +59,25 @@ const PLAN_BADGE: Record<string, string | null> = {
   business: 'Para empresas',
 };
 
+const PLAN_ORDER: Record<string, number> = { free: 0, pro: 1, business: 2 };
+
 export default function PricingPage() {
   const [plans, setPlans] = useState<Plan[]>(DEFAULT_PLANS);
   const [loading, setLoading] = useState(true);
   const [selectedPlan, setSelectedPlan] = useState<string | null>(null);
   const [checkoutLoading, setCheckoutLoading] = useState(false);
   const [testMode] = useState(false);
+  const [currentUserPlan, setCurrentUserPlan] = useState<string | null>(null);
+
+  // Detectar plano atual do usuário logado
+  useEffect(() => {
+    const token = Cookies.get('access_token');
+    if (!token) return;
+    fetch('/api/v1/billing/status', { headers: { Authorization: `Bearer ${token}` } })
+      .then(r => r.ok ? r.json() : null)
+      .then(data => { if (data?.plan) setCurrentUserPlan(data.plan); })
+      .catch(() => {});
+  }, []);
 
   useEffect(() => {
     fetch('/api/v1/plans')
@@ -216,26 +229,55 @@ export default function PricingPage() {
                   ))}
                 </ul>
 
-                <button
-                  onClick={() => handleSelectPlan(plan.slug)}
-                  disabled={checkoutLoading && selectedPlan === plan.slug}
-                  className={`w-full py-2.5 rounded-xl font-semibold text-sm transition-all flex items-center justify-center gap-2 ${
-                    plan.slug === 'pro'
-                      ? 'bg-teal-500 hover:bg-teal-400 text-white'
+                {(() => {
+                    const isCurrentPlan = currentUserPlan === plan.slug;
+                    const isDowngrade = currentUserPlan !== null && (PLAN_ORDER[plan.slug] ?? 0) < (PLAN_ORDER[currentUserPlan] ?? 0);
+                    const isUpgrade = currentUserPlan !== null && (PLAN_ORDER[plan.slug] ?? 0) > (PLAN_ORDER[currentUserPlan] ?? 0);
+                    if (isCurrentPlan) {
+                      return (
+                        <div className="w-full py-2.5 rounded-xl font-semibold text-sm flex items-center justify-center gap-2 border border-teal-500/30 bg-teal-500/10 text-teal-400 cursor-default">
+                          <Check className="w-4 h-4" strokeWidth={2.5} />
+                          Plano atual
+                        </div>
+                      );
+                    }
+                    if (isDowngrade) {
+                      return (
+                        <div className="w-full py-2.5 rounded-xl font-semibold text-sm flex items-center justify-center gap-2 border border-white/[0.06] bg-white/[0.02] text-white/20 cursor-not-allowed">
+                          Plano inferior
+                        </div>
+                      );
+                    }
+                    const btnLabel = plan.price_brl === 0
+                      ? 'Começar grátis'
                       : plan.slug === 'business'
-                      ? 'border border-yellow-500/30 bg-yellow-500/10 hover:bg-yellow-500/20 text-yellow-400'
-                      : 'border border-white/[0.08] bg-white/[0.04] hover:bg-white/[0.07] text-white/70 hover:text-white'
-                  }`}
-                >
-                  {checkoutLoading && selectedPlan === plan.slug ? (
-                    <div className="w-4 h-4 border-2 border-current/30 border-t-current rounded-full animate-spin" />
-                  ) : (
-                    <>
-                      {plan.price_brl === 0 ? 'Começar grátis' : plan.slug === 'business' ? 'Falar com vendas' : `Assinar ${plan.name}`}
-                      <ArrowRight className="w-4 h-4" strokeWidth={2.5} />
-                    </>
-                  )}
-                </button>
+                      ? 'Falar com vendas'
+                      : isUpgrade
+                      ? `Fazer upgrade para ${plan.name}`
+                      : `Assinar ${plan.name}`;
+                    return (
+                      <button
+                        onClick={() => handleSelectPlan(plan.slug)}
+                        disabled={checkoutLoading && selectedPlan === plan.slug}
+                        className={`w-full py-2.5 rounded-xl font-semibold text-sm transition-all flex items-center justify-center gap-2 ${
+                          plan.slug === 'pro'
+                            ? 'bg-teal-500 hover:bg-teal-400 text-white'
+                            : plan.slug === 'business'
+                            ? 'border border-yellow-500/30 bg-yellow-500/10 hover:bg-yellow-500/20 text-yellow-400'
+                            : 'border border-white/[0.08] bg-white/[0.04] hover:bg-white/[0.07] text-white/70 hover:text-white'
+                        }`}
+                      >
+                        {checkoutLoading && selectedPlan === plan.slug ? (
+                          <div className="w-4 h-4 border-2 border-current/30 border-t-current rounded-full animate-spin" />
+                        ) : (
+                          <>
+                            {btnLabel}
+                            <ArrowRight className="w-4 h-4" strokeWidth={2.5} />
+                          </>
+                        )}
+                      </button>
+                    );
+                  })()}
               </div>
             ))}
           </div>
