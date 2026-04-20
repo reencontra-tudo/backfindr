@@ -1,10 +1,10 @@
 'use client';
-import { useEffect } from 'react';
+import { Suspense, useEffect } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { setTokens } from '@/lib/api';
 import { useAuthStore } from '@/hooks/useAuth';
 
-export default function GoogleSuccessPage() {
+function GoogleSuccessContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { fetchMe } = useAuthStore();
@@ -34,5 +34,20 @@ export default function GoogleSuccessPage() {
         <p className="text-white/60 text-sm">Entrando com Google...</p>
       </div>
     </div>
+  );
+}
+
+export default function GoogleSuccessPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen bg-[#0a0a0a] flex items-center justify-center">
+        <div className="text-center">
+          <div className="w-8 h-8 border-2 border-teal-400 border-t-transparent rounded-full animate-spin mx-auto mb-4" />
+          <p className="text-white/60 text-sm">Carregando...</p>
+        </div>
+      </div>
+    }>
+      <GoogleSuccessContent />
+    </Suspense>
   );
 }
