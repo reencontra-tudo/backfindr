@@ -816,6 +816,14 @@ export default function MapPage() {
                     <X className="w-4 h-4" />
                   </button>
                 </div>
+                {/* Badge Webjetos */}
+                {(selected.source === 'webjetos' || selected.is_legacy) && (
+                  <div className="mt-2">
+                    <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-yellow-500/10 border border-yellow-500/20 text-yellow-400">
+                      Compartilhado via Webjetos
+                    </span>
+                  </div>
+                )}
                 {/* Recompensa */}
                 {selected.reward_amount && selected.reward_amount > 0 && (
                   <div className="mt-3 px-3 py-2 rounded-xl bg-amber-500/10 border border-amber-500/20 flex items-center gap-2">

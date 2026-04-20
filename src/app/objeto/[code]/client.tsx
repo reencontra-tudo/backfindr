@@ -105,7 +105,14 @@ export default function PublicObjectClient({ obj }: { obj: RegisteredObject }) {
                 <Shield className="w-4 h-4 text-teal-400" />
               </div>
               <div>
-                <p className="text-teal-300 text-sm font-semibold mb-0.5">Objeto registrado na rede Backfindr</p>
+                <div className="flex items-center gap-2 flex-wrap mb-0.5">
+                  <p className="text-teal-300 text-sm font-semibold">Objeto registrado na rede Backfindr</p>
+                  {(obj.source === 'webjetos' || obj.is_legacy) && (
+                    <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-yellow-500/10 border border-yellow-500/20 text-yellow-400">
+                      Compartilhado via Webjetos
+                    </span>
+                  )}
+                </div>
                 <p className="text-white/60 text-sm leading-relaxed">
                   Este objeto pertence a alguém. Se você o encontrou, clique no botão abaixo para avisar o dono — é rápido e seguro.
                 </p>
