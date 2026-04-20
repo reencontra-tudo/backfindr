@@ -503,6 +503,44 @@ function getGuidedResponse(messages: Message[]): string {
   return `Me diz uma coisa 👇\n\nVocê perdeu ou encontrou algo?`;
 }
 
+// ─── Sanitização de URLs — corrige rotas inválidas geradas pelo LLM ─────────────
+const VALID_ROUTES = new Set([
+  '/', '/map', '/pricing', '/faq', '/terms', '/privacy',
+  '/auth/register', '/auth/login',
+  '/flow/lost', '/flow/found', '/flow/protect', '/flow/pet', '/flow/stolen',
+  '/dashboard', '/dashboard/objects', '/dashboard/objects/new',
+  '/dashboard/matches', '/dashboard/notifications', '/dashboard/settings', '/dashboard/billing',
+]);
+
+// Rotas inválidas conhecidas → rota correta
+const ROUTE_CORRECTIONS: Record<string, string> = {
+  '/dashboard/new': '/flow/lost',
+  '/objects/create': '/dashboard/objects/new',
+  '/register': '/auth/register',
+  '/login': '/auth/login',
+  '/lost': '/flow/lost',
+  '/found': '/flow/found',
+  '/protect': '/flow/protect',
+  '/pet': '/flow/pet',
+  '/stolen': '/flow/stolen',
+  '/new': '/flow/lost',
+};
+
+function sanitizeUrls(text: string): string {
+  // Captura todas as URLs do domínio backfindr.com no texto
+  return text.replace(/https?:\/\/(?:www\.)?backfindr\.com(\/[^\s)"'\]>]*)?/g, (match, path) => {
+    const cleanPath = (path ?? '/').split('?')[0].replace(/\/$/, '') || '/';
+    // Rota válida → mantém
+    if (VALID_ROUTES.has(cleanPath)) return match;
+    // Rota com correção conhecida → substitui
+    if (ROUTE_CORRECTIONS[cleanPath]) {
+      return `https://backfindr.com${ROUTE_CORRECTIONS[cleanPath]}`;
+    }
+    // Rota desconhecida → redireciona para home
+    return 'https://backfindr.com';
+  });
+}
+
 // ─── OpenAI Integration ───────────────────────────────────────────────────────
 async function getOpenAIResponse(messages: Message[], systemPrompt: string): Promise<string> {
   const apiKey = process.env.OPENAI_API_KEY;
@@ -522,7 +560,8 @@ async function getOpenAIResponse(messages: Message[], systemPrompt: string): Pro
     throw new Error(`OpenAI error: ${err}`);
   }
   const data = await response.json();
-  return data.choices[0]?.message?.content ?? 'Desculpe, não consegui processar sua mensagem.';
+  const raw = data.choices[0]?.message?.content ?? 'Desculpe, não consegui processar sua mensagem.';
+  return sanitizeUrls(raw);
 }
 
 // ─── Buscar dados do usuário no banco ────────────────────────────────────────
