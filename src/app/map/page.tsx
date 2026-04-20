@@ -70,6 +70,10 @@ interface NewsItem {
 
 export default function MapPage() {
   const [objects, setObjects] = useState<RegisteredObject[]>([]);
+  // Ref sincronizado com objects para acesso direto dentro de closures do Mapbox
+  // (evita usar setObjects como efeito colateral, que causa crash em mobile)
+  const objectsRef = useRef<RegisteredObject[]>([]);
+  useEffect(() => { objectsRef.current = objects; }, [objects]);
   const [loading, setLoading] = useState(true);
   const [filters, setFilters] = useState<Filters>({
     search: '', status: '', category: '', radiusKm: 0, daysAgo: 0,
@@ -202,9 +206,11 @@ export default function MapPage() {
         });
 
         // Abrir popup Mapbox ancorado ao pin ao clicar em ponto individual
+        // IMPORTANTE: toda a lógica usa objectsRef (não setObjects) para evitar
+        // efeitos colaterais dentro de setter de estado React — causa de crash em mobile
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         map.on('click', 'unclustered-point', (e: any) => {
-          const id = e.features?.[0]?.properties?.id;
+          const id = String(e.features?.[0]?.properties?.id ?? '');
           if (!id) return;
 
           // Toggle: se já está aberto, fecha
@@ -221,114 +227,114 @@ export default function MapPage() {
             openPopupsRef.current = [];
           }
 
-          // Buscar o objeto completo
-          setObjects(prev => {
-            const obj = prev.find(o => String(o.id) === String(id));
-            if (!obj) return prev;
+          // Buscar o objeto via ref — acesso direto, sem setter de estado
+          const obj = objectsRef.current.find(o => String(o.id) === id);
+          if (!obj) return;
 
-            const coords = e.features[0].geometry.coordinates.slice() as [number, number];
+          const coords = e.features[0].geometry.coordinates.slice() as [number, number];
 
-            // Construir HTML do popup
-            const statusColors: Record<string, string> = {
-              lost: 'color:#f87171;background:rgba(239,68,68,.12);border:1px solid rgba(239,68,68,.25)',
-              found: 'color:#2dd4bf;background:rgba(20,184,166,.12);border:1px solid rgba(20,184,166,.25)',
-              returned: 'color:#4ade80;background:rgba(34,197,94,.12);border:1px solid rgba(34,197,94,.25)',
-              stolen: 'color:#fb923c;background:rgba(249,115,22,.12);border:1px solid rgba(249,115,22,.25)',
-            };
-            const statusLabels: Record<string, string> = {
-              lost: 'Perdido', found: 'Achado', returned: 'Recuperado', stolen: 'Roubado',
-            };
-            const emojiMap: Record<string, string> = {
-              phone: '📱', wallet: '👛', keys: '🔑', bag: '🎒', pet: '🐾',
-              bike: '🚲', document: '📄', jewelry: '💍', electronics: '💻',
-              clothing: '👕', other: '📦',
-            };
-            const emoji = emojiMap[obj.category] ?? '📦';
-            const statusStyle = statusColors[obj.status] ?? statusColors.lost;
-            const statusLabel = statusLabels[obj.status] ?? obj.status;
-            const photoHtml = obj.photos?.[0]
-              ? `<img src="${obj.photos[0]}" alt="" style="width:48px;height:48px;border-radius:10px;object-fit:cover;flex-shrink:0;border:1px solid rgba(255,255,255,.08)" />`
-              : `<div style="width:48px;height:48px;border-radius:10px;background:rgba(255,255,255,.06);display:flex;align-items:center;justify-content:center;font-size:22px;flex-shrink:0">${emoji}</div>`;
-            const rewardHtml = obj.reward_amount && obj.reward_amount > 0
-              ? `<div style="margin:8px 0 0;padding:6px 10px;border-radius:8px;background:rgba(234,179,8,.1);border:1px solid rgba(234,179,8,.2);font-size:11px;color:#fbbf24;font-weight:600">🎁 Recompensa: R$ ${obj.reward_amount.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</div>`
-              : '';
-            const desc = obj.description ? `<p style="margin:6px 0 0;font-size:11px;color:rgba(255,255,255,.4);line-height:1.45;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden">${obj.description}</p>` : '';
-            const popupId = `popup-close-${id}`;
+          // Construir HTML do popup
+          const statusColors: Record<string, string> = {
+            lost: 'color:#f87171;background:rgba(239,68,68,.12);border:1px solid rgba(239,68,68,.25)',
+            found: 'color:#2dd4bf;background:rgba(20,184,166,.12);border:1px solid rgba(20,184,166,.25)',
+            returned: 'color:#4ade80;background:rgba(34,197,94,.12);border:1px solid rgba(34,197,94,.25)',
+            stolen: 'color:#fb923c;background:rgba(249,115,22,.12);border:1px solid rgba(249,115,22,.25)',
+          };
+          const statusLabels: Record<string, string> = {
+            lost: 'Perdido', found: 'Achado', returned: 'Recuperado', stolen: 'Roubado',
+          };
+          const emojiMap: Record<string, string> = {
+            phone: '📱', wallet: '👛', keys: '🔑', bag: '🎒', pet: '🐾',
+            bike: '🚲', document: '📄', jewelry: '💍', electronics: '💻',
+            clothing: '👕', other: '📦',
+          };
+          const emoji = emojiMap[obj.category] ?? '📦';
+          const statusStyle = statusColors[obj.status] ?? statusColors.lost;
+          const statusLabel = statusLabels[obj.status] ?? obj.status;
+          const photoHtml = obj.photos?.[0]
+            ? `<img src="${obj.photos[0]}" alt="" style="width:48px;height:48px;border-radius:10px;object-fit:cover;flex-shrink:0;border:1px solid rgba(255,255,255,.08)" />`
+            : `<div style="width:48px;height:48px;border-radius:10px;background:rgba(255,255,255,.06);display:flex;align-items:center;justify-content:center;font-size:22px;flex-shrink:0">${emoji}</div>`;
+          const rewardHtml = obj.reward_amount && obj.reward_amount > 0
+            ? `<div style="margin:8px 0 0;padding:6px 10px;border-radius:8px;background:rgba(234,179,8,.1);border:1px solid rgba(234,179,8,.2);font-size:11px;color:#fbbf24;font-weight:600">🎁 Recompensa: R$ ${obj.reward_amount.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</div>`
+            : '';
+          const desc = obj.description
+            ? `<p style="margin:6px 0 0;font-size:11px;color:rgba(255,255,255,.4);line-height:1.45;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden">${obj.description}</p>`
+            : '';
+          const popupId = `popup-close-${id}`;
 
-            const html = `
-              <div style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;width:260px;padding:14px;background:#0f1a2e;border-radius:16px;border:1px solid rgba(20,184,166,.3);box-shadow:0 12px 40px rgba(0,0,0,.7),0 0 0 1px rgba(20,184,166,.12)">
-                <div style="display:flex;align-items:flex-start;gap:10px">
-                  ${photoHtml}
-                  <div style="flex:1;min-width:0">
-                    <p style="margin:0;font-size:13px;font-weight:700;color:#fff;line-height:1.3;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${obj.title}</p>
-                    <div style="display:flex;align-items:center;gap:6px;margin-top:5px;flex-wrap:wrap">
-                      <span style="font-size:10px;font-weight:600;padding:2px 8px;border-radius:20px;${statusStyle}">${statusLabel}</span>
-                    </div>
-                    ${desc}
+          const html = `
+            <div style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;width:260px;padding:14px;background:#0f1a2e;border-radius:16px;border:1px solid rgba(20,184,166,.3);box-shadow:0 12px 40px rgba(0,0,0,.7),0 0 0 1px rgba(20,184,166,.12)">
+              <div style="display:flex;align-items:flex-start;gap:10px">
+                ${photoHtml}
+                <div style="flex:1;min-width:0">
+                  <p style="margin:0;font-size:13px;font-weight:700;color:#fff;line-height:1.3;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${obj.title}</p>
+                  <div style="display:flex;align-items:center;gap:6px;margin-top:5px;flex-wrap:wrap">
+                    <span style="font-size:10px;font-weight:600;padding:2px 8px;border-radius:20px;${statusStyle}">${statusLabel}</span>
                   </div>
-                  <button id="${popupId}" style="background:none;border:none;cursor:pointer;color:rgba(255,255,255,.3);padding:2px;flex-shrink:0;line-height:1;font-size:16px;margin-top:-2px" title="Fechar">×</button>
+                  ${desc}
                 </div>
-                ${rewardHtml}
-                <a href="/scan/${obj.unique_code}" style="display:flex;align-items:center;justify-content:center;gap:6px;margin-top:12px;padding:10px;background:#14b8a6;border-radius:10px;color:#fff;font-size:12px;font-weight:700;text-decoration:none;transition:background .15s" onmouseover="this.style.background='#0d9488'" onmouseout="this.style.background='#14b8a6'">
-                  Ver detalhes / Contactar dono
-                </a>
+                <button id="${popupId}" style="background:none;border:none;cursor:pointer;color:rgba(255,255,255,.3);padding:2px;flex-shrink:0;line-height:1;font-size:16px;margin-top:-2px" title="Fechar">×</button>
               </div>
-            `;
+              ${rewardHtml}
+              <a href="/scan/${obj.unique_code}" style="display:flex;align-items:center;justify-content:center;gap:6px;margin-top:12px;padding:10px;background:#14b8a6;border-radius:10px;color:#fff;font-size:12px;font-weight:700;text-decoration:none" onclick="window.location.href='/scan/${obj.unique_code}';return false;">
+                Ver detalhes / Contactar dono
+              </a>
+            </div>
+          `;
 
-            // Criar popup Mapbox — anchor sempre 'bottom' (popup acima do pin)
-            // O mapa faz pan simples para centralizar o pin com espaço acima
+          // Criar popup Mapbox — fora de qualquer setter de estado
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          let popup: any;
+          try {
             // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            let popup: any;
-            try {
-              // eslint-disable-next-line @typescript-eslint/no-explicit-any
-              popup = new (mapboxgl as any).default.Popup({
-                closeButton: false,
-                closeOnClick: false,
-                anchor: 'bottom',
-                offset: [0, -14],
-                maxWidth: 'none',
-                className: 'backfindr-popup',
-                focusAfterOpen: false,
-              })
-                .setLngLat(coords)
-                .setHTML(html)
-                .addTo(map);
+            popup = new (mapboxgl as any).default.Popup({
+              closeButton: false,
+              closeOnClick: false,
+              anchor: 'bottom',
+              offset: [0, -14],
+              maxWidth: 'none',
+              className: 'backfindr-popup',
+              focusAfterOpen: false,
+            })
+              .setLngLat(coords)
+              .setHTML(html)
+              .addTo(map);
 
-              // Pan suave simples — sem padding para evitar crash em mobile
-              // eslint-disable-next-line @typescript-eslint/no-explicit-any
-              (map as any).easeTo({ center: coords, offset: [0, 120], duration: 350 });
-            } catch {
-              return prev;
-            }
+            // Pan suave para mostrar o popup acima do pin
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            (map as any).easeTo({ center: coords, offset: [0, 100], duration: 300 });
+          } catch (err) {
+            console.error('Erro ao criar popup:', err);
+            return;
+          }
 
-            // Botão × dentro do HTML
-            popup.on('open', () => {
-              setTimeout(() => {
-                const btn = document.getElementById(popupId);
-                if (btn) {
-                  btn.addEventListener('click', () => {
-                    popup.remove();
-                    openPopupsRef.current = openPopupsRef.current.filter(p => p.id !== String(id));
-                  });
-                }
-              }, 50);
-            });
-
-            // Remover da fila quando fechado externamente
-            popup.on('close', () => {
-              openPopupsRef.current = openPopupsRef.current.filter(p => p.id !== String(id));
-            });
-
-            // Limite de 3: fechar o mais antigo se necessário
-            if (openPopupsRef.current.length >= MAX_POPUPS) {
-              const oldest = openPopupsRef.current.shift();
-              if (oldest) (oldest.popup as { remove: () => void }).remove();
-            }
-
-            openPopupsRef.current.push({ id: String(id), popup });
-            setSelected(obj); // mantém compatibilidade com a lista lateral
-            return prev;
+          // Botão × dentro do HTML
+          popup.on('open', () => {
+            setTimeout(() => {
+              const btn = document.getElementById(popupId);
+              if (btn) {
+                btn.addEventListener('click', () => {
+                  popup.remove();
+                  openPopupsRef.current = openPopupsRef.current.filter(p => p.id !== id);
+                });
+              }
+            }, 50);
           });
+
+          // Remover da fila quando fechado externamente
+          popup.on('close', () => {
+            openPopupsRef.current = openPopupsRef.current.filter(p => p.id !== id);
+          });
+
+          // Limite de 3: fechar o mais antigo se necessário
+          if (openPopupsRef.current.length >= MAX_POPUPS) {
+            const oldest = openPopupsRef.current.shift();
+            if (oldest) (oldest.popup as { remove: () => void }).remove();
+          }
+
+          openPopupsRef.current.push({ id, popup });
+          // Atualizar selected para compatibilidade com a lista lateral
+          setSelected(obj);
         });
 
         map.on('mouseenter', 'clusters', () => { (map as any).getCanvas().style.cursor = 'pointer'; });
