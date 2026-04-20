@@ -3,18 +3,20 @@ import { NextRequest, NextResponse } from 'next/server';
 import { query } from '@/lib/db';
 import { createAccessToken, createRefreshToken } from '@/lib/jwt';
 
-const APP_URL = process.env.NEXT_PUBLIC_APP_URL || 'https://www.backfindr.com';
-
-// GET /api/auth/magic-link/verify?token=XXX — valida o token e autentica o usuário
-export async function GET(req: NextRequest) {
-  const { searchParams } = new URL(req.url);
-  const token = searchParams.get('token');
-
-  if (!token) {
-    return NextResponse.redirect(`${APP_URL}/auth/login?error=magic_link_invalid`);
-  }
-
+// POST /api/auth/magic-link/verify — valida o token e retorna JWT
+// Usa POST para resistir ao pre-fetch automático de clientes de e-mail (iCloud, Gmail)
+export async function POST(req: NextRequest) {
   try {
+    const body = await req.json();
+    const token = body?.token;
+
+    if (!token) {
+      return NextResponse.json(
+        { message: 'Token não informado.' },
+        { status: 400 }
+      );
+    }
+
     // Buscar token válido e não expirado
     const tokenResult = await query(
       `SELECT * FROM magic_link_tokens
@@ -23,7 +25,10 @@ export async function GET(req: NextRequest) {
     );
 
     if (tokenResult.rows.length === 0) {
-      return NextResponse.redirect(`${APP_URL}/auth/login?error=magic_link_expired`);
+      return NextResponse.json(
+        { message: 'Este link já foi usado ou expirou. Solicite um novo.' },
+        { status: 400 }
+      );
     }
 
     const magicToken = tokenResult.rows[0];
@@ -68,14 +73,33 @@ export async function GET(req: NextRequest) {
     const accessToken = createAccessToken(user.id, user.email);
     const refreshToken = createRefreshToken(user.id, user.email);
 
-    // Redirecionar para página intermediária que salva tokens via js-cookie
-    const successUrl = new URL(`${APP_URL}/auth/magic-success`);
-    successUrl.searchParams.set('access_token', accessToken);
-    successUrl.searchParams.set('refresh_token', refreshToken);
-
-    return NextResponse.redirect(successUrl.toString());
+    return NextResponse.json({
+      access_token: accessToken,
+      refresh_token: refreshToken,
+      token_type: 'Bearer',
+    });
   } catch (err) {
     console.error('Magic link verify error:', err);
-    return NextResponse.redirect(`${APP_URL}/auth/login?error=magic_link_failed`);
+    return NextResponse.json(
+      { message: 'Erro interno. Tente novamente.' },
+      { status: 500 }
+    );
   }
+}
+
+// GET mantido para compatibilidade — redireciona para a página de confirmação
+const APP_URL = process.env.NEXT_PUBLIC_APP_URL || 'https://www.backfindr.com';
+export async function GET(req: NextRequest) {
+  const { searchParams } = new URL(req.url);
+  const token = searchParams.get('token');
+
+  if (!token) {
+    return NextResponse.redirect(`${APP_URL}/auth/login?error=magic_link_invalid`);
+  }
+
+  // Redirecionar para a página de confirmação que fará o POST
+  // Isso evita que o pre-fetch do iCloud consuma o token via GET
+  const confirmUrl = new URL(`${APP_URL}/auth/magic-confirm`);
+  confirmUrl.searchParams.set('token', token);
+  return NextResponse.redirect(confirmUrl.toString());
 }
