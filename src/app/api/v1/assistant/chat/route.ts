@@ -449,9 +449,9 @@ function getGuidedResponse(messages: Message[]): string {
     return `Publica o alerta agora 👇\n\n${APP_URL}/flow/pet\n\nA rede começa a procurar imediatamente 🐾`;
   }
 
-  // Como funciona
-  if (/como funciona|o que é|como usar|o que faz/.test(lastMsg)) {
-    return `É simples:\n\n1. Você registra o objeto perdido ou achado\n2. A IA cruza com outros registros da rede\n3. Quando há match, os dois lados são notificados\n4. Com QR Code: quem encontrar escaneia e você é avisado na hora\n\nTudo gratuito 👇\n\n${APP_URL}`;
+  // Como funciona / o que é / apresentação do sistema
+  if (/como funciona|o que (é|faz|isso|vocês fazem)|como usar|para que serve|me (explica|conta)|o sistema faz|backfindr|findr|plataforma|site/.test(lastMsg)) {
+    return `O Backfindr é uma plataforma gratuita que ajuda a recuperar objetos perdidos 🔍\n\nFunciona assim:\n\n1. Você registra o objeto perdido (ou achado)\n2. A IA cruza com outros registros da rede automaticamente\n3. Quando há compatibilidade, os dois lados são notificados\n4. Com QR Code colado no item: quem encontrar escaneia e você é avisado na hora — sem expor seu número\n\nTudo gratuito, sem cartão de crédito 👇\n\n${APP_URL}`;
   }
 
   // Gratuito / preço / planos — só aqui menciona planos
