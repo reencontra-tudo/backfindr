@@ -78,7 +78,7 @@ export default function DashboardPage() {
     if (!token) return;
     fetch('/api/v1/billing/status', { headers: { Authorization: `Bearer ${token}` } })
       .then(r => r.ok ? r.json() : null)
-      .then(data => { if (data?.data) setPlanInfo(data.data); })
+      .then(data => { if (data?.plan) setPlanInfo(data); })
       .catch(() => {});
   }, []);
 
