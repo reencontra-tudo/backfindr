@@ -77,6 +77,9 @@ export default function MapPage() {
   const [showFilters, setShowFilters] = useState(false);
   const [showList, setShowList] = useState(false);
   const [selected, setSelected] = useState<RegisteredObject | null>(null);
+  // Fila de popups abertos (máx 3) — cada entrada é { id, popup }
+  const openPopupsRef = useRef<Array<{ id: string; popup: unknown }>>([]);
+  const MAX_POPUPS = 3;
   const [mapLoaded, setMapLoaded] = useState(false);
   const [userLocation, setUserLocation] = useState<{ lat: number; lng: number } | null>(null);
   const [listPage, setListPage] = useState(1);
@@ -194,17 +197,116 @@ export default function MapPage() {
           });
         });
 
-        // Abrir popup ao clicar em ponto individual
+        // Abrir popup Mapbox ancorado ao pin ao clicar em ponto individual
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         map.on('click', 'unclustered-point', (e: any) => {
           const id = e.features?.[0]?.properties?.id;
-          if (id) {
-            setObjects(prev => {
-              const obj = prev.find(o => o.id === id);
-              if (obj) setSelected(obj);
-              return prev;
-            });
+          if (!id) return;
+
+          // Toggle: se já está aberto, fecha
+          const existingIdx = openPopupsRef.current.findIndex(p => p.id === id);
+          if (existingIdx !== -1) {
+            (openPopupsRef.current[existingIdx].popup as { remove: () => void }).remove();
+            openPopupsRef.current.splice(existingIdx, 1);
+            return;
           }
+
+          // Buscar o objeto completo
+          setObjects(prev => {
+            const obj = prev.find(o => String(o.id) === String(id));
+            if (!obj) return prev;
+
+            const coords = e.features[0].geometry.coordinates.slice() as [number, number];
+
+            // Construir HTML do popup
+            const statusColors: Record<string, string> = {
+              lost: 'color:#f87171;background:rgba(239,68,68,.12);border:1px solid rgba(239,68,68,.25)',
+              found: 'color:#2dd4bf;background:rgba(20,184,166,.12);border:1px solid rgba(20,184,166,.25)',
+              returned: 'color:#4ade80;background:rgba(34,197,94,.12);border:1px solid rgba(34,197,94,.25)',
+              stolen: 'color:#fb923c;background:rgba(249,115,22,.12);border:1px solid rgba(249,115,22,.25)',
+            };
+            const statusLabels: Record<string, string> = {
+              lost: 'Perdido', found: 'Achado', returned: 'Recuperado', stolen: 'Roubado',
+            };
+            const emojiMap: Record<string, string> = {
+              phone: '📱', wallet: '👛', keys: '🔑', bag: '🎒', pet: '🐾',
+              bike: '🚲', document: '📄', jewelry: '💍', electronics: '💻',
+              clothing: '👕', other: '📦',
+            };
+            const emoji = emojiMap[obj.category] ?? '📦';
+            const statusStyle = statusColors[obj.status] ?? statusColors.lost;
+            const statusLabel = statusLabels[obj.status] ?? obj.status;
+            const photoHtml = obj.photos?.[0]
+              ? `<img src="${obj.photos[0]}" alt="" style="width:48px;height:48px;border-radius:10px;object-fit:cover;flex-shrink:0;border:1px solid rgba(255,255,255,.08)" />`
+              : `<div style="width:48px;height:48px;border-radius:10px;background:rgba(255,255,255,.06);display:flex;align-items:center;justify-content:center;font-size:22px;flex-shrink:0">${emoji}</div>`;
+            const rewardHtml = obj.reward_amount && obj.reward_amount > 0
+              ? `<div style="margin:8px 0 0;padding:6px 10px;border-radius:8px;background:rgba(234,179,8,.1);border:1px solid rgba(234,179,8,.2);font-size:11px;color:#fbbf24;font-weight:600">🎁 Recompensa: R$ ${obj.reward_amount.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</div>`
+              : '';
+            const desc = obj.description ? `<p style="margin:6px 0 0;font-size:11px;color:rgba(255,255,255,.4);line-height:1.45;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden">${obj.description}</p>` : '';
+            const popupId = `popup-close-${id}`;
+
+            const html = `
+              <div style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;width:260px;padding:14px;background:#0f1a2e;border-radius:16px;border:1px solid rgba(20,184,166,.3);box-shadow:0 12px 40px rgba(0,0,0,.7),0 0 0 1px rgba(20,184,166,.12)">
+                <div style="display:flex;align-items:flex-start;gap:10px">
+                  ${photoHtml}
+                  <div style="flex:1;min-width:0">
+                    <p style="margin:0;font-size:13px;font-weight:700;color:#fff;line-height:1.3;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${obj.title}</p>
+                    <div style="display:flex;align-items:center;gap:6px;margin-top:5px;flex-wrap:wrap">
+                      <span style="font-size:10px;font-weight:600;padding:2px 8px;border-radius:20px;${statusStyle}">${statusLabel}</span>
+                    </div>
+                    ${desc}
+                  </div>
+                  <button id="${popupId}" style="background:none;border:none;cursor:pointer;color:rgba(255,255,255,.3);padding:2px;flex-shrink:0;line-height:1;font-size:16px;margin-top:-2px" title="Fechar">×</button>
+                </div>
+                ${rewardHtml}
+                <a href="/scan/${obj.unique_code}" style="display:flex;align-items:center;justify-content:center;gap:6px;margin-top:12px;padding:10px;background:#14b8a6;border-radius:10px;color:#fff;font-size:12px;font-weight:700;text-decoration:none;transition:background .15s" onmouseover="this.style.background='#0d9488'" onmouseout="this.style.background='#14b8a6'">
+                  Ver detalhes / Contactar dono
+                </a>
+              </div>
+            `;
+
+            // Criar popup Mapbox
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            const popup = new (mapboxgl as any).default.Popup({
+              closeButton: false,
+              closeOnClick: false,
+              anchor: 'bottom',
+              offset: [0, -12],
+              maxWidth: 'none',
+              className: 'backfindr-popup',
+            })
+              .setLngLat(coords)
+              .setHTML(html)
+              .addTo(map);
+
+            // Botão × dentro do HTML
+            popup.on('open', () => {
+              setTimeout(() => {
+                const btn = document.getElementById(popupId);
+                if (btn) {
+                  btn.addEventListener('click', () => {
+                    popup.remove();
+                    openPopupsRef.current = openPopupsRef.current.filter(p => p.id !== String(id));
+                  });
+                }
+              }, 50);
+            });
+
+            // Remover da fila quando fechado externamente
+            popup.on('close', () => {
+              openPopupsRef.current = openPopupsRef.current.filter(p => p.id !== String(id));
+            });
+
+            // Limite de 3: fechar o mais antigo se necessário
+            if (openPopupsRef.current.length >= MAX_POPUPS) {
+              const oldest = openPopupsRef.current.shift();
+              if (oldest) (oldest.popup as { remove: () => void }).remove();
+            }
+
+            openPopupsRef.current.push({ id: String(id), popup });
+            setSelected(obj); // mantém compatibilidade com a lista lateral
+            return prev;
+          });
         });
 
         map.on('mouseenter', 'clusters', () => { (map as any).getCanvas().style.cursor = 'pointer'; });
@@ -571,65 +673,18 @@ export default function MapPage() {
             </div>
           )}
 
-          {/* Selected object popup — fixado na parte inferior, nunca cortado */}
-          {selected && (
-            <div
-              className="absolute left-0 right-0 bottom-0 z-10 bg-[#0d1117]/97 backdrop-blur-xl border-t border-white/[0.08] shadow-2xl"
-              style={{ maxHeight: '55%' }}
-            >
-              {/* Drag handle */}
-              <div className="flex justify-center pt-2 pb-1">
-                <div className="w-8 h-1 rounded-full bg-white/20" />
-              </div>
-
-              <div className="px-4 pb-4 overflow-y-auto" style={{ maxHeight: 'calc(55vh - 24px)' }}>
-                <div className="flex items-start gap-3 mb-3">
-                  {/* Foto do objeto ou emoji da categoria */}
-                  {selected.photos?.[0] ? (
-                    // eslint-disable-next-line @next/next/no-img-element
-                    <img
-                      src={selected.photos[0]}
-                      alt={selected.title}
-                      className="w-14 h-14 rounded-xl object-cover flex-shrink-0 border border-white/[0.08]"
-                    />
-                  ) : (
-                    <div className="w-14 h-14 rounded-xl bg-white/[0.06] flex items-center justify-center text-2xl flex-shrink-0">
-                      {EMOJI[selected.category] ?? '📦'}
-                    </div>
-                  )}
-                  <div className="flex-1 min-w-0">
-                    <p className="text-white font-semibold text-sm leading-snug">{selected.title}</p>
-                    <div className="flex flex-wrap items-center gap-1.5 mt-1">
-                      <span className={`text-xs font-medium px-2 py-0.5 rounded-full border ${STATUS_COLOR[selected.status]}`}>
-                        {STATUS_LABEL[selected.status]}
-                      </span>
-                      <span className="text-white/30 text-xs">{CATEGORY_LABEL[selected.category] ?? 'Outro'}</span>
-                    </div>
-                    <p className="text-white/40 text-xs mt-1.5 line-clamp-2 leading-relaxed">{selected.description}</p>
-                  </div>
-                  <button onClick={() => setSelected(null)} className="text-white/30 hover:text-white transition-colors flex-shrink-0 p-1">
-                    <X className="w-4 h-4" />
-                  </button>
-                </div>
-
-                {selected.reward_amount && selected.reward_amount > 0 && (
-                  <div className="mb-3 flex items-center gap-2 bg-yellow-500/10 border border-yellow-500/20 rounded-xl px-3 py-2">
-                    <Gift className="w-4 h-4 text-yellow-400 flex-shrink-0" />
-                    <span className="text-yellow-400 text-xs font-semibold">
-                      Recompensa: R$ {selected.reward_amount.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
-                    </span>
-                  </div>
-                )}
-
-                <Link
-                  href={`/scan/${selected.unique_code}`}
-                  className="flex items-center justify-center gap-2 w-full bg-teal-500 hover:bg-teal-400 active:bg-teal-600 text-white text-sm font-semibold py-3 rounded-xl transition-all"
-                >
-                  Ver detalhes / Contactar dono
-                </Link>
-              </div>
-            </div>
-          )}
+          {/* CSS global para remover estilos padrão do Mapbox popup e aplicar visual dark */}
+          <style>{`
+            .backfindr-popup .mapboxgl-popup-content {
+              background: transparent !important;
+              padding: 0 !important;
+              border-radius: 0 !important;
+              box-shadow: none !important;
+            }
+            .backfindr-popup .mapboxgl-popup-tip {
+              border-top-color: rgba(20,184,166,.3) !important;
+            }
+          `}</style>
         </div>
 
         {/* List — virtualização simples com load-more */}
