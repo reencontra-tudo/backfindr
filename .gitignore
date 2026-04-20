@@ -8,3 +8,13 @@ __pycache__/
 *.pyc
 uploads/
 docs/CREDENTIALS_LOCAL.txt
+
+# Arquivos de projetos antigos / análises temporárias
+backend/
+scripts/
+.env.production
+video_*.md
+BUGS_CHECKUP.md
+*.sqlite
+*.db
+tsconfig.tsbuildinfo

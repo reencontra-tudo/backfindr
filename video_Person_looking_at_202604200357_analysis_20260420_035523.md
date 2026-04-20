@@ -1,8 +1,0 @@
-O vídeo apresenta as seguintes cenas e elementos visuais:
-
-1.  **Primeira cena (00:00 - 00:01):** O vídeo se inicia mostrando um homem de cabelos escuros e pele clara, vestindo uma camisa social azul clara. Ele está olhando para baixo, concentrado na tela de um smartphone preto que segura com as duas mãos. O fundo é desfocado, mas sugere um ambiente de escritório moderno e bem iluminado, com janelas ao fundo. No canto inferior direito, há uma marca d'água com a palavra "Veo".
-2.  **Segunda cena (00:01 - 00:02):** A imagem corta para um close-up (plano detalhe) de uma mão segurando o smartphone. A tela do aparelho exibe um aplicativo de mapa. O mapa mostra ruas, áreas verdes e um corpo d'água. O destaque são os inúmeros marcadores (pins) vermelhos espalhados pelo mapa, todos contendo a palavra "ALER" escrita em branco. Há também alguns ícones triangulares amarelos com um ponto de exclamação, indicando alertas. Na parte inferior da tela do celular, há uma barra de navegação com ícones de perfil, mapa e configurações.
-3.  **Terceira cena (00:02 - 00:07):** A câmera retorna para o homem da primeira cena. Desta vez, ele está olhando diretamente para a câmera e falando, com uma expressão séria e persuasiva. Ele gesticula com a mão direita enquanto fala. Durante esta cena, textos em branco aparecem sobrepostos na tela:
-    *   Primeiro, surge a frase **"Use agora"** no centro da tela.
-    *   Em seguida, o endereço do site **"backfindr.com"** aparece logo abaixo da primeira frase.
-    *   O homem termina sua fala com um leve aceno de cabeça e um sorriso sutil. A marca d'água "Veo" permanece visível no canto inferior direito.
