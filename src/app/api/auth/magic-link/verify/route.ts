@@ -61,8 +61,8 @@ export async function POST(req: NextRequest) {
         .replace(/\b\w/g, (c: string) => c.toUpperCase());
 
       const insertResult = await query(
-        `INSERT INTO users (email, name, is_verified, plan, created_at, updated_at)
-         VALUES ($1, $2, true, 'free', NOW(), NOW())
+        `INSERT INTO users (email, name, password, is_verified, plan, created_at, updated_at)
+         VALUES ($1, $2, '', true, 'free', NOW(), NOW())
          RETURNING id, email, name`,
         [email, name]
       );
