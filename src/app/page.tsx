@@ -401,7 +401,7 @@ export default function HomePage() {
 
               {/* ENCONTREI ALGO — verde/teal */}
               <Link
-                href="/achei"
+                href="/flow/found"
                 className="group flex flex-col items-center gap-3 rounded-2xl border border-teal-500/40 bg-teal-500/[0.1] px-4 py-6 text-center transition-all hover:border-teal-500/70 hover:bg-teal-500/[0.18] hover:scale-[1.02]"
                 style={{ boxShadow: '0 0 0 1px rgba(20,184,166,0.15), 0 8px 32px rgba(20,184,166,0.08)' }}
               >
@@ -635,7 +635,7 @@ export default function HomePage() {
                   Devolva com segurança, sem expor seu contato.
                 </p>
                 <Link
-                  href="/achei"
+                  href="/flow/found"
                   className="inline-flex items-center gap-2 rounded-xl border border-teal-500/30 bg-teal-500/[0.1] px-4 py-2.5 text-sm font-semibold text-teal-300 transition-all hover:bg-teal-500/[0.18]"
                 >
                   Publicar item encontrado <ArrowRight className="h-3.5 w-3.5" />
@@ -888,7 +888,7 @@ export default function HomePage() {
               </p>
               <div className="flex flex-col items-center gap-3 sm:flex-row sm:justify-center">
                 <Link
-                  href="/achei"
+                  href="/flow/found"
                   className="inline-flex items-center gap-2 rounded-2xl bg-teal-500 px-7 py-4 text-sm font-bold text-white transition-all hover:bg-teal-400"
                   style={{ boxShadow: '0 0 0 1px rgba(20,184,166,.34), 0 14px 40px rgba(20,184,166,.18)' }}
                 >
