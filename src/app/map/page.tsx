@@ -275,40 +275,31 @@ export default function MapPage() {
               </div>
             `;
 
-            // Determinar anchor dinâmico: se o pin está na metade inferior do container,
-            // abre o popup acima (anchor: 'bottom'); caso contrário, abre abaixo (anchor: 'top')
-            // Isso evita que o popup vaze para fora do container do mapa
+            // Criar popup Mapbox — anchor sempre 'bottom' (popup acima do pin)
+            // O mapa faz pan simples para centralizar o pin com espaço acima
             // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            const mapCanvas = (map as any).getCanvas();
-            const mapHeight = mapCanvas?.clientHeight ?? 400;
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            const pinPixel = (map as any).project(coords);
-            const pinY = pinPixel?.y ?? mapHeight / 2;
-            const popupAnchor = pinY > mapHeight * 0.45 ? 'bottom' : 'top';
-            const popupOffset: [number, number] = popupAnchor === 'bottom' ? [0, -14] : [0, 14];
+            let popup: any;
+            try {
+              // eslint-disable-next-line @typescript-eslint/no-explicit-any
+              popup = new (mapboxgl as any).default.Popup({
+                closeButton: false,
+                closeOnClick: false,
+                anchor: 'bottom',
+                offset: [0, -14],
+                maxWidth: 'none',
+                className: 'backfindr-popup',
+                focusAfterOpen: false,
+              })
+                .setLngLat(coords)
+                .setHTML(html)
+                .addTo(map);
 
-            // Criar popup Mapbox
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            const popup = new (mapboxgl as any).default.Popup({
-              closeButton: false,
-              closeOnClick: false,
-              anchor: popupAnchor,
-              offset: popupOffset,
-              maxWidth: 'none',
-              className: 'backfindr-popup',
-              // autoPan garante que o mapa se move para mostrar o popup inteiro
-              focusAfterOpen: false,
-            })
-              .setLngLat(coords)
-              .setHTML(html)
-              .addTo(map);
-
-            // Mover o mapa para que o pin fique visível com espaço para o popup
-            const panPadding = popupAnchor === 'bottom'
-              ? { top: 20, bottom: 320, left: 20, right: 20 }
-              : { top: 320, bottom: 20, left: 20, right: 20 };
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            (map as any).easeTo({ center: coords, padding: panPadding, duration: 300 });
+              // Pan suave simples — sem padding para evitar crash em mobile
+              // eslint-disable-next-line @typescript-eslint/no-explicit-any
+              (map as any).easeTo({ center: coords, offset: [0, 120], duration: 350 });
+            } catch {
+              return prev;
+            }
 
             // Botão × dentro do HTML
             popup.on('open', () => {
