@@ -580,7 +580,7 @@ export default function MapPage() {
 
           {/* Painel de detalhes React — sobreposto ao mapa, renderizado pelo React (não pelo Mapbox) */}
           {selected && (
-            <div className="absolute bottom-4 left-1/2 -translate-x-1/2 z-10 w-[calc(100%-24px)] max-w-sm pointer-events-auto">
+            <div className="absolute bottom-20 sm:bottom-4 left-1/2 -translate-x-1/2 z-10 w-[calc(100%-24px)] max-w-sm pointer-events-auto">
               <div className="bg-[#0f1a2e] border border-teal-500/30 rounded-2xl shadow-2xl p-4">
                 {/* Header */}
                 <div className="flex items-start gap-3">
