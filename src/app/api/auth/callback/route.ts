@@ -41,8 +41,9 @@ export async function GET(request: NextRequest) {
       console.error('redirect_uri used:', redirectUri);
       console.error('appUrl:', appUrl);
       console.error('code length:', code?.length);
-      const errorDetail = encodeURIComponent(tokenData.error || 'unknown');
-      return NextResponse.redirect(`${appUrl}/auth/login?error=google_token_failed&detail=${errorDetail}`);
+      const errorDetail = encodeURIComponent(JSON.stringify(tokenData));
+      const usedRedirectUri = encodeURIComponent(redirectUri);
+      return NextResponse.redirect(`${appUrl}/auth/login?error=google_token_failed&detail=${errorDetail}&used_uri=${usedRedirectUri}`);
     }
 
     // Buscar dados do usuário
