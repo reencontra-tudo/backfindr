@@ -2,6 +2,7 @@
 import { useEffect, useState, Suspense } from 'react';
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
+import Cookies from 'js-cookie';
 import {
   Zap, ArrowRight, Loader2, Star, CreditCard,
   Calendar, AlertTriangle, Building2, Gift, Clock, Shield,
@@ -68,8 +69,11 @@ function BillingContent() {
   const [showCancelConfirm, setShowCancelConfirm] = useState(false);
 
   const fetchBilling = () => {
-    const token = localStorage.getItem('token') || sessionStorage.getItem('token');
-    if (!token) return;
+    const token = Cookies.get('access_token');
+    if (!token) {
+      setLoading(false);
+      return;
+    }
     fetch('/api/v1/billing', {
       headers: { 'Authorization': `Bearer ${token}` },
     })
@@ -89,7 +93,7 @@ function BillingContent() {
   }, []);
 
   const handleUpgrade = async (planSlug: string) => {
-    const token = localStorage.getItem('token') || sessionStorage.getItem('token');
+    const token = Cookies.get('access_token');
     if (!token) { window.location.href = '/auth/login'; return; }
     setUpgradeLoading(planSlug);
     try {
@@ -113,7 +117,7 @@ function BillingContent() {
   };
 
   const handleCancel = async () => {
-    const token = localStorage.getItem('token') || sessionStorage.getItem('token');
+    const token = Cookies.get('access_token');
     if (!token) return;
     setCancelLoading(true);
     try {

@@ -7,13 +7,14 @@ import {
   MapPin, LayoutDashboard, Package, Search,
   QrCode, Bell, Settings, LogOut, Plus, Menu, X, CreditCard, Building2
 } from 'lucide-react';
+import Cookies from 'js-cookie';
 import { useAuthStore } from '@/hooks/useAuth';
 
 const NAV = [
   { href: '/dashboard',                  icon: LayoutDashboard, label: 'Visão Geral' },
   { href: '/dashboard/objects',          icon: Package,         label: 'Meus Objetos' },
   { href: '/dashboard/search',           icon: Search,          label: 'Buscar Achados' },
-  { href: '/dashboard/matches',          icon: QrCode,          label: 'Matches',        badge: 2 },
+  { href: '/dashboard/matches',          icon: QrCode,          label: 'Matches' },
   { href: '/dashboard/notifications',    icon: Bell,            label: 'Notificações' },
   { href: '/dashboard/billing',          icon: CreditCard,      label: 'Plano' },
   { href: '/dashboard/settings',         icon: Settings,        label: 'Configurações' },
@@ -24,10 +25,29 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const router = useRouter();
   const { user, isAuthenticated, logout } = useAuthStore();
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [pendingMatches, setPendingMatches] = useState(0);
 
   useEffect(() => {
     if (!isAuthenticated) router.replace('/auth/login');
   }, [isAuthenticated, router]);
+
+  // Buscar contagem real de matches pendentes
+  useEffect(() => {
+    if (!isAuthenticated) return;
+    const token = Cookies.get('access_token');
+    if (!token) return;
+    fetch('/api/v1/matches', {
+      headers: { 'Authorization': `Bearer ${token}` },
+    })
+      .then(r => r.ok ? r.json() : null)
+      .then(data => {
+        if (!data) return;
+        const matches = data.data?.matches ?? data.matches ?? [];
+        const pending = matches.filter((m: { status: string }) => m.status === 'pending').length;
+        setPendingMatches(pending);
+      })
+      .catch(() => {});
+  }, [isAuthenticated]);
 
   // Close sidebar on route change
   useEffect(() => { setSidebarOpen(false); }, [pathname]);
@@ -67,8 +87,10 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
       {/* Nav */}
       <nav className="flex-1 px-3 py-2 space-y-0.5 overflow-y-auto">
-        {NAV.map(({ href, icon: Icon, label, badge }) => {
+        {NAV.map(({ href, icon: Icon, label }) => {
           const active = pathname === href || (href !== '/dashboard' && pathname.startsWith(href));
+          const isMatches = href === '/dashboard/matches';
+          const badge = isMatches && pendingMatches > 0 ? pendingMatches : null;
           return (
             <Link
               key={href}
