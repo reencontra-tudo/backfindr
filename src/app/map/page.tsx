@@ -1,7 +1,7 @@
 'use client';
 import { useEffect, useState, useRef, useCallback, useMemo } from 'react';
 import Link from 'next/link';
-import { MapPin, Search, X, ChevronRight, SlidersHorizontal, LocateFixed, Gift, Newspaper, ExternalLink } from 'lucide-react';
+import { MapPin, Search, X, ChevronRight, SlidersHorizontal, LocateFixed, Gift, Newspaper, ExternalLink, Navigation } from 'lucide-react';
 import { toast } from 'sonner';
 import { objectsApi, parseApiError } from '@/lib/api';
 import { RegisteredObject } from '@/types';
@@ -83,6 +83,8 @@ export default function MapPage() {
   const [selected, setSelected] = useState<RegisteredObject | null>(null);
   const [mapLoaded, setMapLoaded] = useState(false);
   const [userLocation, setUserLocation] = useState<{ lat: number; lng: number } | null>(null);
+  const [showNearby, setShowNearby] = useState(false);
+  const userMarkerRef = useRef<unknown>(null);
   const [listPage, setListPage] = useState(1);
   const [showNews, setShowNews] = useState(false);
   const [news, setNews] = useState<NewsItem[]>([]);
@@ -269,7 +271,7 @@ export default function MapPage() {
     });
   }, [filtered, mapLoaded]);
 
-  // ─── Geolocalização ───────────────────────────────────────────────────────
+  //   // ─── Geolocalização ─────────────────────────────────────────────
   const locateUser = useCallback(() => {
     if (!navigator.geolocation) {
       toast.error('Geolocalização não suportada neste browser');
@@ -279,8 +281,55 @@ export default function MapPage() {
       pos => {
         const loc = { lat: pos.coords.latitude, lng: pos.coords.longitude };
         setUserLocation(loc);
-        const map = mapRef.current as { flyTo?: (opts: unknown) => void } | null;
-        map?.flyTo?.({ center: [loc.lng, loc.lat], zoom: 13, duration: 1500 });
+        setShowNearby(true);
+
+        // Criar/atualizar marcador 'você está aqui' com círculo pulsante
+        const map = mapRef.current as {
+          flyTo?: (opts: unknown) => void;
+          getCanvas?: () => HTMLElement;
+        } | null;
+
+        // Remover marcador anterior se existir
+        if (userMarkerRef.current) {
+          (userMarkerRef.current as { remove: () => void }).remove();
+          userMarkerRef.current = null;
+        }
+
+        if (map) {
+          // Criar elemento HTML do marcador pulsante
+          const el = document.createElement('div');
+          el.style.cssText = `
+            width: 20px; height: 20px; border-radius: 50%;
+            background: #14b8a6; border: 3px solid white;
+            box-shadow: 0 0 0 0 rgba(20,184,166,0.6);
+            animation: pulse-user 2s infinite;
+            position: relative; cursor: default;
+          `;
+          // Adicionar animação CSS se ainda não existir
+          if (!document.getElementById('user-marker-style')) {
+            const style = document.createElement('style');
+            style.id = 'user-marker-style';
+            style.textContent = `
+              @keyframes pulse-user {
+                0% { box-shadow: 0 0 0 0 rgba(20,184,166,0.6); }
+                70% { box-shadow: 0 0 0 16px rgba(20,184,166,0); }
+                100% { box-shadow: 0 0 0 0 rgba(20,184,166,0); }
+              }
+            `;
+            document.head.appendChild(style);
+          }
+
+          // Importar Marker do mapbox-gl e criar o marcador
+          import('mapbox-gl').then(mapboxgl => {
+            const marker = new mapboxgl.default.Marker({ element: el, anchor: 'center' })
+              .setLngLat([loc.lng, loc.lat])
+              .addTo(map as unknown as InstanceType<typeof mapboxgl.default.Map>);
+            userMarkerRef.current = marker;
+          });
+
+          map.flyTo?.({ center: [loc.lng, loc.lat], zoom: 13, duration: 1500 });
+        }
+
         toast.success('Localização obtida!');
       },
       () => toast.error('Não foi possível obter sua localização'),
@@ -296,7 +345,7 @@ export default function MapPage() {
   // Lista paginada (virtualização simples)
   const listItems = useMemo(() => filtered.slice(0, listPage * LIST_PAGE_SIZE), [filtered, listPage]);
 
-  // ─── CTA contextual: objetos perdidos num raio de 5km ─────────────────────
+   // ─── CTA contextual: objetos perdidos num raio de 5km ─────────────────
   const nearbyLostCount = useMemo(() => {
     if (!userLocation) return 0;
     return objects.filter(o =>
@@ -306,8 +355,22 @@ export default function MapPage() {
     ).length;
   }, [objects, userLocation]);
 
+  // ─── Objetos próximos ordenados por distância (painel de proximidade) ─────────
+  const nearbyObjects = useMemo(() => {
+    if (!userLocation) return [];
+    return objects
+      .filter(o => o.location?.lat && o.location?.lng)
+      .map(o => ({
+        ...o,
+        distKm: haversine(userLocation.lat, userLocation.lng, o.location!.lat, o.location!.lng),
+      }))
+      .filter(o => o.distKm <= 10)
+      .sort((a, b) => a.distKm - b.distKm)
+      .slice(0, 20);
+  }, [objects, userLocation]);
+
   return (
-    <div className="h-screen flex flex-col bg-[#080b0f]">
+    <div className="flex flex-col bg-[#080b0f]" style={{ height: '100dvh' }}>
       {/* Navbar */}
       <nav className="flex items-center gap-3 px-4 h-14 border-b border-white/[0.06] bg-[#080b0f]/90 backdrop-blur-xl flex-shrink-0 z-20">
         <Link href="/" className="flex items-center gap-2 flex-shrink-0">
@@ -369,11 +432,35 @@ export default function MapPage() {
         {/* Localização */}
         <button
           onClick={locateUser}
-          className="p-2 rounded-lg bg-white/[0.04] text-white/50 border border-white/[0.08] hover:text-teal-400 hover:border-teal-500/20 transition-all flex-shrink-0"
+          className={`p-2 rounded-lg border transition-all flex-shrink-0 ${
+            userLocation
+              ? 'bg-teal-500/10 text-teal-400 border-teal-500/20'
+              : 'bg-white/[0.04] text-white/50 border-white/[0.08] hover:text-teal-400 hover:border-teal-500/20'
+          }`}
           title="Minha localização"
         >
           <LocateFixed className="w-3.5 h-3.5" />
         </button>
+
+        {/* Painel de proximidade */}
+        {userLocation && (
+          <button
+            onClick={() => setShowNearby(v => !v)}
+            className={`relative flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-medium transition-all flex-shrink-0 ${
+              showNearby
+                ? 'bg-teal-500/10 text-teal-400 border border-teal-500/20'
+                : 'bg-white/[0.04] text-white/50 border border-white/[0.08] hover:text-teal-400 hover:border-teal-500/20'
+            }`}
+            title="Ocorrências próximas"
+          >
+            <Navigation className="w-3.5 h-3.5" />
+            {nearbyObjects.length > 0 && (
+              <span className="bg-teal-500 text-white text-[10px] font-bold w-4 h-4 rounded-full flex items-center justify-center">
+                {nearbyObjects.length > 9 ? '9+' : nearbyObjects.length}
+              </span>
+            )}
+          </button>
+        )}
 
         {/* Notícias toggle */}
         <button
@@ -609,6 +696,67 @@ export default function MapPage() {
         </div>
       )}
 
+      {/* Painel de proximidade — objetos ordenados por distância */}
+      {showNearby && userLocation && (
+        <div className="flex-shrink-0 border-b border-white/[0.06] bg-[#0a0d12] overflow-hidden" style={{ maxHeight: '45vh' }}>
+          <div className="flex items-center justify-between px-4 py-2.5 border-b border-white/[0.06]">
+            <div className="flex items-center gap-2">
+              <Navigation className="w-3.5 h-3.5 text-teal-400" />
+              <span className="text-white/70 text-xs font-semibold uppercase tracking-wide">Próximas de você</span>
+              <span className="text-white/25 text-[10px]">≤ 10 km</span>
+            </div>
+            <button onClick={() => setShowNearby(false)} className="text-white/30 hover:text-white transition-colors p-1">
+              <X className="w-3.5 h-3.5" />
+            </button>
+          </div>
+          <div className="overflow-y-auto" style={{ maxHeight: 'calc(45vh - 44px)' }}>
+            {nearbyObjects.length === 0 ? (
+              <div className="text-center py-8 text-white/30 text-sm">Nenhuma ocorrência num raio de 10km</div>
+            ) : (
+              <div className="divide-y divide-white/[0.04]">
+                {nearbyObjects.map(obj => (
+                  <button
+                    key={obj.id}
+                    onClick={() => {
+                      setSelected(selected?.id === obj.id ? null : obj);
+                      setShowNearby(false);
+                      const map = mapRef.current as { easeTo?: (opts: unknown) => void } | null;
+                      if (obj.location?.lat && obj.location?.lng) {
+                        map?.easeTo?.({ center: [obj.location.lng, obj.location.lat], zoom: 15, duration: 800 });
+                      }
+                    }}
+                    className="w-full flex items-center gap-3 px-4 py-3 hover:bg-white/[0.03] transition-colors text-left group"
+                  >
+                    <div className="w-9 h-9 rounded-xl bg-white/[0.06] flex items-center justify-center text-lg flex-shrink-0">
+                      {EMOJI[obj.category] ?? '📦'}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-white/80 text-xs font-medium leading-snug group-hover:text-white transition-colors truncate">
+                        {obj.title}
+                      </p>
+                      <div className="flex items-center gap-2 mt-0.5">
+                        <span className={`text-[10px] font-semibold ${STATUS_COLOR[obj.status].split(' ')[0]}`}>
+                          {STATUS_LABEL[obj.status]}
+                        </span>
+                        <span className="text-white/20 text-[10px]">·</span>
+                        <span className="text-white/30 text-[10px]">{CATEGORY_LABEL[obj.category] ?? 'Outro'}</span>
+                      </div>
+                    </div>
+                    <div className="flex-shrink-0 text-right">
+                      <span className="text-teal-400 text-xs font-bold">
+                        {obj.distKm < 1
+                          ? `${Math.round(obj.distKm * 1000)}m`
+                          : `${obj.distKm.toFixed(1)}km`}
+                      </span>
+                    </div>
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
       {/* Map + list layout */}
       <div className="flex-1 flex flex-col md:flex-row overflow-hidden">
 
@@ -630,7 +778,10 @@ export default function MapPage() {
 
           {/* Painel de detalhes React — sobreposto ao mapa, renderizado pelo React (não pelo Mapbox) */}
           {selected && (
-            <div className="absolute bottom-20 sm:bottom-4 left-1/2 -translate-x-1/2 z-10 w-[calc(100%-24px)] max-w-sm pointer-events-auto">
+            <div
+              className="absolute left-1/2 -translate-x-1/2 z-10 w-[calc(100%-24px)] max-w-sm pointer-events-auto"
+              style={{ bottom: 'calc(env(safe-area-inset-bottom, 0px) + 16px)' }}
+            >
               <div className="bg-[#0f1a2e] border border-teal-500/30 rounded-2xl shadow-2xl p-4">
                 {/* Header */}
                 <div className="flex items-start gap-3">
