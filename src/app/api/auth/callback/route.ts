@@ -91,22 +91,12 @@ export async function GET(request: NextRequest) {
     const accessToken = createAccessToken(user.id, user.email);
     const refreshToken = createRefreshToken(user.id, user.email);
 
-    const redirectResponse = NextResponse.redirect(`${appUrl}/dashboard`);
-    redirectResponse.cookies.set('access_token', accessToken, {
-      httpOnly: false,
-      secure: true,
-      sameSite: 'lax',
-      maxAge: 60 * 60 * 24,
-      path: '/',
-    });
-    redirectResponse.cookies.set('refresh_token', refreshToken, {
-      httpOnly: false,
-      secure: true,
-      sameSite: 'lax',
-      maxAge: 60 * 60 * 24 * 30,
-      path: '/',
-    });
-    return redirectResponse;
+    // Redirecionar para página intermediária que salva tokens via js-cookie (cliente)
+    // Isso garante compatibilidade com todos os browsers, incluindo mobile
+    const successUrl = new URL(`${appUrl}/auth/google-success`);
+    successUrl.searchParams.set('access_token', accessToken);
+    successUrl.searchParams.set('refresh_token', refreshToken);
+    return NextResponse.redirect(successUrl.toString());
   } catch (err) {
     console.error('Google OAuth error:', err);
     return NextResponse.redirect(`${appUrl}/auth/login?error=oauth_failed`);
