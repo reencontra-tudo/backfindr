@@ -415,7 +415,7 @@ export default function HomePage() {
 
               {/* FOI ROUBADO — laranja/âmbar */}
               <Link
-                href="/auth/register?intent=stolen"
+                href="/flow/stolen"
                 className="group flex flex-col items-center gap-3 rounded-2xl border border-orange-500/40 bg-orange-500/[0.1] px-4 py-6 text-center transition-all hover:border-orange-500/70 hover:bg-orange-500/[0.18] hover:scale-[1.02]"
                 style={{ boxShadow: '0 0 0 1px rgba(249,115,22,0.15), 0 8px 32px rgba(249,115,22,0.08)' }}
               >
@@ -429,7 +429,7 @@ export default function HomePage() {
 
               {/* QUERO ME PREVENIR — azul */}
               <Link
-                href="/auth/register?intent=protect"
+                href="/flow/protect"
                 className="group flex flex-col items-center gap-3 rounded-2xl border border-blue-500/40 bg-blue-500/[0.1] px-4 py-6 text-center transition-all hover:border-blue-500/70 hover:bg-blue-500/[0.18] hover:scale-[1.02]"
                 style={{ boxShadow: '0 0 0 1px rgba(59,130,246,0.15), 0 8px 32px rgba(59,130,246,0.08)' }}
               >
@@ -575,7 +575,7 @@ export default function HomePage() {
                 </p>
                 <div className="flex flex-col items-center gap-3 sm:flex-row sm:justify-center">
                   <Link
-                    href="/auth/register?intent=protect"
+                    href="/flow/protect"
                     className="inline-flex items-center gap-2 rounded-2xl bg-teal-500 px-8 py-4 text-sm font-bold text-white transition-all hover:bg-teal-400"
                     style={{ boxShadow: '0 0 0 1px rgba(20,184,166,.34), 0 14px 40px rgba(20,184,166,.22)' }}
                   >
@@ -652,7 +652,7 @@ export default function HomePage() {
                   Registre agora para gerar alerta, contexto e visibilidade.
                 </p>
                 <Link
-                  href="/auth/register?intent=stolen"
+                  href="/flow/stolen"
                   className="inline-flex items-center gap-2 rounded-xl border border-orange-500/30 bg-orange-500/[0.1] px-4 py-2.5 text-sm font-semibold text-orange-300 transition-all hover:bg-orange-500/[0.18]"
                 >
                   Registrar item roubado <ArrowRight className="h-3.5 w-3.5" />
@@ -669,7 +669,7 @@ export default function HomePage() {
                   Crie um QR antes da perda e aumente sua chance de retorno.
                 </p>
                 <Link
-                  href="/auth/register?intent=protect"
+                  href="/flow/protect"
                   className="inline-flex items-center gap-2 rounded-xl border border-blue-500/30 bg-blue-500/[0.1] px-4 py-2.5 text-sm font-semibold text-blue-300 transition-all hover:bg-blue-500/[0.18]"
                 >
                   Criar meu QR grátis <ArrowRight className="h-3.5 w-3.5" />
@@ -686,7 +686,7 @@ export default function HomePage() {
                   Ative a busca e amplie a chance de reencontro rapidamente.
                 </p>
                 <Link
-                  href="/buscar?category=pet"
+                  href="/flow/pet"
                   className="inline-flex items-center gap-2 rounded-xl border border-amber-500/30 bg-amber-500/[0.1] px-4 py-2.5 text-sm font-semibold text-amber-300 transition-all hover:bg-amber-500/[0.18]"
                 >
                   Buscar pet agora <ArrowRight className="h-3.5 w-3.5" />
