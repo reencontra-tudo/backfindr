@@ -780,7 +780,7 @@ export default function MapPage() {
           {selected && (
             <div
               className="absolute left-1/2 -translate-x-1/2 z-10 w-[calc(100%-24px)] max-w-sm pointer-events-auto"
-              style={{ bottom: 'calc(env(safe-area-inset-bottom, 0px) + 16px)' }}
+              style={{ bottom: 'calc(env(safe-area-inset-bottom, 0px) + 72px)' }}
             >
               <div className="bg-[#0f1a2e] border border-teal-500/30 rounded-2xl shadow-2xl p-4">
                 {/* Header */}
