@@ -13,6 +13,7 @@ import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { objectsApi, parseApiError } from '@/lib/api';
 import { RegisteredObject } from '@/types';
+import Cookies from 'js-cookie';
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
@@ -199,9 +200,7 @@ export default function ObjectDetailPage() {
   // Buscar boost ativo do objeto
   useEffect(() => {
     if (!id) return;
-    const token = typeof window !== 'undefined'
-      ? (localStorage.getItem('token') || sessionStorage.getItem('token'))
-      : null;
+    const token = Cookies.get('access_token');
     if (!token) return;
     fetch(`/api/v1/boost?object_id=${id}`, {
       headers: { 'Authorization': `Bearer ${token}` },
@@ -212,9 +211,7 @@ export default function ObjectDetailPage() {
   }, [id]);
 
   const handleBoost = async (type: '7d' | '30d' | 'alert') => {
-    const token = typeof window !== 'undefined'
-      ? (localStorage.getItem('token') || sessionStorage.getItem('token'))
-      : null;
+    const token = Cookies.get('access_token');
     if (!token) { window.location.href = '/auth/login'; return; }
     setBoostLoading(type);
     try {
