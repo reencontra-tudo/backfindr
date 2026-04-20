@@ -408,8 +408,9 @@ function buildSystemPrompt(
   return prompt;
 }
 
-// ─── Guided Flow (fallback sem OpenAI) ───────────────────────────────────────
+// ─── Guided Flow (fallback sem OpenAI) ─────────────────────────────────────────────────────
 const APP_URL = 'https://backfindr.com';
+const GUIDED_FALLBACK = `Me diz uma coisa 👇\n\nVocê perdeu ou encontrou algo?`;
 
 function getGuidedResponse(messages: Message[]): string {
   const lastMsg = messages[messages.length - 1]?.content?.toLowerCase() ?? '';
@@ -634,16 +635,29 @@ export async function POST(req: NextRequest) {
 
     const systemPrompt = buildSystemPrompt(objects, notifications, matches, userName);
 
+    // ── Lógica híbrida: fluxo guiado tem PRIORIDADE ──
+    // O fluxo guiado é determinístico, rápido e nunca gera links errados.
+    // A OpenAI só é acionada quando a intenção não é reconhecida pelo regex
+    // (retorno do fallback genérico) OU quando o usuário está logado e
+    // precisa de contexto pessoal (objetos, matches, notificações).
+    const guidedReply = getGuidedResponse(messages);
+    const isFallback = guidedReply === GUIDED_FALLBACK;
+    const hasPersonalContext = !!(objects?.length || matches?.length || notifications?.length);
+
     let reply: string;
-    if (process.env.OPENAI_API_KEY) {
+    if (!isFallback) {
+      // Intenção reconhecida → usa fluxo guiado (sem custo, sem risco de URL errada)
+      reply = guidedReply;
+    } else if (process.env.OPENAI_API_KEY && (isFallback || hasPersonalContext)) {
+      // Intenção não reconhecida OU usuário logado com contexto → usa OpenAI
       try {
         reply = await getOpenAIResponse(messages, systemPrompt);
       } catch (err) {
         console.error('OpenAI falhou, usando fluxo guiado:', err);
-        reply = getGuidedResponse(messages);
+        reply = guidedReply;
       }
     } else {
-      reply = getGuidedResponse(messages);
+      reply = guidedReply;
     }
 
     return NextResponse.json({ reply });
