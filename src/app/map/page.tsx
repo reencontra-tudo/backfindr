@@ -275,19 +275,40 @@ export default function MapPage() {
               </div>
             `;
 
+            // Determinar anchor dinâmico: se o pin está na metade inferior do container,
+            // abre o popup acima (anchor: 'bottom'); caso contrário, abre abaixo (anchor: 'top')
+            // Isso evita que o popup vaze para fora do container do mapa
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            const mapCanvas = (map as any).getCanvas();
+            const mapHeight = mapCanvas?.clientHeight ?? 400;
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            const pinPixel = (map as any).project(coords);
+            const pinY = pinPixel?.y ?? mapHeight / 2;
+            const popupAnchor = pinY > mapHeight * 0.45 ? 'bottom' : 'top';
+            const popupOffset: [number, number] = popupAnchor === 'bottom' ? [0, -14] : [0, 14];
+
             // Criar popup Mapbox
             // eslint-disable-next-line @typescript-eslint/no-explicit-any
             const popup = new (mapboxgl as any).default.Popup({
               closeButton: false,
               closeOnClick: false,
-              anchor: 'bottom',
-              offset: [0, -12],
+              anchor: popupAnchor,
+              offset: popupOffset,
               maxWidth: 'none',
               className: 'backfindr-popup',
+              // autoPan garante que o mapa se move para mostrar o popup inteiro
+              focusAfterOpen: false,
             })
               .setLngLat(coords)
               .setHTML(html)
               .addTo(map);
+
+            // Mover o mapa para que o pin fique visível com espaço para o popup
+            const panPadding = popupAnchor === 'bottom'
+              ? { top: 20, bottom: 320, left: 20, right: 20 }
+              : { top: 320, bottom: 20, left: 20, right: 20 };
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            (map as any).easeTo({ center: coords, padding: panPadding, duration: 300 });
 
             // Botão × dentro do HTML
             popup.on('open', () => {
@@ -712,6 +733,11 @@ export default function MapPage() {
             }
             .backfindr-popup .mapboxgl-popup-tip {
               border-top-color: rgba(20,184,166,.3) !important;
+              border-bottom-color: rgba(20,184,166,.3) !important;
+            }
+            /* Garante que o popup nunca ultrapasse os limites do container */
+            .mapboxgl-popup {
+              max-width: calc(100vw - 32px) !important;
             }
           `}</style>
         </div>
