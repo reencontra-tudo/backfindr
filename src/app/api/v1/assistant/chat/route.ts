@@ -195,7 +195,7 @@ function getGuidedResponse(messages: Message[]): string {
 
   // Gratuito
   if (/gratu|grátis|custo|preço|plano|pago/.test(lastMsg)) {
-    return `Sim 🙏\n\nPode usar sem custo pra começar.\n\nFaz aqui 👇\n\n${APP_URL}`;
+    return `É gratuito. Quem quiser mais visibilidade pode pagar — mas não é obrigatório.\n\nFaz aqui 👇\n\n${APP_URL}`;
   }
 
   // Emocional
