@@ -7,7 +7,7 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { toast } from 'sonner';
-import { MapPin, Eye, EyeOff, ArrowRight, Loader2 } from 'lucide-react';
+import { MapPin, Eye, EyeOff, ArrowRight, Loader2, Mail } from 'lucide-react';
 import { useAuthStore } from '@/hooks/useAuth';
 import Cookies from 'js-cookie';
 
@@ -25,6 +25,13 @@ function LoginForm() {
   const [showPass, setShowPass] = useState(false);
   const [checkoutLoading, setCheckoutLoading] = useState(false);
   const [loginError, setLoginError] = useState('');
+
+  // Magic Link state
+  const [magicEmail, setMagicEmail] = useState('');
+  const [magicLoading, setMagicLoading] = useState(false);
+  const [magicSent, setMagicSent] = useState(false);
+  const [magicError, setMagicError] = useState('');
+  const [showMagicForm, setShowMagicForm] = useState(false);
 
   const { register, handleSubmit, formState: { errors } } = useForm<FormData>({ resolver: zodResolver(schema) });
 
@@ -61,12 +68,38 @@ function LoginForm() {
     }
   };
 
+  const onMagicSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setMagicError('');
+    const email = magicEmail.trim().toLowerCase();
+    if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      setMagicError('Digite um e-mail válido.');
+      return;
+    }
+    setMagicLoading(true);
+    try {
+      const res = await fetch('/api/auth/magic-link', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email }),
+      });
+      const data = await res.json();
+      if (data.ok) {
+        setMagicSent(true);
+      } else {
+        setMagicError(data.error || 'Erro ao enviar. Tente novamente.');
+      }
+    } catch {
+      setMagicError('Erro ao enviar. Verifique sua conexão.');
+    } finally {
+      setMagicLoading(false);
+    }
+  };
+
   const isProcessing = isLoading || checkoutLoading;
 
-  const inputClass2 = (hasError: boolean) =>
+  const inputClass = (hasError: boolean) =>
     `w-full bg-white/[0.04] border ${hasError ? 'border-red-500/60' : 'border-white/[0.08]'} rounded-lg px-3.5 py-2.5 text-white placeholder-white/20 text-sm outline-none focus:border-teal-500/60 focus:bg-white/[0.06] transition-all`;
-
-  const inputClass = inputClass2;
 
   return (
     <div className="min-h-screen bg-[#080b0f] flex items-center justify-center px-5">
@@ -84,10 +117,13 @@ function LoginForm() {
           <h1 className="text-2xl font-bold text-white tracking-tight mb-1">Entrar na sua conta</h1>
           <p className="text-white/40 text-sm">
             Não tem conta?{' '}
-            <Link href={`/auth/register${planSlug ? `?plan=${planSlug}` : ''}`} className="text-teal-400 hover:text-teal-300 transition-colors font-medium">{planSlug && planSlug !== 'free' ? `Criar conta` : 'Criar conta grátis'}</Link>
+            <Link href={`/auth/register${planSlug ? `?plan=${planSlug}` : ''}`} className="text-teal-400 hover:text-teal-300 transition-colors font-medium">
+              {planSlug && planSlug !== 'free' ? 'Criar conta' : 'Criar conta grátis'}
+            </Link>
           </p>
         </div>
 
+        {/* Formulário de login normal */}
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
           <div>
             <label className="block text-sm text-white/70 mb-1.5 font-medium">Seu e-mail</label>
@@ -135,6 +171,7 @@ function LoginForm() {
             <div className="relative flex justify-center"><span className="text-white/20 text-xs bg-[#080b0f] px-3">ou</span></div>
           </div>
 
+          {/* Google */}
           <button
             type="button"
             onClick={() => window.location.href = '/api/auth/google'}
@@ -149,11 +186,65 @@ function LoginForm() {
             Continuar com Google
           </button>
         </form>
+
+        {/* Magic Link — link discreto abaixo */}
+        <div className="mt-5 text-center">
+          {!showMagicForm ? (
+            <button
+              type="button"
+              onClick={() => setShowMagicForm(true)}
+              className="text-white/30 hover:text-teal-400 text-xs transition-colors"
+            >
+              Prefere entrar sem senha? Receba um link no seu e-mail
+            </button>
+          ) : magicSent ? (
+            <div className="bg-teal-500/10 border border-teal-500/20 rounded-xl px-4 py-4 text-center">
+              <Mail className="w-5 h-5 text-teal-400 mx-auto mb-2" />
+              <p className="text-white/80 text-sm font-medium mb-1">Link enviado!</p>
+              <p className="text-white/40 text-xs">Verifique sua caixa de entrada em <span className="text-white/60">{magicEmail}</span>. O link expira em 15 minutos.</p>
+              <button
+                type="button"
+                onClick={() => { setMagicSent(false); setMagicEmail(''); }}
+                className="mt-3 text-teal-400/60 hover:text-teal-400 text-xs transition-colors"
+              >
+                Usar outro e-mail
+              </button>
+            </div>
+          ) : (
+            <form onSubmit={onMagicSubmit} className="mt-1">
+              <p className="text-white/40 text-xs mb-3">Digite seu e-mail e receba um link para entrar sem senha</p>
+              <div className="flex gap-2">
+                <input
+                  type="email"
+                  value={magicEmail}
+                  onChange={e => setMagicEmail(e.target.value)}
+                  placeholder="seu@email.com"
+                  autoComplete="email"
+                  className="flex-1 bg-white/[0.04] border border-white/[0.08] rounded-lg px-3 py-2.5 text-white placeholder-white/20 text-sm outline-none focus:border-teal-500/60 transition-all"
+                />
+                <button
+                  type="submit"
+                  disabled={magicLoading}
+                  className="bg-white/[0.06] hover:bg-white/[0.10] border border-white/[0.08] text-white/70 hover:text-white text-sm px-4 py-2.5 rounded-lg transition-all disabled:opacity-50 whitespace-nowrap"
+                >
+                  {magicLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Enviar'}
+                </button>
+              </div>
+              {magicError && <p className="text-red-400 text-xs mt-2">{magicError}</p>}
+              <button
+                type="button"
+                onClick={() => setShowMagicForm(false)}
+                className="mt-2 text-white/20 hover:text-white/40 text-xs transition-colors"
+              >
+                Cancelar
+              </button>
+            </form>
+          )}
+        </div>
       </div>
     </div>
   );
 }
-
 
 export default function LoginPage() {
   return (

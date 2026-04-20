@@ -4,7 +4,7 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { setTokens } from '@/lib/api';
 import { useAuthStore } from '@/hooks/useAuth';
 
-function GoogleSuccessContent() {
+function MagicSuccessContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { fetchMe } = useAuthStore();
@@ -14,16 +14,12 @@ function GoogleSuccessContent() {
     const refreshToken = searchParams.get('refresh_token');
 
     if (accessToken && refreshToken) {
-      // Salvar tokens via js-cookie (mesmo mecanismo do login normal)
       setTokens({ access_token: accessToken, refresh_token: refreshToken, token_type: 'Bearer' });
-      // Buscar dados do usuário e redirecionar
-      fetchMe().then(() => {
-        router.replace('/dashboard');
-      }).catch(() => {
-        router.replace('/auth/login?error=google_session_failed');
-      });
+      fetchMe()
+        .then(() => router.replace('/dashboard'))
+        .catch(() => router.replace('/auth/login?error=magic_session_failed'));
     } else {
-      router.replace('/auth/login?error=google_no_tokens');
+      router.replace('/auth/login?error=magic_no_tokens');
     }
   }, [searchParams, fetchMe, router]);
 
@@ -31,13 +27,13 @@ function GoogleSuccessContent() {
     <div className="min-h-screen bg-[#0a0a0a] flex items-center justify-center">
       <div className="text-center">
         <div className="w-8 h-8 border-2 border-teal-400 border-t-transparent rounded-full animate-spin mx-auto mb-4" />
-        <p className="text-white/60 text-sm">Entrando com Google...</p>
+        <p className="text-white/60 text-sm">Verificando seu link...</p>
       </div>
     </div>
   );
 }
 
-export default function GoogleSuccessPage() {
+export default function MagicSuccessPage() {
   return (
     <Suspense fallback={
       <div className="min-h-screen bg-[#0a0a0a] flex items-center justify-center">
@@ -47,7 +43,7 @@ export default function GoogleSuccessPage() {
         </div>
       </div>
     }>
-      <GoogleSuccessContent />
+      <MagicSuccessContent />
     </Suspense>
   );
 }
