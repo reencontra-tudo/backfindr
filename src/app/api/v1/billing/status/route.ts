@@ -57,7 +57,7 @@ export async function GET(request: NextRequest) {
       is_pro:          effectivePlan === 'pro',
       is_business:     effectivePlan === 'business',
       plan_expires_at: user.plan_expires_at,
-      provider:        user.subscription_provider,
+      provider:        user.subscription_provider ?? (user.mp_subscription_id ? 'mercadopago' : null),
       features,
     });
   } catch (error) {

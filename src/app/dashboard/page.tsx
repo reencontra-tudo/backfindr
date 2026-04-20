@@ -146,7 +146,7 @@ export default function DashboardPage() {
               <p className="text-white/30 text-xs">Faça upgrade para mais recursos</p>
             ) : planInfo?.plan_expires_at ? (
               <p className="text-white/30 text-xs">
-                Renova em {new Date(planInfo.plan_expires_at).toLocaleDateString('pt-BR')}
+                Renova em {new Date(planInfo.plan_expires_at).toLocaleDateString('pt-BR')} · até {planInfo?.features?.max_objects ?? '—'} objetos
               </p>
             ) : (
               <p className="text-white/30 text-xs">

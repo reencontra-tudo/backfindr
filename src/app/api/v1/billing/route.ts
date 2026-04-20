@@ -19,7 +19,7 @@ export async function GET(request: NextRequest) {
     }
 
     const result = await query(
-      'SELECT id, email, name, plan, stripe_subscription_id, plan_expires_at FROM users WHERE id = $1',
+      'SELECT id, email, name, plan, stripe_subscription_id, mp_subscription_id, subscription_provider, plan_expires_at FROM users WHERE id = $1',
       [payload.sub]
     );
 
@@ -51,8 +51,10 @@ export async function GET(request: NextRequest) {
     } catch { /* tabela pode não existir */ }
 
     // Determinar provedor ativo
-    const isMP = user.stripe_subscription_id?.startsWith('mp_');
-    const provider = isMP ? 'mercadopago' : (user.stripe_subscription_id ? 'stripe' : null);
+    const provider = user.subscription_provider
+      ?? (user.mp_subscription_id ? 'mercadopago' : null)
+      ?? (user.stripe_subscription_id?.startsWith('mp_') ? 'mercadopago' : null)
+      ?? (user.stripe_subscription_id ? 'stripe' : null);
 
     // Verificar se a assinatura está cancelada (plan_expires_at no passado)
     let isCancelled = false;
@@ -91,7 +93,7 @@ export async function POST(request: NextRequest) {
     const { action, plan_slug } = body; // action: 'upgrade' | 'cancel'
 
     const result = await query(
-      'SELECT id, email, name, plan, stripe_subscription_id, plan_expires_at FROM users WHERE id = $1',
+      'SELECT id, email, name, plan, stripe_subscription_id, mp_subscription_id, subscription_provider, plan_expires_at FROM users WHERE id = $1',
       [payload.sub]
     );
 
