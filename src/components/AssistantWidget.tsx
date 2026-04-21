@@ -121,15 +121,21 @@ const FLOWS: Record<string, { text: string; buttons?: { label: string; action: s
 function detectIntent(text: string): string | null {
   const t = text.toLowerCase();
 
-  // Navegação
-  if (/\b(ir para|abrir|acessar|ver|mostrar|navegar|quero ver|me leva)\b/.test(t)) {
+  // Navegação — só captura quando há intenção EXPLÍCITA de ir para algum lugar
+  // Evita capturar "ver" em contexto de pergunta (ex: "como faço pra ver...")
+  const isQuestion = /\b(como|o que|por que|quando|onde|qual|quem|quanto)\b/.test(t);
+  const isNavigationIntent = /\b(ir para|abrir|acessar|navegar|quero ver|me leva|me mostra|vai para|leva para)\b/.test(t)
+    || (!isQuestion && /\b(ver|mostrar)\b/.test(t));
+
+  if (isNavigationIntent) {
     if (/mapa/.test(t)) return 'nav_map';
     if (/dashboard|painel|meus objetos/.test(t)) return 'nav_dashboard';
     if (/registrar|novo objeto|cadastrar/.test(t)) return 'nav_new';
     if (/pet|animal|cachorro|gato/.test(t) && !/perdi|achei/.test(t)) return 'nav_pets';
     if (/notifica/.test(t)) return 'nav_notifications';
     if (/início|home|começo/.test(t)) return 'nav_home';
-    return 'navigate';
+    // Só retorna 'navigate' se não for pergunta genérica
+    if (!isQuestion) return 'navigate';
   }
 
   // Perdeu algo — categorias específicas
