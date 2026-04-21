@@ -100,6 +100,15 @@ const FLOWS: Record<string, { text: string; buttons?: { label: string; action: s
   nav_pets: { text: 'Área de pets 👇\n\n' + APP_URL + '/#pets' },
   nav_notifications: { text: 'Suas notificações 👇\n\n' + APP_URL + '/dashboard?tab=notifications' },
 
+  // ── Buscar achados ──
+  browse_found: {
+    text: 'Para ver itens encontrados por outras pessoas, acesse o **Mapa ao vivo** ou a seção **Buscar Achados** 👇\n\nhttps://backfindr.com/map\n\nVocê pode filtrar por categoria, data e localização. Se algum item combinar com o que você perdeu, o sistema notifica automaticamente.',
+    buttons: [
+      { label: '🗺️ Abrir mapa', action: 'nav_map' },
+      { label: '😔 Registrar item perdido', action: 'lost' },
+    ],
+  },
+
   // ── Fallback ──
   confused: {
     text: 'Me diz uma coisa 👇\n\nVocê perdeu ou encontrou algo?',
@@ -152,6 +161,11 @@ function detectIntent(text: string): string | null {
 
   // Encontrou algo
   if (/\b(achei|encontrei|achar|encontrar)\b/.test(t)) return 'found';
+
+  // Perguntas sobre como ver/buscar itens perdidos ou achados no sistema
+  if (/como.*(ver|buscar|encontrar|achar|procurar).*(perdid|achad|objeto|item|coisa|pet|celular|carro)/.test(t)
+    || /(perdid|achad|objeto|item).*(onde|como).*(ver|buscar|achar|encontrar)/.test(t)
+    || /onde.*(ver|achar|encontrar|buscar).*(perdid|achad|objeto|item|coisa)/.test(t)) return 'browse_found';
 
   // Como funciona
   if (/como funciona|o que é|como usar|como cadastr/.test(t)) return 'how';
