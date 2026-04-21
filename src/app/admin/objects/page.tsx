@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState, useCallback } from 'react';
+import { useRouter } from 'next/navigation';
 import { Search, X, MoreVertical, MapPin, QrCode, Eye, Trash2, CheckCircle2, Package } from 'lucide-react';
 import { api, parseApiError } from '@/lib/api';
 import { toast } from 'sonner';
@@ -26,6 +27,7 @@ const CATEGORY_EMOJI: Record<string, string> = {
 };
 
 export default function AdminObjects() {
+  const router = useRouter();
   const [objects, setObjects] = useState<Obj[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
@@ -56,7 +58,7 @@ export default function AdminObjects() {
     try {
       if (action === 'delete')   { await api.delete(`/admin/objects/${id}`); toast.success('Objeto removido'); }
       if (action === 'returned') { await api.patch(`/admin/objects/${id}`, { status: 'returned' }); toast.success('Marcado como recuperado'); }
-      if (action === 'view')     { window.open(`/objeto/${objects.find(o => o.id === id)?.unique_code}`, '_blank'); return; }
+      if (action === 'view')     { router.push(`/admin/objects/${id}`); return; }
       if (action === 'qr')       { window.open(`/scan/${objects.find(o => o.id === id)?.unique_code}`, '_blank'); return; }
       load();
     } catch (e) { toast.error(parseApiError(e)); }

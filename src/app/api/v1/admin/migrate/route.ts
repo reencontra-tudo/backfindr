@@ -49,6 +49,16 @@ export async function POST(req: NextRequest) {
       sql: `ALTER TABLE objects ADD COLUMN IF NOT EXISTS reward_description TEXT DEFAULT NULL`,
     },
 
+    // ── Colunas de status e origem na tabela users ──────────────────────────
+    {
+      name: 'add_is_active_is_legacy_to_users',
+      sql: `
+        ALTER TABLE users
+          ADD COLUMN IF NOT EXISTS is_active BOOLEAN NOT NULL DEFAULT true,
+          ADD COLUMN IF NOT EXISTS is_legacy BOOLEAN NOT NULL DEFAULT false
+      `,
+    },
+
     // ── Colunas de plano na tabela users ──────────────────────────────────────
     {
       name: 'add_plan_columns_to_users',

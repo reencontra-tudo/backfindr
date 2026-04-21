@@ -1,7 +1,8 @@
 'use client';
 
 import { useEffect, useState, useCallback } from 'react';
-import { Search, Filter, MoreVertical, UserCheck, UserX, Mail, Package, ChevronLeft, ChevronRight, X, Shield, Loader2 } from 'lucide-react';
+import { useRouter } from 'next/navigation';
+import { Search, Filter, MoreVertical, UserCheck, UserX, Mail, Package, ChevronLeft, ChevronRight, X, Shield, Loader2, Eye } from 'lucide-react';
 import { api, parseApiError } from '@/lib/api';
 import { toast } from 'sonner';
 
@@ -17,7 +18,7 @@ const PLAN_STYLE: Record<string, string> = {
   business: 'text-yellow-400 bg-yellow-500/10 border-yellow-500/20',
 };
 
-function UserRow({ user, onAction }: { user: User; onAction: (id: string, action: string) => void }) {
+function UserRow({ user, onAction, onView }: { user: User; onAction: (id: string, action: string) => void; onView: (id: string) => void }) {
   const [open, setOpen] = useState(false);
   const initials = user.name?.split(' ').map(n => n[0]).slice(0, 2).join('').toUpperCase() ?? '??';
   const date = new Date(user.created_at).toLocaleDateString('pt-BR', { day: '2-digit', month: 'short', year: '2-digit' });
@@ -54,7 +55,11 @@ function UserRow({ user, onAction }: { user: User; onAction: (id: string, action
         </div>
       </td>
       <td className="px-4 py-3">
-        <div className="relative">
+        <div className="relative flex items-center gap-1">
+          <button onClick={() => onView(user.id)}
+            className="w-7 h-7 flex items-center justify-center text-white/20 hover:text-teal-400 hover:bg-teal-500/[0.06] rounded-lg transition-all opacity-0 group-hover:opacity-100" title="Ver detalhes">
+            <Eye className="w-3.5 h-3.5" />
+          </button>
           <button onClick={() => setOpen(!open)}
             className="w-7 h-7 flex items-center justify-center text-white/20 hover:text-white hover:bg-white/[0.06] rounded-lg transition-all opacity-0 group-hover:opacity-100">
             <MoreVertical className="w-3.5 h-3.5" />
@@ -85,6 +90,7 @@ function UserRow({ user, onAction }: { user: User; onAction: (id: string, action
 }
 
 export default function AdminUsers() {
+  const router = useRouter();
   const [users, setUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
@@ -119,7 +125,7 @@ export default function AdminUsers() {
       if (action === 'activate')  await api.patch(`/admin/users/${userId}`, { is_active: true });
       if (action === 'promote')   await api.patch(`/admin/users/${userId}`, { plan: 'pro' });
       if (action === 'email')     { toast.info('Funcionalidade de e-mail direto em breve'); return; }
-      if (action === 'objects')   { window.location.href = `/admin/objects?user=${userId}`; return; }
+      if (action === 'objects')   { router.push(`/admin/users/${userId}`); return; }
       toast.success('Atualizado com sucesso');
       load();
     } catch (e) {
@@ -189,7 +195,7 @@ export default function AdminUsers() {
             ) : users.length === 0 ? (
               <tr><td colSpan={6} className="px-4 py-12 text-center text-white/20 text-sm">Nenhum usuário encontrado</td></tr>
             ) : (
-              users.map(u => <UserRow key={u.id} user={u} onAction={handleAction} />)
+              users.map(u => <UserRow key={u.id} user={u} onAction={handleAction} onView={(id) => router.push(`/admin/users/${id}`)} />)
             )}
           </tbody>
         </table>

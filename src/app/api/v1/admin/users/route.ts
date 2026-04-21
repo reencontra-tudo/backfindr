@@ -21,26 +21,39 @@ export async function GET(req: NextRequest) {
     let idx = 1;
 
     if (search) {
-      conditions.push(`(name ILIKE $${idx} OR email ILIKE $${idx})`);
+      conditions.push(`(u.name ILIKE $${idx} OR u.email ILIKE $${idx})`);
       params.push(`%${search}%`);
       idx++;
     }
+
     if (filter === 'pro') {
-      conditions.push(`plan = 'pro'`);
+      conditions.push(`u.plan = 'pro'`);
     } else if (filter === 'free') {
-      conditions.push(`(plan = 'free' OR plan IS NULL)`);
+      conditions.push(`(u.plan = 'free' OR u.plan IS NULL)`);
     } else if (filter === 'verified') {
-      conditions.push(`is_verified = true`);
+      conditions.push(`u.is_verified = true`);
+    } else if (filter === 'legacy') {
+      // Usuários que possuem ao menos um objeto com is_legacy = true
+      conditions.push(`EXISTS (SELECT 1 FROM objects o WHERE o.user_id = u.id AND o.is_legacy = true)`);
+    } else if (filter === 'inactive') {
+      // Usuários sem objetos criados nos últimos 90 dias OU com is_active = false (se coluna existir)
+      conditions.push(`
+        NOT EXISTS (
+          SELECT 1 FROM objects o
+          WHERE o.user_id = u.id
+            AND o.created_at > NOW() - INTERVAL '90 days'
+        )
+      `);
     }
 
     const where = conditions.length > 0 ? `WHERE ${conditions.join(' AND ')}` : '';
 
     const [countRes, rowsRes] = await Promise.all([
-      query(`SELECT COUNT(*) FROM users ${where}`, params),
+      query(`SELECT COUNT(*) FROM users u ${where}`, params),
       query(
-        `SELECT id, email, name, phone, plan, is_verified, avatar_url, created_at, updated_at
-         FROM users ${where}
-         ORDER BY created_at DESC
+        `SELECT u.id, u.email, u.name, u.phone, u.plan, u.is_verified, u.avatar_url, u.created_at, u.updated_at
+         FROM users u ${where}
+         ORDER BY u.created_at DESC
          LIMIT $${idx} OFFSET $${idx + 1}`,
         [...params, size, offset]
       ),

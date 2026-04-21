@@ -2,15 +2,18 @@ import { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import PublicObjectClient from './client';
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:8000';
+const APP_URL = process.env.NEXT_PUBLIC_APP_URL ?? 'https://backfindr.com';
 
 async function getObject(code: string) {
   try {
-    const res = await fetch(`${API_URL}/api/v1/objects/scan/${code}`, {
+    // Usa o endpoint local do Next.js (não depende do FastAPI)
+    const res = await fetch(`${APP_URL}/api/v1/objects/scan/${code}`, {
       next: { revalidate: 60 },
     });
     if (!res.ok) return null;
-    return res.json();
+    const json = await res.json();
+    // O endpoint retorna { success: true, data: {...} }
+    return json?.data ?? json;
   } catch {
     return null;
   }
