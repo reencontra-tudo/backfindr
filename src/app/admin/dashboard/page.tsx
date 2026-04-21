@@ -12,6 +12,7 @@ interface Stats {
 }
 
 interface Activity { id: string; type: string; text: string; time: string; }
+interface GeoItem { city: string; pct: number; }
 
 const FALLBACK: Stats = {
   total_users: 0, new_users_today: 0, new_users_week: 0,
@@ -55,20 +56,26 @@ const ACTIVITY_COLORS: Record<string, string> = {
 export default function AdminDashboard() {
   const [stats, setStats] = useState<Stats>(FALLBACK);
   const [loading, setLoading] = useState(true);
-  const [activities] = useState<Activity[]>([
-    { id: '1', type: 'user', text: 'Novo usuário cadastrado — São Paulo', time: 'agora' },
-    { id: '2', type: 'match', text: 'Match 92% confirmado — iPhone 14', time: '2 min' },
-    { id: '3', type: 'scan', text: 'QR Code escaneado — BKF-X9K2', time: '4 min' },
-    { id: '4', type: 'returned', text: 'Objeto recuperado — Carteira', time: '8 min' },
-    { id: '5', type: 'object', text: 'Novo objeto registrado — Labrador', time: '12 min' },
-    { id: '6', type: 'user', text: 'Reativação Webjetos — marcelo@...', time: '15 min' },
-  ]);
+  const [activities, setActivities] = useState<Activity[]>([]);
+  const [geoData, setGeoData] = useState<GeoItem[]>([]);
 
   useEffect(() => {
-    api.get('/admin/stats')
-      .then(({ data }) => setStats({ ...FALLBACK, ...data }))
+    // Stats reais do banco
+    fetch('/api/v1/admin/stats')
+      .then(r => r.json())
+      .then(data => setStats({ ...FALLBACK, ...data }))
       .catch(() => {})
       .finally(() => setLoading(false));
+    // Atividade recente real
+    fetch('/api/v1/admin/activity')
+      .then(r => r.json())
+      .then(data => setActivities(data.items ?? []))
+      .catch(() => {});
+    // Concentração geográfica real
+    fetch('/api/v1/admin/geo')
+      .then(r => r.json())
+      .then(data => setGeoData(data.items ?? []))
+      .catch(() => {});
   }, []);
 
   const recoveryRate = stats.total_objects > 0
@@ -197,6 +204,9 @@ export default function AdminDashboard() {
             <div className="w-2 h-2 rounded-full bg-teal-400 animate-pulse" />
           </div>
           <div className="space-y-3">
+            {activities.length === 0 && (
+              <p className="text-white/20 text-xs text-center py-4">Nenhuma atividade registrada ainda.</p>
+            )}
             {activities.map(a => {
               const Icon = ACTIVITY_ICONS[a.type] ?? Activity;
               const color = ACTIVITY_COLORS[a.type] ?? 'text-white/50 bg-white/[0.06]';
@@ -217,13 +227,10 @@ export default function AdminDashboard() {
         <div className="bg-white/[0.02] border border-white/[0.07] rounded-2xl p-5">
           <p className="text-white font-semibold text-sm mb-4">Concentração geográfica</p>
           <div className="space-y-2">
-            {[
-              { city: 'São Paulo, SP',        pct: 68 },
-              { city: 'Rio de Janeiro, RJ',   pct: 12 },
-              { city: 'Belo Horizonte, MG',   pct: 6 },
-              { city: 'Curitiba, PR',         pct: 4 },
-              { city: 'Outras cidades',       pct: 10 },
-            ].map(({ city, pct }) => (
+            {geoData.length === 0 && (
+              <p className="text-white/20 text-xs text-center py-4">Nenhum dado geográfico disponível ainda.</p>
+            )}
+            {geoData.map(({ city, pct }) => (
               <div key={city} className="flex items-center gap-3">
                 <MapPin className="w-3 h-3 text-white/20 flex-shrink-0" />
                 <span className="text-white/50 text-xs flex-1">{city}</span>

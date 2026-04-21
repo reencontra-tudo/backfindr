@@ -10,7 +10,7 @@
 | Serviço | Token / Chave | Observação |
 |---------|--------------|------------|
 | **Vercel API Token** | `vcp_36mc8Lb2k...cpN0buKwr` | Nome: `Backfindr-Manus-Deploy` — Sem expiração — Scope: `marcosmakarara-6287's projects` — **Valor completo salvo localmente** |
-| **GitHub Token** | `ghp_1d9jevp1...45zqzf` | Org: `reencontra-tudo`, Repo: `backfindr` — **Valor completo salvo localmente** |
+| **GitHub Token** | `[token-removido]` | Org: `reencontra-tudo`, Repo: `backfindr` — Escopo: `repo` — Salvo em `~/.git-credentials` |
 | **Repositório GitHub** | `https://github.com/reencontra-tudo/backfindr` | Branch principal: `main` |
 
 ---

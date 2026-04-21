@@ -1,8 +1,8 @@
+export const dynamic = 'force-dynamic';
 import { NextRequest, NextResponse } from 'next/server';
-import { requireAdmin, backendHeaders } from '@/lib/adminGuard';
+import { requireAdmin } from '@/lib/adminGuard';
+import { query } from '@/lib/db';
 import { z } from 'zod';
-
-const API = process.env.NEXT_PUBLIC_API_URL ?? '';
 
 const PartnerSchema = z.object({
   name:    z.string().min(2).max(200),
@@ -14,64 +14,40 @@ const PartnerSchema = z.object({
   notes:   z.string().optional(),
 });
 
-// ─── GET /api/v1/admin/b2b ────────────────────────────────────────────────────
 export async function GET(req: NextRequest) {
   const auth = await requireAdmin(req);
   if (auth instanceof NextResponse) return auth;
-
   const url    = new URL(req.url);
   const status = url.searchParams.get('status') ?? '';
   const search = url.searchParams.get('search') ?? '';
-
+  const page   = Math.max(1, parseInt(url.searchParams.get('page') ?? '1', 10));
+  const size   = Math.min(100, Math.max(1, parseInt(url.searchParams.get('size') ?? '20', 10)));
+  const offset = (page - 1) * size;
+  const conditions: string[] = []; const params: unknown[] = []; let idx = 1;
+  if (status) { conditions.push(`status = $${idx}`); params.push(status); idx++; }
+  if (search) { conditions.push(`(name ILIKE $${idx} OR city ILIKE $${idx} OR email ILIKE $${idx})`); params.push(`%${search}%`); idx++; }
+  const where = conditions.length > 0 ? `WHERE ${conditions.join(' AND ')}` : '';
   try {
-    // Buscar do backend — endpoint b2b a ser criado
-    const res = await fetch(
-      `${API}/api/v1/admin/b2b?status=${status}&search=${search}`,
-      { headers: backendHeaders(req) }
-    );
-
-    if (res.ok) {
-      return NextResponse.json(await res.json());
-    }
-
-    // Fallback — dados estáticos enquanto endpoint não existe
-    return NextResponse.json({
-      items: [],
-      total: 0,
-      message: 'Endpoint b2b backend pendente de implementação',
-    });
-  } catch {
-    return NextResponse.json({ items: [], total: 0 }, { status: 200 });
-  }
+    const [countRes, rowsRes] = await Promise.all([
+      query(`SELECT COUNT(*) FROM b2b_partners ${where}`, params),
+      query(`SELECT * FROM b2b_partners ${where} ORDER BY created_at DESC LIMIT $${idx} OFFSET $${idx+1}`, [...params, size, offset]),
+    ]);
+    return NextResponse.json({ items: rowsRes.rows, total: parseInt(countRes.rows[0].count, 10), page, size });
+  } catch (e) { return NextResponse.json({ items: [], total: 0 }); }
 }
 
-// ─── POST /api/v1/admin/b2b ───────────────────────────────────────────────────
 export async function POST(req: NextRequest) {
   const auth = await requireAdmin(req);
   if (auth instanceof NextResponse) return auth;
-
-  let body: unknown;
-  try { body = await req.json(); }
-  catch { return NextResponse.json({ detail: 'JSON inválido' }, { status: 400 }); }
-
-  const result = PartnerSchema.safeParse(body);
-  if (!result.success) {
-    return NextResponse.json(
-      { detail: 'Dados inválidos', errors: result.error.flatten() },
-      { status: 422 }
-    );
-  }
-
+  const body = await req.json();
+  const parsed = PartnerSchema.safeParse(body);
+  if (!parsed.success) return NextResponse.json({ detail: parsed.error.issues }, { status: 400 });
+  const { name, type, city, contact, email, phone, notes } = parsed.data;
   try {
-    const res = await fetch(`${API}/api/v1/admin/b2b`, {
-      method: 'POST',
-      headers: backendHeaders(req),
-      body: JSON.stringify(result.data),
-    });
-
-    if (res.ok) return NextResponse.json(await res.json(), { status: 201 });
-    return NextResponse.json(await res.json(), { status: res.status });
-  } catch {
-    return NextResponse.json({ detail: 'Erro ao criar parceiro' }, { status: 500 });
-  }
+    const res = await query(
+      `INSERT INTO b2b_partners (name, type, city, contact, email, phone, notes) VALUES ($1,$2,$3,$4,$5,$6,$7) RETURNING *`,
+      [name, type, city, contact, email, phone ?? null, notes ?? null]
+    );
+    return NextResponse.json(res.rows[0], { status: 201 });
+  } catch (e) { return NextResponse.json({ detail: 'Erro ao criar parceiro' }, { status: 500 }); }
 }

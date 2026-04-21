@@ -1,120 +1,53 @@
+export const dynamic = 'force-dynamic';
 import { NextRequest, NextResponse } from 'next/server';
-import { requireAdmin, backendHeaders, forwardParams } from '@/lib/adminGuard';
+import { requireAdmin } from '@/lib/adminGuard';
+import { query } from '@/lib/db';
 import { z } from 'zod';
 
-const API = process.env.NEXT_PUBLIC_API_URL ?? '';
-
 const ActionSchema = z.object({
-  report_id:  z.string().uuid(),
-  action:     z.enum(['dismiss', 'remove_object', 'suspend_user', 'block_user']),
-  reason:     z.string().optional(),
+  report_id: z.string().uuid(),
+  action:    z.enum(['dismiss', 'remove_object', 'suspend_user', 'block_user']),
+  reason:    z.string().optional(),
 });
 
-// ─── GET /api/v1/admin/moderacao ─────────────────────────────────────────────
 export async function GET(req: NextRequest) {
   const auth = await requireAdmin(req);
   if (auth instanceof NextResponse) return auth;
-
-  const qs = forwardParams(req, ['status', 'type', 'page', 'size']);
-
+  const url    = new URL(req.url);
+  const status = url.searchParams.get('status') ?? '';
+  const type   = url.searchParams.get('type')   ?? '';
+  const page   = Math.max(1, parseInt(url.searchParams.get('page') ?? '1', 10));
+  const size   = Math.min(100, Math.max(1, parseInt(url.searchParams.get('size') ?? '20', 10)));
+  const offset = (page - 1) * size;
+  const conditions: string[] = []; const params: unknown[] = []; let idx = 1;
+  if (status) { conditions.push(`r.status = $${idx}`); params.push(status); idx++; }
+  if (type)   { conditions.push(`r.type = $${idx}`);   params.push(type);   idx++; }
+  const where = conditions.length > 0 ? `WHERE ${conditions.join(' AND ')}` : '';
   try {
-    const res = await fetch(`${API}/api/v1/admin/reports${qs}`, {
-      headers: backendHeaders(req),
-    });
-
-    if (res.ok) return NextResponse.json(await res.json());
-
-    // Fallback estrutura vazia
-    return NextResponse.json({ items: [], total: 0, pending: 0 });
-  } catch {
-    return NextResponse.json({ items: [], total: 0, pending: 0 });
-  }
+    const [countRes, rowsRes, pendingRes] = await Promise.all([
+      query(`SELECT COUNT(*) FROM reports r ${where}`, params),
+      query(`SELECT r.id, r.type, r.reason, r.status, r.created_at, o.title AS object_title, u.email AS reporter_email FROM reports r LEFT JOIN objects o ON o.id = r.object_id LEFT JOIN users u ON u.id = r.reporter_id ${where} ORDER BY r.created_at DESC LIMIT $${idx} OFFSET $${idx+1}`, [...params, size, offset]),
+      query(`SELECT COUNT(*) FROM reports WHERE status = 'pending'`),
+    ]);
+    return NextResponse.json({ items: rowsRes.rows, total: parseInt(countRes.rows[0].count, 10), pending: parseInt(pendingRes.rows[0].count, 10), page, size });
+  } catch (e) { return NextResponse.json({ items: [], total: 0, pending: 0 }); }
 }
 
-// ─── POST /api/v1/admin/moderacao ─────────────────────────────────────────────
 export async function POST(req: NextRequest) {
   const auth = await requireAdmin(req);
   if (auth instanceof NextResponse) return auth;
-
-  let body: unknown;
-  try { body = await req.json(); } catch {
-    return NextResponse.json({ detail: 'JSON inválido' }, { status: 400 });
-  }
-
-  const result = ActionSchema.safeParse(body);
-  if (!result.success) {
-    return NextResponse.json(
-      { detail: 'Dados inválidos', errors: result.error.flatten() },
-      { status: 422 }
-    );
-  }
-
-  const { report_id, action, reason } = result.data;
-
+  const body = await req.json();
+  const parsed = ActionSchema.safeParse(body);
+  if (!parsed.success) return NextResponse.json({ detail: parsed.error.issues }, { status: 400 });
+  const { report_id, action, reason } = parsed.data;
   try {
-    // Executar ação correspondente no backend
-    const actions: Record<string, () => Promise<Response>> = {
-      dismiss: () =>
-        fetch(`${API}/api/v1/admin/reports/${report_id}/dismiss`, {
-          method: 'POST', headers: backendHeaders(req),
-          body: JSON.stringify({ reason }),
-        }),
-
-      remove_object: async () => {
-        // Buscar report para pegar object_id
-        const reportRes = await fetch(
-          `${API}/api/v1/admin/reports/${report_id}`,
-          { headers: backendHeaders(req) }
-        );
-        if (!reportRes.ok) throw new Error('Report não encontrado');
-        const report = await reportRes.json();
-
-        return fetch(`${API}/api/v1/admin/objects/${report.object_id}`, {
-          method: 'DELETE', headers: backendHeaders(req),
-        });
-      },
-
-      suspend_user: async () => {
-        const reportRes = await fetch(
-          `${API}/api/v1/admin/reports/${report_id}`,
-          { headers: backendHeaders(req) }
-        );
-        if (!reportRes.ok) throw new Error('Report não encontrado');
-        const report = await reportRes.json();
-
-        return fetch(`${API}/api/v1/admin/users/${report.target_user_id}`, {
-          method: 'PATCH', headers: backendHeaders(req),
-          body: JSON.stringify({ is_active: false }),
-        });
-      },
-
-      block_user: async () => {
-        const reportRes = await fetch(
-          `${API}/api/v1/admin/reports/${report_id}`,
-          { headers: backendHeaders(req) }
-        );
-        if (!reportRes.ok) throw new Error('Report não encontrado');
-        const report = await reportRes.json();
-
-        return fetch(`${API}/api/v1/admin/users/${report.target_user_id}`, {
-          method: 'PATCH', headers: backendHeaders(req),
-          body: JSON.stringify({ is_active: false, is_blocked: true }),
-        });
-      },
-    };
-
-    const handler = actions[action];
-    if (!handler) {
-      return NextResponse.json({ detail: 'Ação inválida' }, { status: 400 });
+    const reportRes = await query(`SELECT * FROM reports WHERE id = $1`, [report_id]);
+    if (reportRes.rows.length === 0) return NextResponse.json({ detail: 'Denúncia não encontrada' }, { status: 404 });
+    const report = reportRes.rows[0];
+    if (action === 'remove_object' && report.object_id) {
+      await query(`UPDATE objects SET status = 'archived', updated_at = NOW() WHERE id = $1`, [report.object_id]);
     }
-
-    const res = await handler();
-    return NextResponse.json(
-      { success: true, action, report_id },
-      { status: res.ok ? 200 : res.status }
-    );
-
-  } catch (e) {
-    return NextResponse.json({ detail: String(e) }, { status: 500 });
-  }
+    await query(`UPDATE reports SET status = 'resolved', resolved_at = NOW(), reason = COALESCE($1, reason), updated_at = NOW() WHERE id = $2`, [reason ?? null, report_id]);
+    return NextResponse.json({ success: true, action });
+  } catch (e) { return NextResponse.json({ detail: 'Erro ao processar ação' }, { status: 500 }); }
 }
