@@ -246,6 +246,49 @@ function detectIntent(text: string): string | null {
   return null;
 }
 
+// ─── Gatilhos de transferência para GPT-mini ────────────────────────────────────
+// Retorna true quando a mensagem deve ir direto para a Camada 2 (GPT-mini),
+// sem passar pela detecção determinística local.
+
+function shouldEscalateToGPT(text: string, history: Message[]): boolean {
+  const t = text.toLowerCase();
+
+  // 1. Múltiplas intenções na mesma mensagem
+  const intentKeywords = [
+    /\b(perdi|perdeu|sumiu|desapareceu)\b/,
+    /\b(achei|encontrei)\b/,
+    /\b(roubado|roubaram|furtado|furtaram|assalt)\b/,
+    /\b(prevenir|proteger|qr|qr code)\b/,
+    /\b(como funciona|o que é|me explica)\b/,
+  ];
+  const matchedIntents = intentKeywords.filter(re => re.test(t)).length;
+  if (matchedIntents >= 2) return true;
+
+  // 2. Mensagem muito longa (mais de 80 caracteres sem intenção clara)
+  if (text.length > 80) return true;
+
+  // 3. Linguagem emocional intensa (desespero, urgência extrema)
+  if (/\b(desesperado|desesperada|chorando|imploro|por favor me ajuda|urgente|preciso urgente|tô desesperado|to desesperado|não sei o que fazer|nao sei o que fazer)\b/.test(t)) return true;
+
+  // 4. Pergunta aberta sem intenção clara
+  if (/^(como|por que|por quê|quando|o que acontece|o que devo|me explica|me conta|pode me dizer)/.test(t) && text.length > 30) return true;
+
+  // 5. Repetição de dúvida (usuário já fez pergunta parecida antes)
+  if (history.length >= 4) {
+    const userMsgs = history.filter(m => m.role === 'user').slice(-3).map(m => m.content.toLowerCase());
+    const hasSimilar = userMsgs.some(prev => {
+      const words = t.split(/\s+/).filter(w => w.length > 4);
+      return words.some(w => prev.includes(w)) && prev !== t;
+    });
+    if (hasSimilar) return true;
+  }
+
+  // 6. Mensagem ambígua com condições compostas ("mas", "e também", "além disso")
+  if (/\b(mas também|e também|além disso|ao mesmo tempo|não sei se|acho que pode ser|não tenho certeza|pode ser que)\b/.test(t)) return true;
+
+  return false;
+}
+
 // ─── Markdown simples ─────────────────────────────────────────────────────────
 
 function renderMarkdown(text: string) {
@@ -386,8 +429,11 @@ export default function AssistantWidget() {
     };
     setMessages(prev => [...prev, userMsg]);
 
-    // Tentar detectar intenção localmente primeiro
-    const intent = detectIntent(msg);
+    // Verificar se deve escalar para GPT-mini antes da detecção local
+    const escalate = shouldEscalateToGPT(msg, messages);
+
+    // Tentar detectar intenção localmente primeiro (apenas se não escalou)
+    const intent = !escalate ? detectIntent(msg) : null;
     if (intent) {
       if (intent === 'greeting') {
         const greetingFlow = {
