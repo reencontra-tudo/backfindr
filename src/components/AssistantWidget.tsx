@@ -33,7 +33,9 @@ const FLOWS: Record<string, { text: string; buttons?: { label: string; action: s
     text: 'Oi 👋\nVocê perdeu ou encontrou algo?',
     buttons: [
       { label: '😔 Perdi algo', action: 'lost' },
+      { label: '🚨 Foi roubado', action: 'stolen' },
       { label: '🙌 Encontrei algo', action: 'found' },
+      { label: '🛡️ Quero me prevenir', action: 'prevent' },
       { label: '🗺️ Navegar no site', action: 'navigate' },
       { label: '❓ Como funciona?', action: 'how' },
     ],
@@ -41,44 +43,63 @@ const FLOWS: Record<string, { text: string; buttons?: { label: string; action: s
 
   // ── Perdeu algo ──
   lost: {
-    text: 'Sinto muito 😔\n\nO que você perdeu?',
+    text: 'Sinto muito 😔\n\nJá estamos ajudando casos assim. O que você perdeu?',
     buttons: [
       { label: '🐾 Pet', action: 'lost_pet' },
       { label: '📱 Celular', action: 'lost_phone' },
-      { label: '🚗 Carro', action: 'lost_car' },
+      { label: '🚗 Carro / Moto', action: 'lost_car' },
       { label: '📄 Documentos', action: 'lost_docs' },
       { label: '📦 Outro objeto', action: 'lost_other' },
     ],
   },
   lost_pet: {
-    text: 'Registra agora 👇\n\n' + APP_URL + '/dashboard/new\n\nQuanto antes, maior a chance de alguém te encontrar 🙏',
+    text: 'Sinto muito 😔\nJá estamos ajudando casos assim. Registra agora — é gratuito 👇\n\n' + APP_URL + '/pet\n\nQuanto antes publicar, maiores as chances 🙏',
   },
   lost_phone: {
-    text: 'Registra agora 👇\n\n' + APP_URL + '/dashboard/new\n\nIsso já aumenta a chance de alguém te encontrar.',
+    text: 'Sinto muito 😔\nJá estamos conectando casos assim. Registra gratuitamente aqui 👇\n\n' + APP_URL + '/perdi\n\nLeva 30s e aumenta as chances.',
   },
   lost_car: {
-    text: 'Registra agora 👇\n\n' + APP_URL + '/dashboard/new\n\nQuanto antes, mais rápido a rede pode ajudar.',
+    text: 'Sinto muito 😔\nRegistra agora — é gratuito e a rede já começa a ajudar 👇\n\n' + APP_URL + '/perdi\n\nQuanto antes, mais rápido.',
   },
   lost_docs: {
-    text: 'Registra agora 👇\n\n' + APP_URL + '/dashboard/new\n\nDocumentos encontrados aparecem aqui com frequência.',
+    text: 'Sinto muito 😔\nDocumentos encontrados aparecem aqui com frequência. Registra gratuitamente 👇\n\n' + APP_URL + '/perdi\n\nLeva menos de 1 minuto.',
   },
   lost_other: {
-    text: 'Registra agora 👇\n\n' + APP_URL + '/dashboard/new\n\nLeva menos de 1 minuto e já ajuda bastante.',
+    text: 'Sinto muito 😔\nJá estamos ajudando casos assim. Registra agora — é gratuito 👇\n\n' + APP_URL + '/perdi\n\nLeva menos de 1 minuto.',
+  },
+
+  // ── Roubado ──
+  stolen: {
+    text: 'Complicado 😔\n\nRegistra o quanto antes — já estamos gerando alertas na rede.\nÉ gratuito 👇\n\n' + APP_URL + '/roubado',
   },
 
   // ── Encontrou algo ──
   found: {
-    text: 'Boa atitude 🙏\n\nRegistra aqui 👇\n\n' + APP_URL + '/dashboard/new\n\nAssim o dono consegue te encontrar.',
+    text: 'Boa atitude 🙏\n\nVocê pode tentar devolver com segurança — é gratuito e seu contato fica protegido 👇\n\n' + APP_URL + '/encontrei',
+  },
+
+  // ── Prevenir / QR Code ──
+  prevent: {
+    text: 'Dá pra se proteger antes 👍\n\nCrie um QR Code em menos de 1 min — é gratuito 👇\n\n' + APP_URL + '/proteger\n\nSe o objeto for encontrado, o achador te contacta direto.',
   },
 
   // ── Como funciona ──
   how: {
-    text: 'É simples:\n\nvocê registra → alguém encontra → você recebe aviso\n\nFaz aqui 👇\n\n' + APP_URL,
+    text: 'É uma plataforma que conecta quem perdeu com quem encontrou, em tempo real.\n\nJá está funcionando e é gratuita 👇\n\n' + APP_URL,
+    buttons: [
+      { label: '😔 Perdi algo', action: 'lost' },
+      { label: '🙌 Encontrei algo', action: 'found' },
+    ],
   },
 
-  // ── Gratuito ──
+  // ── Desconfiança ──
+  trust: {
+    text: 'Já estamos conectando casos reais.\n\nVocê pode testar agora — é gratuito 👇\n\n' + APP_URL,
+  },
+
+  // ── Gratuito / Preço ──
   pricing: {
-    text: 'Sim 🙏\n\nPode usar sem custo pra começar.\n\nFaz aqui 👇\n\n' + APP_URL,
+    text: 'Pode usar sem custo pra começar 🙏\n\nRegistra aqui 👇\n\n' + APP_URL,
   },
 
   // ── Navegação ──
@@ -97,16 +118,36 @@ const FLOWS: Record<string, { text: string; buttons?: { label: string; action: s
   nav_map: { text: 'Mapa ao vivo 👇\n\n' + APP_URL + '/map' },
   nav_dashboard: { text: 'Seus objetos 👇\n\n' + APP_URL + '/dashboard' },
   nav_new: { text: 'Registrar objeto 👇\n\n' + APP_URL + '/dashboard/new' },
-  nav_pets: { text: 'Área de pets 👇\n\n' + APP_URL + '/#pets' },
+  nav_pets: { text: 'Área de pets 👇\n\n' + APP_URL + '/pet' },
   nav_notifications: { text: 'Suas notificações 👇\n\n' + APP_URL + '/dashboard?tab=notifications' },
 
   // ── Buscar achados ──
   browse_found: {
-    text: 'Para ver itens encontrados por outras pessoas, acesse o **Mapa ao vivo** ou a seção **Buscar Achados** 👇\n\nhttps://backfindr.com/map\n\nVocê pode filtrar por categoria, data e localização. Se algum item combinar com o que você perdeu, o sistema notifica automaticamente.',
+    text: 'Para ver itens encontrados por outras pessoas, acesse o **Mapa ao vivo** 👇\n\n' + APP_URL + '/map\n\nVocê pode filtrar por categoria, data e localização. Se algum item combinar com o que você perdeu, o sistema notifica automaticamente.',
     buttons: [
       { label: '🗺️ Abrir mapa', action: 'nav_map' },
       { label: '😔 Registrar item perdido', action: 'lost' },
     ],
+  },
+
+  // ── Não sabe usar ──
+  help_use: {
+    text: 'É bem rápido 👍\n\nAbre aqui e segue os passos — leva ~30s 👇\n\n' + APP_URL + '/perdi',
+  },
+
+  // ── Já registrou ──
+  already_registered: {
+    text: 'Perfeito 👍\n\nSe puder, compartilha também — aumenta muito as chances 🙏\n\n' + APP_URL,
+  },
+
+  // ── Agradecimento ──
+  thanks: {
+    text: 'Que bom ajudar 🙏\n\nSe puder, compartilha — isso aumenta as chances de outros casos também.',
+  },
+
+  // ── Emocional ──
+  emotional: {
+    text: 'Entendo, é desesperador mesmo 😔\n\nVamos tentar ajudar — registra aqui (é gratuito) 👇\n\n' + APP_URL + '/perdi\n\nEstou torcendo pra dar certo 🙏',
   },
 
   // ── Fallback ──
@@ -117,15 +158,13 @@ const FLOWS: Record<string, { text: string; buttons?: { label: string; action: s
       { label: '🙌 Encontrei algo', action: 'found' },
     ],
   },
-  emotional: {
-    text: 'Imagino como deve estar sendo 😔\n\nVamos tentar aumentar as chances 👇\n\n' + APP_URL + '\n\nEstou torcendo pra dar certo 🙏',
-  },
+
   followup: {
     text: 'Se ainda precisar 👇\n\n' + APP_URL + '\n\nPode ajudar bastante.',
   },
 };
 
-// ─── Detectar intenção por texto livre ───────────────────────────────────────
+// ─── Saudação por horário ─────────────────────────────────────────────────────
 
 function getGreeting(): string {
   const hour = new Date().getHours();
@@ -133,6 +172,8 @@ function getGreeting(): string {
   if (hour >= 12 && hour < 18) return 'Boa tarde! ☀️';
   return 'Boa noite! 🌙';
 }
+
+// ─── Detectar intenção por texto livre ───────────────────────────────────────
 
 function detectIntent(text: string): string | null {
   const t = text.toLowerCase();
@@ -142,7 +183,6 @@ function detectIntent(text: string): string | null {
     || /^(oi |olá |ola |hey |ei )/.test(t)) return 'greeting';
 
   // Navegação — só captura quando há intenção EXPLÍCITA de ir para algum lugar
-  // Evita capturar "ver" em contexto de pergunta (ex: "como faço pra ver...")
   const isQuestion = /\b(como|o que|por que|quando|onde|qual|quem|quanto)\b/.test(t);
   const isNavigationIntent = /\b(ir para|abrir|acessar|navegar|quero ver|me leva|me mostra|vai para|leva para)\b/.test(t)
     || (!isQuestion && /\b(ver|mostrar)\b/.test(t));
@@ -154,13 +194,14 @@ function detectIntent(text: string): string | null {
     if (/pet|animal|cachorro|gato/.test(t) && !/perdi|achei/.test(t)) return 'nav_pets';
     if (/notifica/.test(t)) return 'nav_notifications';
     if (/início|home|começo/.test(t)) return 'nav_home';
-    // Só retorna 'navigate' se não for pergunta genérica
     if (!isQuestion) return 'navigate';
   }
 
+  // Roubado — antes de "perdeu" para não confundir
+  if (/\b(roubaram|furtaram|roubado|furtado|assaltaram|assalto|furto|roubo)\b/.test(t)) return 'stolen';
+
   // Perdeu algo — categorias específicas
-  // Não captura "perdidas" em perguntas como "como ver as coisas perdidas"
-  const isLostReport = /\b(perdi|perdeu|desapareceu|sumiu|roubaram|furtaram)\b/.test(t)
+  const isLostReport = /\b(perdi|perdeu|desapareceu|sumiu)\b/.test(t)
     || (/\b(perder)\b/.test(t) && !isQuestion);
   if (isLostReport) {
     if (/pet|cachorro|gato|animal|cão/.test(t)) return 'lost_pet';
@@ -173,10 +214,25 @@ function detectIntent(text: string): string | null {
   // Encontrou algo
   if (/\b(achei|encontrei|achar|encontrar)\b/.test(t)) return 'found';
 
-  // Perguntas sobre como ver/buscar itens perdidos ou achados no sistema
+  // Prevenir / QR Code
+  if (/\b(prevenir|prevenção|proteger|proteção|qr|qr code|evitar perder|antes de perder)\b/.test(t)) return 'prevent';
+
+  // Perguntas sobre como ver/buscar itens no sistema
   if (/como.*(ver|buscar|encontrar|achar|procurar).*(perdid|achad|objeto|item|coisa|pet|celular|carro)/.test(t)
     || /(perdid|achad|objeto|item).*(onde|como).*(ver|buscar|achar|encontrar)/.test(t)
     || /onde.*(ver|achar|encontrar|buscar).*(perdid|achad|objeto|item|coisa)/.test(t)) return 'browse_found';
+
+  // Desconfiança
+  if (/\b(funciona mesmo|é confiável|é seguro|é verdade|é real|tem resultado|resolve mesmo|acreditar)\b/.test(t)) return 'trust';
+
+  // Não sabe usar
+  if (/\b(não sei usar|como usar|não sei como|não consigo|não entendo|me ajuda a usar)\b/.test(t)) return 'help_use';
+
+  // Já registrou
+  if (/\b(já registrei|já cadastrei|já publiquei|já coloquei)\b/.test(t)) return 'already_registered';
+
+  // Agradecimento
+  if (/\b(obrigad|valeu|muito obrigad|agradeço|obg|vlw|thanks)\b/.test(t)) return 'thanks';
 
   // Como funciona
   if (/como funciona|o que é|como usar|como cadastr/.test(t)) return 'how';
@@ -276,12 +332,14 @@ export default function AssistantWidget() {
     // Adicionar mensagem do usuário visível
     const labelMap: Record<string, string> = {
       lost: '😔 Perdi algo',
+      stolen: '🚨 Foi roubado',
       found: '🙌 Encontrei algo',
+      prevent: '🛡️ Quero me prevenir',
       navigate: '🗺️ Navegar no site',
       how: '❓ Como funciona?',
       lost_pet: '🐾 Pet',
       lost_phone: '📱 Celular',
-      lost_car: '🚗 Carro',
+      lost_car: '🚗 Carro / Moto',
       lost_docs: '📄 Documentos',
       lost_other: '📦 Outro objeto',
       nav_home: '🏠 Início',
@@ -336,8 +394,9 @@ export default function AssistantWidget() {
           text: `${getGreeting()}\n\nSou o **Findr**, assistente do Backfindr 🐾\n\nComo posso te ajudar?`,
           buttons: [
             { label: '😔 Perdi algo', action: 'lost' },
+            { label: '🚨 Foi roubado', action: 'stolen' },
             { label: '🙌 Encontrei algo', action: 'found' },
-            { label: '❓ Como funciona?', action: 'how' },
+            { label: '🛡️ Quero me prevenir', action: 'prevent' },
           ],
         };
         setTimeout(() => addBotMessage(greetingFlow), 400);
