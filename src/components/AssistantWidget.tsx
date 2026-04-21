@@ -160,7 +160,11 @@ const FLOWS: Record<string, { text: string; buttons?: { label: string; action: s
   },
 
   followup: {
-    text: 'Se ainda precisar 👇\n\n' + APP_URL + '\n\nPode ajudar bastante.',
+    text: 'Posso te ajudar com mais alguma coisa? 😊',
+    buttons: [
+      { label: '😔 Perdi algo', action: 'lost' },
+      { label: '🙌 Encontrei algo', action: 'found' },
+    ],
   },
 };
 
@@ -312,6 +316,7 @@ export default function AssistantWidget() {
   const [loading, setLoading] = useState(false);
   const [unread, setUnread] = useState(0);
   const [followupSent, setFollowupSent] = useState(false);
+  const [userHasInteracted, setUserHasInteracted] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const followupTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -336,24 +341,7 @@ export default function AssistantWidget() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open]);
 
-  // Follow-up automático após 15s sem resposta do usuário
-  useEffect(() => {
-    if (open && messages.length > 0 && !followupSent) {
-      const lastMsg = messages[messages.length - 1];
-      if (lastMsg.role === 'assistant') {
-        followupTimerRef.current = setTimeout(() => {
-          if (!followupSent) {
-            setFollowupSent(true);
-            addBotMessage(FLOWS.followup);
-          }
-        }, 15000);
-      }
-    }
-    return () => {
-      if (followupTimerRef.current) clearTimeout(followupTimerRef.current);
-    };
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [messages, open, followupSent]);
+  // Follow-up desativado — o bot responde apenas quando o usuário interage
 
   const addBotMessage = useCallback((flow: typeof FLOWS[string]) => {
     const msg: Message = {
@@ -368,9 +356,10 @@ export default function AssistantWidget() {
   }, [open]);
 
   const handleAction = useCallback((action: string) => {
-    // Cancelar follow-up se usuário interagiu
+    // Marcar que o usuário interagiu e cancelar follow-up pendente
+    setUserHasInteracted(true);
     if (followupTimerRef.current) clearTimeout(followupTimerRef.current);
-    setFollowupSent(true);
+    setFollowupSent(false);
 
     // Adicionar mensagem do usuário visível
     const labelMap: Record<string, string> = {
@@ -417,9 +406,10 @@ export default function AssistantWidget() {
     if (!msg || loading) return;
     setInput('');
 
-    // Cancelar follow-up se usuário digitou
+    // Marcar que o usuário interagiu e resetar follow-up
+    setUserHasInteracted(true);
     if (followupTimerRef.current) clearTimeout(followupTimerRef.current);
-    setFollowupSent(true);
+    setFollowupSent(false);
 
     const userMsg: Message = {
       id: Date.now().toString(),
