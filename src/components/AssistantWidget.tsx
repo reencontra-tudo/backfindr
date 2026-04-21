@@ -127,8 +127,19 @@ const FLOWS: Record<string, { text: string; buttons?: { label: string; action: s
 
 // ─── Detectar intenção por texto livre ───────────────────────────────────────
 
+function getGreeting(): string {
+  const hour = new Date().getHours();
+  if (hour >= 5 && hour < 12) return 'Bom dia! 🌅';
+  if (hour >= 12 && hour < 18) return 'Boa tarde! ☀️';
+  return 'Boa noite! 🌙';
+}
+
 function detectIntent(text: string): string | null {
   const t = text.toLowerCase();
+
+  // Saudação
+  if (/^(oi|olá|ola|hey|ei|hello|bom dia|boa tarde|boa noite|boas|salve|e aí|e ai|tudo bem|tudo bom)/.test(t)
+    || /^(oi |olá |ola |hey |ei )/.test(t)) return 'greeting';
 
   // Navegação — só captura quando há intenção EXPLÍCITA de ir para algum lugar
   // Evita capturar "ver" em contexto de pergunta (ex: "como faço pra ver...")
@@ -319,9 +330,23 @@ export default function AssistantWidget() {
 
     // Tentar detectar intenção localmente primeiro
     const intent = detectIntent(msg);
-    if (intent && FLOWS[intent]) {
-      setTimeout(() => addBotMessage(FLOWS[intent]), 400);
-      return;
+    if (intent) {
+      if (intent === 'greeting') {
+        const greetingFlow = {
+          text: `${getGreeting()}\n\nSou o **Findr**, assistente do Backfindr 🐾\n\nComo posso te ajudar?`,
+          buttons: [
+            { label: '😔 Perdi algo', action: 'lost' },
+            { label: '🙌 Encontrei algo', action: 'found' },
+            { label: '❓ Como funciona?', action: 'how' },
+          ],
+        };
+        setTimeout(() => addBotMessage(greetingFlow), 400);
+        return;
+      }
+      if (FLOWS[intent]) {
+        setTimeout(() => addBotMessage(FLOWS[intent]), 400);
+        return;
+      }
     }
 
     // Fallback para API (OpenAI quando disponível, guided flow caso contrário)
