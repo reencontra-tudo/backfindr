@@ -4,10 +4,10 @@ import { useState, useEffect } from 'react';
 import { Server, Database, Zap, Globe, CheckCircle2, AlertTriangle, XCircle, RefreshCw, Activity, Clock } from 'lucide-react';
 import { api } from '@/lib/api';
 
-interface HealthData { status: string; database: string; version: string; uptime?: number; }
+interface HealthData { status: string; database?: string; version: string; uptime?: number; services?: { database?: { status: string; latency_ms?: number } } }
 
 const SERVICES = [
-  { name: 'API Backend',          url: '/api/v1/health',       key: 'api' },
+  { name: 'API Backend',          url: '/api/health',          key: 'api' },
   { name: 'Banco (Supabase)',      url: null,                   key: 'db' },
   { name: 'Vercel Edge',          url: null,                   key: 'edge' },
   { name: 'Resend (E-mail)',       url: null,                   key: 'email' },
@@ -42,10 +42,11 @@ export default function AdminSistema() {
     try {
       const { data } = await api.get('/health');
       setHealth(data);
+      const dbOk = data.services?.database?.status === 'ok' || data.database === 'connected';
       setStatuses(prev => ({
         ...prev,
         api: 'ok',
-        db: data.database === 'connected' ? 'ok' : 'down',
+        db: dbOk ? 'ok' : 'down',
       }));
     } catch {
       setStatuses(prev => ({ ...prev, api: 'down', db: 'down' }));
@@ -122,7 +123,7 @@ export default function AdminSistema() {
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
           {[
             { icon: Globe,    label: 'API Version',  value: health.version ?? '1.0.0' },
-            { icon: Database, label: 'Banco',         value: health.database === 'connected' ? 'Conectado' : 'Offline' },
+            { icon: Database, label: 'Banco',         value: (health.services?.database?.status === 'ok' || health.database === 'connected') ? 'Conectado' : 'Offline' },
             { icon: Activity, label: 'Status',        value: health.status ?? 'ok' },
             { icon: Clock,    label: 'Uptime',        value: health.uptime ? `${Math.floor(health.uptime / 3600)}h` : '—' },
           ].map(({ icon: Icon, label, value }) => (
