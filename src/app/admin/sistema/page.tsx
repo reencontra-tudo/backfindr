@@ -40,12 +40,13 @@ export default function AdminSistema() {
   const checkHealth = async () => {
     setLoading(true);
     try {
-      const { data } = await api.get('/health');
+      const res = await fetch('/api/health', { cache: 'no-store' });
+      const data: HealthData = await res.json();
       setHealth(data);
       const dbOk = data.services?.database?.status === 'ok' || data.database === 'connected';
       setStatuses(prev => ({
         ...prev,
-        api: 'ok',
+        api: res.ok ? 'ok' : 'down',
         db: dbOk ? 'ok' : 'down',
       }));
     } catch {
