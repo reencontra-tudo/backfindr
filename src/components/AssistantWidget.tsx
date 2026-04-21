@@ -139,7 +139,10 @@ function detectIntent(text: string): string | null {
   }
 
   // Perdeu algo — categorias específicas
-  if (/\b(perdi|perder|perdeu|desapareceu|sumiu|roubaram|furtaram)\b/.test(t)) {
+  // Não captura "perdidas" em perguntas como "como ver as coisas perdidas"
+  const isLostReport = /\b(perdi|perdeu|desapareceu|sumiu|roubaram|furtaram)\b/.test(t)
+    || (/\b(perder)\b/.test(t) && !isQuestion);
+  if (isLostReport) {
     if (/pet|cachorro|gato|animal|cão/.test(t)) return 'lost_pet';
     if (/celular|telefone|iphone|android|smartphone/.test(t)) return 'lost_phone';
     if (/carro|veículo|moto|bicicleta/.test(t)) return 'lost_car';
