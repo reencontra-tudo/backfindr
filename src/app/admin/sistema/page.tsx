@@ -1,8 +1,9 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Server, Database, Zap, Globe, CheckCircle2, AlertTriangle, XCircle, RefreshCw, Activity, Clock } from 'lucide-react';
-import { api } from '@/lib/api';
+import { api, parseApiError } from '@/lib/api';
+import { toast } from 'sonner';
 
 interface HealthData { status: string; database?: string; version: string; uptime?: number; services?: { database?: { status: string; latency_ms?: number } } }
 
@@ -33,9 +34,22 @@ const LOG_STYLE: Record<string, string> = {
 export default function AdminSistema() {
   const [health, setHealth] = useState<HealthData | null>(null);
   const [loading, setLoading] = useState(true);
+  const [actionLoading, setActionLoading] = useState<string | null>(null);
   const [statuses, setStatuses] = useState<Record<string, 'ok' | 'degraded' | 'down' | 'checking'>>({
     api: 'checking', db: 'checking', edge: 'ok', email: 'ok', stripe: 'ok', mapbox: 'ok',
   });
+
+  const runMatching = useCallback(async () => {
+    setActionLoading('matching');
+    try {
+      const { data } = await api.post('/admin/matching/run-all');
+      toast.success(data?.message ?? 'Matching concluído com sucesso');
+    } catch (e) {
+      toast.error(parseApiError(e));
+    } finally {
+      setActionLoading(null);
+    }
+  }, []);
 
   const checkHealth = async () => {
     setLoading(true);
@@ -170,14 +184,14 @@ export default function AdminSistema() {
         <p className="text-white font-semibold text-sm mb-4">Ações de manutenção</p>
         <div className="grid sm:grid-cols-2 gap-2">
           {[
-            { icon: Zap,       label: 'Rodar matching completo',    action: () => api.post('/matching/run-all'),  color: 'text-teal-400' },
-            { icon: Database,  label: 'Verificar integridade do banco', action: () => {},                         color: 'text-blue-400' },
-            { icon: RefreshCw, label: 'Limpar cache Redis',          action: () => {},                            color: 'text-yellow-400' },
-            { icon: Activity,  label: 'Forçar reindexação',          action: () => {},                            color: 'text-purple-400' },
-          ].map(({ icon: Icon, label, color }) => (
-            <button key={label}
-              className="flex items-center gap-3 px-4 py-3 rounded-xl bg-white/[0.03] hover:bg-white/[0.06] border border-white/[0.07] text-left transition-all group">
-              <Icon className={`w-4 h-4 ${color} flex-shrink-0`} />
+            { icon: Zap,       label: 'Rodar matching completo',    action: runMatching,                          color: 'text-teal-400', key: 'matching' },
+            { icon: Database,  label: 'Verificar integridade do banco', action: () => { checkHealth(); },         color: 'text-blue-400',   key: 'db' },
+            { icon: RefreshCw, label: 'Recarregar status dos serviços', action: () => { checkHealth(); },           color: 'text-yellow-400', key: 'refresh' },
+            { icon: Activity,  label: 'Verificar API health',          action: () => { checkHealth(); },           color: 'text-purple-400', key: 'health' },
+          ].map(({ icon: Icon, label, color, key, action }) => (
+            <button key={label} onClick={action} disabled={actionLoading === key}
+              className="flex items-center gap-3 px-4 py-3 rounded-xl bg-white/[0.03] hover:bg-white/[0.06] border border-white/[0.07] text-left transition-all group disabled:opacity-50">
+              <Icon className={`w-4 h-4 ${color} flex-shrink-0 ${actionLoading === key ? 'animate-spin' : ''}`} />
               <span className="text-white/50 group-hover:text-white text-sm transition-colors">{label}</span>
             </button>
           ))}

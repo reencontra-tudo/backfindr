@@ -253,8 +253,18 @@ function LiveTicker({ items }: { items: ActivityItem[] }) {
   );
 }
 
+const STATS_FALLBACK = { total_objects: 12847, returned_objects: 3291, recovery_rate_pct: 94 };
+
 export default function HomePage() {
   const [activities, setActivities] = useState<ActivityItem[]>(FALLBACK_ACTIVITIES);
+  const [publicStats, setPublicStats] = useState(STATS_FALLBACK);
+
+  useEffect(() => {
+    fetch('/api/v1/stats/public')
+      .then(r => r.ok ? r.json() : null)
+      .then(d => { if (d) setPublicStats(d); })
+      .catch(() => {});
+  }, []);
 
   useEffect(() => {
     fetch('/api/v1/objects/public?size=20&status=lost')
@@ -773,9 +783,9 @@ export default function HomePage() {
 
           <div className="mb-10 grid gap-6 text-center md:grid-cols-3">
             {[
-              { value: 12847, suffix: '+', label: 'objetos registrados' },
-              { value: 3291, suffix: '+', label: 'recuperações confirmadas' },
-              { value: 94, suffix: '%', label: 'mais chance com QR' },
+              { value: publicStats.total_objects,    suffix: '+', label: 'objetos registrados' },
+              { value: publicStats.returned_objects,   suffix: '+', label: 'recuperações confirmadas' },
+              { value: publicStats.recovery_rate_pct,  suffix: '%', label: 'mais chance com QR' },
             ].map((stat, index) => (
               <FadeIn key={stat.label} delay={index * 100}>
                 <div className="rounded-3xl border border-white/[0.08] bg-white/[0.03] px-5 py-7">
