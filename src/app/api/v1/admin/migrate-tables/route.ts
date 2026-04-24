@@ -91,5 +91,29 @@ export async function POST(req: NextRequest) {
     results.users_flags = 'OK';
   } catch (e: unknown) { results.users_flags = String(e); }
 
+  // ── users: coluna admin_permissions (permissões granulares por colaborador) ───
+  try {
+    await query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS admin_permissions JSONB`);
+    results.users_admin_permissions = 'OK';
+  } catch (e: unknown) { results.users_admin_permissions = String(e); }
+
+  // ── team_invites: convites pendentes de colaboradores ─────────────────────
+  try {
+    await query(`CREATE TABLE IF NOT EXISTS team_invites (
+      id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+      email TEXT NOT NULL,
+      role TEXT NOT NULL DEFAULT 'admin',
+      permissions JSONB,
+      invited_by UUID REFERENCES users(id) ON DELETE SET NULL,
+      token TEXT NOT NULL UNIQUE,
+      accepted_at TIMESTAMPTZ,
+      expires_at TIMESTAMPTZ NOT NULL DEFAULT NOW() + INTERVAL '7 days',
+      created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    )`);
+    await query(`CREATE INDEX IF NOT EXISTS idx_team_invites_email ON team_invites(email)`);
+    await query(`CREATE INDEX IF NOT EXISTS idx_team_invites_token ON team_invites(token)`);
+    results.team_invites = 'OK';
+  } catch (e: unknown) { results.team_invites = String(e); }
+
   return NextResponse.json({ ok: true, results });
 }

@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import {
-  LayoutDashboard, Users, Package, Zap, Building2,
+  LayoutDashboard, Users, Users2, Package, Zap, Building2,
   CreditCard, Mail, Shield, Server, LogOut, Menu, X,
   ChevronRight, Bell, Settings, TrendingUp, Activity
 } from 'lucide-react';
@@ -17,22 +17,23 @@ interface AdminStats {
 
 const NAV = [
   { section: 'Visão Geral', items: [
-    { href: '/admin/dashboard', icon: LayoutDashboard, label: 'Dashboard',    badge: null },
+    { href: '/admin/dashboard', icon: LayoutDashboard, label: 'Dashboard',    badge: null, superOnly: false },
   ]},
   { section: 'Plataforma', items: [
-    { href: '/admin/users',     icon: Users,           label: 'Usuários',     badge: null },
-    { href: '/admin/objects',   icon: Package,         label: 'Objetos',      badge: null },
-    { href: '/admin/matches',   icon: Zap,             label: 'Matches IA',   badge: 'pending_matches' },
-    { href: '/admin/moderacao', icon: Shield,          label: 'Moderação',    badge: 'pending_reports' },
+    { href: '/admin/users',     icon: Users,           label: 'Usuários',     badge: null,              superOnly: false },
+    { href: '/admin/objects',   icon: Package,         label: 'Objetos',      badge: null,              superOnly: false },
+    { href: '/admin/matches',   icon: Zap,             label: 'Matches IA',   badge: 'pending_matches', superOnly: false },
+    { href: '/admin/moderacao', icon: Shield,          label: 'Moderação',    badge: 'pending_reports', superOnly: false },
   ]},
   { section: 'Crescimento', items: [
-    { href: '/admin/financeiro', icon: CreditCard,     label: 'Financeiro',   badge: null },
-    { href: '/admin/planos',     icon: TrendingUp,     label: 'Planos',       badge: null },
-    { href: '/admin/b2b',        icon: Building2,      label: 'B2B',          badge: null },
-    { href: '/admin/emails',     icon: Mail,           label: 'E-mails',      badge: null },
+    { href: '/admin/financeiro', icon: CreditCard,     label: 'Financeiro',   badge: null, superOnly: false },
+    { href: '/admin/planos',     icon: TrendingUp,     label: 'Planos',       badge: null, superOnly: false },
+    { href: '/admin/b2b',        icon: Building2,      label: 'B2B',          badge: null, superOnly: false },
+    { href: '/admin/emails',     icon: Mail,           label: 'E-mails',      badge: null, superOnly: false },
   ]},
   { section: 'Operações', items: [
-    { href: '/admin/sistema',    icon: Server,         label: 'Sistema',      badge: null },
+    { href: '/admin/sistema',   icon: Server,          label: 'Sistema',      badge: null, superOnly: false },
+    { href: '/admin/equipe',    icon: Users2,          label: 'Equipe',       badge: null, superOnly: true  },
   ]},
 ];
 
@@ -40,6 +41,8 @@ function Sidebar({ onClose, stats }: { onClose?: () => void; stats: AdminStats }
   const pathname = usePathname();
   const router = useRouter();
   const { user, logout } = useAuthStore();
+
+  const isSuperAdmin = user?.role === 'super_admin';
 
   const getBadge = (key: string | null) => {
     if (!key) return 0;
@@ -68,34 +71,38 @@ function Sidebar({ onClose, stats }: { onClose?: () => void; stats: AdminStats }
 
       {/* Nav */}
       <nav className="flex-1 px-2.5 py-3 overflow-y-auto space-y-4">
-        {NAV.map(({ section, items }) => (
-          <div key={section}>
-            <p className="text-[9px] font-bold uppercase tracking-[0.18em] text-white/15 px-2.5 mb-1.5">{section}</p>
-            <div className="space-y-0.5">
-              {items.map(({ href, icon: Icon, label, badge }) => {
-                const active = href === '/admin' ? pathname === '/admin' : pathname.startsWith(href);
-                const badgeCount = getBadge(badge);
-                return (
-                  <Link key={href} href={href}
-                    className={`flex items-center gap-2.5 px-2.5 py-2 rounded-xl text-[13px] transition-all group ${
-                      active
-                        ? 'bg-teal-500/12 text-teal-300 border border-teal-500/20'
-                        : 'text-white/35 hover:text-white/80 hover:bg-white/[0.04]'
-                    }`}>
-                    <Icon className={`w-4 h-4 flex-shrink-0 transition-colors ${active ? 'text-teal-400' : 'text-white/25 group-hover:text-white/50'}`} />
-                    <span className="flex-1 font-medium">{label}</span>
-                    {badgeCount > 0 && (
-                      <span className="min-w-[18px] h-[18px] flex items-center justify-center bg-red-500/90 text-white text-[9px] font-bold rounded-full px-1">
-                        {badgeCount > 99 ? '99+' : badgeCount}
-                      </span>
-                    )}
-                    {active && !badgeCount && <ChevronRight className="w-3 h-3 text-teal-500/40" />}
-                  </Link>
-                );
-              })}
+        {NAV.map(({ section, items }) => {
+          const visibleItems = items.filter(item => !item.superOnly || isSuperAdmin);
+          if (visibleItems.length === 0) return null;
+          return (
+            <div key={section}>
+              <p className="text-[9px] font-bold uppercase tracking-[0.18em] text-white/15 px-2.5 mb-1.5">{section}</p>
+              <div className="space-y-0.5">
+                {visibleItems.map(({ href, icon: Icon, label, badge }) => {
+                  const active = href === '/admin' ? pathname === '/admin' : pathname.startsWith(href);
+                  const badgeCount = getBadge(badge);
+                  return (
+                    <Link key={href} href={href}
+                      className={`flex items-center gap-2.5 px-2.5 py-2 rounded-xl text-[13px] transition-all group ${
+                        active
+                          ? 'bg-teal-500/12 text-teal-300 border border-teal-500/20'
+                          : 'text-white/35 hover:text-white/80 hover:bg-white/[0.04]'
+                      }`}>
+                      <Icon className={`w-4 h-4 flex-shrink-0 transition-colors ${active ? 'text-teal-400' : 'text-white/25 group-hover:text-white/50'}`} />
+                      <span className="flex-1 font-medium">{label}</span>
+                      {badgeCount > 0 && (
+                        <span className="min-w-[18px] h-[18px] flex items-center justify-center bg-red-500/90 text-white text-[9px] font-bold rounded-full px-1">
+                          {badgeCount > 99 ? '99+' : badgeCount}
+                        </span>
+                      )}
+                      {active && !badgeCount && <ChevronRight className="w-3 h-3 text-teal-500/40" />}
+                    </Link>
+                  );
+                })}
+              </div>
             </div>
-          </div>
-        ))}
+          );
+        })}
       </nav>
 
       {/* User footer */}
@@ -106,7 +113,9 @@ function Sidebar({ onClose, stats }: { onClose?: () => void; stats: AdminStats }
           </div>
           <div className="flex-1 min-w-0">
             <p className="text-white/70 text-xs font-semibold truncate leading-none">{user?.name ?? 'Admin'}</p>
-            <p className="text-teal-400/50 text-[9px] font-mono mt-0.5">Super Admin</p>
+            <p className="text-teal-400/50 text-[9px] font-mono mt-0.5">
+              {isSuperAdmin ? 'Super Admin' : user?.role === 'admin' ? 'Colaborador' : 'Admin B2B'}
+            </p>
           </div>
           <div className="w-1.5 h-1.5 bg-green-400 rounded-full flex-shrink-0" />
         </div>
