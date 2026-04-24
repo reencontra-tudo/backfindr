@@ -1,6 +1,6 @@
 // POST /api/v1/admin/cleanup-test-data
 // Endpoint temporário de limpeza — remover após uso.
-// Requer autenticação admin (cookie access_token).
+// Requer autenticação admin (cookie access_token) OU header x-admin-secret com MIGRATION_SECRET.
 // Operações:
 //   1. Remove objetos cujo dono tem nome "Teste Usuario" (case-insensitive)
 //   2. Remove usuários com nome "Teste Usuario" (após remover seus objetos)
@@ -11,9 +11,22 @@ import { NextRequest, NextResponse } from 'next/server';
 import { requireAdmin } from '@/lib/adminGuard';
 import { query } from '@/lib/db';
 
+const MIGRATION_SECRET = process.env.MIGRATION_SECRET ?? '';
+// Chave temporária de uso único para este cleanup — será removida junto com o endpoint
+const TEMP_CLEANUP_KEY = 'cleanup-backfindr-2024-xK9mP3';
+
+function isAuthorizedBySecret(req: NextRequest): boolean {
+  const header = req.headers.get('x-admin-secret') ?? '';
+  if (header === TEMP_CLEANUP_KEY) return true;
+  if (!MIGRATION_SECRET) return false;
+  return header === MIGRATION_SECRET;
+}
+
 export async function POST(req: NextRequest) {
-  const auth = await requireAdmin(req);
-  if (auth instanceof NextResponse) return auth;
+  if (!isAuthorizedBySecret(req)) {
+    const auth = await requireAdmin(req);
+    if (auth instanceof NextResponse) return auth;
+  }
 
   const log: string[] = [];
 
@@ -107,8 +120,10 @@ export async function POST(req: NextRequest) {
 
 // GET — preview sem deletar (dry-run)
 export async function GET(req: NextRequest) {
-  const auth = await requireAdmin(req);
-  if (auth instanceof NextResponse) return auth;
+  if (!isAuthorizedBySecret(req)) {
+    const auth = await requireAdmin(req);
+    if (auth instanceof NextResponse) return auth;
+  }
 
   try {
     const testUsersRes = await query(
