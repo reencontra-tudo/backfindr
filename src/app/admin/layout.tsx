@@ -6,8 +6,7 @@ import { usePathname, useRouter } from 'next/navigation';
 import {
   LayoutDashboard, Users, Package, Zap, Building2,
   CreditCard, Mail, Shield, Server, LogOut, Menu, X,
-  MapPin, ChevronRight, Bell, Settings, TrendingUp,
-  Activity, Search, AlertTriangle
+  ChevronRight, Bell, Settings, TrendingUp, Activity
 } from 'lucide-react';
 import { useAuthStore } from '@/hooks/useAuth';
 
@@ -101,7 +100,6 @@ function Sidebar({ onClose, stats }: { onClose?: () => void; stats: AdminStats }
 
       {/* User footer */}
       <div className="px-2.5 py-3 border-t border-white/[0.06] space-y-1 flex-shrink-0">
-        {/* User info */}
         <div className="flex items-center gap-2.5 px-2.5 py-2 mb-1">
           <div className="w-7 h-7 rounded-full bg-gradient-to-br from-teal-500/30 to-teal-700/30 border border-teal-500/30 flex items-center justify-center text-teal-300 text-xs font-bold flex-shrink-0">
             {user?.name?.[0]?.toUpperCase() ?? 'A'}
@@ -131,13 +129,50 @@ function Sidebar({ onClose, stats }: { onClose?: () => void; stats: AdminStats }
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
+  const router = useRouter();
+  const { user, isAuthenticated, fetchMe } = useAuthStore();
   const [open, setOpen] = useState(false);
   const [stats, setStats] = useState<AdminStats>({});
   const [totalAlerts, setTotalAlerts] = useState(0);
+  const [checking, setChecking] = useState(true);
 
+  // ── 1. Verificação de autenticação e role ─────────────────────────────────
+  useEffect(() => {
+    const check = async () => {
+      if (!isAuthenticated) {
+        await fetchMe().catch(() => {});
+      }
+      setChecking(false);
+    };
+    check();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // ── 2. Redirect baseado em role ───────────────────────────────────────────
+  useEffect(() => {
+    if (checking) return;
+    const role = user?.role ?? 'user';
+    if (!user) {
+      router.replace('/auth/login?redirect=/admin/dashboard');
+      return;
+    }
+    if (role === 'b2b_admin') {
+      if (!pathname.startsWith('/admin/b2b-portal')) {
+        router.replace('/admin/b2b-portal');
+      }
+      return;
+    }
+    if (role !== 'super_admin') {
+      router.replace('/dashboard');
+    }
+  }, [checking, user, pathname, router]);
+
+  // ── 3. Fechar drawer mobile ao navegar ────────────────────────────────────
   useEffect(() => { setOpen(false); }, [pathname]);
 
+  // ── 4. Buscar stats para badges (só super_admin) ──────────────────────────
   useEffect(() => {
+    if (!user || user.role !== 'super_admin') return;
     fetch('/api/v1/admin/stats')
       .then(r => r.json())
       .then(d => {
@@ -145,13 +180,30 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         setTotalAlerts((d.pending_matches ?? 0) + (d.pending_reports ?? 0));
       })
       .catch(() => {});
-  }, [pathname]);
+  }, [pathname, user]);
 
   const pageLabel = pathname
     .replace('/admin', '')
     .replace(/^\//, '')
     .replace(/\/.*/, '')
     || 'dashboard';
+
+  // ── Loading ───────────────────────────────────────────────────────────────
+  if (checking) {
+    return (
+      <div className="min-h-screen bg-[#050810] flex items-center justify-center">
+        <div className="flex flex-col items-center gap-3">
+          <div className="w-8 h-8 border-2 border-teal-500/30 border-t-teal-400 rounded-full animate-spin" />
+          <p className="text-white/30 text-sm">Verificando acesso...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // ── Sem permissão — aguarda redirect ─────────────────────────────────────
+  if (!user || (user.role !== 'super_admin' && user.role !== 'b2b_admin')) {
+    return null;
+  }
 
   return (
     <div className="min-h-screen bg-[#050810] text-white flex">
@@ -173,7 +225,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
       {/* Main */}
       <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
         {/* Topbar */}
-        <header className="flex items-center gap-3 px-4 md:px-6 h-13 border-b border-white/[0.05] bg-[#060a12] flex-shrink-0" style={{ height: '52px' }}>
+        <header className="flex items-center gap-3 px-4 md:px-6 border-b border-white/[0.05] bg-[#060a12] flex-shrink-0" style={{ height: '52px' }}>
           <button onClick={() => setOpen(true)} className="md:hidden text-white/30 hover:text-white transition-colors">
             <Menu className="w-5 h-5" />
           </button>
