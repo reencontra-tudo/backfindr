@@ -3,12 +3,16 @@ import { query } from '@/lib/db';
 import { verifyToken, extractTokenFromHeader } from '@/lib/jwt';
 
 // ─── Hierarquia de roles ──────────────────────────────────────────────────────
-// super_admin : dono da plataforma — acesso total a tudo
+// super_admin : dono da plataforma — acesso total, incluindo gerenciar roles,
+//               configurações críticas do sistema e impersonar usuários
+// admin       : colaborador interno — acesso amplo ao painel (objetos, usuários,
+//               matches, financeiro, moderação, emails, b2b), sem poder alterar
+//               roles de outros ou acessar configurações críticas do sistema
 // b2b_admin   : gestor de parceiro B2B — acesso restrito ao próprio parceiro
 // user        : usuário comum (free / pro / business) — sem acesso admin
 // ─────────────────────────────────────────────────────────────────────────────
 
-export type UserRole = 'super_admin' | 'b2b_admin' | 'user';
+export type UserRole = 'super_admin' | 'admin' | 'b2b_admin' | 'user';
 
 export interface AdminUser {
   id: string;
@@ -58,7 +62,7 @@ async function resolveUser(req: NextRequest): Promise<AdminUser | NextResponse> 
   }
 }
 
-/** Requer super_admin — dono da plataforma, acesso total */
+/** Requer super_admin — dono da plataforma, acesso total e irrestrito */
 export async function requireSuperAdmin(
   req: NextRequest
 ): Promise<{ user: AdminUser } | NextResponse> {
@@ -70,13 +74,36 @@ export async function requireSuperAdmin(
   return { user: result };
 }
 
-/** Requer super_admin OU b2b_admin — b2b_admin vê apenas dados do seu parceiro */
+/**
+ * Requer super_admin OU admin (colaborador interno).
+ * Usado na maioria das rotas do painel admin.
+ * b2b_admin NÃO tem acesso a estas rotas — use requireAnyAdmin para incluí-lo.
+ */
 export async function requireAdmin(
   req: NextRequest
 ): Promise<{ user: AdminUser } | NextResponse> {
   const result = await resolveUser(req);
   if (result instanceof NextResponse) return result;
-  if (result.role !== 'super_admin' && result.role !== 'b2b_admin') {
+  if (result.role !== 'super_admin' && result.role !== 'admin') {
+    return NextResponse.json({ detail: 'Acesso restrito à equipe interna' }, { status: 403 });
+  }
+  return { user: result };
+}
+
+/**
+ * Requer super_admin, admin OU b2b_admin.
+ * Usado em rotas que o parceiro B2B também pode acessar (ex: portal B2B).
+ */
+export async function requireAnyAdmin(
+  req: NextRequest
+): Promise<{ user: AdminUser } | NextResponse> {
+  const result = await resolveUser(req);
+  if (result instanceof NextResponse) return result;
+  if (
+    result.role !== 'super_admin' &&
+    result.role !== 'admin' &&
+    result.role !== 'b2b_admin'
+  ) {
     return NextResponse.json({ detail: 'Acesso restrito' }, { status: 403 });
   }
   return { user: result };
@@ -89,6 +116,16 @@ export async function requireAuth(
   const result = await resolveUser(req);
   if (result instanceof NextResponse) return result;
   return { user: result };
+}
+
+/** Verifica se o usuário tem acesso ao painel admin (qualquer nível acima de user) */
+export function isAdminRole(role: UserRole): boolean {
+  return role === 'super_admin' || role === 'admin' || role === 'b2b_admin';
+}
+
+/** Verifica se o usuário é da equipe interna (super_admin ou admin) */
+export function isInternalTeam(role: UserRole): boolean {
+  return role === 'super_admin' || role === 'admin';
 }
 
 export function backendHeaders(req: NextRequest): HeadersInit {

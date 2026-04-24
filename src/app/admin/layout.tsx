@@ -156,13 +156,16 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
       router.replace('/auth/login?redirect=/admin/dashboard');
       return;
     }
-    if (role === 'b2b_admin') {
+    if (role === 'admin') {
+      // colaborador interno — acesso ao painel completo exceto configurações críticas
+      // não redireciona, continua no admin
+    } else if (role === 'b2b_admin') {
       if (!pathname.startsWith('/admin/b2b-portal')) {
         router.replace('/admin/b2b-portal');
       }
       return;
     }
-    if (role !== 'super_admin') {
+    if (role !== 'super_admin' && role !== 'admin') {
       router.replace('/dashboard');
     }
   }, [checking, user, pathname, router]);
@@ -170,9 +173,9 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   // ── 3. Fechar drawer mobile ao navegar ────────────────────────────────────
   useEffect(() => { setOpen(false); }, [pathname]);
 
-  // ── 4. Buscar stats para badges (só super_admin) ──────────────────────────
+  // ── 4. Buscar stats para badges (super_admin e admin) ──────────────────────────────────
   useEffect(() => {
-    if (!user || user.role !== 'super_admin') return;
+    if (!user || (user.role !== 'super_admin' && user.role !== 'admin')) return;
     fetch('/api/v1/admin/stats')
       .then(r => r.json())
       .then(d => {
@@ -201,7 +204,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   }
 
   // ── Sem permissão — aguarda redirect ─────────────────────────────────────
-  if (!user || (user.role !== 'super_admin' && user.role !== 'b2b_admin')) {
+  if (!user || (user.role !== 'super_admin' && user.role !== 'admin' && user.role !== 'b2b_admin')) {
     return null;
   }
 
