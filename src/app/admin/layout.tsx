@@ -6,7 +6,7 @@ import { usePathname, useRouter } from 'next/navigation';
 import {
   LayoutDashboard, Users, Users2, Package, Zap, Building2,
   CreditCard, Mail, Shield, Server, LogOut, Menu, X,
-  ChevronRight, Bell, Settings, TrendingUp, Activity
+  ChevronRight, Bell, Settings, TrendingUp, Activity, Megaphone
 } from 'lucide-react';
 import { useAuthStore } from '@/hooks/useAuth';
 
@@ -21,8 +21,9 @@ const NAV = [
   ]},
   { section: 'Plataforma', items: [
     { href: '/admin/users',     icon: Users,           label: 'Usuários',     badge: null,              superOnly: false },
-    { href: '/admin/objects',   icon: Package,         label: 'Objetos',      badge: null,              superOnly: false },
-    { href: '/admin/matches',   icon: Zap,             label: 'Matches IA',   badge: 'pending_matches', superOnly: false },
+    { href: '/admin/objects',      icon: Package,    label: 'Objetos',      badge: null,              superOnly: false },
+    { href: '/admin/publicacoes',   icon: Megaphone,  label: 'Publicações',  badge: null,              superOnly: false },
+    { href: '/admin/matches',       icon: Zap,        label: 'Matches IA',   badge: 'pending_matches', superOnly: false },
     { href: '/admin/moderacao', icon: Shield,          label: 'Moderação',    badge: 'pending_reports', superOnly: false },
   ]},
   { section: 'Crescimento', items: [
