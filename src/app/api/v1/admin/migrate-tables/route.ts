@@ -115,5 +115,58 @@ export async function POST(req: NextRequest) {
     results.team_invites = 'OK';
   } catch (e: unknown) { results.team_invites = String(e); }
 
+  // ── plan_configs: configurações de planos ───────────────────────────────────────
+  try {
+    await query(`CREATE TABLE IF NOT EXISTS plan_configs (
+      id SERIAL PRIMARY KEY,
+      slug TEXT NOT NULL UNIQUE,
+      name TEXT NOT NULL,
+      price_brl NUMERIC(10,2) NOT NULL DEFAULT 0,
+      max_objects INTEGER NOT NULL DEFAULT 3,
+      features JSONB NOT NULL DEFAULT '[]',
+      is_active BOOLEAN NOT NULL DEFAULT true,
+      stripe_price_id TEXT,
+      mp_plan_id TEXT,
+      created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+      updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    )`);
+    // Inserir planos padrão se a tabela estiver vazia
+    await query(`
+      INSERT INTO plan_configs (slug, name, price_brl, max_objects, features)
+      VALUES
+        ('free',     'Grátis',   0,      3,   '["3 objetos","QR Code permanente","Busca manual","Suporte comunidade"]'),
+        ('pro',      'Pro',      29.00,  50,  '["50 objetos","Matching automático","Notificações push e email","QR Code personalizado","Suporte por email"]'),
+        ('business', 'Business', 149.00, 500, '["500 objetos","Matching prioritário","Notificações push, email e SMS","QR Code bulk","5 usuários","Relatórios completos","API"]')
+      ON CONFLICT (slug) DO NOTHING
+    `);
+    results.plan_configs = 'OK';
+  } catch (e: unknown) { results.plan_configs = String(e); }
+
+  // ── payment_settings: chaves de gateway de pagamento ───────────────────────
+  try {
+    await query(`CREATE TABLE IF NOT EXISTS payment_settings (
+      id SERIAL PRIMARY KEY,
+      key TEXT NOT NULL UNIQUE,
+      value TEXT NOT NULL DEFAULT '',
+      description TEXT NOT NULL DEFAULT '',
+      is_secret BOOLEAN NOT NULL DEFAULT false,
+      updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    )`);
+    // Inserir chaves padrão se a tabela estiver vazia
+    await query(`
+      INSERT INTO payment_settings (key, description, is_secret, value)
+      VALUES
+        ('mp_access_token',       'Mercado Pago Access Token (produção)',    true,  ''),
+        ('mp_public_key',         'Mercado Pago Public Key',                false, ''),
+        ('mp_webhook_secret',     'Mercado Pago Webhook Secret',            true,  ''),
+        ('payments_enabled',      'Habilitar pagamentos (true/false)',       false, 'false'),
+        ('boost_price_7d',        'Preço Boost 7 dias',                     false, '9.90'),
+        ('boost_price_30d',       'Preço Boost 30 dias',                    false, '24.90'),
+        ('boost_alert_price',     'Preço Alerta de Área',                   false, '14.90')
+      ON CONFLICT (key) DO NOTHING
+    `);
+    results.payment_settings = 'OK';
+  } catch (e: unknown) { results.payment_settings = String(e); }
+
   return NextResponse.json({ ok: true, results });
 }

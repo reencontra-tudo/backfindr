@@ -7,6 +7,7 @@ import {
   AlertTriangle, Package, Gift, Building2
 } from 'lucide-react';
 import { toast } from 'sonner';
+import Cookies from 'js-cookie';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -62,10 +63,7 @@ export default function AdminPlanosPage() {
   const [settingEdits, setSettingEdits] = useState<Record<string, string>>({});
   const [boostRunning, setBoostRunning] = useState(false);
 
-  const getToken = () =>
-    typeof window !== 'undefined'
-      ? (localStorage.getItem('token') || sessionStorage.getItem('token') || '')
-      : '';
+  const getToken = () => Cookies.get('access_token') ?? '';
 
   const fetchPlans = useCallback(async () => {
     setLoading(true);
@@ -74,7 +72,16 @@ export default function AdminPlanosPage() {
         headers: { 'Authorization': `Bearer ${getToken()}` },
       });
       const data = await res.json();
-      if (data.plans?.length > 0) setPlans(data.plans);
+      if (data.plans?.length > 0) {
+        // Normalizar features: pode vir como string JSON do banco
+        const normalized = data.plans.map((p: PlanConfig) => ({
+          ...p,
+          features: Array.isArray(p.features) ? p.features : (typeof p.features === 'string' ? JSON.parse(p.features) : []),
+          price_brl: Number(p.price_brl) || 0,
+          max_objects: Number(p.max_objects) || 0,
+        }));
+        setPlans(normalized);
+      }
     } catch { /* usa defaults */ }
     finally { setLoading(false); }
   }, []);
