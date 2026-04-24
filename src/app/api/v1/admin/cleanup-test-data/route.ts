@@ -1,10 +1,10 @@
 // POST /api/v1/admin/cleanup-test-data
 // Endpoint temporário de limpeza — remover após uso.
-// Requer autenticação admin (cookie access_token) OU header x-admin-secret com MIGRATION_SECRET.
+// Requer autenticação admin (cookie access_token) OU header x-admin-secret.
 // Operações:
 //   1. Remove objetos cujo dono tem nome "Teste Usuario" (case-insensitive)
 //   2. Remove usuários com nome "Teste Usuario" (após remover seus objetos)
-//   3. Remove objetos duplicados: mantém o mais antigo por (user_id, title, status)
+//   3. Remove objetos duplicados: mantém o mais antigo (MIN created_at) por (user_id, title, status)
 
 export const dynamic = 'force-dynamic';
 import { NextRequest, NextResponse } from 'next/server';
@@ -12,7 +12,6 @@ import { requireAdmin } from '@/lib/adminGuard';
 import { query } from '@/lib/db';
 
 const MIGRATION_SECRET = process.env.MIGRATION_SECRET ?? '';
-// Chave temporária de uso único para este cleanup — será removida junto com o endpoint
 const TEMP_CLEANUP_KEY = 'cleanup-backfindr-2024-xK9mP3';
 
 function isAuthorizedBySecret(req: NextRequest): boolean {
@@ -21,6 +20,18 @@ function isAuthorizedBySecret(req: NextRequest): boolean {
   if (!MIGRATION_SECRET) return false;
   return header === MIGRATION_SECRET;
 }
+
+// Query para encontrar duplicatas: mantém o mais antigo por (user_id, title normalizado, status)
+const DUP_QUERY = `
+  SELECT o.id, o.title, o.status, o.user_id, o.created_at
+  FROM objects o
+  WHERE o.id NOT IN (
+    SELECT DISTINCT ON (user_id, LOWER(TRIM(title)), status) id
+    FROM objects
+    ORDER BY user_id, LOWER(TRIM(title)), status, created_at ASC
+  )
+  ORDER BY o.created_at DESC
+`;
 
 export async function POST(req: NextRequest) {
   if (!isAuthorizedBySecret(req)) {
@@ -36,7 +47,7 @@ export async function POST(req: NextRequest) {
       `SELECT id, name, email FROM users
        WHERE LOWER(name) LIKE '%teste%' OR LOWER(email) LIKE '%teste%'`
     );
-    const testUserIds = testUsersRes.rows.map((r: { id: string }) => r.id);
+    const testUserIds: string[] = testUsersRes.rows.map((r: { id: string }) => r.id);
     log.push(`Usuários de teste encontrados: ${testUsersRes.rows.length}`);
     testUsersRes.rows.forEach((r: { id: string; name: string; email: string }) =>
       log.push(`  → ${r.name} <${r.email}> (${r.id})`)
@@ -69,18 +80,8 @@ export async function POST(req: NextRequest) {
       log.push(`Usuários de teste removidos: ${deletedUsers}`);
     }
 
-    // ── 4. Remover duplicatas (manter o mais antigo por user_id + title + status) ──
-    // Identifica IDs a deletar: todos exceto o MIN(id) por grupo
-    const dupRes = await query(
-      `SELECT id, title, status, user_id, created_at
-       FROM objects
-       WHERE id NOT IN (
-         SELECT MIN(id)
-         FROM objects
-         GROUP BY user_id, LOWER(TRIM(title)), status
-       )
-       ORDER BY created_at DESC`
-    );
+    // ── 4. Remover duplicatas ─────────────────────────────────────────────────
+    const dupRes = await query(DUP_QUERY);
     log.push(`Duplicatas encontradas: ${dupRes.rows.length}`);
     dupRes.rows.forEach((r: { id: string; title: string; status: string }) =>
       log.push(`  → "${r.title}" [${r.status}] (${r.id})`)
@@ -88,7 +89,7 @@ export async function POST(req: NextRequest) {
 
     let deletedDuplicates = 0;
     if (dupRes.rows.length > 0) {
-      const dupIds = dupRes.rows.map((r: { id: string }) => r.id);
+      const dupIds: string[] = dupRes.rows.map((r: { id: string }) => r.id);
       const placeholders = dupIds.map((_: string, i: number) => `$${i + 1}`).join(', ');
       const delDupRes = await query(
         `DELETE FROM objects WHERE id IN (${placeholders}) RETURNING id`,
@@ -118,7 +119,7 @@ export async function POST(req: NextRequest) {
   }
 }
 
-// GET — preview sem deletar (dry-run)
+// GET — dry-run: mostra o que seria removido sem deletar
 export async function GET(req: NextRequest) {
   if (!isAuthorizedBySecret(req)) {
     const auth = await requireAdmin(req);
@@ -130,33 +131,29 @@ export async function GET(req: NextRequest) {
       `SELECT id, name, email FROM users
        WHERE LOWER(name) LIKE '%teste%' OR LOWER(email) LIKE '%teste%'`
     );
-    const testUserIds = testUsersRes.rows.map((r: { id: string }) => r.id);
+    const testUserIds: string[] = testUsersRes.rows.map((r: { id: string }) => r.id);
 
     let testObjectsCount = 0;
+    let testObjects: { id: string; title: string; status: string }[] = [];
     if (testUserIds.length > 0) {
       const placeholders = testUserIds.map((_: string, i: number) => `$${i + 1}`).join(', ');
       const res = await query(
-        `SELECT COUNT(*) AS count FROM objects WHERE user_id IN (${placeholders})`,
+        `SELECT id, title, status FROM objects WHERE user_id IN (${placeholders})`,
         testUserIds
       );
-      testObjectsCount = parseInt(res.rows[0]?.count ?? '0', 10);
+      testObjectsCount = res.rows.length;
+      testObjects = res.rows;
     }
 
-    const dupRes = await query(
-      `SELECT id, title, status, user_id, created_at
-       FROM objects
-       WHERE id NOT IN (
-         SELECT MIN(id)
-         FROM objects
-         GROUP BY user_id, LOWER(TRIM(title)), status
-       )`
-    );
+    const dupRes = await query(DUP_QUERY);
 
     return NextResponse.json({
       dry_run: true,
-      test_users:   testUsersRes.rows,
+      test_users:         testUsersRes.rows,
       test_objects_count: testObjectsCount,
-      duplicates:   dupRes.rows,
+      test_objects:       testObjects,
+      duplicates_count:   dupRes.rows.length,
+      duplicates:         dupRes.rows,
     });
   } catch (e) {
     const msg = e instanceof Error ? e.message : String(e);
