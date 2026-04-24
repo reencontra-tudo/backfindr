@@ -28,6 +28,8 @@ export async function GET(req: NextRequest) {
 
     if (filter === 'pro') {
       conditions.push(`u.plan = 'pro'`);
+    } else if (filter === 'business') {
+      conditions.push(`u.plan = 'business'`);
     } else if (filter === 'free') {
       conditions.push(`(u.plan = 'free' OR u.plan IS NULL)`);
     } else if (filter === 'verified') {
@@ -36,14 +38,8 @@ export async function GET(req: NextRequest) {
       // Usuários que possuem ao menos um objeto com is_legacy = true
       conditions.push(`EXISTS (SELECT 1 FROM objects o WHERE o.user_id = u.id AND o.is_legacy = true)`);
     } else if (filter === 'inactive') {
-      // Usuários sem objetos criados nos últimos 90 dias OU com is_active = false (se coluna existir)
-      conditions.push(`
-        NOT EXISTS (
-          SELECT 1 FROM objects o
-          WHERE o.user_id = u.id
-            AND o.created_at > NOW() - INTERVAL '90 days'
-        )
-      `);
+      // Usuários sem login nos últimos 90 dias (updated_at como proxy de atividade)
+      conditions.push(`u.updated_at < NOW() - INTERVAL '90 days'`);
     }
 
     const where = conditions.length > 0 ? `WHERE ${conditions.join(' AND ')}` : '';
