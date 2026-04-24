@@ -58,10 +58,11 @@ const STEPS = ['Categoria', 'Status', 'Detalhes', 'Localização'];
 
 // ─── Intent map ────────────────────────────────────────────────────────────────
 const INTENT_MAP: Record<string, { category?: string; status?: string; startStep?: number }> = {
-  lost:    { status: 'lost',  startStep: 1 },
-  found:   { status: 'found', startStep: 1 },
-  protect: { status: 'lost',  startStep: 0 },
-  pet:     { category: 'pet', status: 'lost', startStep: 1 },
+  lost:    { status: 'lost',   startStep: 1 },
+  found:   { status: 'found',  startStep: 1 },
+  stolen:  { status: 'stolen', startStep: 1 },
+  protect: { status: 'lost',   startStep: 0 },
+  pet:     { category: 'pet',  status: 'lost', startStep: 1 },
 };
 
 // ─── Component ────────────────────────────────────────────────────────────────

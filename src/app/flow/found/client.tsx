@@ -73,14 +73,14 @@ export default function FoundFlowClient() {
     setStep(3);
   }
 
-  // ─── Tela 3: Finalização — redireciona para /achei com dados pré-preenchidos
+  // ─── Tela 3: Finalização — redireciona para registro com intent
   function handleFinalize() {
     analytics.flowCompleted('found', matches.length > 0);
     const params = new URLSearchParams();
     params.set('intent', 'found');
     if (step1.what) params.set('prefill_title', step1.what);
     if (step1.where) params.set('prefill_location', step1.where);
-    router.push(`/achei?${params.toString()}`);
+    router.push(`/auth/register?${params.toString()}`);
   }
 
   return (

@@ -88,6 +88,8 @@ export default function PetFlowClient() {
     const title = [step1.name, step1.breed, step1.petType].filter(Boolean).join(' ');
     if (title) params.set('prefill_title', title);
     if (step1.where) params.set('prefill_location', step1.where);
+    if (step1.breed) params.set('prefill_breed', step1.breed);
+    if (step1.color) params.set('prefill_color', step1.color);
     router.push(`/auth/register?${params.toString()}`);
   }
 

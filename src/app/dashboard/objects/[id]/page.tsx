@@ -226,6 +226,10 @@ export default function ObjectDetailPage() {
         toast.success(data.test_mode ? '🚀 Boost ativado (modo teste)!' : '🚀 Boost ativado!');
       } else if (data.checkout_url) {
         window.location.href = data.checkout_url;
+      } else if (data.detail || data.error) {
+        toast.error(data.detail || data.error || 'Erro ao ativar boost.');
+      } else {
+        toast.error('Erro ao ativar boost. Tente novamente.');
       }
     } catch {
       toast.error('Erro ao ativar boost. Tente novamente.');

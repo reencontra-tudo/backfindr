@@ -199,7 +199,7 @@ function BillingContent() {
         toast.success('Boost ativado com sucesso!');
         setBoostStep(null);
       } else {
-        toast.error(data.error || 'Erro ao ativar boost');
+        toast.error(data.detail || data.error || 'Erro ao ativar boost');
       }
     } catch {
       toast.error('Erro ao processar. Tente novamente.');
