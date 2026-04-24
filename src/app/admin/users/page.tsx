@@ -35,7 +35,7 @@ function UserRow({ user, onAction, onView }: {
   const date = new Date(user.created_at).toLocaleDateString('pt-BR', { day: '2-digit', month: 'short', year: '2-digit' });
 
   return (
-    <tr className="border-b border-white/[0.04] hover:bg-white/[0.02] transition-colors group">
+    <tr className="border-b border-white/[0.04] hover:bg-white/[0.02] transition-colors group cursor-pointer" onClick={() => onView(user.id)}>
       {/* Avatar + nome */}
       <td className="px-4 py-3">
         <div className="flex items-center gap-3">
@@ -97,18 +97,18 @@ function UserRow({ user, onAction, onView }: {
       {/* Ações */}
       <td className="px-4 py-3">
         <div className="relative flex items-center gap-1 justify-end">
-          <button onClick={() => onView(user.id)}
+          <button onClick={(e) => { e.stopPropagation(); onView(user.id); }}
             className="w-7 h-7 flex items-center justify-center text-white/15 hover:text-teal-400 hover:bg-teal-500/[0.08] rounded-lg transition-all opacity-0 group-hover:opacity-100"
             title="Ver perfil">
             <Eye className="w-3.5 h-3.5" />
           </button>
-          <button onClick={() => setOpen(!open)}
+          <button onClick={(e) => { e.stopPropagation(); setOpen(!open); }}
             className="w-7 h-7 flex items-center justify-center text-white/15 hover:text-white hover:bg-white/[0.06] rounded-lg transition-all opacity-0 group-hover:opacity-100">
             <MoreVertical className="w-3.5 h-3.5" />
           </button>
           {open && (
             <>
-              <div className="fixed inset-0 z-10" onClick={() => setOpen(false)} />
+              <div className="fixed inset-0 z-10" onClick={(e) => { e.stopPropagation(); setOpen(false); }} />
               <div className="absolute right-0 top-8 z-20 w-48 bg-[#0d1420] border border-white/[0.1] rounded-2xl shadow-2xl p-1.5">
                 <button onClick={() => { onView(user.id); setOpen(false); }}
                   className="flex items-center gap-2.5 w-full px-3 py-2 rounded-xl text-xs text-white/60 hover:text-white hover:bg-white/[0.06] transition-all">

@@ -6,10 +6,9 @@ import { api, parseApiError } from '@/lib/api';
 import { toast } from 'sonner';
 
 const PLAN_OPTIONS = [
-  { value: 'free',    label: 'Free',    color: 'text-white/60' },
-  { value: 'basic',   label: 'Basic',   color: 'text-blue-400' },
-  { value: 'pro',     label: 'Pro',     color: 'text-teal-400' },
-  { value: 'premium', label: 'Premium', color: 'text-yellow-400' },
+  { value: 'free',     label: 'Free',     color: 'text-white/60' },
+  { value: 'pro',      label: 'Pro',      color: 'text-yellow-400' },
+  { value: 'business', label: 'Business', color: 'text-purple-400' },
 ];
 
 interface UserObject {
