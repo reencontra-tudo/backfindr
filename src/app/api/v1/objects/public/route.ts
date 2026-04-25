@@ -3,104 +3,164 @@ import { NextRequest } from 'next/server';
 import { query } from '@/lib/db';
 import { successResponse, internalErrorResponse } from '@/lib/response';
 
+// Verifica se a coluna search_vector já existe (cache em memória por processo)
+let hasFTS: boolean | null = null;
+async function checkFTS(): Promise<boolean> {
+  if (hasFTS !== null) return hasFTS;
+  try {
+    const r = await query(
+      `SELECT 1 FROM information_schema.columns
+       WHERE table_name = 'objects' AND column_name = 'search_vector' LIMIT 1`
+    );
+    hasFTS = r.rows.length > 0;
+  } catch {
+    hasFTS = false;
+  }
+  return hasFTS;
+}
+
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
-    const status = searchParams.get('status') || ''; // vazio = todos os status
+    const status   = searchParams.get('status') || '';
     const category = searchParams.get('category');
-    const keyword = searchParams.get('keyword') || searchParams.get('q') || '';
-    const limit = Math.min(parseInt(searchParams.get('size') || searchParams.get('limit') || '200'), 500);
-    const page = parseInt(searchParams.get('page') || '1');
-    const offset = (page - 1) * limit;
+    const keyword  = (searchParams.get('keyword') || searchParams.get('q') || '').trim();
+    const limit    = Math.min(parseInt(searchParams.get('size') || searchParams.get('limit') || '200'), 500);
+    // Suporte a paginação por cursor (cursor = updated_at ISO string do último item)
+    const cursor   = searchParams.get('cursor');
+    const page     = parseInt(searchParams.get('page') || '1');
+    const offset   = cursor ? null : (page - 1) * limit;
+
+    const ftsAvailable = await checkFTS();
 
     const params: unknown[] = [];
     const conditions: string[] = ['is_public = true'];
 
-    // Filtrar por status apenas se especificado
+    // ── Filtro de status ──────────────────────────────────────────────────
     if (status && status !== 'all') {
       params.push(status);
       conditions.push(`status = $${params.length}`);
     } else {
-      // Excluir apenas "returned" do mapa público por padrão
       conditions.push(`status IN ('lost', 'found', 'stolen')`);
     }
 
+    // ── Filtro de categoria ───────────────────────────────────────────────
     if (category) {
       params.push(category);
       conditions.push(`category = $${params.length}`);
     }
 
-    // Busca por texto (case-insensitive) em título, descrição, cor, marca e raça
-    if (keyword && keyword.trim().length > 0) {
-      params.push(`%${keyword.trim().toLowerCase()}%`);
-      conditions.push(`(LOWER(title) LIKE $${params.length} OR LOWER(description) LIKE $${params.length} OR LOWER(color) LIKE $${params.length} OR LOWER(brand) LIKE $${params.length} OR LOWER(breed) LIKE $${params.length})`);
+    // ── Busca por keyword: FTS se disponível, ILIKE como fallback ─────────
+    let rankExpr = '0::float AS rank';
+    if (keyword.length > 0) {
+      if (ftsAvailable) {
+        // Full-text search com ranking por relevância
+        params.push(keyword);
+        const pIdx = params.length;
+        conditions.push(
+          `(search_vector @@ plainto_tsquery('portuguese', $${pIdx})` +
+          ` OR title ILIKE $${pIdx + 1})`
+        );
+        params.push(`%${keyword}%`);
+        rankExpr = `ts_rank(search_vector, plainto_tsquery('portuguese', $${pIdx})) AS rank`;
+      } else {
+        // Fallback: ILIKE em múltiplos campos
+        params.push(`%${keyword.toLowerCase()}%`);
+        const p = params.length;
+        conditions.push(
+          `(LOWER(title) LIKE $${p} OR LOWER(description) LIKE $${p}` +
+          ` OR LOWER(color) LIKE $${p} OR LOWER(brand) LIKE $${p} OR LOWER(breed) LIKE $${p})`
+        );
+      }
     }
 
-    const whereClause = conditions.length > 0 ? `WHERE ${conditions.join(' AND ')}` : '';
+    // ── Paginação por cursor ──────────────────────────────────────────────
+    if (cursor) {
+      params.push(cursor);
+      conditions.push(`updated_at < $${params.length}`);
+    }
+
+    const whereClause = `WHERE ${conditions.join(' AND ')}`;
+
+    // ── Query principal ───────────────────────────────────────────────────
+    const orderBy = keyword.length > 0 && ftsAvailable
+      ? `ORDER BY rank DESC, is_boosted DESC, updated_at DESC NULLS LAST`
+      : `ORDER BY
+           CASE WHEN is_boosted = true AND (boost_expires_at IS NULL OR boost_expires_at > NOW()) THEN 0 ELSE 1 END ASC,
+           CASE WHEN images IS NOT NULL AND images != '[]' AND images != 'null' THEN 0 ELSE 1 END ASC,
+           CASE WHEN updated_at > NOW() - INTERVAL '2 years' THEN 0 ELSE 1 END ASC,
+           updated_at DESC NULLS LAST`;
+
+    params.push(limit);
+    const limitParam = params.length;
+
+    let paginationClause: string;
+    if (cursor) {
+      paginationClause = `LIMIT $${limitParam}`;
+    } else {
+      params.push(offset as number);
+      paginationClause = `LIMIT $${limitParam} OFFSET $${params.length}`;
+    }
 
     const sql = `
-      SELECT 
-        id,
-        title,
-        description,
-        status,
-        category,
-        type,
-        location,
-        latitude,
-        longitude,
-        qr_code,
-        color,
-        brand,
-        breed,
-        images,
-        is_legacy,
-        source,
-        reward_amount,
-        reward_description,
-        is_boosted,
-        boost_expires_at,
-        created_at,
-        updated_at
+      SELECT
+        id, title, description, status, category, type,
+        location, latitude, longitude, qr_code,
+        color, brand, breed, images,
+        is_legacy, source, reward_amount, reward_description,
+        is_boosted, boost_expires_at, created_at, updated_at,
+        ${rankExpr}
       FROM objects
       ${whereClause}
-      ORDER BY
-        -- 1. Boosted primeiro
-        CASE WHEN is_boosted = true AND (boost_expires_at IS NULL OR boost_expires_at > NOW()) THEN 0 ELSE 1 END ASC,
-        -- 2. Objetos com foto têm prioridade
-        CASE WHEN images IS NOT NULL AND images != '[]' AND images != 'null' THEN 0 ELSE 1 END ASC,
-        -- 3. Objetos recentes (últimos 2 anos) têm prioridade sobre legados antigos
-        CASE WHEN updated_at > NOW() - INTERVAL '2 years' THEN 0 ELSE 1 END ASC,
-        -- 4. Dentro de cada grupo, mais recente primeiro
-        updated_at DESC NULLS LAST
-      LIMIT $${params.length + 1} OFFSET $${params.length + 2}
+      ${orderBy}
+      ${paginationClause}
     `;
-    params.push(limit, offset);
 
     const result = await query(sql, params);
 
-    // Contar total
-    const countParams: unknown[] = [];
-    const countConditions: string[] = ['is_public = true'];
-    if (status && status !== 'all') {
-      countParams.push(status);
-      countConditions.push(`status = $${countParams.length}`);
-    } else {
-      countConditions.push(`status IN ('lost', 'found', 'stolen')`);
+    // ── Contagem total (apenas para paginação por offset) ─────────────────
+    let total = 0;
+    let pages = 1;
+    if (!cursor) {
+      const countParams: unknown[] = [];
+      const countConds: string[] = ['is_public = true'];
+      if (status && status !== 'all') {
+        countParams.push(status);
+        countConds.push(`status = $${countParams.length}`);
+      } else {
+        countConds.push(`status IN ('lost', 'found', 'stolen')`);
+      }
+      if (category) {
+        countParams.push(category);
+        countConds.push(`category = $${countParams.length}`);
+      }
+      if (keyword.length > 0) {
+        if (ftsAvailable) {
+          countParams.push(keyword);
+          const pIdx = countParams.length;
+          countConds.push(
+            `(search_vector @@ plainto_tsquery('portuguese', $${pIdx})` +
+            ` OR title ILIKE $${pIdx + 1})`
+          );
+          countParams.push(`%${keyword}%`);
+        } else {
+          countParams.push(`%${keyword.toLowerCase()}%`);
+          const p = countParams.length;
+          countConds.push(
+            `(LOWER(title) LIKE $${p} OR LOWER(description) LIKE $${p}` +
+            ` OR LOWER(color) LIKE $${p} OR LOWER(brand) LIKE $${p} OR LOWER(breed) LIKE $${p})`
+          );
+        }
+      }
+      const countResult = await query(
+        `SELECT COUNT(*) as count FROM objects WHERE ${countConds.join(' AND ')}`,
+        countParams
+      );
+      total = parseInt(countResult.rows[0].count);
+      pages = Math.ceil(total / limit);
     }
-    if (category) {
-      countParams.push(category);
-      countConditions.push(`category = $${countParams.length}`);
-    }
-    if (keyword && keyword.trim().length > 0) {
-      countParams.push(`%${keyword.trim().toLowerCase()}%`);
-      countConditions.push(`(LOWER(title) LIKE $${countParams.length} OR LOWER(description) LIKE $${countParams.length} OR LOWER(color) LIKE $${countParams.length} OR LOWER(brand) LIKE $${countParams.length} OR LOWER(breed) LIKE $${countParams.length})`);
-    }
-    const countWhere = countConditions.length > 0 ? `WHERE ${countConditions.join(' AND ')}` : '';
-    const countResult = await query(`SELECT COUNT(*) as count FROM objects ${countWhere}`, countParams);
-    const total = parseInt(countResult.rows[0].count);
 
-    // Normalizar dados para o formato esperado pelo frontend (RegisteredObject)
+    // ── Normalizar para RegisteredObject ──────────────────────────────────
     const items = result.rows.map((row: Record<string, unknown>) => ({
       id: row.id,
       title: row.title,
@@ -112,18 +172,16 @@ export async function GET(request: NextRequest) {
       photos: (() => {
         try {
           if (Array.isArray(row.images)) return row.images;
-          if (typeof row.images === 'string') return JSON.parse(row.images);
+          if (typeof row.images === 'string') return JSON.parse(row.images as string);
           return [];
         } catch { return []; }
       })(),
-      // Normalizar localização: suporta tanto latitude/longitude separados quanto objeto location
       location: (() => {
         const lat = row.latitude ? parseFloat(String(row.latitude)) : null;
         const lng = row.longitude ? parseFloat(String(row.longitude)) : null;
         if (lat && lng && !isNaN(lat) && !isNaN(lng)) {
-          return { lat, lng, address: row.location as string || undefined };
+          return { lat, lng, address: (row.location as string) || undefined };
         }
-        // Tentar parsear location como JSON {lat, lng}
         if (row.location && typeof row.location === 'string') {
           try {
             const parsed = JSON.parse(row.location as string);
@@ -142,14 +200,22 @@ export async function GET(request: NextRequest) {
       reward_description: row.reward_description || null,
       created_at: row.created_at,
       updated_at: row.updated_at,
+      _rank: row.rank ?? 0,
     }));
+
+    // Cursor para a próxima página (updated_at do último item)
+    const nextCursor = items.length === limit
+      ? String(items[items.length - 1].updated_at)
+      : null;
 
     return successResponse({
       items,
-      total,
-      page,
+      total: cursor ? undefined : total,
+      page: cursor ? undefined : page,
       size: limit,
-      pages: Math.ceil(total / limit),
+      pages: cursor ? undefined : pages,
+      next_cursor: nextCursor,
+      fts_active: ftsAvailable,
     });
   } catch (error) {
     return internalErrorResponse(error);

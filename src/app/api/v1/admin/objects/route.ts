@@ -20,7 +20,25 @@ export async function GET(req: NextRequest) {
   const params: unknown[]    = [];
   let idx = 1;
 
-  if (search)   { conditions.push(`(o.title ILIKE $${idx} OR o.description ILIKE $${idx})`); params.push(`%${search}%`); idx++; }
+  if (search) {
+    // Tentar FTS se search_vector existir, senão ILIKE
+    try {
+      const ftsCheck = await query(
+        `SELECT 1 FROM information_schema.columns WHERE table_name='objects' AND column_name='search_vector' LIMIT 1`
+      );
+      if (ftsCheck.rows.length > 0) {
+        conditions.push(`(o.search_vector @@ plainto_tsquery('portuguese', $${idx}) OR o.title ILIKE $${idx + 1})`);
+        params.push(search); idx++;
+        params.push(`%${search}%`); idx++;
+      } else {
+        conditions.push(`(o.title ILIKE $${idx} OR o.description ILIKE $${idx})`);
+        params.push(`%${search}%`); idx++;
+      }
+    } catch {
+      conditions.push(`(o.title ILIKE $${idx} OR o.description ILIKE $${idx})`);
+      params.push(`%${search}%`); idx++;
+    }
+  }
   if (status)   { conditions.push(`o.status = $${idx}`); params.push(status); idx++; }
   if (user)     { conditions.push(`o.user_id = $${idx}`); params.push(user); idx++; }
   if (category) { conditions.push(`o.category = $${idx}`); params.push(category); idx++; }
