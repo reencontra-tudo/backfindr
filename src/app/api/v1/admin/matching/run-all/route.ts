@@ -2,6 +2,7 @@ export const dynamic = 'force-dynamic';
 import { NextRequest, NextResponse } from 'next/server';
 import { requireAdmin } from '@/lib/adminGuard';
 import { query } from '@/lib/db';
+import { sendMatchAlertEmail } from '@/lib/email';
 
 const MAX_RADIUS_KM = 50;
 
@@ -120,12 +121,35 @@ export async function POST(req: NextRequest) {
         );
         if (existing.rows.length > 0) continue;
 
-        await query(
+        const matchResult = await query(
           `INSERT INTO matches (lost_object_id, found_object_id, score, status, created_at, updated_at)
-           VALUES ($1, $2, $3, 'pending', NOW(), NOW())`,
+           VALUES ($1, $2, $3, 'pending', NOW(), NOW())
+           RETURNING id`,
           [object.id, candidate.id, score]
         );
         totalCreated++;
+
+        // ── Notificar o dono do objeto perdido por e-mail (assíncrono) ─────────────────────
+        try {
+          const ownerResult = await query(
+            `SELECT u.name, u.email FROM users u
+             JOIN objects o ON o.user_id = u.id
+             WHERE o.id = $1`,
+            [object.id]
+          );
+          if (ownerResult.rows.length > 0) {
+            const owner = ownerResult.rows[0];
+            sendMatchAlertEmail(
+              { name: owner.name, email: owner.email },
+              object.title as string,
+              matchResult.rows[0]?.id ?? '',
+              score,
+              candidate.title as string
+            ).catch(err => console.error('[admin/matching] Falha ao enviar e-mail de match:', err));
+          }
+        } catch (emailErr) {
+          console.error('[admin/matching] Erro ao buscar dono para notificação:', emailErr);
+        }
       }
     }
 

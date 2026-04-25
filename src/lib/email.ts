@@ -135,47 +135,142 @@ export async function sendWelcomeEmail(user: { name: string; email: string }) {
 }
 
 // ─── E-mail de alerta de match ────────────────────────────────────────────────
-export async function sendMatchAlertEmail(user: { name: string; email: string }, objectTitle: string, matchId: string) {
+export async function sendMatchAlertEmail(
+  user: { name: string; email: string },
+  objectTitle: string,
+  matchId: string,
+  score?: number,
+  matchedTitle?: string
+) {
   const firstName = user.name.split(' ')[0];
   const matchUrl = `https://www.backfindr.com/dashboard/matches`;
+  const scoreLabel = score && score >= 80 ? 'Alta' : score && score >= 60 ? 'Média' : 'Moderada';
+  const scoreColor = score && score >= 80 ? '#22c55e' : score && score >= 60 ? '#f59e0b' : '#14b8a6';
+  const scoreBar = score ? Math.round(score) : 70;
 
   const html = `
 <!DOCTYPE html>
 <html lang="pt-BR">
-<head><meta charset="UTF-8" /><title>Match encontrado!</title></head>
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Match encontrado!</title>
+</head>
 <body style="margin:0;padding:0;background:#080b0f;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;">
   <table width="100%" cellpadding="0" cellspacing="0" style="background:#080b0f;padding:40px 20px;">
     <tr>
       <td align="center">
         <table width="100%" cellpadding="0" cellspacing="0" style="max-width:520px;background:#0f1318;border:1px solid rgba(255,255,255,0.08);border-radius:20px;overflow:hidden;">
+
+          <!-- Header -->
           <tr>
-            <td style="padding:32px;">
-              <div style="text-align:center;margin-bottom:24px;">
-                <span style="font-size:48px;">⚡</span>
+            <td style="padding:32px 32px 0;text-align:center;">
+              <div style="display:inline-flex;align-items:center;gap:10px;margin-bottom:8px;">
+                <div style="width:36px;height:36px;background:#14b8a6;border-radius:10px;display:inline-flex;align-items:center;justify-content:center;">
+                  <span style="color:white;font-size:18px;">📍</span>
+                </div>
+                <span style="color:white;font-size:18px;font-weight:700;">Backfindr</span>
               </div>
-              <h1 style="color:white;font-size:22px;font-weight:700;margin:0 0 8px;text-align:center;">
+            </td>
+          </tr>
+
+          <!-- Body -->
+          <tr>
+            <td style="padding:24px 32px 32px;">
+
+              <!-- Ícone de match -->
+              <div style="text-align:center;margin-bottom:20px;">
+                <div style="display:inline-block;background:rgba(20,184,166,0.1);border:1px solid rgba(20,184,166,0.25);border-radius:50%;width:72px;height:72px;line-height:72px;text-align:center;">
+                  <span style="font-size:32px;">⚡</span>
+                </div>
+              </div>
+
+              <h1 style="color:white;font-size:22px;font-weight:700;margin:0 0 8px;text-align:center;line-height:1.3;">
                 Match encontrado, ${firstName}!
               </h1>
               <p style="color:rgba(255,255,255,0.55);font-size:14px;line-height:1.6;margin:0 0 24px;text-align:center;">
-                A IA do Backfindr encontrou uma correspondência para <strong style="color:white;">${objectTitle}</strong>.
+                A IA do Backfindr identificou uma possível correspondência para<br/>
+                <strong style="color:white;">${objectTitle}</strong>
               </p>
-              <table width="100%" cellpadding="0" cellspacing="0">
+
+              <!-- Card de match -->
+              <table width="100%" cellpadding="0" cellspacing="0" style="background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.08);border-radius:14px;margin-bottom:24px;">
+                <tr>
+                  <td style="padding:20px 24px;">
+                    <p style="color:rgba(255,255,255,0.35);font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:0.15em;margin:0 0 12px;">Detalhes do match</p>
+
+                    <!-- Objeto perdido -->
+                    <table width="100%" cellpadding="0" cellspacing="0" style="margin-bottom:12px;">
+                      <tr>
+                        <td style="width:8px;background:#ef4444;border-radius:4px;" width="8"></td>
+                        <td style="padding-left:12px;">
+                          <p style="color:rgba(255,255,255,0.4);font-size:11px;margin:0 0 2px;">Seu objeto</p>
+                          <p style="color:white;font-size:14px;font-weight:600;margin:0;">${objectTitle}</p>
+                        </td>
+                      </tr>
+                    </table>
+
+                    <!-- Divider -->
+                    <div style="text-align:center;margin:8px 0;">
+                      <span style="color:rgba(255,255,255,0.2);font-size:18px;">↕</span>
+                    </div>
+
+                    <!-- Objeto encontrado -->
+                    <table width="100%" cellpadding="0" cellspacing="0" style="margin-bottom:16px;">
+                      <tr>
+                        <td style="width:8px;background:#22c55e;border-radius:4px;" width="8"></td>
+                        <td style="padding-left:12px;">
+                          <p style="color:rgba(255,255,255,0.4);font-size:11px;margin:0 0 2px;">Possível correspondência</p>
+                          <p style="color:white;font-size:14px;font-weight:600;margin:0;">${matchedTitle || 'Item encontrado registrado na plataforma'}</p>
+                        </td>
+                      </tr>
+                    </table>
+
+                    <!-- Score de confiança -->
+                    <p style="color:rgba(255,255,255,0.35);font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:0.15em;margin:0 0 8px;">Confiança do match</p>
+                    <table width="100%" cellpadding="0" cellspacing="0">
+                      <tr>
+                        <td>
+                          <div style="background:rgba(255,255,255,0.06);border-radius:100px;height:8px;overflow:hidden;">
+                            <div style="background:${scoreColor};height:8px;border-radius:100px;width:${scoreBar}%;"></div>
+                          </div>
+                        </td>
+                        <td style="width:80px;padding-left:12px;white-space:nowrap;">
+                          <span style="color:${scoreColor};font-size:13px;font-weight:700;">${scoreBar}% — ${scoreLabel}</span>
+                        </td>
+                      </tr>
+                    </table>
+                  </td>
+                </tr>
+              </table>
+
+              <!-- CTA -->
+              <table width="100%" cellpadding="0" cellspacing="0" style="margin-bottom:20px;">
                 <tr>
                   <td align="center">
                     <a href="${matchUrl}"
-                       style="display:inline-block;background:#14b8a6;color:white;font-size:15px;font-weight:700;text-decoration:none;padding:14px 32px;border-radius:12px;">
+                       style="display:inline-block;background:#14b8a6;color:white;font-size:15px;font-weight:700;text-decoration:none;padding:14px 36px;border-radius:12px;box-shadow:0 4px 20px rgba(20,184,166,0.25);">
                       Ver o match agora →
                     </a>
                   </td>
                 </tr>
               </table>
+
+              <p style="color:rgba(255,255,255,0.25);font-size:12px;text-align:center;margin:0;">
+                Acesse o match para confirmar ou descartar a correspondência.
+              </p>
             </td>
           </tr>
+
+          <!-- Footer -->
           <tr>
-            <td style="padding:16px 32px;border-top:1px solid rgba(255,255,255,0.06);text-align:center;">
-              <p style="color:rgba(255,255,255,0.2);font-size:12px;margin:0;">© 2026 Backfindr</p>
+            <td style="padding:20px 32px;border-top:1px solid rgba(255,255,255,0.06);text-align:center;">
+              <p style="color:rgba(255,255,255,0.2);font-size:12px;margin:0;">
+                © 2026 Backfindr · <a href="https://www.backfindr.com" style="color:rgba(255,255,255,0.3);text-decoration:none;">www.backfindr.com</a>
+              </p>
             </td>
           </tr>
+
         </table>
       </td>
     </tr>

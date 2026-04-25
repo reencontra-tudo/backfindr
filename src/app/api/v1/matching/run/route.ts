@@ -3,6 +3,7 @@ import { NextRequest } from 'next/server';
 import { query } from '@/lib/db';
 import { verifyToken, extractTokenFromHeader } from '@/lib/jwt';
 import { successResponse, unauthorizedResponse, internalErrorResponse } from '@/lib/response';
+import { sendMatchAlertEmail } from '@/lib/email';
 
 const MAX_RADIUS_KM = 50;
 
@@ -150,7 +151,34 @@ export async function POST(request: NextRequest) {
          RETURNING *`,
         [lostId, foundId, score]
       );
-      matches.push(matchResult.rows[0]);
+      const newMatch = matchResult.rows[0];
+      matches.push(newMatch);
+
+      // ── Notificar o dono do objeto perdido por e-mail ────────────────────────────────
+      try {
+        // Buscar o dono do objeto perdido
+        const lostObj = object.status === 'lost' ? object : candidate;
+        const foundObj = object.status === 'found' ? object : candidate;
+        const ownerResult = await query(
+          `SELECT u.name, u.email FROM users u
+           JOIN objects o ON o.user_id = u.id
+           WHERE o.id = $1`,
+          [lostObj.id]
+        );
+        if (ownerResult.rows.length > 0) {
+          const owner = ownerResult.rows[0];
+          // Enviar e-mail de forma assíncrona (não bloquear a resposta)
+          sendMatchAlertEmail(
+            { name: owner.name, email: owner.email },
+            lostObj.title as string,
+            newMatch.id,
+            score,
+            foundObj.title as string
+          ).catch(err => console.error('[matching] Falha ao enviar e-mail de match:', err));
+        }
+      } catch (emailErr) {
+        console.error('[matching] Erro ao buscar dono para notificação:', emailErr);
+      }
     }
 
     return successResponse({
