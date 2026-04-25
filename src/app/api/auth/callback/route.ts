@@ -72,6 +72,7 @@ export async function GET(request: NextRequest) {
     );
 
     let user;
+    let isNewUser = false;
     if (userResult.rows.length > 0) {
       user = userResult.rows[0];
       await query(
@@ -86,6 +87,7 @@ export async function GET(request: NextRequest) {
         [email, name, googleId, avatarUrl]
       );
       user = insertResult.rows[0];
+      isNewUser = true;
     }
 
     const accessToken = createAccessToken(user.id, user.email);
@@ -96,6 +98,8 @@ export async function GET(request: NextRequest) {
     const successUrl = new URL(`${appUrl}/auth/google-success`);
     successUrl.searchParams.set('access_token', accessToken);
     successUrl.searchParams.set('refresh_token', refreshToken);
+    // Apenas novos usuários devem ver o WelcomeModal
+    if (isNewUser) successUrl.searchParams.set('new', '1');
     return NextResponse.redirect(successUrl.toString());
   } catch (err) {
     console.error('Google OAuth error:', err);

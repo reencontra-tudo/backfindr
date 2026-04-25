@@ -47,6 +47,12 @@ function MagicConfirmContent() {
         token_type: 'Bearer',
       });
 
+      // Usuários que entram via magic link já existem no sistema
+      // — marcar WelcomeModal como visto para não interromper o acesso
+      if (typeof window !== 'undefined') {
+        localStorage.setItem('backfindr_welcome_shown', '1');
+      }
+
       await fetchMe();
       router.replace('/dashboard');
     } catch {

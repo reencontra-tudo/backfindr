@@ -15,6 +15,11 @@ function MagicSuccessContent() {
 
     if (accessToken && refreshToken) {
       setTokens({ access_token: accessToken, refresh_token: refreshToken, token_type: 'Bearer' });
+      // Usuários que entram via magic link já existem no sistema
+      // — marcar WelcomeModal como visto para não interromper o acesso
+      if (typeof window !== 'undefined') {
+        localStorage.setItem('backfindr_welcome_shown', '1');
+      }
       fetchMe()
         .then(() => router.replace('/dashboard'))
         .catch(() => router.replace('/auth/login?error=magic_session_failed'));

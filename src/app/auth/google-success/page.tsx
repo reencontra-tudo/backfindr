@@ -12,10 +12,16 @@ function GoogleSuccessContent() {
   useEffect(() => {
     const accessToken = searchParams.get('access_token');
     const refreshToken = searchParams.get('refresh_token');
+    const isNew = searchParams.get('new') === '1';
 
     if (accessToken && refreshToken) {
       // Salvar tokens via js-cookie (mesmo mecanismo do login normal)
       setTokens({ access_token: accessToken, refresh_token: refreshToken, token_type: 'Bearer' });
+      // Para usuários existentes, marcar o WelcomeModal como já exibido
+      // para evitar que apareça em novos dispositivos/browsers
+      if (!isNew && typeof window !== 'undefined') {
+        localStorage.setItem('backfindr_welcome_shown', '1');
+      }
       // Buscar dados do usuário e redirecionar
       fetchMe().then(() => {
         router.replace('/dashboard');

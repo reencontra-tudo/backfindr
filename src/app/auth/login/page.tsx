@@ -58,6 +58,11 @@ function LoginForm() {
     try {
       await login(data.email, data.password);
       toast.success('Bem-vindo de volta!');
+      // Usuários que fazem login com e-mail/senha já são existentes
+      // — marcar WelcomeModal como visto para não interromper o acesso
+      if (typeof window !== 'undefined') {
+        localStorage.setItem('backfindr_welcome_shown', '1');
+      }
       if (planSlug && planSlug !== 'free') {
         await redirectToCheckout(planSlug);
       } else {
