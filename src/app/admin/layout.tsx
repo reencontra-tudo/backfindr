@@ -6,9 +6,11 @@ import { usePathname, useRouter } from 'next/navigation';
 import {
   LayoutDashboard, Users, Users2, Package, Zap, Building2,
   CreditCard, Mail, Shield, Server, LogOut, Menu, X,
-  ChevronRight, Bell, Settings, TrendingUp, Activity, Megaphone, FileBarChart, Send, BarChart2
+  ChevronRight, Bell, Settings, TrendingUp, Activity, Megaphone, FileBarChart, Send, BarChart2,
+  LayoutGrid, Eye
 } from 'lucide-react';
 import { useAuthStore } from '@/hooks/useAuth';
+import { toast } from 'sonner';
 
 interface AdminStats {
   pending_matches?: number;
@@ -124,9 +126,10 @@ function Sidebar({ onClose, stats }: { onClose?: () => void; stats: AdminStats }
           <div className="w-1.5 h-1.5 bg-green-400 rounded-full flex-shrink-0" />
         </div>
 
+        {/* Toggle: navegar como usuário comum (própria conta) */}
         <Link href="/dashboard"
-          className="flex items-center gap-2.5 px-2.5 py-2 rounded-xl text-white/25 hover:text-white/60 hover:bg-white/[0.04] text-xs transition-all">
-          <Settings className="w-3.5 h-3.5" />
+          className="flex items-center gap-2.5 px-2.5 py-2 rounded-xl text-white/25 hover:text-teal-400 hover:bg-teal-500/[0.06] text-xs transition-all">
+          <LayoutGrid className="w-3.5 h-3.5" />
           <span>Ver como usuário</span>
         </Link>
         <button

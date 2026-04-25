@@ -3,6 +3,7 @@ import { Suspense, useEffect } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { setTokens } from '@/lib/api';
 import { useAuthStore } from '@/hooks/useAuth';
+import { getPostLoginRedirect } from '@/lib/redirectByRole';
 
 function MagicSuccessContent() {
   const router = useRouter();
@@ -21,7 +22,10 @@ function MagicSuccessContent() {
         localStorage.setItem('backfindr_welcome_shown', '1');
       }
       fetchMe()
-        .then(() => router.replace('/dashboard'))
+        .then(() => {
+          const { user } = useAuthStore.getState();
+          router.replace(getPostLoginRedirect(user?.role));
+        })
         .catch(() => router.replace('/auth/login?error=magic_session_failed'));
     } else {
       router.replace('/auth/login?error=magic_no_tokens');

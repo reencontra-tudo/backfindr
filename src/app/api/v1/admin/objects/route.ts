@@ -6,6 +6,7 @@ import { query } from '@/lib/db';
 export async function GET(req: NextRequest) {
   const auth = await requireAdmin(req);
   if (auth instanceof NextResponse) return auth;
+  const { user: adminUser } = auth;
 
   const url      = new URL(req.url);
   const page     = Math.max(1, parseInt(url.searchParams.get('page')     ?? '1',  10));
@@ -20,8 +21,14 @@ export async function GET(req: NextRequest) {
   const params: unknown[]    = [];
   let idx = 1;
 
+  // ── Filtro B2B: admin vinculado a empresa só vê objetos dos usuários dela ──
+  if (adminUser.role === 'admin' && adminUser.b2b_partner_id) {
+    conditions.push(`u.b2b_partner_id = $${idx}`);
+    params.push(adminUser.b2b_partner_id);
+    idx++;
+  }
+
   if (search) {
-    // Tentar FTS se search_vector existir, senão ILIKE
     try {
       const ftsCheck = await query(
         `SELECT 1 FROM information_schema.columns WHERE table_name='objects' AND column_name='search_vector' LIMIT 1`
@@ -43,11 +50,15 @@ export async function GET(req: NextRequest) {
   if (user)     { conditions.push(`o.user_id = $${idx}`); params.push(user); idx++; }
   if (category) { conditions.push(`o.category = $${idx}`); params.push(category); idx++; }
 
+  // Sempre fazemos JOIN com users para poder filtrar por b2b_partner_id
   const where = conditions.length > 0 ? `WHERE ${conditions.join(' AND ')}` : '';
 
   try {
     const [countRes, rowsRes, countsRes] = await Promise.all([
-      query(`SELECT COUNT(*) FROM objects o ${where}`, params),
+      query(
+        `SELECT COUNT(*) FROM objects o LEFT JOIN users u ON u.id = o.user_id ${where}`,
+        params
+      ),
       query(
         `SELECT o.id, o.title, o.description, o.status, o.category, o.qr_code,
                 o.location, o.is_legacy, o.source, o.created_at, o.updated_at,
@@ -60,13 +71,14 @@ export async function GET(req: NextRequest) {
          LIMIT $${idx} OFFSET $${idx + 1}`,
         [...params, size, offset]
       ),
-      // Contagens por status (sem filtro de status para mostrar totais reais)
+      // Contagens por status
       query(
-        `SELECT status, COUNT(*) AS cnt FROM objects o
+        `SELECT o.status, COUNT(*) AS cnt
+         FROM objects o LEFT JOIN users u ON u.id = o.user_id
          ${conditions.filter((_, i) => params[i] !== status).length > 0
            ? `WHERE ${conditions.filter((_, i) => params[i] !== status).join(' AND ')}`
            : ''}
-         GROUP BY status`,
+         GROUP BY o.status`,
         params.filter(p => p !== status)
       ),
     ]);

@@ -10,6 +10,7 @@ import { toast } from 'sonner';
 import { MapPin, Eye, EyeOff, ArrowRight, Loader2, Mail } from 'lucide-react';
 import { useAuthStore } from '@/hooks/useAuth';
 import Cookies from 'js-cookie';
+import { getPostLoginRedirect } from '@/lib/redirectByRole';
 
 const schema = z.object({
   email: z.string().email('E-mail inválido'),
@@ -66,7 +67,8 @@ function LoginForm() {
       if (planSlug && planSlug !== 'free') {
         await redirectToCheckout(planSlug);
       } else {
-        router.push('/dashboard');
+        const { user } = useAuthStore.getState();
+        router.push(getPostLoginRedirect(user?.role));
       }
     } catch {
       setLoginError('E-mail ou senha incorretos. Verifique seus dados.');

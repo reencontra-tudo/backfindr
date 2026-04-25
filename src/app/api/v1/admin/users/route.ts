@@ -4,9 +4,13 @@ import { requireAdmin } from '@/lib/adminGuard';
 import { query } from '@/lib/db';
 
 // ─── GET /api/v1/admin/users ──────────────────────────────────────────────────
+// super_admin / admin → todos os usuários
+// admin (b2b_admin via requireAdmin não chega aqui, mas admin interno com
+//   b2b_partner_id definido → filtrado pela empresa)
 export async function GET(req: NextRequest) {
   const auth = await requireAdmin(req);
   if (auth instanceof NextResponse) return auth;
+  const { user: adminUser } = auth;
 
   const url    = new URL(req.url);
   const page   = Math.max(1, parseInt(url.searchParams.get('page')  ?? '1',  10));
@@ -19,6 +23,13 @@ export async function GET(req: NextRequest) {
     const conditions: string[] = [];
     const params: unknown[]    = [];
     let idx = 1;
+
+    // ── Filtro B2B: admin vinculado a uma empresa só vê os usuários dela ──────
+    if (adminUser.role === 'admin' && adminUser.b2b_partner_id) {
+      conditions.push(`u.b2b_partner_id = $${idx}`);
+      params.push(adminUser.b2b_partner_id);
+      idx++;
+    }
 
     if (search) {
       conditions.push(`(u.name ILIKE $${idx} OR u.email ILIKE $${idx})`);
@@ -35,10 +46,8 @@ export async function GET(req: NextRequest) {
     } else if (filter === 'verified') {
       conditions.push(`u.is_verified = true`);
     } else if (filter === 'legacy') {
-      // Usuários que possuem ao menos um objeto com is_legacy = true
       conditions.push(`EXISTS (SELECT 1 FROM objects o WHERE o.user_id = u.id AND o.is_legacy = true)`);
     } else if (filter === 'inactive') {
-      // Usuários sem login nos últimos 90 dias (updated_at como proxy de atividade)
       conditions.push(`u.updated_at < NOW() - INTERVAL '90 days'`);
     }
 

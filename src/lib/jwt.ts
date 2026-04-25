@@ -10,6 +10,9 @@ export interface TokenPayload {
   email: string;
   iat?: number;
   exp?: number;
+  /** Presente apenas em tokens de impersonation gerados pelo super_admin */
+  impersonated_by?: string;
+  impersonated_by_email?: string;
 }
 
 export function createAccessToken(userId: string, email: string): string {

@@ -6,7 +6,66 @@ export const dynamic = 'force-dynamic';
 export async function GET(req: NextRequest) {
   const auth = await requireAdmin(req);
   if (auth instanceof NextResponse) return auth;
+  const { user: adminUser } = auth;
 
+  // ── Admin B2B: redireciona para stats da empresa ──────────────────────────
+  // Se o admin tem b2b_partner_id, retorna stats filtradas pelo parceiro
+  if (adminUser.role === 'admin' && adminUser.b2b_partner_id) {
+    const partnerId = adminUser.b2b_partner_id;
+    try {
+      const [statsRes, pendingMatchesRes, pendingReportsRes] = await Promise.all([
+        query(
+          `SELECT
+            COUNT(*) FILTER (WHERE o.status IS NOT NULL) AS total_objects,
+            COUNT(*) FILTER (WHERE o.status = 'lost')     AS lost_objects,
+            COUNT(*) FILTER (WHERE o.status = 'found')    AS found_objects,
+            COUNT(*) FILTER (WHERE o.status = 'returned') AS returned_objects,
+            COUNT(DISTINCT o.user_id)                     AS total_users
+           FROM objects o
+           JOIN users u ON u.id = o.user_id
+           WHERE u.b2b_partner_id = $1`,
+          [partnerId]
+        ),
+        query(
+          `SELECT COUNT(*) FROM matches m
+           JOIN objects o ON o.id = m.object_id
+           JOIN users u ON u.id = o.user_id
+           WHERE u.b2b_partner_id = $1 AND m.status = 'pending'`,
+          [partnerId]
+        ),
+        query(
+          `SELECT COUNT(*) FROM reports r
+           JOIN objects o ON o.id = r.object_id
+           JOIN users u ON u.id = o.user_id
+           WHERE u.b2b_partner_id = $1 AND r.status = 'pending'`,
+          [partnerId]
+        ),
+      ]);
+
+      const s = statsRes.rows[0] as Record<string, string>;
+      return NextResponse.json({
+        total_users:       parseInt(s.total_users,       10),
+        new_users_today:   0,
+        new_users_week:    0,
+        active_users_week: 0,
+        total_objects:     parseInt(s.total_objects,     10),
+        lost_objects:      parseInt(s.lost_objects,      10),
+        found_objects:     parseInt(s.found_objects,     10),
+        returned_objects:  parseInt(s.returned_objects,  10),
+        pending_matches:   parseInt(pendingMatchesRes.rows[0].count, 10),
+        confirmed_matches: 0,
+        rejected_matches:  0,
+        total_scans_today: 0,
+        pending_reports:   parseInt(pendingReportsRes.rows[0].count, 10),
+        mrr: 0, arr: 0, total_subscribers: 0, churn_rate: 0, daily_growth: [],
+      });
+    } catch (err) {
+      console.error('[admin/stats B2B] DB error:', err);
+      return NextResponse.json({ total_users: 0, total_objects: 0, pending_matches: 0, pending_reports: 0 });
+    }
+  }
+
+  // ── super_admin / admin global ────────────────────────────────────────────
   const backendUrl = process.env.BACKEND_API_URL;
   if (backendUrl) {
     try {

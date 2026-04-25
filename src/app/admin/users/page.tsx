@@ -4,10 +4,11 @@ import { useRouter } from 'next/navigation';
 import {
   Search, MoreVertical, UserCheck, UserX, Package,
   ChevronLeft, ChevronRight, X, Shield, Eye,
-  Crown, Star, Users, RefreshCw, CheckCircle2, Clock
+  Crown, Star, Users, RefreshCw, CheckCircle2, Clock, UserCog
 } from 'lucide-react';
 import { api, parseApiError } from '@/lib/api';
 import { toast } from 'sonner';
+import { useAuthStore } from '@/hooks/useAuth';
 
 interface User {
   id: string; name: string; email: string; phone?: string;
@@ -24,10 +25,11 @@ const PLAN_ICON: Record<string, React.ElementType> = {
   pro: Crown, business: Star, free: Users,
 };
 
-function UserRow({ user, onAction, onView }: {
+function UserRow({ user, onAction, onView, isSuperAdmin }: {
   user: User;
   onAction: (id: string, action: string) => void;
   onView: (id: string) => void;
+  isSuperAdmin: boolean;
 }) {
   const [open, setOpen] = useState(false);
   const PlanIcon = PLAN_ICON[user.plan] ?? Users;
@@ -130,6 +132,15 @@ function UserRow({ user, onAction, onView }: {
                   className="flex items-center gap-2.5 w-full px-3 py-2 rounded-xl text-xs text-white/40 hover:text-white hover:bg-white/[0.06] transition-all">
                   <Users className="w-3.5 h-3.5" /> Rebaixar para Free
                 </button>
+                {isSuperAdmin && (
+                  <>
+                    <div className="my-1 border-t border-white/[0.06]" />
+                    <button onClick={() => { onAction(user.id, 'impersonate'); setOpen(false); }}
+                      className="flex items-center gap-2.5 w-full px-3 py-2 rounded-xl text-xs text-amber-400/70 hover:text-amber-400 hover:bg-amber-500/[0.08] transition-all">
+                      <UserCog className="w-3.5 h-3.5" /> Navegar como este usuário
+                    </button>
+                  </>
+                )}
                 <div className="my-1 border-t border-white/[0.06]" />
                 <button onClick={() => { onAction(user.id, user.is_active !== false ? 'suspend' : 'activate'); setOpen(false); }}
                   className={`flex items-center gap-2.5 w-full px-3 py-2 rounded-xl text-xs transition-all ${
@@ -151,6 +162,8 @@ function UserRow({ user, onAction, onView }: {
 
 export default function AdminUsers() {
   const router = useRouter();
+  const { user: adminUser, startImpersonation } = useAuthStore();
+  const isSuperAdmin = adminUser?.role === 'super_admin';
   const [users, setUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
@@ -180,6 +193,12 @@ export default function AdminUsers() {
 
   const handleAction = async (userId: string, action: string) => {
     try {
+      if (action === 'impersonate') {
+        await startImpersonation(userId);
+        toast.success('Navegando como o usuário selecionado');
+        router.push('/dashboard');
+        return;
+      }
       if (action === 'suspend')           await api.patch(`/admin/users/${userId}`, { is_active: false });
       else if (action === 'activate')     await api.patch(`/admin/users/${userId}`, { is_active: true });
       else if (action === 'promote_pro')  await api.patch(`/admin/users/${userId}`, { plan: 'pro' });
@@ -313,7 +332,7 @@ export default function AdminUsers() {
                 </tr>
               ) : (
                 users.map(u => (
-                  <UserRow key={u.id} user={u} onAction={handleAction} onView={id => router.push(`/admin/users/${id}`)} />
+                  <UserRow key={u.id} user={u} onAction={handleAction} onView={id => router.push(`/admin/users/${id}`)} isSuperAdmin={isSuperAdmin} />
                 ))
               )}
             </tbody>

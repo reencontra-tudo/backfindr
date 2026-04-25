@@ -9,6 +9,7 @@ import {
 } from 'lucide-react';
 import Cookies from 'js-cookie';
 import { useAuthStore } from '@/hooks/useAuth';
+import ImpersonationBanner from '@/components/ui/ImpersonationBanner';
 
 const NAV = [
   { href: '/dashboard',                  icon: LayoutDashboard, label: 'Visão Geral' },
@@ -163,6 +164,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
   return (
     <div className="min-h-screen bg-[#080b0f] flex">
+      <ImpersonationBanner />
 
       {/* ── Desktop sidebar ───────────────────────────────────────────── */}
       <aside className="hidden md:flex w-60 flex-shrink-0 bg-[#080b0f] border-r border-white/[0.06] flex-col">

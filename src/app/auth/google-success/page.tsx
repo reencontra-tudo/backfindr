@@ -3,6 +3,7 @@ import { Suspense, useEffect } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { setTokens } from '@/lib/api';
 import { useAuthStore } from '@/hooks/useAuth';
+import { getPostLoginRedirect } from '@/lib/redirectByRole';
 
 function GoogleSuccessContent() {
   const router = useRouter();
@@ -22,9 +23,10 @@ function GoogleSuccessContent() {
       if (!isNew && typeof window !== 'undefined') {
         localStorage.setItem('backfindr_welcome_shown', '1');
       }
-      // Buscar dados do usuário e redirecionar
+      // Buscar dados do usuário e redirecionar conforme role
       fetchMe().then(() => {
-        router.replace('/dashboard');
+        const { user } = useAuthStore.getState();
+        router.replace(getPostLoginRedirect(user?.role));
       }).catch(() => {
         router.replace('/auth/login?error=google_session_failed');
       });

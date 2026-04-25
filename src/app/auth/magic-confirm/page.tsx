@@ -3,6 +3,7 @@ import { Suspense, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { setTokens } from '@/lib/api';
 import { useAuthStore } from '@/hooks/useAuth';
+import { getPostLoginRedirect } from '@/lib/redirectByRole';
 
 // Proteção real contra pre-fetch do iCloud Mail / Gmail:
 // O token só é consumido quando o usuário clica no botão.
@@ -54,7 +55,8 @@ function MagicConfirmContent() {
       }
 
       await fetchMe();
-      router.replace('/dashboard');
+      const { user } = useAuthStore.getState();
+      router.replace(getPostLoginRedirect(user?.role));
     } catch {
       setStatus('error');
       setErrorMsg('Erro ao verificar o link. Tente novamente.');
