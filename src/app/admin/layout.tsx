@@ -6,7 +6,7 @@ import { usePathname, useRouter } from 'next/navigation';
 import {
   LayoutDashboard, Users, Users2, Package, Zap, Building2,
   CreditCard, Mail, Shield, Server, LogOut, Menu, X,
-  ChevronRight, Bell, Settings, TrendingUp, Activity, Megaphone, FileBarChart
+  ChevronRight, Bell, Settings, TrendingUp, Activity, Megaphone, FileBarChart, Send
 } from 'lucide-react';
 import { useAuthStore } from '@/hooks/useAuth';
 
@@ -27,10 +27,11 @@ const NAV = [
     { href: '/admin/moderacao', icon: Shield,          label: 'Moderação',    badge: 'pending_reports', superOnly: false },
   ]},
   { section: 'Crescimento', items: [
-    { href: '/admin/financeiro', icon: CreditCard,     label: 'Financeiro',   badge: null, superOnly: false },
-    { href: '/admin/planos',     icon: TrendingUp,     label: 'Planos',       badge: null, superOnly: false },
-    { href: '/admin/b2b',        icon: Building2,      label: 'B2B',          badge: null, superOnly: false },
-    { href: '/admin/emails',     icon: Mail,           label: 'E-mails',      badge: null, superOnly: false },
+    { href: '/admin/financeiro',   icon: CreditCard,   label: 'Financeiro',   badge: null, superOnly: false },
+    { href: '/admin/planos',       icon: TrendingUp,   label: 'Planos',       badge: null, superOnly: false },
+    { href: '/admin/b2b',          icon: Building2,    label: 'B2B',          badge: null, superOnly: false },
+    { href: '/admin/emails',       icon: Mail,         label: 'E-mails',      badge: null, superOnly: false },
+    { href: '/admin/social-posts', icon: Send,         label: 'Social Auto',  badge: null, superOnly: false },
   ]},
   { section: 'Operações', items: [
     { href: '/admin/relatorios', icon: FileBarChart,    label: 'Relatórios',   badge: null, superOnly: false },

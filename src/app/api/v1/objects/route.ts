@@ -3,6 +3,7 @@ import { NextRequest } from 'next/server';
 import { query } from '@/lib/db';
 import { verifyToken, extractTokenFromHeader } from '@/lib/jwt';
 import { successResponse, unauthorizedResponse, internalErrorResponse } from '@/lib/response';
+import { enqueueSocialPosts } from '@/lib/socialPost';
 
 // Limites de objetos por plano
 const PLAN_MAX_OBJECTS: Record<string, number> = {
@@ -178,7 +179,24 @@ export async function POST(request: NextRequest) {
       [payload.sub, title, description || null, status || 'lost', cat, location || null, latitude || null, longitude || null, qrCode, JSON.stringify(images || []), reward_amount || null, reward_description || null]
     );
 
-    return successResponse(normalizeObject(result.rows[0] as Record<string, unknown>), 201);
+    const newObject = normalizeObject(result.rows[0] as Record<string, unknown>);
+
+    // ── Enfileirar posts sociais automáticos (fire-and-forget) ────────────
+    enqueueSocialPosts({
+      id: newObject.id as string,
+      title: newObject.title as string,
+      description: newObject.description as string | null,
+      status: newObject.status as string,
+      category: newObject.category as string,
+      unique_code: (newObject.unique_code as string) ?? qrCode,
+      qr_code: qrCode,
+      location: newObject.location as { address?: string } | null,
+      images: (newObject.photos as string[]) ?? [],
+      reward_amount: newObject.reward_amount as number | null,
+      reward_description: newObject.reward_description as string | null,
+    }).catch(() => { /* silencioso — não bloquear o cadastro */ });
+
+    return successResponse(newObject, 201);
   } catch (error) {
     return internalErrorResponse(error);
   }
