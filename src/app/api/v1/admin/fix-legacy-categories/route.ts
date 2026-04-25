@@ -51,7 +51,22 @@ export async function POST(req: NextRequest) {
           OR title ILIKE '%motocicleta%' OR title ILIKE '%caminhonete%'
           OR title ILIKE '%camionete%' OR title ILIKE '%utilitário%'
           OR title ILIKE '%furto veiculo%' OR title ILIKE '%roubo veiculo%'
-          OR title ILIKE '%bike%'
+          OR title ILIKE '%bike%' OR title ILIKE '%tornado%' OR title ILIKE '%fusca%'
+          OR title ILIKE '%corsa%' OR title ILIKE '%astra%' OR title ILIKE '%vectra%'
+          OR title ILIKE '%marea%' OR title ILIKE '%stilo%' OR title ILIKE '%bravo%'
+          OR title ILIKE '%ducato%' OR title ILIKE '%kangoo%' OR title ILIKE '%scenic%'
+          OR title ILIKE '%megane%' OR title ILIKE '%206%' OR title ILIKE '%307%'
+          OR title ILIKE '%308%' OR title ILIKE '%c3 %' OR title ILIKE '%c4 %'
+          OR title ILIKE '%xsara%' OR title ILIKE '%berlingo%' OR title ILIKE '%golf%'
+          OR title ILIKE '%polo%' OR title ILIKE '%fox %' OR title ILIKE '%fusca%'
+          OR title ILIKE '%mb1620%' OR title ILIKE '%mb%placa%' OR title ILIKE '%placa%'
+          OR title ILIKE '%caçamba%' OR title ILIKE '%carreta%' OR title ILIKE '%reboque%'
+          OR title ILIKE '%titan%' OR title ILIKE '%fan 160%' OR title ILIKE '%nxr%'
+          OR title ILIKE '%xre%' OR title ILIKE '%pcx%' OR title ILIKE '%biz%'
+          OR title ILIKE '%pop 110%' OR title ILIKE '%cg 150%' OR title ILIKE '%cg 125%'
+          OR title ILIKE '%fazer%' OR title ILIKE '%lander%' OR title ILIKE '%tenere%'
+          OR title ILIKE '%gs500%' OR title ILIKE '%cb 300%' OR title ILIKE '%twister%'
+          OR title ILIKE '%bros%' OR title ILIKE '%nx350%'
         )
     `);
     results.vehicle = vehicleRes.rowCount ?? 0;
@@ -73,6 +88,11 @@ export async function POST(req: NextRequest) {
           OR title ILIKE '%cadela%' OR title ILIKE '%cachorra%' OR title ILIKE '%gatinho%'
           OR title ILIKE '%gatinha%' OR title ILIKE '%filhote%' OR title ILIKE '%procura-se%'
           OR title ILIKE '%vira-lata%' OR title ILIKE '%viralata%'
+          OR title ILIKE '%lhasa%' OR title ILIKE '%apso%' OR title ILIKE '%spitz%'
+          OR title ILIKE '%schnauzer%' OR title ILIKE '%cocker%' OR title ILIKE '%dálmata%'
+          OR title ILIKE '%dalmata%' OR title ILIKE '%chow%' OR title ILIKE '%akita%'
+          OR title ILIKE '%shiba%' OR title ILIKE '%pug%' OR title ILIKE '%buldogue%'
+          OR title ILIKE '%desaparecida%' OR title ILIKE '%desaparecido%'
         )
     `);
     results.pet = petRes.rowCount ?? 0;
