@@ -38,7 +38,7 @@ const STATUS_LABEL: Record<string, string> = {
 };
 const CATEGORY_EMOJI: Record<string, string> = {
   phone: '📱', wallet: '👛', keys: '🔑', bag: '🎒', pet: '🐾',
-  bike: '🚲', document: '📄', jewelry: '💍', electronics: '💻', clothing: '👕', other: '📦',
+  bike: '🚲', vehicle: '🚗', document: '📄', jewelry: '💍', electronics: '💻', clothing: '👕', other: '📦',
 };
 
 const STATUS_FILTERS = [

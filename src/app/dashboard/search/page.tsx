@@ -23,7 +23,7 @@ const CATEGORIES = [
 
 const EMOJI: Record<string, string> = {
   phone: '📱', wallet: '👛', keys: '🔑', bag: '🎒', pet: '🐾',
-  bike: '🚲', document: '📄', jewelry: '💍', electronics: '💻', clothing: '👕', other: '📦',
+  bike: '🚲', vehicle: '🚗', document: '📄', jewelry: '💍', electronics: '💻', clothing: '👕', other: '📦',
 };
 
 export default function SearchPage() {

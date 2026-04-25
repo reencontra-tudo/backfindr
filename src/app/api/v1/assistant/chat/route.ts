@@ -481,6 +481,9 @@ function getGuidedResponse(messages: Message[]): string {
     if (/document|rg|cpf|passaporte|carteira de habilitação|cnh/.test(lastMsg)) {
       return `Documentos aparecem com frequência na rede 📄\n\nRegistra agora 👇\n\n${APP_URL}/flow/lost`;
     }
+    if (/carro|moto|bicicleta|veículo|veiculo|caminhonete|caminhão|caminhao|bike/.test(lastMsg)) {
+      return `Roubo e furto de veículo é sério 🚗\n\nRegistra o alerta agora 👇\n\n${APP_URL}/flow/stolen\n\nInforme placa, modelo, cor e local — ativa a rede imediatamente.`;
+    }
     if (/roubado|roubaram|assalt/.test(lastMsg)) {
       return `Para roubo, temos um fluxo específico 👇\n\n${APP_URL}/flow/stolen\n\nVocê vai receber orientações sobre B.O. e como ativar alertas na rede.`;
     }

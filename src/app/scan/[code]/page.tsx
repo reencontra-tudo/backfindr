@@ -14,13 +14,13 @@ import ShareModal from '@/components/ShareModal';
 
 const CATEGORY_EMOJI: Record<string, string> = {
   phone: '📱', wallet: '👛', keys: '🔑', bag: '🎒', pet: '🐾',
-  bike: '🚲', document: '📄', jewelry: '💍', electronics: '💻',
+  bike: '🚲', vehicle: '🚗', document: '📄', jewelry: '💍', electronics: '💻',
   clothing: '👕', other: '📦',
 };
 
 const CATEGORY_LABEL: Record<string, string> = {
   phone: 'Celular', wallet: 'Carteira', keys: 'Chaves', bag: 'Bolsa',
-  pet: 'Animal de Estimação', bike: 'Bicicleta', document: 'Documento',
+  pet: 'Animal de Estimação', bike: 'Bicicleta', vehicle: 'Veículo', document: 'Documento',
   jewelry: 'Joia / Relógio', electronics: 'Eletrônico', clothing: 'Roupa', other: 'Objeto',
 };
 

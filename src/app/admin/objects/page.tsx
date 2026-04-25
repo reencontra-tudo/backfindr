@@ -26,12 +26,12 @@ interface Obj {
 
 const CATEGORY_EMOJI: Record<string, string> = {
   phone: '📱', wallet: '👛', keys: '🔑', bag: '🎒', pet: '🐾',
-  bike: '🚲', document: '📄', jewelry: '💍', electronics: '💻',
+  bike: '🚲', vehicle: '🚗', document: '📄', jewelry: '💍', electronics: '💻',
   clothing: '👕', other: '📦',
 };
 const CATEGORY_LABEL: Record<string, string> = {
   phone: 'Celular', wallet: 'Carteira', keys: 'Chaves', bag: 'Bolsa', pet: 'Pet',
-  bike: 'Bicicleta', document: 'Documento', jewelry: 'Joia', electronics: 'Eletrônico',
+  bike: 'Bicicleta', vehicle: 'Veículo', document: 'Documento', jewelry: 'Joia', electronics: 'Eletrônico',
   clothing: 'Roupa', other: 'Outro',
 };
 const CATEGORY_FILTERS = [
@@ -40,6 +40,7 @@ const CATEGORY_FILTERS = [
   { value: 'wallet', label: 'Carteira' },
   { value: 'keys', label: 'Chaves' },
   { value: 'pet', label: 'Pet' },
+  { value: 'vehicle', label: 'Veículo' },
   { value: 'electronics', label: 'Eletrônico' },
   { value: 'document', label: 'Documento' },
   { value: 'other', label: 'Outro' },

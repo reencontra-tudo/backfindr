@@ -42,6 +42,7 @@ const CATEGORIES: { value: ObjectCategory; label: string; emoji: string }[] = [
   { value: 'keys', label: 'Chaves', emoji: '🔑' },
   { value: 'bag', label: 'Bolsa / Mochila', emoji: '🎒' },
   { value: 'bike', label: 'Bicicleta', emoji: '🚲' },
+  { value: 'vehicle', label: 'Veículo', emoji: '🚗' },
   { value: 'document', label: 'Documento', emoji: '📄' },
   { value: 'jewelry', label: 'Joia / Relógio', emoji: '💍' },
   { value: 'electronics', label: 'Eletrônico', emoji: '💻' },

@@ -8,12 +8,12 @@ import { RegisteredObject } from '@/types';
 
 const EMOJI: Record<string, string> = {
   phone: '📱', wallet: '👛', keys: '🔑', bag: '🎒', pet: '🐾',
-  bike: '🚲', document: '📄', jewelry: '💍', electronics: '💻',
+  bike: '🚲', vehicle: '🚗', document: '📄', jewelry: '💍', electronics: '💻',
   clothing: '👕', other: '📦',
 };
 const CATEGORY_LABEL: Record<string, string> = {
   phone: 'Celular', wallet: 'Carteira', keys: 'Chaves', bag: 'Bolsa/Mochila',
-  pet: 'Pet', bike: 'Bicicleta', document: 'Documento', jewelry: 'Joia',
+  pet: 'Pet', bike: 'Bicicleta', vehicle: 'Veículo', document: 'Documento', jewelry: 'Joia',
   electronics: 'Eletrônico', clothing: 'Roupa', other: 'Outro',
 };
 const STATUS_LABEL: Record<string, string> = {

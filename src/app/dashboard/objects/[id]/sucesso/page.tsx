@@ -21,7 +21,7 @@ interface ObjectData {
 
 const CATEGORY_EMOJI: Record<string, string> = {
   phone: '📱', wallet: '👛', keys: '🔑', bag: '🎒', pet: '🐾',
-  bike: '🚲', document: '📄', jewelry: '💍', electronics: '💻',
+  bike: '🚲', vehicle: '🚗', document: '📄', jewelry: '💍', electronics: '💻',
   clothing: '👕', other: '📦',
 };
 

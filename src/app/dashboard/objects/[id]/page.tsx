@@ -19,13 +19,13 @@ import Cookies from 'js-cookie';
 
 const CATEGORY_EMOJI: Record<string, string> = {
   phone: '📱', wallet: '👛', keys: '🔑', bag: '🎒', pet: '🐾',
-  bike: '🚲', document: '📄', jewelry: '💍', electronics: '💻',
+  bike: '🚲', vehicle: '🚗', document: '📄', jewelry: '💍', electronics: '💻',
   clothing: '👕', other: '📦',
 };
 
 const CATEGORY_LABEL: Record<string, string> = {
   phone: 'Celular', wallet: 'Carteira', keys: 'Chaves', bag: 'Bolsa / Mochila',
-  pet: 'Pet / Animal', bike: 'Bicicleta', document: 'Documento',
+  pet: 'Pet / Animal', bike: 'Bicicleta', vehicle: 'Veículo', document: 'Documento',
   jewelry: 'Joia / Relógio', electronics: 'Eletrônico', clothing: 'Roupa', other: 'Outro',
 };
 
