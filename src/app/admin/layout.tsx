@@ -6,7 +6,7 @@ import { usePathname, useRouter } from 'next/navigation';
 import {
   LayoutDashboard, Users, Users2, Package, Zap, Building2,
   CreditCard, Mail, Shield, Server, LogOut, Menu, X,
-  ChevronRight, Bell, Settings, TrendingUp, Activity, Megaphone, FileBarChart, Send
+  ChevronRight, Bell, Settings, TrendingUp, Activity, Megaphone, FileBarChart, Send, BarChart2
 } from 'lucide-react';
 import { useAuthStore } from '@/hooks/useAuth';
 
@@ -18,6 +18,7 @@ interface AdminStats {
 const NAV = [
   { section: 'Visão Geral', items: [
     { href: '/admin/dashboard', icon: LayoutDashboard, label: 'Dashboard',    badge: null, superOnly: false },
+    { href: '/admin/analytics', icon: BarChart2,       label: 'Analytics',    badge: null, superOnly: true  },
   ]},
   { section: 'Plataforma', items: [
     { href: '/admin/users',     icon: Users,           label: 'Usuários',     badge: null,              superOnly: false },

@@ -1,5 +1,19 @@
+import type { Metadata } from 'next';
 import Link from 'next/link';
 import { MapPin } from 'lucide-react';
+
+export const metadata: Metadata = {
+  title: 'Termos de Uso',
+  description: 'Leia os Termos de Uso do Backfindr: regras de utilização da plataforma, direitos e responsabilidades dos usuários.',
+  alternates: { canonical: 'https://www.backfindr.com/terms' },
+  openGraph: {
+    title: 'Termos de Uso | Backfindr',
+    description: 'Regras de utilização da plataforma Backfindr.',
+    url: 'https://www.backfindr.com/terms',
+    type: 'website',
+  },
+  robots: { index: true, follow: false },
+};
 
 export default function TermsPage() {
   const sections = [

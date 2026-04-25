@@ -39,13 +39,13 @@ export const metadata: Metadata = {
   authors: [{ name: 'Backfindr' }],
   creator: 'Backfindr',
   publisher: 'Backfindr',
-  metadataBase: new URL('https://www.backfindr.com'),
-  alternates: { canonical: 'https://www.backfindr.com' },
+  metadataBase: new URL('https://backfindr.com'),
+  alternates: { canonical: 'https://backfindr.com' },
 
   openGraph: {
     title: 'Backfindr — Recupere o que perdeu',
     description: 'Plataforma global de objetos perdidos com QR Code e IA.',
-    url: 'https://backfindr.com.br',
+    url: 'https://backfindr.com',
     siteName: 'Backfindr',
     locale: 'pt_BR',
     type: 'website',
@@ -89,6 +89,39 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html lang="pt-BR" className={`${syne.variable} ${dmSans.variable}`}>
       <head>
+        {/* Schema.org — WebSite + Organization (SEO estruturado) */}
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{
+            __html: JSON.stringify({
+              '@context': 'https://schema.org',
+              '@graph': [
+                {
+                  '@type': 'WebSite',
+                  '@id': 'https://backfindr.com/#website',
+                  url: 'https://backfindr.com',
+                  name: 'Backfindr',
+                  description: 'Plataforma global de recuperação de objetos perdidos com QR Code único, IA de matching e chat mediado.',
+                  inLanguage: 'pt-BR',
+                  potentialAction: {
+                    '@type': 'SearchAction',
+                    target: { '@type': 'EntryPoint', urlTemplate: 'https://backfindr.com/buscar?q={search_term_string}' },
+                    'query-input': 'required name=search_term_string',
+                  },
+                },
+                {
+                  '@type': 'Organization',
+                  '@id': 'https://backfindr.com/#organization',
+                  name: 'Backfindr',
+                  url: 'https://backfindr.com',
+                  logo: { '@type': 'ImageObject', url: 'https://backfindr.com/icons/icon-512x512.png', width: 512, height: 512 },
+                  sameAs: ['https://www.instagram.com/backfindr', 'https://twitter.com/backfindr'],
+                  contactPoint: { '@type': 'ContactPoint', email: 'suporte@backfindr.com', contactType: 'customer support', availableLanguage: 'Portuguese' },
+                },
+              ],
+            }),
+          }}
+        />
         {/* iOS PWA meta tags — Next.js metadata API não cobre todos */}
         <meta name="apple-mobile-web-app-capable" content="yes" />
         <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
