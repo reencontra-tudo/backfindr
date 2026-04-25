@@ -12,6 +12,7 @@ import { toast } from 'sonner';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { objectsApi, parseApiError } from '@/lib/api';
+import { ImageLightbox, useLightbox } from '@/components/ImageLightbox';
 import { RegisteredObject } from '@/types';
 import Cookies from 'js-cookie';
 
@@ -226,6 +227,7 @@ export default function ObjectDetailPage() {
   const [deleting, setDeleting] = useState(false);
   const [boostLoading, setBoostLoading] = useState<string | null>(null);
   const [activeBoost, setActiveBoost] = useState<{ type: string; expires_at: string } | null>(null);
+  const { open: openLightbox, close: closeLightbox, lightbox } = useLightbox();
 
   // Buscar boost ativo do objeto
   useEffect(() => {
@@ -323,6 +325,8 @@ export default function ObjectDetailPage() {
   const isPet = obj.category === 'pet';
 
   return (
+    <>
+      {lightbox && <ImageLightbox images={lightbox.images} initialIndex={lightbox.index} onClose={closeLightbox} />}
     <div className="p-8 max-w-5xl">
       {/* Header */}
       <div className="flex items-start justify-between mb-8 gap-4">
@@ -383,7 +387,8 @@ export default function ObjectDetailPage() {
                     key={i}
                     src={url}
                     alt={`${obj.title} — foto ${i + 1}`}
-                    className="w-full aspect-square object-cover rounded-xl border border-surface-border"
+                    onClick={() => openLightbox(obj.photos, i)}
+                    className="w-full aspect-square object-cover rounded-xl border border-surface-border cursor-zoom-in"
                   />
                 ))}
               </div>
@@ -612,5 +617,6 @@ export default function ObjectDetailPage() {
         </div>
       )}
     </div>
+  </>
   );
 }

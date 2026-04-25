@@ -3,6 +3,7 @@ import { useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { ArrowLeft, Save, Trash2, ExternalLink, Package, MapPin, User, QrCode } from 'lucide-react';
 import { api, parseApiError } from '@/lib/api';
+import { ImageLightbox, useLightbox } from '@/components/ImageLightbox';
 import { toast } from 'sonner';
 
 const STATUS_OPTIONS = [
@@ -33,6 +34,7 @@ export default function AdminObjectDetailPage() {
   const [obj, setObj] = useState<ObjectDetail | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const { open: openLightbox, close: closeLightbox, lightbox } = useLightbox();
   const [form, setForm] = useState({ status: '', title: '', description: '', color: '', brand: '', breed: '', reward_amount: '', reward_description: '' });
 
   useEffect(() => {
@@ -96,6 +98,8 @@ export default function AdminObjectDetailPage() {
   const statusColor = STATUS_OPTIONS.find(s => s.value === obj.status)?.color ?? 'text-white/40';
 
   return (
+    <>
+      {lightbox && <ImageLightbox images={lightbox.images} initialIndex={lightbox.index} onClose={closeLightbox} />}
     <div className="p-4 md:p-6 space-y-5 max-w-2xl mx-auto">
       {/* Header */}
       <div className="flex items-center gap-3">
@@ -130,7 +134,7 @@ export default function AdminObjectDetailPage() {
       {obj.images && obj.images.length > 0 && (
         <div className="flex gap-2 overflow-x-auto pb-1">
           {obj.images.map((img, i) => (
-            <img key={i} src={img} alt="" className="w-20 h-20 rounded-xl object-cover flex-shrink-0 bg-white/[0.06]" />
+            <img key={i} src={img} alt="" onClick={() => openLightbox(obj.images, i)} className="w-20 h-20 rounded-xl object-cover flex-shrink-0 bg-white/[0.06] cursor-zoom-in" />
           ))}
         </div>
       )}
@@ -248,5 +252,6 @@ export default function AdminObjectDetailPage() {
         </button>
       </div>
     </div>
+  </>
   );
 }

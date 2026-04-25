@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { ImageLightbox, useLightbox } from '@/components/ImageLightbox';
 import Link from 'next/link';
 import { MapPin, MessageCircle, CheckCircle2, ChevronRight, Shield, Share2 } from 'lucide-react';
 import { toast } from 'sonner';
@@ -116,14 +117,15 @@ function ShareButtons({ url, title }: { url: string; title: string }) {
           <Share2 className="w-5 h-5 text-white/60" />
           <span className="text-white/60 text-xs font-medium">Mais</span>
         </button>
+        </div>
       </div>
-    </div>
   );
 }
 
 export default function PublicObjectClient({ obj }: { obj: RegisteredObject }) {
   const [sent, setSent] = useState(false);
   const [loading, setLoading] = useState(false);
+  const { open: openLightbox, close: closeLightbox, lightbox } = useLightbox();
 
   const notifyOwner = async () => {
     setLoading(true);
@@ -139,6 +141,7 @@ export default function PublicObjectClient({ obj }: { obj: RegisteredObject }) {
 
   const shareUrl = typeof window !== 'undefined' ? window.location.href : `https://backfindr.com/objeto/${obj.unique_code}`;
   const location = obj.location as { lat?: number; lng?: number; address?: string } | null;
+  const allPhotos = obj.photos ?? [];
 
   // Objeto já devolvido
   if (obj.status === 'returned') {
@@ -159,7 +162,9 @@ export default function PublicObjectClient({ obj }: { obj: RegisteredObject }) {
   }
 
   return (
-    <div className="min-h-screen bg-[#080b0f] text-white">
+    <>
+      {lightbox && <ImageLightbox images={lightbox.images} initialIndex={lightbox.index} onClose={closeLightbox} />}
+      <div className="min-h-screen bg-[#080b0f] text-white">
       {/* Navbar */}
       <nav className="border-b border-white/[0.06] px-5 h-14 flex items-center justify-between">
         <Link href="/" className="flex items-center gap-2">
@@ -228,7 +233,8 @@ export default function PublicObjectClient({ obj }: { obj: RegisteredObject }) {
                     <img
                       src={obj.photos[0]}
                       alt={obj.title}
-                      className="w-20 h-20 rounded-xl object-cover border border-white/[0.08] flex-shrink-0"
+                      onClick={() => openLightbox(allPhotos, 0)}
+                      className="w-20 h-20 rounded-xl object-cover border border-white/[0.08] flex-shrink-0 cursor-zoom-in"
                     />
                   ) : (
                     <div className="w-20 h-20 rounded-xl bg-white/[0.06] border border-white/[0.08] flex items-center justify-center text-4xl flex-shrink-0">
@@ -321,7 +327,8 @@ export default function PublicObjectClient({ obj }: { obj: RegisteredObject }) {
                       key={i}
                       src={url}
                       alt={`${obj.title} — foto ${i + 1}`}
-                      className="w-full aspect-square object-cover rounded-xl border border-white/[0.08]"
+                      onClick={() => openLightbox(allPhotos, i)}
+                      className="w-full aspect-square object-cover rounded-xl border border-white/[0.08] cursor-zoom-in"
                     />
                   ))}
                 </div>
@@ -348,5 +355,6 @@ export default function PublicObjectClient({ obj }: { obj: RegisteredObject }) {
         )}
       </div>
     </div>
+    </>
   );
 }

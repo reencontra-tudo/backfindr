@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useCallback, Suspense } from 'react';
+import { ImageLightbox, useLightbox } from '@/components/ImageLightbox';
 import Link from 'next/link';
 import { MapPin, Search, ArrowRight, AlertTriangle, Package, Loader2 } from 'lucide-react';
 
@@ -25,6 +26,7 @@ function AcheiInner() {
   const [total, setTotal] = useState(0);
   const [loading, setLoading] = useState(false);
   const [searched, setSearched] = useState(false);
+  const { open: openLightbox, close: closeLightbox, lightbox } = useLightbox();
 
   const doSearch = useCallback(async (kw: string) => {
     setLoading(true);
@@ -51,7 +53,9 @@ function AcheiInner() {
   };
 
   return (
-    <div className="min-h-screen bg-[#080b0f]">
+    <>
+      {lightbox && <ImageLightbox images={lightbox.images} initialIndex={lightbox.index} onClose={closeLightbox} />}
+      <div className="min-h-screen bg-[#080b0f]">
       {/* Header com navegação */}
       <div className="border-b border-white/[0.06] px-5 py-4 flex items-center justify-between">
         <Link href="/" className="flex items-center gap-2">
@@ -149,7 +153,7 @@ function AcheiInner() {
                       {/* Foto */}
                       <div className="w-16 h-16 rounded-xl bg-white/[0.05] border border-white/[0.06] flex-shrink-0 overflow-hidden">
                         {item.photos?.[0] ? (
-                          <img src={item.photos[0]} alt={item.title} className="w-full h-full object-cover" />
+                          <img src={item.photos[0]} alt={item.title} onClick={() => openLightbox(item.photos, 0)} className="w-full h-full object-cover cursor-zoom-in" />
                         ) : (
                           <div className="w-full h-full flex items-center justify-center">
                             <Package className="w-6 h-6 text-white/20" />
@@ -210,6 +214,7 @@ function AcheiInner() {
 
       </div>
     </div>
+    </>
   );
 }
 

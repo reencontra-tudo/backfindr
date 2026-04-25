@@ -11,6 +11,7 @@ import {
 import { api, parseApiError } from '@/lib/api';
 import { RegisteredObject } from '@/types';
 import ShareModal from '@/components/ShareModal';
+import { ImageLightbox, useLightbox } from '@/components/ImageLightbox';
 
 const CATEGORY_EMOJI: Record<string, string> = {
   phone: '📱', wallet: '👛', keys: '🔑', bag: '🎒', pet: '🐾',
@@ -45,6 +46,7 @@ export default function ScanPage() {
   const [notFound, setNotFound] = useState(false);
   const [contactSent, setContactSent] = useState(false);
   const [sending, setSending] = useState(false);
+  const { open: openLightbox, close: closeLightbox, lightbox } = useLightbox();
 
   useEffect(() => {
     api.get(`/objects/scan/${code}`)
@@ -173,8 +175,12 @@ export default function ScanPage() {
     );
   }
 
+  const allPhotos = obj?.photos ?? [];
+
   // ── Main ───────────────────────────────────────────────────────────────────
   return (
+    <>
+      {lightbox && <ImageLightbox images={lightbox.images} initialIndex={lightbox.index} onClose={closeLightbox} />}
     <div className="min-h-screen bg-[#0a0a0f] flex flex-col" style={{ paddingBottom: '100px' }}>
 
       {/* ── HERO: Foto fullscreen com gradiente dramático ── */}
@@ -185,7 +191,8 @@ export default function ScanPage() {
           <img
             src={obj.photos![0]}
             alt={obj.title}
-            className="absolute inset-0 w-full h-full object-cover"
+            onClick={() => openLightbox(allPhotos, 0)}
+            className="absolute inset-0 w-full h-full object-cover cursor-zoom-in"
           />
         ) : (
           <div className="absolute inset-0 bg-gradient-to-br from-[#0d1f1a] via-[#0a1510] to-[#0a0a0f] flex items-center justify-center">
@@ -237,7 +244,8 @@ export default function ScanPage() {
                 key={i}
                 src={url}
                 alt=""
-                className="w-11 h-11 rounded-xl object-cover border-2 border-white/20 shadow-lg"
+                onClick={() => openLightbox(allPhotos, i + 1)}
+                className="w-11 h-11 rounded-xl object-cover border-2 border-white/20 shadow-lg cursor-zoom-in"
               />
             ))}
           </div>
@@ -355,5 +363,6 @@ export default function ScanPage() {
       </div>
 
     </div>
+    </>
   );
 }
