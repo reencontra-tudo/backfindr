@@ -12,6 +12,10 @@
     {
       "path": "/api/v1/cron/reactivation",
       "schedule": "0 10 * * *"
+    },
+    {
+      "path": "/api/v1/cron/social-posts",
+      "schedule": "*/5 * * * *"
     }
   ]
 }

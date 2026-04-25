@@ -171,40 +171,94 @@ export default function SettingsPage() {
       {/* Notifications tab */}
       {activeTab === 'notifications' && (
         <div className="space-y-4">
-          <div className="p-5 bg-white/[0.02] border border-white/[0.07] rounded-xl">
-            <div className="flex items-center justify-between mb-4">
-              <div>
-                <p className="text-white text-sm font-medium">Notificações push</p>
-                <p className="text-white/40 text-xs mt-0.5">Receba alertas quando seu objeto for encontrado</p>
+
+          {/* Card principal de ativação */}
+          <div className={`p-5 rounded-xl border transition-all ${
+            pushEnabled
+              ? 'bg-teal-500/[0.06] border-teal-500/20'
+              : 'bg-white/[0.02] border-white/[0.07]'
+          }`}>
+            <div className="flex items-start gap-4">
+              <div className={`w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 ${
+                pushEnabled ? 'bg-teal-500/20' : 'bg-white/[0.06]'
+              }`}>
+                <Bell className={`w-5 h-5 ${pushEnabled ? 'text-teal-400' : 'text-white/40'}`} />
               </div>
-              <button
-                onClick={pushEnabled ? () => { unregister(); setPushEnabled(false); toast.success('Notificações desativadas'); } : enablePush}
-                className={`px-4 py-2 rounded-lg text-xs font-semibold transition-all ${pushEnabled ? 'bg-teal-500/10 text-teal-400 border border-teal-500/20' : 'bg-white/[0.06] text-white/60 border border-white/[0.08] hover:bg-white/[0.1]'}`}
-              >
-                {pushEnabled ? '✓ Ativo' : 'Ativar'}
-              </button>
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center justify-between gap-3 mb-1">
+                  <p className="text-white text-sm font-semibold">Notificações push</p>
+                  <button
+                    onClick={pushEnabled
+                      ? () => { unregister(); setPushEnabled(false); toast.success('Notificações desativadas'); }
+                      : enablePush
+                    }
+                    className={`flex-shrink-0 px-4 py-1.5 rounded-lg text-xs font-semibold transition-all ${
+                      pushEnabled
+                        ? 'bg-teal-500/10 text-teal-400 border border-teal-500/30 hover:bg-red-500/10 hover:text-red-400 hover:border-red-500/30'
+                        : 'bg-teal-500 hover:bg-teal-400 text-white'
+                    }`}
+                    style={!pushEnabled ? { boxShadow: '0 0 12px rgba(20,184,166,0.25)' } : {}}
+                  >
+                    {pushEnabled ? '✓ Ativo — clique para desativar' : 'Ativar notificações'}
+                  </button>
+                </div>
+                <p className="text-white/40 text-xs">
+                  {pushEnabled
+                    ? 'Você será notificado em tempo real sobre matches, scans e mensagens.'
+                    : 'Receba alertas instantâneos mesmo com o app em segundo plano.'}
+                </p>
+                {!pushEnabled && typeof window !== 'undefined' && !('PushManager' in window) && (
+                  <div className="mt-3 p-3 bg-yellow-500/10 border border-yellow-500/20 rounded-lg">
+                    <p className="text-yellow-400 text-xs font-medium mb-1">📱 No iPhone/iPad</p>
+                    <p className="text-yellow-400/70 text-xs">
+                      Para receber notificações no iOS, adicione o Backfindr à tela inicial:
+                      toque em <strong>Compartilhar</strong> → <strong>Adicionar à Tela de Início</strong>.
+                    </p>
+                  </div>
+                )}
+              </div>
             </div>
-            <p className="text-white/20 text-xs">
-              {pushEnabled ? 'Você receberá notificações quando seus objetos forem encontrados.' : 'Ative para ser notificado instantaneamente.'}
-            </p>
           </div>
 
-          {[
-            { label: 'Match encontrado pela IA', desc: 'Quando a IA encontrar um possível par', default: true },
-            { label: 'Objeto escaneado', desc: 'Quando alguém escanear o QR Code', default: true },
-            { label: 'Nova mensagem no chat', desc: 'Novas mensagens de devolução', default: true },
-            { label: 'Objeto recuperado', desc: 'Confirmações de recuperação', default: true },
-          ].map(item => (
-            <div key={item.label} className="flex items-center justify-between p-4 bg-white/[0.02] border border-white/[0.07] rounded-xl">
-              <div>
-                <p className="text-white text-sm">{item.label}</p>
-                <p className="text-white/30 text-xs mt-0.5">{item.desc}</p>
+          {/* Eventos configuráveis */}
+          <div className="space-y-2">
+            <p className="text-white/30 text-xs font-semibold uppercase tracking-wider px-1 mb-3">Quando notificar</p>
+            {[
+              { label: 'Match encontrado pela IA', desc: 'Quando a IA encontrar um possível par para seu objeto', icon: '🔍', on: true },
+              { label: 'QR Code escaneado', desc: 'Quando alguém escanear o QR Code do seu objeto', icon: '📱', on: true },
+              { label: 'Nova mensagem no chat', desc: 'Novas mensagens de quem encontrou seu objeto', icon: '💬', on: true },
+              { label: 'Objeto recuperado', desc: 'Confirmação de recuperação bem-sucedida', icon: '✅', on: true },
+            ].map(item => (
+              <div key={item.label} className="flex items-center justify-between p-4 bg-white/[0.02] border border-white/[0.07] rounded-xl">
+                <div className="flex items-center gap-3">
+                  <span className="text-lg">{item.icon}</span>
+                  <div>
+                    <p className="text-white text-sm">{item.label}</p>
+                    <p className="text-white/30 text-xs mt-0.5">{item.desc}</p>
+                  </div>
+                </div>
+                <div
+                  className={`w-10 h-5 rounded-full relative cursor-pointer transition-all ${
+                    item.on && pushEnabled ? 'bg-teal-500' : 'bg-white/[0.08]'
+                  }`}
+                  onClick={() => !pushEnabled && toast.info('Ative as notificações push primeiro')}
+                >
+                  <div className={`absolute top-0.5 w-4 h-4 rounded-full bg-white transition-all ${
+                    item.on && pushEnabled ? 'left-5' : 'left-0.5'
+                  }`} />
+                </div>
               </div>
-              <div className={`w-10 h-5 rounded-full relative cursor-pointer transition-all ${item.default ? 'bg-teal-500' : 'bg-white/[0.08]'}`} onClick={() => toast.info('Em breve')}>
-                <div className={`absolute top-0.5 w-4 h-4 rounded-full bg-white transition-all ${item.default ? 'left-5' : 'left-0.5'}`} />
-              </div>
-            </div>
-          ))}
+            ))}
+          </div>
+
+          {/* Dica de instalação PWA */}
+          <div className="p-4 bg-white/[0.02] border border-white/[0.06] rounded-xl">
+            <p className="text-white/40 text-xs font-semibold uppercase tracking-wider mb-2">Dica</p>
+            <p className="text-white/30 text-xs leading-relaxed">
+              Para a melhor experiência, adicione o Backfindr à tela inicial do seu celular.
+              Isso permite receber notificações push nativas e acessar o app sem abrir o navegador.
+            </p>
+          </div>
         </div>
       )}
 

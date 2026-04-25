@@ -4,6 +4,7 @@ import { query } from '@/lib/db';
 import { verifyToken, extractTokenFromHeader } from '@/lib/jwt';
 import { successResponse, unauthorizedResponse, internalErrorResponse } from '@/lib/response';
 import { sendMatchAlertEmail } from '@/lib/email';
+import { sendPushToUser, matchPayload } from '@/lib/pushNotification';
 
 const MAX_RADIUS_KM = 50;
 
@@ -175,6 +176,12 @@ export async function POST(request: NextRequest) {
             score,
             foundObj.title as string
           ).catch(err => console.error('[matching] Falha ao enviar e-mail de match:', err));
+
+          // Disparar push notification (fire-and-forget)
+          sendPushToUser(
+            owner.id as string ?? lostObj.user_id as string,
+            matchPayload(newMatch.id as string, lostObj.title as string, score)
+          ).catch(err => console.error('[push] match push failed:', err));
         }
       } catch (emailErr) {
         console.error('[matching] Erro ao buscar dono para notificação:', emailErr);

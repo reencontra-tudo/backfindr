@@ -3,6 +3,7 @@ import { NextRequest } from 'next/server';
 import { query } from '@/lib/db';
 import { verifyToken, extractTokenFromHeader } from '@/lib/jwt';
 import { successResponse, unauthorizedResponse, notFoundResponse, internalErrorResponse } from '@/lib/response';
+import { sendPushToUser, chatPayload } from '@/lib/pushNotification';
 
 export async function GET(
   request: NextRequest,
@@ -106,15 +107,30 @@ export async function POST(
       return unauthorizedResponse();
     }
 
-    // Inserir mensagem
+     // Inserir mensagem
     const result = await query(
       `INSERT INTO chat_messages (match_id, sender_id, message, created_at)
        VALUES ($1, $2, $3, NOW())
        RETURNING id, match_id, sender_id, message, created_at`,
       [params.matchId, payload.sub, message]
     );
-
     const row = result.rows[0];
+
+    // Disparar push para o outro participante do match (fire-and-forget)
+    const recipientId = payload.sub === match.lost_user_id
+      ? match.found_user_id as string
+      : match.lost_user_id as string;
+
+    if (recipientId) {
+      // Buscar nome do remetente
+      query(`SELECT name FROM users WHERE id = $1`, [payload.sub])
+        .then(r => {
+          const senderName = (r.rows[0] as { name: string } | undefined)?.name ?? 'Alguém';
+          return sendPushToUser(recipientId, chatPayload(senderName, params.matchId, message as string));
+        })
+        .catch(err => console.error('[push] chat push failed:', err));
+    }
+
     return successResponse({ ...row, content: row.message }, 201);
   } catch (error) {
     return internalErrorResponse(error);

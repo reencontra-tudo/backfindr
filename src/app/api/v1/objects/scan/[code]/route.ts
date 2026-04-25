@@ -2,6 +2,7 @@ export const dynamic = 'force-dynamic';
 import { NextRequest } from 'next/server';
 import { query } from '@/lib/db';
 import { successResponse, notFoundResponse, internalErrorResponse } from '@/lib/response';
+import { sendPushToUser, scanPayload } from '@/lib/pushNotification';
 
 export async function GET(
   request: NextRequest,
@@ -70,12 +71,26 @@ export async function POST(
 
     const object = objectResult.rows[0];
 
-    // Registrar notificação (simplificado)
+    // Buscar título do objeto para a notificação
+    const objDetail = await query(
+      `SELECT id, title FROM objects WHERE qr_code = $1`,
+      [params.code]
+    );
+    const objTitle = (objDetail.rows[0] as { id: string; title: string } | undefined)?.title ?? 'objeto';
+    const objId    = (objDetail.rows[0] as { id: string; title: string } | undefined)?.id ?? '';
+
+    // Registrar notificação no banco
     await query(
       `INSERT INTO notifications (user_id, title, message, type, created_at)
        VALUES ($1, $2, $3, $4, NOW())`,
-      [object.user_id, 'QR Code Escaneado', message || 'Seu objeto foi encontrado!', 'qr_scan']
+      [object.user_id, 'QR Code Escaneado', message || `Alguém escaneou o QR Code de "${objTitle}".`, 'qr_scan']
     );
+
+    // Disparar push notification (fire-and-forget)
+    sendPushToUser(
+      object.user_id as string,
+      scanPayload(objTitle, objId)
+    ).catch(err => console.error('[push] scan push failed:', err));
 
     return successResponse({ message: 'Notification sent' });
   } catch (error) {

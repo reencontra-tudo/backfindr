@@ -2,6 +2,7 @@ export const dynamic = 'force-dynamic';
 import { NextRequest } from 'next/server';
 import { query } from '@/lib/db';
 import { successResponse, notFoundResponse, internalErrorResponse } from '@/lib/response';
+import { sendPushToUser, scanPayload } from '@/lib/pushNotification';
 
 export async function POST(
   _request: NextRequest,
@@ -38,6 +39,12 @@ export async function POST(
        WHERE id = $1 AND status = 'lost'`,
       [object.id]
     );
+
+    // Disparar push notification (fire-and-forget)
+    sendPushToUser(
+      object.user_id,
+      scanPayload(object.title, object.id)
+    ).catch(err => console.error('[push] notify push failed:', err));
 
     return successResponse({ message: 'Owner notified successfully' });
   } catch (error) {
