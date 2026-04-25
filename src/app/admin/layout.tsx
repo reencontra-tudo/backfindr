@@ -6,7 +6,7 @@ import { usePathname, useRouter } from 'next/navigation';
 import {
   LayoutDashboard, Users, Users2, Package, Zap, Building2,
   CreditCard, Mail, Shield, Server, LogOut, Menu, X,
-  ChevronRight, Bell, Settings, TrendingUp, Activity, Megaphone
+  ChevronRight, Bell, Settings, TrendingUp, Activity, Megaphone, FileBarChart
 } from 'lucide-react';
 import { useAuthStore } from '@/hooks/useAuth';
 
@@ -33,6 +33,7 @@ const NAV = [
     { href: '/admin/emails',     icon: Mail,           label: 'E-mails',      badge: null, superOnly: false },
   ]},
   { section: 'Operações', items: [
+    { href: '/admin/relatorios', icon: FileBarChart,    label: 'Relatórios',   badge: null, superOnly: false },
     { href: '/admin/sistema',   icon: Server,          label: 'Sistema',      badge: null, superOnly: false },
     { href: '/admin/equipe',    icon: Users2,          label: 'Equipe',       badge: null, superOnly: true  },
   ]},
