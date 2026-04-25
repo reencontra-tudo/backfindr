@@ -65,9 +65,14 @@ export async function GET(request: NextRequest) {
       FROM objects
       ${whereClause}
       ORDER BY
+        -- 1. Boosted primeiro
         CASE WHEN is_boosted = true AND (boost_expires_at IS NULL OR boost_expires_at > NOW()) THEN 0 ELSE 1 END ASC,
-        boost_expires_at DESC NULLS LAST,
-        created_at DESC
+        -- 2. Objetos com foto têm prioridade
+        CASE WHEN images IS NOT NULL AND images != '[]' AND images != 'null' THEN 0 ELSE 1 END ASC,
+        -- 3. Objetos recentes (últimos 2 anos) têm prioridade sobre legados antigos
+        CASE WHEN updated_at > NOW() - INTERVAL '2 years' THEN 0 ELSE 1 END ASC,
+        -- 4. Dentro de cada grupo, mais recente primeiro
+        updated_at DESC NULLS LAST
       LIMIT $${params.length + 1} OFFSET $${params.length + 2}
     `;
     params.push(limit, offset);
