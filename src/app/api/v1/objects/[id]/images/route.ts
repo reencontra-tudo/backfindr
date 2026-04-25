@@ -5,11 +5,16 @@ import { NextRequest } from 'next/server';
 import { query } from '@/lib/db';
 import { verifyToken, extractTokenFromHeader } from '@/lib/jwt';
 import { successResponse, unauthorizedResponse, notFoundResponse, internalErrorResponse } from '@/lib/response';
+import { uploadMultipleToR2, deleteMultipleFromR2, isR2Url, detectMimeType } from '@/lib/storage';
 
 /**
  * POST /api/v1/objects/[id]/images
- * Faz upload de imagens (base64) para um objeto existente.
+ * Faz upload de imagens para um objeto existente.
  * Body: { images: string[] } — array de data URIs (data:image/jpeg;base64,...)
+ *
+ * Fluxo:
+ *  1. Se R2 estiver configurado → faz upload para Cloudflare R2 e salva URLs
+ *  2. Se R2 não estiver configurado → salva Base64 no banco (legado)
  */
 export async function POST(
   request: NextRequest,
@@ -52,7 +57,34 @@ export async function POST(
       else if (typeof raw === 'string') existing = JSON.parse(raw);
     } catch { existing = []; }
 
-    const merged = [...existing, ...validImages].slice(0, 10);
+    // ── Upload para R2 (se configurado) ──────────────────────────────────────
+    let newImages: string[] = validImages; // fallback: Base64 original
+
+    const r2Configured = !!(
+      process.env.R2_ACCOUNT_ID &&
+      process.env.R2_ACCESS_KEY_ID &&
+      process.env.R2_SECRET_ACCESS_KEY
+    );
+
+    if (r2Configured) {
+      try {
+        const uploads = await uploadMultipleToR2({
+          folder: 'objects',
+          entityId: params.id,
+          images: validImages.map((img) => ({
+            data: img,
+            mimeType: detectMimeType(img),
+          })),
+        });
+        newImages = uploads.map((u) => u.url);
+      } catch (uploadError) {
+        console.error('[R2] Upload failed, falling back to Base64:', uploadError);
+        // Mantém Base64 como fallback — não quebra o fluxo
+        newImages = validImages;
+      }
+    }
+
+    const merged = [...existing, ...newImages].slice(0, 10);
 
     // Salvar no banco
     const result = await query(
@@ -71,7 +103,11 @@ export async function POST(
       else if (typeof raw === 'string') photos = JSON.parse(raw);
     } catch { photos = []; }
 
-    return successResponse({ photos, count: photos.length });
+    return successResponse({
+      photos,
+      count: photos.length,
+      storage: r2Configured ? 'r2' : 'base64',
+    });
   } catch (error) {
     return internalErrorResponse(error);
   }
@@ -79,7 +115,7 @@ export async function POST(
 
 /**
  * DELETE /api/v1/objects/[id]/images
- * Remove todas as imagens de um objeto.
+ * Remove todas as imagens de um objeto (banco + R2).
  */
 export async function DELETE(
   request: NextRequest,
@@ -90,6 +126,39 @@ export async function DELETE(
     if (!token) return unauthorizedResponse();
     const payload = verifyToken(token);
     if (!payload) return unauthorizedResponse();
+
+    // Buscar imagens atuais para deletar do R2
+    const current = await query(
+      'SELECT images FROM objects WHERE id = $1 AND user_id = $2',
+      [params.id, payload.sub]
+    );
+    if (current.rows.length === 0) return notFoundResponse();
+
+    // Deletar do R2 as imagens que são URLs (não Base64)
+    try {
+      let existingImages: string[] = [];
+      const raw = current.rows[0].images;
+      if (Array.isArray(raw)) existingImages = raw;
+      else if (typeof raw === 'string') existingImages = JSON.parse(raw);
+
+      const r2Keys = existingImages
+        .filter(isR2Url)
+        .map((url) => {
+          // Extrair a key da URL: https://pub-xxx.r2.dev/objects/id/file.jpg → objects/id/file.jpg
+          try {
+            const u = new URL(url);
+            return u.pathname.replace(/^\//, '');
+          } catch { return null; }
+        })
+        .filter(Boolean) as string[];
+
+      if (r2Keys.length > 0) {
+        await deleteMultipleFromR2(r2Keys);
+      }
+    } catch (deleteError) {
+      console.error('[R2] Delete failed:', deleteError);
+      // Continua mesmo se o delete do R2 falhar
+    }
 
     const result = await query(
       `UPDATE objects SET images = '[]', updated_at = NOW()
