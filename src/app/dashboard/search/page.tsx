@@ -10,15 +10,17 @@ import { objectsApi, parseApiError } from '@/lib/api';
 import { RegisteredObject } from '@/types';
 
 const CATEGORIES = [
-  { value: '', label: 'Todas' },
-  { value: 'phone', label: '📱 Celular' },
-  { value: 'wallet', label: '👛 Carteira' },
-  { value: 'keys', label: '🔑 Chaves' },
-  { value: 'bag', label: '🎒 Bolsa' },
-  { value: 'pet', label: '🐾 Pet' },
-  { value: 'document', label: '📄 Documento' },
-  { value: 'electronics', label: '💻 Eletrônico' },
-  { value: 'other', label: '📦 Outro' },
+  { value: '', label: 'Todas', highlight: false },
+  { value: 'phone', label: '📱 Celular', highlight: true },
+  { value: 'pet', label: '🐾 Pet', highlight: true },
+  { value: 'vehicle', label: '🚗 Veículo', highlight: true },
+  { value: 'wallet', label: '👛 Carteira', highlight: false },
+  { value: 'keys', label: '🔑 Chaves', highlight: false },
+  { value: 'bag', label: '🎒 Bolsa', highlight: false },
+  { value: 'bike', label: '🚲 Bicicleta', highlight: false },
+  { value: 'document', label: '📄 Documento', highlight: false },
+  { value: 'electronics', label: '💻 Eletrônico', highlight: false },
+  { value: 'other', label: '📦 Outro', highlight: false },
 ];
 
 const EMOJI: Record<string, string> = {
@@ -109,7 +111,9 @@ export default function SearchPage() {
             className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${
               category === cat.value
                 ? 'bg-teal-500/15 text-teal-400 border border-teal-500/30'
-                : 'bg-white/[0.04] text-white/40 border border-white/[0.07] hover:text-white/70'
+                : cat.highlight
+                  ? 'bg-amber-500/8 text-amber-300/70 border border-amber-500/20 hover:text-amber-300'
+                  : 'bg-white/[0.04] text-white/40 border border-white/[0.07] hover:text-white/70'
             }`}
           >
             {cat.label}

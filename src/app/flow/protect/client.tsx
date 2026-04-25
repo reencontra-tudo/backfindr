@@ -3,10 +3,10 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { analytics } from '@/providers/PostHogProvider';
-import { ArrowRight, CheckCircle2, Shield, QrCode, Smartphone, Wallet, Key, Briefcase, Dog } from 'lucide-react';
+import { ArrowRight, CheckCircle2, Shield, QrCode, Smartphone, Wallet, Key, Briefcase, Dog, Car, Bike } from 'lucide-react';
 import FlowLayout from '@/components/flow/FlowLayout';
 
-type ItemType = 'celular' | 'carteira' | 'chaves' | 'mochila' | 'pet' | 'outro';
+type ItemType = 'celular' | 'carteira' | 'chaves' | 'mochila' | 'pet' | 'veiculo' | 'bicicleta' | 'outro';
 
 interface ItemOption {
   value: ItemType;
@@ -16,10 +16,12 @@ interface ItemOption {
 
 const ITEM_OPTIONS: ItemOption[] = [
   { value: 'celular', label: 'Celular', icon: <Smartphone className="w-5 h-5" /> },
+  { value: 'pet', label: 'Pet', icon: <Dog className="w-5 h-5" /> },
+  { value: 'veiculo', label: 'Veículo', icon: <Car className="w-5 h-5" /> },
   { value: 'carteira', label: 'Carteira', icon: <Wallet className="w-5 h-5" /> },
   { value: 'chaves', label: 'Chaves', icon: <Key className="w-5 h-5" /> },
+  { value: 'bicicleta', label: 'Bicicleta', icon: <Bike className="w-5 h-5" /> },
   { value: 'mochila', label: 'Mochila / Bolsa', icon: <Briefcase className="w-5 h-5" /> },
-  { value: 'pet', label: 'Pet', icon: <Dog className="w-5 h-5" /> },
   { value: 'outro', label: 'Outro item', icon: <Shield className="w-5 h-5" /> },
 ];
 

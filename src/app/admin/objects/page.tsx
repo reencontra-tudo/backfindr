@@ -36,14 +36,15 @@ const CATEGORY_LABEL: Record<string, string> = {
 };
 const CATEGORY_FILTERS = [
   { value: 'all', label: 'Todos' },
-  { value: 'phone', label: 'Celular' },
-  { value: 'wallet', label: 'Carteira' },
-  { value: 'keys', label: 'Chaves' },
-  { value: 'pet', label: 'Pet' },
-  { value: 'vehicle', label: 'Veículo' },
-  { value: 'electronics', label: 'Eletrônico' },
-  { value: 'document', label: 'Documento' },
-  { value: 'other', label: 'Outro' },
+  { value: 'phone', label: '📱 Celular' },
+  { value: 'pet', label: '🐾 Pet' },
+  { value: 'vehicle', label: '🚗 Veículo' },
+  { value: 'wallet', label: '👛 Carteira' },
+  { value: 'keys', label: '🔑 Chaves' },
+  { value: 'bike', label: '🚲 Bicicleta' },
+  { value: 'electronics', label: '💻 Eletrônico' },
+  { value: 'document', label: '📄 Documento' },
+  { value: 'other', label: '📦 Outro' },
 ];
 
 function ObjectRow({ obj, onAction }: { obj: Obj; onAction: (id: string, action: string) => void }) {
