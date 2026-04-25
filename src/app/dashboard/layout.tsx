@@ -77,6 +77,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       <div className="px-4 py-3">
         <Link
           href="/dashboard/objects/new"
+          data-tour-id="register-btn"
           className="flex items-center justify-center gap-2 w-full bg-teal-500 hover:bg-teal-400 text-white text-sm font-semibold py-2.5 rounded-lg transition-all"
           style={{ boxShadow: '0 0 0 1px rgba(20,184,166,0.4)' }}
         >
@@ -86,7 +87,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       </div>
 
       {/* Nav */}
-      <nav className="flex-1 px-3 py-2 space-y-0.5 overflow-y-auto">
+      <nav className="flex-1 px-3 py-2 space-y-0.5 overflow-y-auto" data-tour-id="sidebar-nav">
         {NAV.map(({ href, icon: Icon, label }) => {
           const active = pathname === href || (href !== '/dashboard' && pathname.startsWith(href));
           const isMatches = href === '/dashboard/matches';
