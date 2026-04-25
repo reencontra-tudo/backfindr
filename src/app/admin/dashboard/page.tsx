@@ -13,13 +13,15 @@ import {
 import { formatDistanceToNow } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 
+interface DailyPoint { day: string; users: number; objects: number; }
 interface Stats {
   total_users: number; new_users_today: number; new_users_week: number; active_users_week: number;
   total_objects: number; lost_objects: number; found_objects: number; returned_objects: number;
   pending_matches: number; confirmed_matches: number; rejected_matches: number;
   total_scans_today: number;
-  mrr?: number; arr?: number; total_subscribers?: number; churn_rate?: number;
+  mrr?: number; arr?: number; total_subscribers?: number; pro_subscribers?: number; business_subscribers?: number; churn_rate?: number;
   pending_reports?: number;
+  daily_growth?: DailyPoint[];
 }
 interface ActivityItem { type: string; label: string; ts: string; }
 interface GeoItem { city: string; count: number; pct: number; }
@@ -261,6 +263,41 @@ export default function AdminDashboard() {
         </div>
       </div>
 
+      {/* Crescimento Diário */}
+      {(stats.daily_growth ?? []).length > 0 && (
+        <div className="bg-white/[0.02] border border-white/[0.06] rounded-2xl p-5">
+          <div className="flex items-center justify-between mb-5">
+            <div>
+              <h3 className="text-white font-semibold text-sm">Crescimento Diário</h3>
+              <p className="text-white/25 text-xs mt-0.5">Usuários e objetos — últimos 7 dias</p>
+            </div>
+          </div>
+          <ResponsiveContainer width="100%" height={150}>
+            <AreaChart data={stats.daily_growth} margin={{ top: 0, right: 0, left: -25, bottom: 0 }}>
+              <defs>
+                <linearGradient id="usersGrad" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="5%" stopColor="#6366f1" stopOpacity={0.3} />
+                  <stop offset="95%" stopColor="#6366f1" stopOpacity={0} />
+                </linearGradient>
+                <linearGradient id="objGrad" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="5%" stopColor="#14b8a6" stopOpacity={0.3} />
+                  <stop offset="95%" stopColor="#14b8a6" stopOpacity={0} />
+                </linearGradient>
+              </defs>
+              <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.04)" />
+              <XAxis dataKey="day" tick={{ fill: 'rgba(255,255,255,0.2)', fontSize: 10 }} axisLine={false} tickLine={false} />
+              <YAxis tick={{ fill: 'rgba(255,255,255,0.2)', fontSize: 10 }} axisLine={false} tickLine={false} />
+              <Tooltip contentStyle={{ background: '#0d1420', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 12, fontSize: 12 }} />
+              <Area type="monotone" dataKey="users"   name="Usuários" stroke="#6366f1" strokeWidth={2} fill="url(#usersGrad)" dot={false} />
+              <Area type="monotone" dataKey="objects" name="Objetos"  stroke="#14b8a6" strokeWidth={2} fill="url(#objGrad)"   dot={false} />
+            </AreaChart>
+          </ResponsiveContainer>
+          <div className="flex items-center gap-4 mt-3">
+            <div className="flex items-center gap-1.5"><div className="w-2.5 h-2.5 rounded-full bg-indigo-500" /><span className="text-white/30 text-xs">Usuários</span></div>
+            <div className="flex items-center gap-1.5"><div className="w-2.5 h-2.5 rounded-full bg-teal-500" /><span className="text-white/30 text-xs">Objetos</span></div>
+          </div>
+        </div>
+      )}
       {/* Atividade + Geo */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         {/* Atividade recente */}

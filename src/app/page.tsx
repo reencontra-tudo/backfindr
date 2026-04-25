@@ -253,7 +253,18 @@ function LiveTicker({ items }: { items: ActivityItem[] }) {
   );
 }
 
-const STATS_FALLBACK = { total_objects: 12847, returned_objects: 3291, recovery_rate_pct: 94 };
+const STATS_FALLBACK = {
+  total_objects: 12847,
+  returned_objects: 3291,
+  recovery_rate_pct: 94,
+  recent_recoveries: [
+    { title: 'iPhone 14 Pro',   emoji: '📱', city: 'São Paulo, SP',      hours_ago: 2  },
+    { title: 'Cachorra Mel',    emoji: '🐾', city: 'Rio de Janeiro, RJ', hours_ago: 5  },
+    { title: 'Carteira preta',  emoji: '👛', city: 'Belo Horizonte, MG', hours_ago: 11 },
+    { title: 'Chaves Gol',      emoji: '🔑', city: 'Curitiba, PR',       hours_ago: 18 },
+    { title: 'Mochila escolar', emoji: '🎒', city: 'Fortaleza, CE',      hours_ago: 24 },
+  ],
+};
 
 export default function HomePage() {
   const [activities, setActivities] = useState<ActivityItem[]>(FALLBACK_ACTIVITIES);
@@ -798,19 +809,15 @@ export default function HomePage() {
             ))}
           </div>
 
-          <div className="grid gap-4 md:grid-cols-4">
-            {[
-              { emoji: '🐕', title: 'Cachorro recuperado em 2 horas', sub: 'QR na coleira facilitou o retorno' },
-              { emoji: '👛', title: 'Carteira localizada após scan', sub: 'contato protegido e rápido' },
-              { emoji: '🔒', title: 'Contato protegido, devolução segura', sub: 'sem expor número pessoal' },
-              { emoji: '⚡', title: 'Match gerado pela IA', sub: 'mais velocidade na conexão' },
-            ].map((item, index) => (
-              <FadeIn key={item.title} delay={index * 80}>
+          <div className="grid gap-3 md:grid-cols-3 lg:grid-cols-5">
+            {(publicStats.recent_recoveries ?? STATS_FALLBACK.recent_recoveries).slice(0, 5).map((item, index) => (
+              <FadeIn key={index} delay={index * 80}>
                 <div className="flex gap-3 rounded-2xl border border-white/[0.08] bg-white/[0.03] p-4">
-                  <span className="text-2xl">{item.emoji}</span>
-                  <div>
-                    <p className="text-sm font-semibold text-white">{item.title}</p>
-                    <p className="text-xs text-white/40">{item.sub}</p>
+                  <span className="text-2xl flex-shrink-0">{item.emoji}</span>
+                  <div className="min-w-0">
+                    <p className="text-sm font-semibold text-white truncate">{item.title}</p>
+                    <p className="text-xs text-white/40 truncate">{item.city}</p>
+                    <p className="text-xs text-teal-400/70 mt-0.5">✓ há {item.hours_ago}h</p>
                   </div>
                 </div>
               </FadeIn>
