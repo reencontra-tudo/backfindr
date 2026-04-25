@@ -57,7 +57,7 @@ export default function WelcomeModal({ userName, onClose, onStartTour }: Welcome
 
   return (
     <div
-      className={`fixed inset-0 z-50 flex items-end sm:items-center justify-center px-4 pb-4 sm:pb-0 transition-all duration-300 ${
+      className={`fixed inset-0 z-50 flex items-center justify-center transition-all duration-300 ${
         visible ? 'opacity-100' : 'opacity-0'
       }`}
     >
@@ -67,82 +67,91 @@ export default function WelcomeModal({ userName, onClose, onStartTour }: Welcome
         onClick={handleClose}
       />
 
-      {/* Modal */}
+      {/* Scroll container — ocupa toda a tela e permite rolar no mobile */}
       <div
-        className={`relative w-full max-w-md bg-[#0b1120] border border-white/[0.08] rounded-2xl shadow-2xl z-10 overflow-hidden transition-all duration-300 ${
-          visible ? 'translate-y-0 scale-100' : 'translate-y-4 scale-95'
-        }`}
+        className="relative z-10 w-full h-full overflow-y-auto flex items-start sm:items-center justify-center px-4"
+        style={{
+          paddingTop: 'max(1rem, env(safe-area-inset-top, 1rem))',
+          paddingBottom: 'max(1rem, env(safe-area-inset-bottom, 1rem))',
+        }}
       >
-        {/* Header gradient */}
-        <div className="relative h-28 bg-gradient-to-br from-teal-600/30 via-teal-500/10 to-transparent flex items-center justify-center overflow-hidden">
-          <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,rgba(20,184,166,0.15),transparent_70%)]" />
-          <div className="relative flex items-center gap-3">
-            <div className="w-12 h-12 rounded-2xl bg-teal-500/20 border border-teal-500/30 flex items-center justify-center">
-              <Sparkles className="w-6 h-6 text-teal-400" />
-            </div>
-            <div>
-              <p className="text-white font-bold text-lg leading-tight">
-                Bem-vindo{userName ? `, ${userName.split(' ')[0]}` : ''}!
-              </p>
-              <p className="text-teal-300/70 text-xs">Sua conta está pronta</p>
-            </div>
-          </div>
-          <button
-            onClick={handleClose}
-            className="absolute top-4 right-4 text-white/30 hover:text-white/60 transition-colors"
-          >
-            <X className="w-4 h-4" />
-          </button>
-        </div>
-
-        {/* Content */}
-        <div className="p-5">
-          <p className="text-white/50 text-sm mb-5 text-center">
-            O Backfindr protege seus objetos com QR Code inteligente e matching por IA.
-            Veja como funciona:
-          </p>
-
-          <div className="grid grid-cols-2 gap-3 mb-6">
-            {HIGHLIGHTS.map(({ icon: Icon, color, title, desc }) => (
-              <div
-                key={title}
-                className="bg-white/[0.02] border border-white/[0.06] rounded-xl p-3 space-y-1.5"
-              >
-                <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${color}`}>
-                  <Icon className="w-4 h-4" />
-                </div>
-                <p className="text-white text-xs font-semibold leading-tight">{title}</p>
-                <p className="text-white/40 text-[11px] leading-relaxed">{desc}</p>
+        {/* Modal */}
+        <div
+          className={`relative w-full max-w-md bg-[#0b1120] border border-white/[0.08] rounded-2xl shadow-2xl overflow-hidden transition-all duration-300 my-auto ${
+            visible ? 'translate-y-0 scale-100' : 'translate-y-4 scale-95'
+          }`}
+        >
+          {/* Header gradient */}
+          <div className="relative h-28 bg-gradient-to-br from-teal-600/30 via-teal-500/10 to-transparent flex items-center justify-center overflow-hidden">
+            <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,rgba(20,184,166,0.15),transparent_70%)]" />
+            <div className="relative flex items-center gap-3">
+              <div className="w-12 h-12 rounded-2xl bg-teal-500/20 border border-teal-500/30 flex items-center justify-center">
+                <Sparkles className="w-6 h-6 text-teal-400" />
               </div>
-            ))}
+              <div>
+                <p className="text-white font-bold text-lg leading-tight">
+                  Bem-vindo{userName ? `, ${userName.split(' ')[0]}` : ''}!
+                </p>
+                <p className="text-teal-300/70 text-xs">Sua conta está pronta</p>
+              </div>
+            </div>
+            <button
+              onClick={handleClose}
+              className="absolute top-4 right-4 text-white/30 hover:text-white/60 transition-colors"
+            >
+              <X className="w-4 h-4" />
+            </button>
           </div>
 
-          {/* CTAs */}
-          <div className="space-y-2.5">
-            <Link
-              href="/dashboard/objects/new"
-              onClick={handleClose}
-              className="flex items-center justify-center gap-2 w-full bg-teal-500 hover:bg-teal-400 text-white text-sm font-semibold py-3 rounded-xl transition-all"
-              style={{ boxShadow: '0 0 20px rgba(20,184,166,0.3)' }}
-            >
-              <Package className="w-4 h-4" />
-              Registrar meu primeiro objeto
-              <ArrowRight className="w-4 h-4" />
-            </Link>
+          {/* Content */}
+          <div className="p-5">
+            <p className="text-white/50 text-sm mb-5 text-center">
+              O Backfindr protege seus objetos com QR Code inteligente e matching por IA.
+              Veja como funciona:
+            </p>
 
-            <button
-              onClick={handleStartTour}
-              className="flex items-center justify-center gap-2 w-full bg-white/[0.04] hover:bg-white/[0.07] border border-white/[0.08] text-white/70 hover:text-white text-sm py-2.5 rounded-xl transition-all"
-            >
-              Ver tour guiado do painel
-            </button>
+            <div className="grid grid-cols-2 gap-3 mb-6">
+              {HIGHLIGHTS.map(({ icon: Icon, color, title, desc }) => (
+                <div
+                  key={title}
+                  className="bg-white/[0.02] border border-white/[0.06] rounded-xl p-3 space-y-1.5"
+                >
+                  <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${color}`}>
+                    <Icon className="w-4 h-4" />
+                  </div>
+                  <p className="text-white text-xs font-semibold leading-tight">{title}</p>
+                  <p className="text-white/40 text-[11px] leading-relaxed">{desc}</p>
+                </div>
+              ))}
+            </div>
 
-            <button
-              onClick={handleClose}
-              className="w-full text-white/30 hover:text-white/50 text-xs py-1.5 transition-colors"
-            >
-              Explorar por conta própria
-            </button>
+            {/* CTAs */}
+            <div className="space-y-2.5">
+              <Link
+                href="/dashboard/objects/new"
+                onClick={handleClose}
+                className="flex items-center justify-center gap-2 w-full bg-teal-500 hover:bg-teal-400 text-white text-sm font-semibold py-3 rounded-xl transition-all"
+                style={{ boxShadow: '0 0 20px rgba(20,184,166,0.3)' }}
+              >
+                <Package className="w-4 h-4" />
+                Registrar meu primeiro objeto
+                <ArrowRight className="w-4 h-4" />
+              </Link>
+
+              <button
+                onClick={handleStartTour}
+                className="flex items-center justify-center gap-2 w-full bg-white/[0.04] hover:bg-white/[0.07] border border-white/[0.08] text-white/70 hover:text-white text-sm py-2.5 rounded-xl transition-all"
+              >
+                Ver tour guiado do painel
+              </button>
+
+              <button
+                onClick={handleClose}
+                className="w-full text-white/30 hover:text-white/50 text-xs py-1.5 transition-colors"
+              >
+                Explorar por conta própria
+              </button>
+            </div>
           </div>
         </div>
       </div>

@@ -118,8 +118,11 @@ export default function DashboardPage() {
   const [showOnboarding, setShowOnboarding] = useState(true);
   const [planInfo, setPlanInfo] = useState<PlanInfo | null>(null);
 
-  // Onboarding states
-  const [showWelcome, setShowWelcome] = useState(false);
+  // Onboarding states — inicializa como true se nunca foi exibido (evita flash do dashboard)
+  const [showWelcome, setShowWelcome] = useState(() => {
+    if (typeof window === 'undefined') return false;
+    return !localStorage.getItem(LS_WELCOME_SHOWN);
+  });
   const [showTour, setShowTour] = useState(false);
 
   // Buscar status do plano
@@ -146,16 +149,8 @@ export default function DashboardPage() {
 
   useEffect(() => { load(); }, [load]);
 
-  // Exibir modal de boas-vindas apenas no primeiro acesso
-  useEffect(() => {
-    if (typeof window === 'undefined') return;
-    const alreadyShown = localStorage.getItem(LS_WELCOME_SHOWN);
-    if (!alreadyShown) {
-      // Pequeno delay para garantir que a página carregou
-      const t = setTimeout(() => setShowWelcome(true), 800);
-      return () => clearTimeout(t);
-    }
-  }, []);
+  // O modal já é inicializado no estado correto via useState lazy init acima
+  // Não é necessário useEffect com delay — evita flash do conteúdo por baixo
 
   function handleCloseWelcome() {
     localStorage.setItem(LS_WELCOME_SHOWN, '1');
