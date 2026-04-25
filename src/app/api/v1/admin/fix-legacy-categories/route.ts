@@ -67,6 +67,20 @@ export async function POST(req: NextRequest) {
           OR title ILIKE '%fazer%' OR title ILIKE '%lander%' OR title ILIKE '%tenere%'
           OR title ILIKE '%gs500%' OR title ILIKE '%cb 300%' OR title ILIKE '%twister%'
           OR title ILIKE '%bros%' OR title ILIKE '%nx350%'
+          OR title ILIKE '%porsche%' OR title ILIKE '%porshe%' OR title ILIKE '%boxster%'
+          OR title ILIKE '%ecosport%' OR title ILIKE '%eco sport%' OR title ILIKE '%tucson%'
+          OR title ILIKE '%creta%' OR title ILIKE '%t-cross%' OR title ILIKE '%tcross%'
+          OR title ILIKE '%nivus%' OR title ILIKE '%kicks%' OR title ILIKE '%duster%'
+          OR title ILIKE '%captur%' OR title ILIKE '%hr-v%' OR title ILIKE '%hrv%'
+          OR title ILIKE '%cr-v%' OR title ILIKE '%crv%' OR title ILIKE '%fit %'
+          OR title ILIKE '%accord%' OR title ILIKE '%camry%' OR title ILIKE '%etios%'
+          OR title ILIKE '%yaris%' OR title ILIKE '%sw4%' OR title ILIKE '%rav4%'
+          OR title ILIKE '%land cruiser%' OR title ILIKE '%pajero%' OR title ILIKE '%outlander%'
+          OR title ILIKE '%l200%' OR title ILIKE '%triton%' OR title ILIKE '%frontier%'
+          OR title ILIKE '%amarok%' OR title ILIKE '%s10%' OR title ILIKE '%d20%'
+          OR title ILIKE '%d10%' OR title ILIKE '%versa%' OR title ILIKE '%march%'
+          OR title ILIKE '%logan%' OR title ILIKE '%fluence%' OR title ILIKE '%duster%'
+          OR title ILIKE '%peças automotivas%' OR title ILIKE '%automovel%'
         )
     `);
     results.vehicle = vehicleRes.rowCount ?? 0;
@@ -111,7 +125,10 @@ export async function POST(req: NextRequest) {
           OR title ILIKE '%televisor%' OR title ILIKE '% tv %' OR title ILIKE '%monitor%'
           OR title ILIKE '%projetor%' OR title ILIKE '%fone%' OR title ILIKE '%headphone%'
           OR title ILIKE '%macbook%' OR title ILIKE '%smartwatch%' OR title ILIKE '%airpod%'
-          OR title ILIKE '%impressora%' OR title ILIKE '%hd externo%'
+          OR title ILIKE '%impressora%' OR title ILIKE '%hd externo%' OR title ILIKE '%eletrônicos%'
+          OR title ILIKE '%eletronicos%' OR title ILIKE '%dermatoscópio%'
+          OR title ILIKE '%dermatoscopio%' OR title ILIKE '%equipamento%'
+          OR title ILIKE '%aparelho%' OR title ILIKE '%geladeira%' OR title ILIKE '%refrigerador%'
         )
     `);
     results.electronics = electronicsRes.rowCount ?? 0;
