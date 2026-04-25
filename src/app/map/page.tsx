@@ -776,74 +776,7 @@ export default function MapPage() {
             </div>
           )}
 
-          {/* Painel de detalhes React — sobreposto ao mapa, renderizado pelo React (não pelo Mapbox) */}
-          {selected && (
-            <div
-              className="absolute left-1/2 -translate-x-1/2 z-10 w-[calc(100%-24px)] max-w-sm pointer-events-auto"
-              style={{ bottom: 'calc(env(safe-area-inset-bottom, 0px) + 72px)' }}
-            >
-              <div className="bg-[#0f1a2e] border border-teal-500/30 rounded-2xl shadow-2xl p-4">
-                {/* Header */}
-                <div className="flex items-start gap-3">
-                  {/* Foto ou emoji */}
-                  {selected.photos?.[0] ? (
-                    <img src={selected.photos[0]} alt="" className="w-12 h-12 rounded-xl object-cover flex-shrink-0 border border-white/10" />
-                  ) : (
-                    <div className="w-12 h-12 rounded-xl bg-white/[0.06] flex items-center justify-center text-2xl flex-shrink-0">
-                      {EMOJI[selected.category] ?? '📦'}
-                    </div>
-                  )}
-                  {/* Info */}
-                  <div className="flex-1 min-w-0">
-                    <p className="text-white font-bold text-sm leading-snug truncate">{selected.title}</p>
-                    <div className="flex items-center gap-2 mt-1.5 flex-wrap">
-                      <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full border ${STATUS_COLOR[selected.status]}`}>
-                        {STATUS_LABEL[selected.status]}
-                      </span>
-                      {selected.location?.address && (
-                        <span className="text-white/30 text-[10px] truncate">{selected.location.address}</span>
-                      )}
-                    </div>
-                    {selected.description && (
-                      <p className="text-white/40 text-[11px] mt-1.5 line-clamp-2 leading-relaxed">{selected.description}</p>
-                    )}
-                  </div>
-                  {/* Fechar */}
-                  <button
-                    onClick={() => setSelected(null)}
-                    className="text-white/30 hover:text-white transition-colors flex-shrink-0 p-1 -mt-1 -mr-1"
-                  >
-                    <X className="w-4 h-4" />
-                  </button>
-                </div>
-                {/* Badge Webjetos */}
-                {(selected.source === 'webjetos' || selected.is_legacy) && (
-                  <div className="mt-2">
-                    <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-yellow-500/10 border border-yellow-500/20 text-yellow-400">
-                      Compartilhado via Webjetos
-                    </span>
-                  </div>
-                )}
-                {/* Recompensa */}
-                {selected.reward_amount && selected.reward_amount > 0 && (
-                  <div className="mt-3 px-3 py-2 rounded-xl bg-amber-500/10 border border-amber-500/20 flex items-center gap-2">
-                    <Gift className="w-3.5 h-3.5 text-amber-400 flex-shrink-0" />
-                    <span className="text-amber-300 text-xs font-semibold">
-                      Recompensa: R$ {selected.reward_amount.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
-                    </span>
-                  </div>
-                )}
-                {/* CTA */}
-                <Link
-                  href={`/objeto/${selected.unique_code}`}
-                  className="mt-3 flex items-center justify-center gap-2 w-full py-2.5 bg-teal-500 hover:bg-teal-400 rounded-xl text-white text-sm font-bold transition-colors"
-                >
-                  Ver detalhes / Contactar dono
-                  <ChevronRight className="w-4 h-4" />
-                </Link>
-              </div>
-            </div>
-          )}
+          {/* Placeholder — o bottom sheet está fora deste container (ver abaixo) */}
         </div>
 
         {/* List — virtualização simples com load-more */}
@@ -907,6 +840,102 @@ export default function MapPage() {
           </aside>
         )}
       </div>
+
+      {/* Bottom sheet de detalhes — fixed para não ser cortado pelo overflow-hidden do container */}
+      {selected && (
+        <>
+          {/* Overlay clicável para fechar */}
+          <div className="fixed inset-0 z-40" onClick={() => setSelected(null)} />
+          {/* Card */}
+          <div
+            className="fixed left-0 right-0 z-50 px-3 pointer-events-auto"
+            style={{ bottom: 'calc(env(safe-area-inset-bottom, 0px) + 16px)' }}
+          >
+            <div className="bg-[#0f1a2e] border border-teal-500/30 rounded-2xl shadow-2xl overflow-hidden max-w-lg mx-auto">
+              {/* Drag handle */}
+              <div className="flex justify-center pt-2.5 pb-1">
+                <div className="w-10 h-1 rounded-full bg-white/20" />
+              </div>
+              <div className="px-4 pb-4">
+                {/* Header */}
+                <div className="flex items-start gap-3">
+                  {selected.photos?.[0] ? (
+                    <img src={selected.photos[0]} alt="" className="w-14 h-14 rounded-xl object-cover flex-shrink-0 border border-white/10" />
+                  ) : (
+                    <div className="w-14 h-14 rounded-xl bg-white/[0.06] flex items-center justify-center text-3xl flex-shrink-0">
+                      {EMOJI[selected.category] ?? '📦'}
+                    </div>
+                  )}
+                  <div className="flex-1 min-w-0">
+                    <p className="text-white font-bold text-base leading-snug">{selected.title}</p>
+                    <div className="flex items-center gap-2 mt-1.5 flex-wrap">
+                      <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full border ${STATUS_COLOR[selected.status]}`}>
+                        {STATUS_LABEL[selected.status]}
+                      </span>
+                      <span className="text-white/30 text-[10px]">{CATEGORY_LABEL[selected.category] ?? 'Outro'}</span>
+                    </div>
+                  </div>
+                  <button
+                    onClick={() => setSelected(null)}
+                    className="text-white/30 hover:text-white transition-colors flex-shrink-0 p-1.5 -mt-1 -mr-1 rounded-lg hover:bg-white/[0.06]"
+                  >
+                    <X className="w-4 h-4" />
+                  </button>
+                </div>
+
+                {/* Descrição */}
+                {selected.description && (
+                  <p className="text-white/50 text-xs mt-3 leading-relaxed line-clamp-3">{selected.description}</p>
+                )}
+
+                {/* Localização */}
+                {selected.location?.address && (
+                  <div className="flex items-center gap-1.5 mt-2.5">
+                    <MapPin className="w-3 h-3 text-white/30 flex-shrink-0" />
+                    <span className="text-white/40 text-xs truncate">{selected.location.address}</span>
+                  </div>
+                )}
+
+                {/* Data */}
+                {selected.created_at && (
+                  <p className="text-white/25 text-[10px] mt-1.5">
+                    Registrado em {new Date(selected.created_at).toLocaleDateString('pt-BR', { day: '2-digit', month: 'short', year: 'numeric' })}
+                  </p>
+                )}
+
+                {/* Badge Webjetos */}
+                {(selected.source === 'webjetos' || selected.is_legacy) && (
+                  <div className="mt-2.5">
+                    <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-yellow-500/10 border border-yellow-500/20 text-yellow-400">
+                      Compartilhado via Webjetos
+                    </span>
+                  </div>
+                )}
+
+                {/* Recompensa */}
+                {selected.reward_amount && selected.reward_amount > 0 && (
+                  <div className="mt-3 px-3 py-2 rounded-xl bg-amber-500/10 border border-amber-500/20 flex items-center gap-2">
+                    <Gift className="w-3.5 h-3.5 text-amber-400 flex-shrink-0" />
+                    <span className="text-amber-300 text-xs font-semibold">
+                      Recompensa: R$ {selected.reward_amount.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                    </span>
+                  </div>
+                )}
+
+                {/* CTA */}
+                <Link
+                  href={`/objeto/${selected.unique_code}`}
+                  className="mt-3 flex items-center justify-center gap-2 w-full py-3 bg-teal-500 hover:bg-teal-400 active:bg-teal-600 rounded-xl text-white text-sm font-bold transition-colors"
+                  style={{ boxShadow: '0 0 0 1px rgba(20,184,166,0.4), 0 4px 16px rgba(20,184,166,0.2)' }}
+                >
+                  Ver detalhes completos / Contactar dono
+                  <ChevronRight className="w-4 h-4" />
+                </Link>
+              </div>
+            </div>
+          </div>
+        </>
+      )}
     </div>
   );
 }
