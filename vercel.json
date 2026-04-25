@@ -15,7 +15,7 @@
     },
     {
       "path": "/api/v1/cron/social-posts",
-      "schedule": "*/5 * * * *"
+      "schedule": "0 9 * * *"
     }
   ]
 }
