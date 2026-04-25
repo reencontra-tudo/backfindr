@@ -7,198 +7,149 @@ const MIGRATION_SECRET = process.env.MIGRATION_SECRET || '';
 /**
  * POST /api/v1/admin/fix-legacy-categories
  * Reclassifica categorias dos objetos legados do Webjetos que foram importados como 'other'.
- * Usa correspondência por palavras-chave no título para identificar a categoria correta.
+ * Usa ILIKE hardcoded para evitar limite de parâmetros do PostgreSQL.
  */
 export async function POST(req: NextRequest) {
-  // Autenticação via MIGRATION_SECRET
   let authorized = false;
   try {
     const body = await req.json().catch(() => ({})) as Record<string, unknown>;
-    if (MIGRATION_SECRET && body.secret === MIGRATION_SECRET) {
-      authorized = true;
-    }
+    if (MIGRATION_SECRET && body.secret === MIGRATION_SECRET) authorized = true;
   } catch {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
-  if (!authorized) {
-    return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
-  }
+  if (!authorized) return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
 
   const results: Record<string, number> = {};
 
   try {
     // ── 1. Veículos ──────────────────────────────────────────────────────────
-    const vehicleKeywords = [
-      'carro', 'moto', 'veículo', 'veiculo', 'automóvel', 'automov',
-      'bicicleta', 'bike', 'caminhão', 'caminhao', 'pickup', 'ônibus', 'onibus',
-      'honda', 'toyota', 'chevrolet', 'fiat', 'ford', 'volkswagen', ' vw ',
-      'hyundai', 'nissan', 'renault', 'peugeot', 'citroën', 'citroen',
-      'jeep', 'kawasaki', 'yamaha', 'suzuki', 'harley', 'ducati',
-      'mercedes', 'audi', 'bmw', 'spin', 'corolla', 'civic', 'gol ',
-      'uno ', 'palio', 'onix', 'hb20', 'kwid', 'mobi ', 'cobalt', 'cruze',
-      'tracker', 'compass', 'renegade', 'strada', 'hilux', 'ranger',
-      'saveiro', 'voyage', 'prisma', 'montana', 'zafira', 'kombi',
-      'celta', 'sandero', 'punto', 'siena', 'fiesta', 'focus', 'ka ',
-      'scooter', 'motocicleta', 'ciclomotor', 'triciclo', 'quadriciclo',
-      'van ', 'utilitário', 'utilitario', 'reboque', 'carreta',
-    ];
-
-    const vehicleConditions = vehicleKeywords
-      .map((_, i) => `LOWER(title) LIKE $${i + 1}`)
-      .join(' OR ');
-    const vehicleParams = vehicleKeywords.map(kw => `%${kw}%`);
-
-    const vehicleRes = await query(
-      `UPDATE objects
-       SET category = 'vehicle', updated_at = NOW()
-       WHERE is_legacy = true
-         AND category = 'other'
-         AND (${vehicleConditions})`,
-      vehicleParams
-    );
+    const vehicleRes = await query(`
+      UPDATE objects SET category = 'vehicle', updated_at = NOW()
+      WHERE is_legacy = true AND category = 'other'
+        AND (
+          title ILIKE '%carro%' OR title ILIKE '%moto%' OR title ILIKE '%veículo%'
+          OR title ILIKE '%veiculo%' OR title ILIKE '%automóvel%' OR title ILIKE '%automov%'
+          OR title ILIKE '%bicicleta%' OR title ILIKE '%caminhão%' OR title ILIKE '%caminhao%'
+          OR title ILIKE '%pickup%' OR title ILIKE '%ônibus%' OR title ILIKE '%onibus%'
+          OR title ILIKE '%honda%' OR title ILIKE '%toyota%' OR title ILIKE '%chevrolet%'
+          OR title ILIKE '%fiat%' OR title ILIKE '%ford %' OR title ILIKE '%volkswagen%'
+          OR title ILIKE '% vw %' OR title ILIKE '%hyundai%' OR title ILIKE '%nissan%'
+          OR title ILIKE '%renault%' OR title ILIKE '%peugeot%' OR title ILIKE '%citroen%'
+          OR title ILIKE '%citroën%' OR title ILIKE '%jeep%' OR title ILIKE '%kawasaki%'
+          OR title ILIKE '%yamaha%' OR title ILIKE '%suzuki%' OR title ILIKE '%harley%'
+          OR title ILIKE '%ducati%' OR title ILIKE '%mercedes%' OR title ILIKE '%audi%'
+          OR title ILIKE '%spin%' OR title ILIKE '%corolla%' OR title ILIKE '%civic%'
+          OR title ILIKE '% gol %' OR title ILIKE '% uno %' OR title ILIKE '%palio%'
+          OR title ILIKE '%onix%' OR title ILIKE '%hb20%' OR title ILIKE '%kwid%'
+          OR title ILIKE '%cobalt%' OR title ILIKE '%cruze%' OR title ILIKE '%tracker%'
+          OR title ILIKE '%compass%' OR title ILIKE '%renegade%' OR title ILIKE '%strada%'
+          OR title ILIKE '%hilux%' OR title ILIKE '%ranger%' OR title ILIKE '%saveiro%'
+          OR title ILIKE '%voyage%' OR title ILIKE '%prisma%' OR title ILIKE '%montana%'
+          OR title ILIKE '%zafira%' OR title ILIKE '%kombi%' OR title ILIKE '%celta%'
+          OR title ILIKE '%sandero%' OR title ILIKE '%punto%' OR title ILIKE '%siena%'
+          OR title ILIKE '%fiesta%' OR title ILIKE '% ka %' OR title ILIKE '%scooter%'
+          OR title ILIKE '%motocicleta%' OR title ILIKE '%caminhonete%'
+          OR title ILIKE '%camionete%' OR title ILIKE '%utilitário%'
+          OR title ILIKE '%furto veiculo%' OR title ILIKE '%roubo veiculo%'
+          OR title ILIKE '%bike%'
+        )
+    `);
     results.vehicle = vehicleRes.rowCount ?? 0;
 
     // ── 2. Pets / Animais ────────────────────────────────────────────────────
-    const petKeywords = [
-      'cachorro', 'cão', 'cao ', 'gato', 'felino', 'canino', 'pet ',
-      'animal', 'pássaro', 'passaro', 'ave ', 'papagaio', 'periquito',
-      'hamster', 'coelho', 'tartaruga', 'cobra', 'lagarto', 'peixe',
-      'cavalo', 'égua', 'egua', 'pônei', 'ponei', 'porco', 'ovelha',
-      'vira-lata', 'viralata', 'labrador', 'golden', 'poodle', 'bulldog',
-      'pastor', 'husky', 'pitbull', 'rottweiler', 'dachshund', 'shih',
-      'yorkshire', 'maltês', 'maltes', 'pinscher', 'beagle', 'boxer',
-      'siamês', 'siaes', 'persa ', 'maine', 'ragdoll', 'bengal',
-    ];
-
-    const petConditions = petKeywords
-      .map((_, i) => `LOWER(title) LIKE $${i + 1}`)
-      .join(' OR ');
-    const petParams = petKeywords.map(kw => `%${kw}%`);
-
-    const petRes = await query(
-      `UPDATE objects
-       SET category = 'pet', updated_at = NOW()
-       WHERE is_legacy = true
-         AND category = 'other'
-         AND (${petConditions})`,
-      petParams
-    );
+    const petRes = await query(`
+      UPDATE objects SET category = 'pet', updated_at = NOW()
+      WHERE is_legacy = true AND category = 'other'
+        AND (
+          title ILIKE '%cachorro%' OR title ILIKE '% cão %' OR title ILIKE '%gato%'
+          OR title ILIKE '%felino%' OR title ILIKE '%canino%' OR title ILIKE '% pet %'
+          OR title ILIKE '%animal%' OR title ILIKE '%pássaro%' OR title ILIKE '%passaro%'
+          OR title ILIKE '%papagaio%' OR title ILIKE '%periquito%' OR title ILIKE '%hamster%'
+          OR title ILIKE '%coelho%' OR title ILIKE '%tartaruga%' OR title ILIKE '%labrador%'
+          OR title ILIKE '%golden%' OR title ILIKE '%poodle%' OR title ILIKE '%bulldog%'
+          OR title ILIKE '%pastor%' OR title ILIKE '%pitbull%' OR title ILIKE '%rottweiler%'
+          OR title ILIKE '%dachshund%' OR title ILIKE '%yorkshire%' OR title ILIKE '%pinscher%'
+          OR title ILIKE '%beagle%' OR title ILIKE '%siamês%' OR title ILIKE '%siaes%'
+          OR title ILIKE '%cadela%' OR title ILIKE '%cachorra%' OR title ILIKE '%gatinho%'
+          OR title ILIKE '%gatinha%' OR title ILIKE '%filhote%' OR title ILIKE '%procura-se%'
+          OR title ILIKE '%vira-lata%' OR title ILIKE '%viralata%'
+        )
+    `);
     results.pet = petRes.rowCount ?? 0;
 
     // ── 3. Eletrônicos ───────────────────────────────────────────────────────
-    const electronicsKeywords = [
-      'celular', 'smartphone', 'iphone', 'samsung', 'motorola', 'xiaomi',
-      'notebook', 'laptop', 'computador', 'tablet', 'ipad', 'kindle',
-      'câmera', 'camera', 'filmadora', 'drone', 'playstation', 'xbox',
-      'nintendo', 'televisor', 'tv ', 'monitor', 'projetor', 'som ',
-      'caixa de som', 'fone', 'headphone', 'headset', 'airpod',
-      'macbook', 'apple watch', 'smartwatch', 'gps ', 'rádio', 'radio',
-      'impressora', 'scanner', 'modem', 'roteador', 'hd externo',
-    ];
-
-    const electronicsConditions = electronicsKeywords
-      .map((_, i) => `LOWER(title) LIKE $${i + 1}`)
-      .join(' OR ');
-    const electronicsParams = electronicsKeywords.map(kw => `%${kw}%`);
-
-    const electronicsRes = await query(
-      `UPDATE objects
-       SET category = 'electronics', updated_at = NOW()
-       WHERE is_legacy = true
-         AND category = 'other'
-         AND (${electronicsConditions})`,
-      electronicsParams
-    );
+    const electronicsRes = await query(`
+      UPDATE objects SET category = 'electronics', updated_at = NOW()
+      WHERE is_legacy = true AND category = 'other'
+        AND (
+          title ILIKE '%celular%' OR title ILIKE '%smartphone%' OR title ILIKE '%iphone%'
+          OR title ILIKE '%samsung%' OR title ILIKE '%motorola%' OR title ILIKE '%xiaomi%'
+          OR title ILIKE '%notebook%' OR title ILIKE '%laptop%' OR title ILIKE '%computador%'
+          OR title ILIKE '%tablet%' OR title ILIKE '%ipad%' OR title ILIKE '%câmera%'
+          OR title ILIKE '%camera%' OR title ILIKE '%filmadora%' OR title ILIKE '%drone%'
+          OR title ILIKE '%playstation%' OR title ILIKE '%xbox%' OR title ILIKE '%nintendo%'
+          OR title ILIKE '%televisor%' OR title ILIKE '% tv %' OR title ILIKE '%monitor%'
+          OR title ILIKE '%projetor%' OR title ILIKE '%fone%' OR title ILIKE '%headphone%'
+          OR title ILIKE '%macbook%' OR title ILIKE '%smartwatch%' OR title ILIKE '%airpod%'
+          OR title ILIKE '%impressora%' OR title ILIKE '%hd externo%'
+        )
+    `);
     results.electronics = electronicsRes.rowCount ?? 0;
 
     // ── 4. Documentos ────────────────────────────────────────────────────────
-    const documentKeywords = [
-      'documento', 'rg ', 'cpf ', 'cnh ', 'habilitação', 'habilitacao',
-      'passaporte', 'carteira de trabalho', 'ctps', 'certidão', 'certidao',
-      'título de eleitor', 'titulo de eleitor', 'cartão', 'cartao',
-      'identidade', 'registro', 'diploma', 'certificado',
-    ];
-
-    const documentConditions = documentKeywords
-      .map((_, i) => `LOWER(title) LIKE $${i + 1}`)
-      .join(' OR ');
-    const documentParams = documentKeywords.map(kw => `%${kw}%`);
-
-    const documentRes = await query(
-      `UPDATE objects
-       SET category = 'document', updated_at = NOW()
-       WHERE is_legacy = true
-         AND category = 'other'
-         AND (${documentConditions})`,
-      documentParams
-    );
+    const documentRes = await query(`
+      UPDATE objects SET category = 'document', updated_at = NOW()
+      WHERE is_legacy = true AND category = 'other'
+        AND (
+          title ILIKE '%documento%' OR title ILIKE '% rg %' OR title ILIKE '% cpf %'
+          OR title ILIKE '% cnh %' OR title ILIKE '%habilitação%' OR title ILIKE '%habilitacao%'
+          OR title ILIKE '%passaporte%' OR title ILIKE '%carteira de trabalho%'
+          OR title ILIKE '%certidão%' OR title ILIKE '%certidao%'
+          OR title ILIKE '%título de eleitor%' OR title ILIKE '%titulo de eleitor%'
+          OR title ILIKE '%identidade%' OR title ILIKE '%diploma%' OR title ILIKE '%certificado%'
+        )
+    `);
     results.document = documentRes.rowCount ?? 0;
 
     // ── 5. Joias e Relógios ──────────────────────────────────────────────────
-    const jewelryKeywords = [
-      'joia', 'jóia', 'anel', 'pulseira', 'colar', 'brinco', 'relógio',
-      'relogio', 'aliança', 'alianca', 'corrente', 'pingente', 'bracelete',
-      'ouro', 'prata ', 'diamante', 'esmeralda', 'rubi', 'safira',
-    ];
-
-    const jewelryConditions = jewelryKeywords
-      .map((_, i) => `LOWER(title) LIKE $${i + 1}`)
-      .join(' OR ');
-    const jewelryParams = jewelryKeywords.map(kw => `%${kw}%`);
-
-    const jewelryRes = await query(
-      `UPDATE objects
-       SET category = 'jewelry', updated_at = NOW()
-       WHERE is_legacy = true
-         AND category = 'other'
-         AND (${jewelryConditions})`,
-      jewelryParams
-    );
+    const jewelryRes = await query(`
+      UPDATE objects SET category = 'jewelry', updated_at = NOW()
+      WHERE is_legacy = true AND category = 'other'
+        AND (
+          title ILIKE '%joia%' OR title ILIKE '%jóia%' OR title ILIKE '% anel %'
+          OR title ILIKE '%pulseira%' OR title ILIKE '% colar %' OR title ILIKE '%brinco%'
+          OR title ILIKE '%relógio%' OR title ILIKE '%relogio%' OR title ILIKE '%aliança%'
+          OR title ILIKE '%alianca%' OR title ILIKE '%corrente%' OR title ILIKE '%pingente%'
+          OR title ILIKE '%bracelete%' OR title ILIKE '% ouro %' OR title ILIKE '% prata %'
+          OR title ILIKE '%diamante%' OR title ILIKE '%esmeralda%' OR title ILIKE '%rubi%'
+        )
+    `);
     results.jewelry = jewelryRes.rowCount ?? 0;
 
     // ── 6. Bolsas e Mochilas ─────────────────────────────────────────────────
-    const bagKeywords = [
-      'bolsa', 'mochila', 'carteira', 'mala ', 'sacola', 'pochete',
-      'necessaire', 'pasta ', 'portfólio', 'portfolio',
-    ];
-
-    const bagConditions = bagKeywords
-      .map((_, i) => `LOWER(title) LIKE $${i + 1}`)
-      .join(' OR ');
-    const bagParams = bagKeywords.map(kw => `%${kw}%`);
-
-    const bagRes = await query(
-      `UPDATE objects
-       SET category = 'bag', updated_at = NOW()
-       WHERE is_legacy = true
-         AND category = 'other'
-         AND (${bagConditions})`,
-      bagParams
-    );
+    const bagRes = await query(`
+      UPDATE objects SET category = 'bag', updated_at = NOW()
+      WHERE is_legacy = true AND category = 'other'
+        AND (
+          title ILIKE '%bolsa%' OR title ILIKE '%mochila%' OR title ILIKE '%carteira%'
+          OR title ILIKE '% mala %' OR title ILIKE '%sacola%' OR title ILIKE '%pochete%'
+          OR title ILIKE '%necessaire%' OR title ILIKE '% pasta %'
+        )
+    `);
     results.bag = bagRes.rowCount ?? 0;
 
     // ── 7. Chaves ────────────────────────────────────────────────────────────
-    const keyKeywords = ['chave ', 'chaveiro', 'chaves '];
+    const keysRes = await query(`
+      UPDATE objects SET category = 'keys', updated_at = NOW()
+      WHERE is_legacy = true AND category = 'other'
+        AND (
+          title ILIKE '%chave %' OR title ILIKE '%chaveiro%' OR title ILIKE '%chaves%'
+        )
+    `);
+    results.keys = keysRes.rowCount ?? 0;
 
-    const keyConditions = keyKeywords
-      .map((_, i) => `LOWER(title) LIKE $${i + 1}`)
-      .join(' OR ');
-    const keyParams = keyKeywords.map(kw => `%${kw}%`);
-
-    const keyRes = await query(
-      `UPDATE objects
-       SET category = 'keys', updated_at = NOW()
-       WHERE is_legacy = true
-         AND category = 'other'
-         AND (${keyConditions})`,
-      keyParams
-    );
-    results.keys = keyRes.rowCount ?? 0;
-
-    // ── Totais ───────────────────────────────────────────────────────────────
     const totalUpdated = Object.values(results).reduce((a, b) => a + b, 0);
 
-    // Contar quantos ainda ficaram como 'other'
     const remainingRes = await query(
       `SELECT COUNT(*) FROM objects WHERE is_legacy = true AND category = 'other'`
     );
@@ -214,6 +165,6 @@ export async function POST(req: NextRequest) {
 
   } catch (e) {
     console.error('[fix-legacy-categories]', e);
-    return NextResponse.json({ error: 'Erro ao reclassificar categorias', detail: String(e) }, { status: 500 });
+    return NextResponse.json({ error: 'Erro ao reclassificar', detail: String(e) }, { status: 500 });
   }
 }
