@@ -1,19 +1,21 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
-import { Server, Database, Zap, Globe, CheckCircle2, AlertTriangle, XCircle, RefreshCw, Activity, Clock } from 'lucide-react';
+import { Server, Database, Zap, Globe, CheckCircle2, AlertTriangle, XCircle, RefreshCw, Activity, Clock, HardDrive } from 'lucide-react';
 import { api, parseApiError } from '@/lib/api';
 import { toast } from 'sonner';
 
 interface HealthData { status: string; database?: string; version: string; uptime?: number; services?: { database?: { status: string; latency_ms?: number } } }
+interface R2HealthData { status: 'ok' | 'not_configured' | 'error'; configured: boolean; bucket: string; public_url?: string | null; latency_ms?: number; error?: string; }
 
 const SERVICES = [
-  { name: 'API Backend',          url: '/api/health',          key: 'api' },
-  { name: 'Banco (Supabase)',      url: null,                   key: 'db' },
-  { name: 'Vercel Edge',          url: null,                   key: 'edge' },
-  { name: 'Resend (E-mail)',       url: null,                   key: 'email' },
-  { name: 'Stripe (Pagamentos)',   url: null,                   key: 'stripe' },
-  { name: 'Mapbox',               url: null,                   key: 'mapbox' },
+  { name: 'API Backend',                  key: 'api',     icon: Server   },
+  { name: 'Banco (Supabase)',             key: 'db',      icon: Database },
+  { name: 'Storage de Imagens (R2)',      key: 'r2',      icon: HardDrive },
+  { name: 'Vercel Edge',                  key: 'edge',    icon: Globe    },
+  { name: 'Resend (E-mail)',              key: 'email',   icon: Server   },
+  { name: 'Stripe (Pagamentos)',          key: 'stripe',  icon: Server   },
+  { name: 'Mapbox',                       key: 'mapbox',  icon: Server   },
 ];
 
 const LOGS = [
@@ -31,12 +33,16 @@ const LOG_STYLE: Record<string, string> = {
   error: 'text-red-400 bg-red-500/10 border-red-500/20',
 };
 
+type ServiceStatus = 'ok' | 'degraded' | 'down' | 'checking';
+
 export default function AdminSistema() {
   const [health, setHealth] = useState<HealthData | null>(null);
+  const [r2Health, setR2Health] = useState<R2HealthData | null>(null);
   const [loading, setLoading] = useState(true);
   const [actionLoading, setActionLoading] = useState<string | null>(null);
-  const [statuses, setStatuses] = useState<Record<string, 'ok' | 'degraded' | 'down' | 'checking'>>({
-    api: 'checking', db: 'checking', edge: 'ok', email: 'ok', stripe: 'ok', mapbox: 'ok',
+  const [statuses, setStatuses] = useState<Record<string, ServiceStatus>>({
+    api: 'checking', db: 'checking', r2: 'checking',
+    edge: 'ok', email: 'ok', stripe: 'ok', mapbox: 'ok',
   });
 
   const runMatching = useCallback(async () => {
@@ -51,26 +57,51 @@ export default function AdminSistema() {
     }
   }, []);
 
-  const checkHealth = async () => {
+  const checkHealth = useCallback(async () => {
     setLoading(true);
+    setStatuses(prev => ({ ...prev, api: 'checking', db: 'checking', r2: 'checking' }));
     try {
-      const res = await fetch('/api/health', { cache: 'no-store' });
-      const data: HealthData = await res.json();
-      setHealth(data);
-      const dbOk = data.services?.database?.status === 'ok' || data.database === 'connected';
-      setStatuses(prev => ({
-        ...prev,
-        api: res.ok ? 'ok' : 'down',
-        db: dbOk ? 'ok' : 'down',
-      }));
+      // Verificar API + banco e R2 em paralelo
+      const [apiRes, r2Res] = await Promise.allSettled([
+        fetch('/api/health', { cache: 'no-store' }),
+        fetch('/api/v1/admin/r2/health', { cache: 'no-store' }),
+      ]);
+
+      // ── API Backend + Banco ────────────────────────────────────────────────
+      if (apiRes.status === 'fulfilled' && apiRes.value.ok) {
+        const data: HealthData = await apiRes.value.json();
+        setHealth(data);
+        const dbOk = data.services?.database?.status === 'ok' || data.database === 'connected';
+        setStatuses(prev => ({
+          ...prev,
+          api: 'ok',
+          db: dbOk ? 'ok' : 'down',
+        }));
+      } else {
+        setStatuses(prev => ({ ...prev, api: 'down', db: 'down' }));
+      }
+
+      // ── Cloudflare R2 (Storage de Imagens) ────────────────────────────────
+      if (r2Res.status === 'fulfilled' && r2Res.value.ok) {
+        const r2Data: R2HealthData = await r2Res.value.json();
+        setR2Health(r2Data);
+        setStatuses(prev => ({
+          ...prev,
+          r2: r2Data.status === 'ok'             ? 'ok'
+            : r2Data.status === 'not_configured' ? 'degraded'
+            : 'down',
+        }));
+      } else {
+        setStatuses(prev => ({ ...prev, r2: 'down' }));
+      }
     } catch {
-      setStatuses(prev => ({ ...prev, api: 'down', db: 'down' }));
+      setStatuses(prev => ({ ...prev, api: 'down', db: 'down', r2: 'down' }));
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
 
-  useEffect(() => { checkHealth(); }, []);
+  useEffect(() => { checkHealth(); }, [checkHealth]);
 
   const StatusIcon = ({ status }: { status: string }) => {
     if (status === 'ok')       return <CheckCircle2 className="w-4 h-4 text-green-400" />;
@@ -81,10 +112,10 @@ export default function AdminSistema() {
 
   const StatusText = ({ status }: { status: string }) => {
     const map: Record<string, [string, string]> = {
-      ok:       ['Operacional', 'text-green-400'],
-      degraded: ['Degradado',   'text-yellow-400'],
-      down:     ['Offline',     'text-red-400'],
-      checking: ['Verificando', 'text-white/30'],
+      ok:       ['Operacional',    'text-green-400'],
+      degraded: ['Não configurado','text-yellow-400'],
+      down:     ['Offline',        'text-red-400'],
+      checking: ['Verificando',    'text-white/30'],
     };
     const [label, color] = map[status] ?? ['Desconhecido', 'text-white/30'];
     return <span className={`text-xs ${color}`}>{label}</span>;
@@ -118,18 +149,34 @@ export default function AdminSistema() {
           <p className="text-white font-semibold text-sm">Status dos serviços</p>
         </div>
         <div className="divide-y divide-white/[0.04]">
-          {SERVICES.map(svc => (
-            <div key={svc.key} className="flex items-center justify-between px-5 py-3.5">
-              <div className="flex items-center gap-3">
-                <Server className="w-4 h-4 text-white/20" />
-                <span className="text-white/70 text-sm">{svc.name}</span>
+          {SERVICES.map(svc => {
+            const Icon = svc.icon;
+            // Tooltip extra para R2
+            const subtitle = svc.key === 'r2' && r2Health
+              ? r2Health.status === 'not_configured'
+                ? 'Credenciais R2 não configuradas nas variáveis de ambiente'
+                : r2Health.status === 'ok'
+                  ? `Bucket: ${r2Health.bucket}${r2Health.latency_ms ? ` · ${r2Health.latency_ms}ms` : ''}`
+                  : r2Health.error ?? ''
+              : null;
+            return (
+              <div key={svc.key} className="flex items-center justify-between px-5 py-3.5">
+                <div className="flex items-center gap-3 min-w-0">
+                  <Icon className="w-4 h-4 text-white/20 flex-shrink-0" />
+                  <div className="min-w-0">
+                    <span className="text-white/70 text-sm">{svc.name}</span>
+                    {subtitle && (
+                      <p className="text-white/25 text-[10px] mt-0.5 truncate max-w-[200px]">{subtitle}</p>
+                    )}
+                  </div>
+                </div>
+                <div className="flex items-center gap-2 flex-shrink-0">
+                  <StatusText status={statuses[svc.key] ?? 'checking'} />
+                  <StatusIcon status={statuses[svc.key] ?? 'checking'} />
+                </div>
               </div>
-              <div className="flex items-center gap-2">
-                <StatusText status={statuses[svc.key]} />
-                <StatusIcon status={statuses[svc.key]} />
-              </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       </div>
 
@@ -150,6 +197,32 @@ export default function AdminSistema() {
               <p className="text-white font-semibold text-sm">{value}</p>
             </div>
           ))}
+        </div>
+      )}
+
+      {/* R2 storage info */}
+      {r2Health && r2Health.configured && (
+        <div className="bg-white/[0.02] border border-white/[0.07] rounded-2xl p-4">
+          <div className="flex items-center gap-2 mb-3">
+            <HardDrive className="w-3.5 h-3.5 text-white/30" />
+            <span className="text-white/30 text-xs uppercase tracking-wider">Storage de Imagens (Cloudflare R2)</span>
+          </div>
+          <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+            <div>
+              <p className="text-white/25 text-[10px] uppercase tracking-wider mb-1">Bucket</p>
+              <p className="text-white/70 text-sm font-mono">{r2Health.bucket}</p>
+            </div>
+            <div>
+              <p className="text-white/25 text-[10px] uppercase tracking-wider mb-1">URL Pública</p>
+              <p className="text-white/70 text-xs truncate">{r2Health.public_url ?? '—'}</p>
+            </div>
+            {r2Health.latency_ms != null && (
+              <div>
+                <p className="text-white/25 text-[10px] uppercase tracking-wider mb-1">Latência</p>
+                <p className="text-white/70 text-sm">{r2Health.latency_ms}ms</p>
+              </div>
+            )}
+          </div>
         </div>
       )}
 
@@ -184,14 +257,14 @@ export default function AdminSistema() {
         <p className="text-white font-semibold text-sm mb-4">Ações de manutenção</p>
         <div className="grid sm:grid-cols-2 gap-2">
           {[
-            { icon: Zap,       label: 'Rodar matching completo',    action: runMatching,                          color: 'text-teal-400', key: 'matching' },
-            { icon: Database,  label: 'Verificar integridade do banco', action: () => { checkHealth(); },         color: 'text-blue-400',   key: 'db' },
-            { icon: RefreshCw, label: 'Recarregar status dos serviços', action: () => { checkHealth(); },           color: 'text-yellow-400', key: 'refresh' },
-            { icon: Activity,  label: 'Verificar API health',          action: () => { checkHealth(); },           color: 'text-purple-400', key: 'health' },
+            { icon: Zap,       label: 'Rodar matching completo',       action: runMatching,   color: 'text-teal-400',   key: 'matching' },
+            { icon: Database,  label: 'Verificar integridade do banco', action: checkHealth,   color: 'text-blue-400',   key: 'db' },
+            { icon: HardDrive, label: 'Verificar storage R2',           action: checkHealth,   color: 'text-orange-400', key: 'r2' },
+            { icon: RefreshCw, label: 'Recarregar status dos serviços', action: checkHealth,   color: 'text-yellow-400', key: 'refresh' },
           ].map(({ icon: Icon, label, color, key, action }) => (
-            <button key={label} onClick={action} disabled={actionLoading === key}
+            <button key={label} onClick={action} disabled={actionLoading === key || loading}
               className="flex items-center gap-3 px-4 py-3 rounded-xl bg-white/[0.03] hover:bg-white/[0.06] border border-white/[0.07] text-left transition-all group disabled:opacity-50">
-              <Icon className={`w-4 h-4 ${color} flex-shrink-0 ${actionLoading === key ? 'animate-spin' : ''}`} />
+              <Icon className={`w-4 h-4 ${color} flex-shrink-0 ${(actionLoading === key || (loading && (key === 'db' || key === 'r2' || key === 'refresh'))) ? 'animate-spin' : ''}`} />
               <span className="text-white/50 group-hover:text-white text-sm transition-colors">{label}</span>
             </button>
           ))}
