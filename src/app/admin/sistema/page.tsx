@@ -1,5 +1,32 @@
 'use client';
 
+/**
+ * ╔══════════════════════════════════════════════════════════════════════════╗
+ * ║  REGRA DE MANUTENÇÃO — REGISTRO OBRIGATÓRIO DE NOVOS SERVIÇOS           ║
+ * ╠══════════════════════════════════════════════════════════════════════════╣
+ * ║  Sempre que um novo serviço externo for integrado ao projeto             ║
+ * ║  (API, storage, banco, e-mail, pagamento, mapas, IA, etc.), ele DEVE     ║
+ * ║  ser adicionado ao array SERVICES abaixo com:                            ║
+ * ║                                                                          ║
+ * ║  1. name   → nome legível exibido na lista (ex: 'OpenAI (IA)')           ║
+ * ║  2. key    → identificador único em camelCase (ex: 'openai')             ║
+ * ║  3. icon   → ícone Lucide representativo                                 ║
+ * ║                                                                          ║
+ * ║  Se o serviço permitir health check programático, criar também:          ║
+ * ║  → src/app/api/v1/admin/{servico}/health/route.ts                        ║
+ * ║  → Chamar o endpoint em checkHealth() em paralelo com os demais          ║
+ * ║                                                                          ║
+ * ║  Serviços atualmente monitorados:                                        ║
+ * ║  • API Backend     — /api/health (health check real)                     ║
+ * ║  • Banco Supabase  — via /api/health (health check real)                 ║
+ * ║  • Storage R2      — /api/v1/admin/r2/health (health check real)         ║
+ * ║  • Vercel Edge     — estático (sempre OK)                                ║
+ * ║  • Resend (E-mail) — estático                                            ║
+ * ║  • Stripe          — estático                                            ║
+ * ║  • Mapbox          — estático                                            ║
+ * ╚══════════════════════════════════════════════════════════════════════════╝
+ */
+
 import { useState, useEffect, useCallback } from 'react';
 import { Server, Database, Zap, Globe, CheckCircle2, AlertTriangle, XCircle, RefreshCw, Activity, Clock, HardDrive } from 'lucide-react';
 import { api, parseApiError } from '@/lib/api';
