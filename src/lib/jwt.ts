@@ -1,6 +1,9 @@
 import jwt from 'jsonwebtoken';
 
-const SECRET_KEY = process.env.SECRET_KEY || 'backfindr-super-secret-key-2026-production-xyz';
+if (!process.env.SECRET_KEY) {
+  throw new Error('SECRET_KEY environment variable is not set. Aborting to prevent insecure JWT signing.');
+}
+const SECRET_KEY = process.env.SECRET_KEY;
 const ALGORITHM = process.env.ALGORITHM || 'HS256';
 const ACCESS_TOKEN_EXPIRE_MINUTES = 30;
 const REFRESH_TOKEN_EXPIRE_DAYS = 30;

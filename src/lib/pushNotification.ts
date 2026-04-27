@@ -116,9 +116,19 @@ export function matchPayload(matchId: string, objectTitle: string, score: number
   return {
     title: '🔍 Match encontrado!',
     body: `Possível correspondência para "${objectTitle}" com ${Math.round(score * 100)}% de similaridade.`,
-    url: `/dashboard/matches`,
+    url: `/dashboard/chat/${matchId}`,
     tag: `match-${matchId}`,
     actions: [{ action: 'view', title: 'Ver match' }],
+  };
+}
+
+export function matchConfirmedPayload(matchId: string, objectTitle: string): PushPayload {
+  return {
+    title: '✅ Match confirmado!',
+    body: `A outra parte confirmou o match para "${objectTitle}". Combine a devolução pelo chat.`,
+    url: `/dashboard/chat/${matchId}`,
+    tag: `match-confirmed-${matchId}`,
+    actions: [{ action: 'chat', title: 'Abrir chat' }],
   };
 }
 

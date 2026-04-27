@@ -2,6 +2,11 @@ export const dynamic = 'force-dynamic';
 import { NextRequest, NextResponse } from 'next/server';
 
 export async function GET(request: NextRequest) {
+  // Rota de debug — bloqueada em produção
+  if (process.env.ENVIRONMENT === 'production' || process.env.NODE_ENV === 'production') {
+    return NextResponse.json({ error: 'Not available in production' }, { status: 404 });
+  }
+
   const { searchParams } = new URL(request.url);
   const code = searchParams.get('code');
   const error = searchParams.get('error');

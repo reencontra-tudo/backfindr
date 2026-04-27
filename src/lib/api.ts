@@ -107,9 +107,10 @@ export const matchesApi = {
 };
 
 export const matchingApi = {
-  runForObject: (objectId: string) => api.post(`/matching/run/${objectId}`),
-  runAll: () => api.post('/matching/run-all'),
-  scores: (objectId: string) => api.get(`/matching/scores/${objectId}`),
+  // objectId vai no body — o backend lê de req.json(), não do path
+  runForObject: (objectId: string) => api.post('/matching/run', { objectId }),
+  runAll: () => api.post('/admin/matching/run-all'),
+  // scores: rota não implementada no backend — removida para evitar 404 silencioso
 };
 
 export const adminApi = {

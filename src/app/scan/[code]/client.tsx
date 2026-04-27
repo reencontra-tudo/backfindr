@@ -12,6 +12,7 @@ import { api, parseApiError } from '@/lib/api';
 import { RegisteredObject } from '@/types';
 import ShareModal from '@/components/ShareModal';
 import { ImageLightbox, useLightbox } from '@/components/ImageLightbox';
+import RecoveredCelebration from '@/components/RecoveredCelebration';
 
 const CATEGORY_EMOJI: Record<string, string> = {
   phone: '📱', wallet: '👛', keys: '🔑', bag: '🎒', pet: '🐾',
@@ -115,13 +116,12 @@ export default function ScanPage() {
   // ── Already returned ───────────────────────────────────────────────────────
   if (obj.status === 'returned') {
     return (
-      <div className="min-h-screen bg-[#0a0a0f] flex flex-col items-center justify-center px-6 text-center">
-        <div className="w-20 h-20 rounded-3xl bg-green-500/10 border border-green-500/20 flex items-center justify-center mb-6">
-          <CheckCircle2 className="w-9 h-9 text-green-400" />
-        </div>
-        <h1 className="text-2xl font-bold text-white mb-2">Objeto recuperado!</h1>
-        <p className="text-slate-400 text-sm">Este objeto já foi devolvido ao seu dono. 🎉</p>
-      </div>
+      <RecoveredCelebration
+        objectTitle={obj.title}
+        objectEmoji={CATEGORY_EMOJI[obj.category] ?? '📦'}
+        objectCode={obj.unique_code}
+        mode="page"
+      />
     );
   }
 
@@ -142,29 +142,58 @@ export default function ScanPage() {
         </div>
 
         <div className="flex-1 px-6 -mt-6 relative z-10">
-          <div className="bg-[#111118] rounded-3xl border border-white/5 p-8 text-center mb-6">
-            <h1 className="text-2xl font-bold text-white mb-3">Obrigado!</h1>
-            <p className="text-slate-400 text-sm leading-relaxed mb-6">
-              O dono foi notificado anonimamente. Se ele quiser entrar em contato, você receberá uma mensagem.
+          {/* Card principal */}
+          <div className="bg-[#111118] rounded-3xl border border-white/5 p-6 mb-4">
+            <h1 className="text-2xl font-bold text-white mb-2">Boa ação registrada!</h1>
+            <p className="text-slate-400 text-sm leading-relaxed mb-5">
+              O dono foi notificado. Obrigado por ajudar — isso faz diferença de verdade. 🙏
             </p>
-            <div className="bg-[#0a0a0f] rounded-2xl p-4 text-left border border-white/5">
+            <div className="bg-[#0a0a0f] rounded-2xl p-4 border border-white/5 mb-5">
               <p className="text-slate-500 text-xs mb-1">Objeto reportado</p>
               <p className="text-white font-semibold">{obj.title}</p>
             </div>
+
+            {/* Timeline do próximo passo */}
+            <p className="text-slate-500 text-xs font-semibold uppercase tracking-wider mb-4">O que acontece agora</p>
+            <div className="space-y-4">
+              <div className="flex gap-3">
+                <div className="flex flex-col items-center">
+                  <div className="w-7 h-7 rounded-full bg-[#00d4aa] flex items-center justify-center text-xs font-bold text-black flex-shrink-0">1</div>
+                  <div className="w-px flex-1 bg-white/[0.06] mt-1" />
+                </div>
+                <div className="pb-4">
+                  <p className="text-white text-sm font-semibold">Dono recebe notificação agora</p>
+                  <p className="text-slate-500 text-xs mt-0.5 leading-relaxed">Via push, email ou SMS — dependendo das configurações dele.</p>
+                </div>
+              </div>
+              <div className="flex gap-3">
+                <div className="flex flex-col items-center">
+                  <div className="w-7 h-7 rounded-full bg-white/[0.08] border border-white/[0.12] flex items-center justify-center text-xs font-semibold text-white/50 flex-shrink-0">2</div>
+                  <div className="w-px flex-1 bg-white/[0.06] mt-1" />
+                </div>
+                <div className="pb-4">
+                  <p className="text-slate-300 text-sm font-semibold">Dono entra em contato</p>
+                  <p className="text-slate-500 text-xs mt-0.5 leading-relaxed">Ele responde pelo Backfindr — seu número fica protegido.</p>
+                </div>
+              </div>
+              <div className="flex gap-3">
+                <div className="w-7 h-7 rounded-full bg-white/[0.08] border border-white/[0.12] flex items-center justify-center text-xs font-semibold text-white/50 flex-shrink-0">3</div>
+                <div>
+                  <p className="text-slate-300 text-sm font-semibold">Vocês combinam a devolução</p>
+                  <p className="text-slate-500 text-xs mt-0.5 leading-relaxed">Sempre em local público e seguro — a plataforma orienta os dois.</p>
+                </div>
+              </div>
+            </div>
           </div>
 
-          {/* Convite para a plataforma */}
-          <div className="bg-gradient-to-br from-[#00d4aa]/10 to-[#00d4aa]/5 rounded-3xl border border-[#00d4aa]/20 p-6 text-center">
-            <div className="w-10 h-10 rounded-2xl bg-[#00d4aa]/20 flex items-center justify-center mx-auto mb-3">
-              <Shield className="w-5 h-5 text-[#00d4aa]" />
-            </div>
-            <p className="text-white font-semibold text-sm mb-1">Proteja seus objetos também</p>
-            <p className="text-slate-400 text-xs mb-4 leading-relaxed">
-              Cadastre seus pertences no Backfindr e receba notificações se alguém encontrar.
+          {/* Convite para a plataforma — sem pressão */}
+          <div className="rounded-3xl border border-[#00d4aa]/15 bg-[#00d4aa]/[0.04] p-5 text-center mb-6">
+            <p className="text-slate-400 text-xs mb-3 leading-relaxed">
+              Quer receber avisos se alguém encontrar seus objetos também?
             </p>
             <Link
               href="/"
-              className="inline-flex items-center gap-2 bg-[#00d4aa] text-black font-bold px-5 py-2.5 rounded-xl text-sm"
+              className="inline-flex items-center gap-2 bg-white/[0.06] border border-white/[0.1] text-white/70 font-semibold px-5 py-2.5 rounded-xl text-sm"
             >
               Conhecer o Backfindr
               <ChevronRight className="w-3.5 h-3.5" />

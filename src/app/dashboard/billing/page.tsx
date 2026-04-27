@@ -40,7 +40,7 @@ interface LostObject {
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 const PLAN_CONFIG: Record<string, { label: string; icon: React.ReactNode; color: string; price: string }> = {
   free:     { label: 'Gratuito',  icon: <Gift className="w-5 h-5" />,      color: 'text-white/60',   price: 'R$ 0/mês' },
-  pro:      { label: 'Pro',       icon: <Zap className="w-5 h-5" />,       color: 'text-teal-400',   price: 'R$ 29,90/mês' },
+  pro:      { label: 'Pro',       icon: <Zap className="w-5 h-5" />,       color: 'text-teal-400',   price: 'R$ 29,00/mês' },
   business: { label: 'Business',  icon: <Building2 className="w-5 h-5" />, color: 'text-yellow-400', price: 'R$ 149,90/mês' },
 };
 
@@ -354,7 +354,7 @@ function BillingContent() {
           </div>
           <div className="space-y-2">
             {[
-              { slug: 'pro',      label: 'Pro',      price: 'R$ 29,90/mês',  desc: '50 objetos · IA · Notificações · Suporte por email', color: 'teal' },
+              { slug: 'pro',      label: 'Pro',      price: 'R$ 29,00/mês',  desc: '50 objetos · IA · Notificações · Suporte por email', color: 'teal' },
               { slug: 'business', label: 'Business', price: 'R$ 149,90/mês', desc: '500 objetos · Prioritário · 5 usuários · API',        color: 'yellow' },
             ].map(plan => (
               <button

@@ -8,6 +8,7 @@ import {
   Share2, Trash2, Edit2, Download, CheckCircle2,
   AlertTriangle, Clock, Package, ExternalLink, Copy, Gift, Zap, Star
 } from 'lucide-react';
+import RecoveredCelebration from '@/components/RecoveredCelebration';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
@@ -591,30 +592,13 @@ export default function ObjectDetailPage() {
 
       {/* ── Modal de Celebração — Objeto Recuperado ── */}
       {showRecoveredModal && obj && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center px-5 bg-black/70 backdrop-blur-sm">
-          <div className="bg-[#0d1117] border border-white/[0.08] rounded-3xl p-8 max-w-sm w-full text-center shadow-2xl">
-            <div className="text-6xl mb-4 animate-bounce">🎉</div>
-            <h2 className="text-2xl font-bold text-white mb-2">Que ótima notícia!</h2>
-            <p className="text-white/50 text-sm leading-relaxed mb-6">
-              <span className="text-white font-medium">{obj.title}</span> foi recuperado!
-              Você faz parte de uma rede que já ajudou milhares de pessoas.
-            </p>
-            <a
-              href={`https://wa.me/?text=${encodeURIComponent('🎉 Recuperei meu objeto com o Backfindr! "' + obj.title + '" estava perdido e consegui de volta. Cadastre seus objetos em https://backfindr.com')}`}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="w-full flex items-center justify-center gap-2 bg-[#25D366] hover:bg-[#20b85a] text-white font-semibold py-3 rounded-xl transition-all mb-3 text-sm"
-            >
-              Compartilhar no WhatsApp
-            </a>
-            <button
-              onClick={() => setShowRecoveredModal(false)}
-              className="w-full text-white/40 hover:text-white/70 text-sm py-2 transition-colors"
-            >
-              Fechar
-            </button>
-          </div>
-        </div>
+        <RecoveredCelebration
+          objectTitle={obj.title}
+          objectEmoji={CATEGORY_EMOJI[obj.category] ?? '📦'}
+          objectCode={obj.unique_code}
+          mode="modal"
+          onClose={() => setShowRecoveredModal(false)}
+        />
       )}
     </div>
   </>

@@ -24,16 +24,38 @@
  * ║  • Resend (E-mail) — estático                                            ║
  * ║  • Stripe          — estático                                            ║
  * ║  • Mapbox          — estático                                            ║
+ * ║  • Google Analytics — via /api/v1/admin/analytics/ga4 (OAuth2)           ║
  * ╚══════════════════════════════════════════════════════════════════════════╝
  */
 
 import { useState, useEffect, useCallback } from 'react';
-import { Server, Database, Zap, Globe, CheckCircle2, AlertTriangle, XCircle, RefreshCw, Activity, Clock, HardDrive } from 'lucide-react';
+import { useSearchParams } from 'next/navigation';
+import { Server, Database, Zap, Globe, CheckCircle2, AlertTriangle, XCircle, RefreshCw, Activity, Clock, HardDrive, BarChart3, ExternalLink, Users, Eye, TrendingUp, Link2 } from 'lucide-react';
 import { api, parseApiError } from '@/lib/api';
 import { toast } from 'sonner';
 
 interface HealthData { status: string; database?: string; version: string; uptime?: number; services?: { database?: { status: string; latency_ms?: number } } }
 interface R2HealthData { status: 'ok' | 'not_configured' | 'error'; configured: boolean; bucket: string; public_url?: string | null; latency_ms?: number; error?: string; }
+
+interface GA4Metrics {
+  connected: boolean;
+  property_id?: string;
+  realtime_users?: number;
+  error?: string;
+  last_7_days?: {
+    sessions: number;
+    active_users: number;
+    pageviews: number;
+    bounce_rate: number;
+    avg_session_duration: number;
+  };
+  last_30_days?: {
+    sessions: number;
+    active_users: number;
+    pageviews: number;
+    new_users: number;
+  };
+}
 
 const SERVICES = [
   { name: 'API Backend',                  key: 'api',     icon: Server   },
@@ -62,15 +84,58 @@ const LOG_STYLE: Record<string, string> = {
 
 type ServiceStatus = 'ok' | 'degraded' | 'down' | 'checking';
 
+function formatDuration(seconds: number): string {
+  if (seconds < 60) return `${Math.round(seconds)}s`;
+  return `${Math.round(seconds / 60)}m`;
+}
+
+function formatNumber(n: number): string {
+  if (n >= 1000000) return `${(n / 1000000).toFixed(1)}M`;
+  if (n >= 1000) return `${(n / 1000).toFixed(1)}K`;
+  return String(Math.round(n));
+}
+
 export default function AdminSistema() {
+  const searchParams = useSearchParams();
   const [health, setHealth] = useState<HealthData | null>(null);
   const [r2Health, setR2Health] = useState<R2HealthData | null>(null);
+  const [ga4, setGa4] = useState<GA4Metrics | null>(null);
+  const [ga4Loading, setGa4Loading] = useState(true);
   const [loading, setLoading] = useState(true);
   const [actionLoading, setActionLoading] = useState<string | null>(null);
   const [statuses, setStatuses] = useState<Record<string, ServiceStatus>>({
     api: 'checking', db: 'checking', r2: 'checking',
     edge: 'ok', email: 'ok', stripe: 'ok', mapbox: 'ok',
   });
+
+  // Mostrar toast após retorno do OAuth
+  useEffect(() => {
+    const connected = searchParams.get('analytics_connected');
+    const error = searchParams.get('analytics_error');
+    if (connected === '1') {
+      toast.success('Google Analytics conectado com sucesso!');
+    } else if (error) {
+      const msgs: Record<string, string> = {
+        oauth_denied: 'Autorização negada pelo Google.',
+        not_authenticated: 'Sessão expirada. Faça login novamente.',
+        token_failed: 'Falha ao obter token do Google.',
+        server_error: 'Erro interno ao conectar Analytics.',
+      };
+      toast.error(msgs[error] ?? `Erro ao conectar Analytics: ${error}`);
+    }
+  }, [searchParams]);
+
+  const fetchGA4 = useCallback(async () => {
+    setGa4Loading(true);
+    try {
+      const { data } = await api.get('/admin/analytics/ga4');
+      setGa4(data as GA4Metrics);
+    } catch {
+      setGa4({ connected: false });
+    } finally {
+      setGa4Loading(false);
+    }
+  }, []);
 
   const runMatching = useCallback(async () => {
     setActionLoading('matching');
@@ -88,27 +153,20 @@ export default function AdminSistema() {
     setLoading(true);
     setStatuses(prev => ({ ...prev, api: 'checking', db: 'checking', r2: 'checking' }));
     try {
-      // Verificar API + banco e R2 em paralelo
       const [apiRes, r2Res] = await Promise.allSettled([
         fetch('/api/health', { cache: 'no-store' }),
         fetch('/api/v1/admin/r2/health', { cache: 'no-store' }),
       ]);
 
-      // ── API Backend + Banco ────────────────────────────────────────────────
       if (apiRes.status === 'fulfilled' && apiRes.value.ok) {
         const data: HealthData = await apiRes.value.json();
         setHealth(data);
         const dbOk = data.services?.database?.status === 'ok' || data.database === 'connected';
-        setStatuses(prev => ({
-          ...prev,
-          api: 'ok',
-          db: dbOk ? 'ok' : 'down',
-        }));
+        setStatuses(prev => ({ ...prev, api: 'ok', db: dbOk ? 'ok' : 'down' }));
       } else {
         setStatuses(prev => ({ ...prev, api: 'down', db: 'down' }));
       }
 
-      // ── Cloudflare R2 (Storage de Imagens) ────────────────────────────────
       if (r2Res.status === 'fulfilled' && r2Res.value.ok) {
         const r2Data: R2HealthData = await r2Res.value.json();
         setR2Health(r2Data);
@@ -128,7 +186,10 @@ export default function AdminSistema() {
     }
   }, []);
 
-  useEffect(() => { checkHealth(); }, [checkHealth]);
+  useEffect(() => {
+    checkHealth();
+    fetchGA4();
+  }, [checkHealth, fetchGA4]);
 
   const StatusIcon = ({ status }: { status: string }) => {
     if (status === 'ok')       return <CheckCircle2 className="w-4 h-4 text-green-400" />;
@@ -170,6 +231,150 @@ export default function AdminSistema() {
         </div>
       </div>
 
+      {/* ── Google Analytics Widget ─────────────────────────────────────────── */}
+      <div className="bg-white/[0.02] border border-white/[0.07] rounded-2xl overflow-hidden">
+        <div className="px-5 py-4 border-b border-white/[0.06] flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <BarChart3 className="w-4 h-4 text-orange-400" />
+            <p className="text-white font-semibold text-sm">Google Analytics</p>
+            {ga4?.connected && (
+              <span className="text-[10px] font-medium px-2 py-0.5 rounded-full bg-green-500/10 border border-green-500/20 text-green-400">
+                Conectado
+              </span>
+            )}
+          </div>
+          <div className="flex items-center gap-2">
+            {ga4?.connected && (
+              <>
+                <a
+                  href={`https://analytics.google.com/analytics/web/#/p${ga4.property_id}/reports/intelligenthome`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white/[0.04] hover:bg-white/[0.07] border border-white/[0.07] text-white/50 hover:text-white text-xs transition-all"
+                >
+                  <ExternalLink className="w-3 h-3" />
+                  Abrir GA4
+                </a>
+                <a
+                  href="https://search.google.com/search-console?resource_id=https%3A%2F%2Fbackfindr.com%2F"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white/[0.04] hover:bg-white/[0.07] border border-white/[0.07] text-white/50 hover:text-white text-xs transition-all"
+                >
+                  <Link2 className="w-3 h-3" />
+                  Search Console
+                </a>
+              </>
+            )}
+            <button
+              onClick={fetchGA4}
+              className="w-8 h-8 flex items-center justify-center text-white/30 hover:text-white rounded-lg border border-white/[0.07] hover:bg-white/[0.04] transition-all"
+            >
+              <RefreshCw className={`w-3 h-3 ${ga4Loading ? 'animate-spin' : ''}`} />
+            </button>
+          </div>
+        </div>
+
+        {ga4Loading ? (
+          <div className="px-5 py-8 flex items-center justify-center">
+            <RefreshCw className="w-5 h-5 text-white/20 animate-spin" />
+          </div>
+        ) : !ga4?.connected ? (
+          /* Estado: não conectado */
+          <div className="px-5 py-8 flex flex-col items-center gap-4 text-center">
+            <div className="w-12 h-12 rounded-2xl bg-orange-500/10 border border-orange-500/20 flex items-center justify-center">
+              <BarChart3 className="w-6 h-6 text-orange-400" />
+            </div>
+            <div>
+              <p className="text-white/70 text-sm font-medium">Analytics não conectado</p>
+              <p className="text-white/30 text-xs mt-1">Conecte sua conta Google para ver métricas de tráfego em tempo real</p>
+            </div>
+            <a
+              href="/api/analytics/connect"
+              className="flex items-center gap-2 px-4 py-2 rounded-xl bg-orange-500/10 hover:bg-orange-500/20 border border-orange-500/20 text-orange-400 text-sm font-medium transition-all"
+            >
+              <BarChart3 className="w-4 h-4" />
+              Conectar Google Analytics
+            </a>
+          </div>
+        ) : ga4.error ? (
+          /* Estado: conectado mas com erro */
+          <div className="px-5 py-6 flex items-center gap-3">
+            <AlertTriangle className="w-5 h-5 text-yellow-400 flex-shrink-0" />
+            <div>
+              <p className="text-white/70 text-sm">Erro ao buscar métricas</p>
+              <p className="text-white/30 text-xs mt-0.5">{ga4.error}</p>
+            </div>
+          </div>
+        ) : (
+          /* Estado: conectado com dados */
+          <div className="p-5 space-y-4">
+            {/* Usuários em tempo real */}
+            <div className="flex items-center gap-3 px-4 py-3 rounded-xl bg-green-500/5 border border-green-500/10">
+              <div className="w-2 h-2 rounded-full bg-green-400 animate-pulse flex-shrink-0" />
+              <span className="text-white/50 text-sm">Usuários ativos agora</span>
+              <span className="ml-auto text-green-400 font-bold text-lg">{ga4.realtime_users ?? 0}</span>
+            </div>
+
+            {/* Métricas 7 dias */}
+            {ga4.last_7_days && (
+              <div>
+                <p className="text-white/20 text-[10px] uppercase tracking-wider mb-2">Últimos 7 dias</p>
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                  {[
+                    { icon: Users,      label: 'Usuários',   value: formatNumber(ga4.last_7_days.active_users) },
+                    { icon: Eye,        label: 'Pageviews',  value: formatNumber(ga4.last_7_days.pageviews) },
+                    { icon: Activity,   label: 'Sessões',    value: formatNumber(ga4.last_7_days.sessions) },
+                    { icon: Clock,      label: 'Duração',    value: formatDuration(ga4.last_7_days.avg_session_duration) },
+                  ].map(({ icon: Icon, label, value }) => (
+                    <div key={label} className="bg-white/[0.03] border border-white/[0.06] rounded-xl p-3">
+                      <div className="flex items-center gap-1.5 mb-1.5">
+                        <Icon className="w-3 h-3 text-white/25" />
+                        <span className="text-white/25 text-[10px] uppercase tracking-wider">{label}</span>
+                      </div>
+                      <p className="text-white font-semibold text-base">{value}</p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Métricas 30 dias */}
+            {ga4.last_30_days && (
+              <div>
+                <p className="text-white/20 text-[10px] uppercase tracking-wider mb-2">Últimos 30 dias</p>
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                  {[
+                    { icon: Users,      label: 'Usuários',    value: formatNumber(ga4.last_30_days.active_users) },
+                    { icon: Eye,        label: 'Pageviews',   value: formatNumber(ga4.last_30_days.pageviews) },
+                    { icon: Activity,   label: 'Sessões',     value: formatNumber(ga4.last_30_days.sessions) },
+                    { icon: TrendingUp, label: 'Novos users', value: formatNumber(ga4.last_30_days.new_users) },
+                  ].map(({ icon: Icon, label, value }) => (
+                    <div key={label} className="bg-white/[0.03] border border-white/[0.06] rounded-xl p-3">
+                      <div className="flex items-center gap-1.5 mb-1.5">
+                        <Icon className="w-3 h-3 text-white/25" />
+                        <span className="text-white/25 text-[10px] uppercase tracking-wider">{label}</span>
+                      </div>
+                      <p className="text-white font-semibold text-base">{value}</p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Taxa de rejeição */}
+            {ga4.last_7_days && (
+              <div className="flex items-center justify-between px-4 py-2.5 rounded-xl bg-white/[0.02] border border-white/[0.05]">
+                <span className="text-white/40 text-xs">Taxa de rejeição (7d)</span>
+                <span className={`text-sm font-semibold ${ga4.last_7_days.bounce_rate > 70 ? 'text-red-400' : ga4.last_7_days.bounce_rate > 50 ? 'text-yellow-400' : 'text-green-400'}`}>
+                  {ga4.last_7_days.bounce_rate}%
+                </span>
+              </div>
+            )}
+          </div>
+        )}
+      </div>
+
       {/* Services status */}
       <div className="bg-white/[0.02] border border-white/[0.07] rounded-2xl overflow-hidden">
         <div className="px-5 py-4 border-b border-white/[0.06]">
@@ -178,7 +383,6 @@ export default function AdminSistema() {
         <div className="divide-y divide-white/[0.04]">
           {SERVICES.map(svc => {
             const Icon = svc.icon;
-            // Tooltip extra para R2
             const subtitle = svc.key === 'r2' && r2Health
               ? r2Health.status === 'not_configured'
                 ? 'Credenciais R2 não configuradas nas variáveis de ambiente'
@@ -234,7 +438,7 @@ export default function AdminSistema() {
             <HardDrive className="w-3.5 h-3.5 text-white/30" />
             <span className="text-white/30 text-xs uppercase tracking-wider">Storage de Imagens (Cloudflare R2)</span>
           </div>
-          <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+          <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
             <div>
               <p className="text-white/25 text-[10px] uppercase tracking-wider mb-1">Bucket</p>
               <p className="text-white/70 text-sm font-mono">{r2Health.bucket}</p>

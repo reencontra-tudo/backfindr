@@ -381,12 +381,17 @@ export default function HomePage() {
 
         <div className="relative mx-auto max-w-3xl text-center">
           <FadeIn>
+            {/* Eyebrow — ancora o contexto antes do título */}
+            <p className="mb-5 inline-flex items-center gap-2 rounded-full border border-blue-400/25 bg-blue-400/[0.08] px-4 py-1.5 text-[11px] font-semibold uppercase tracking-[0.18em] text-blue-200/70">
+              Achados, perdidos, roubados e prevenção em um só lugar
+            </p>
+
             {/* Headline de intenção — sem narrativa institucional */}
             <h1
               className="mb-4 font-extrabold leading-[0.96] tracking-[-0.04em] text-white"
               style={{ fontSize: 'clamp(36px, 5.5vw, 64px)' }}
             >
-              Perdeu algo? Encontrou?
+              Perdeu algo?
               <br />
               <span
                 style={{
@@ -396,12 +401,12 @@ export default function HomePage() {
                   backgroundClip: 'text',
                 }}
               >
-                Foi roubado? Quer se prevenir?
+                Ainda dá tempo de recuperar.
               </span>
             </h1>
 
             <p className="mx-auto mb-10 max-w-xl text-base leading-relaxed text-white/50 md:text-lg">
-              A Backfindr conecta perdas, achados e proteção preventiva em tempo real — com mapa público, QR e matching por IA.
+              O Backfindr conecta quem perdeu com quem encontrou — e te ajuda a agir rápido antes que a chance passe.
             </p>
 
             {/* Grid 2×2 — botões dominantes */}

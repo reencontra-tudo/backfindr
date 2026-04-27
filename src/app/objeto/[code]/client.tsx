@@ -7,6 +7,13 @@ import { MapPin, MessageCircle, CheckCircle2, ChevronRight, Shield, Share2 } fro
 import { toast } from 'sonner';
 import { api, parseApiError } from '@/lib/api';
 import { RegisteredObject } from '@/types';
+import RecoveredCelebration from '@/components/RecoveredCelebration';
+
+const CATEGORY_EMOJI: Record<string, string> = {
+  phone: '📱', wallet: '👛', keys: '🔑', bag: '🎒', pet: '🐾',
+  bike: '🚲', vehicle: '🚗', document: '📄', jewelry: '💍', electronics: '💻',
+  clothing: '👕', other: '📦',
+};
 
 const CATEGORY_LABEL: Record<string, string> = {
   phone: 'Celular', wallet: 'Carteira', keys: 'Chaves', bag: 'Bolsa',
@@ -146,18 +153,12 @@ export default function PublicObjectClient({ obj }: { obj: RegisteredObject }) {
   // Objeto já devolvido
   if (obj.status === 'returned') {
     return (
-      <div className="min-h-screen bg-[#080b0f] flex flex-col items-center justify-center px-5 text-center">
-        <div className="w-20 h-20 rounded-3xl bg-green-500/10 border border-green-500/20 flex items-center justify-center mb-6">
-          <CheckCircle2 className="w-10 h-10 text-green-400" />
-        </div>
-        <h1 className="text-2xl font-bold text-white mb-3">Este objeto já foi recuperado</h1>
-        <p className="text-white/50 text-base leading-relaxed max-w-xs mx-auto">
-          O dono já recebeu este item de volta. Obrigado pela boa ação! 🙏
-        </p>
-        <Link href="/" className="mt-8 inline-flex items-center gap-2 text-teal-400 hover:text-teal-300 text-sm transition-colors">
-          Conhecer o Backfindr <ChevronRight className="w-4 h-4" />
-        </Link>
-      </div>
+      <RecoveredCelebration
+        objectTitle={obj.title}
+        objectEmoji={CATEGORY_EMOJI[obj.category] ?? '📦'}
+        objectCode={obj.unique_code}
+        mode="page"
+      />
     );
   }
 
@@ -182,23 +183,65 @@ export default function PublicObjectClient({ obj }: { obj: RegisteredObject }) {
       <div className="max-w-lg mx-auto px-5 py-8">
         {sent ? (
           /* ── Tela de sucesso ── */
-          <div className="text-center py-10">
-            <div className="w-20 h-20 rounded-3xl bg-teal-500/10 border border-teal-500/20 flex items-center justify-center mx-auto mb-6">
-              <CheckCircle2 className="w-10 h-10 text-teal-400" />
+          <div className="py-8">
+            {/* Ícone de sucesso */}
+            <div className="text-center mb-6">
+              <div className="w-20 h-20 rounded-3xl bg-teal-500/10 border border-teal-500/20 flex items-center justify-center mx-auto mb-4">
+                <CheckCircle2 className="w-10 h-10 text-teal-400" />
+              </div>
+              <h1 className="text-2xl font-bold text-white mb-2">Boa ação registrada!</h1>
+              <p className="text-white/50 text-sm max-w-xs mx-auto leading-relaxed">
+                O dono foi notificado. Obrigado por ajudar — isso faz diferença de verdade. 🙏
+              </p>
             </div>
-            <h1 className="text-2xl font-bold text-white mb-3">Mensagem enviada!</h1>
-            <p className="text-white/50 text-base leading-relaxed mb-6 max-w-xs mx-auto">
-              O dono foi avisado que você encontrou o objeto. Ele vai entrar em contato em breve. Obrigado! 🙏
-            </p>
-            <div className="bg-white/[0.03] border border-white/[0.07] rounded-xl p-4 text-left mb-8">
-              <p className="text-white/40 text-xs mb-1">Objeto encontrado</p>
+
+            {/* Card do objeto */}
+            <div className="bg-white/[0.03] border border-white/[0.07] rounded-xl p-4 mb-6">
+              <p className="text-white/40 text-xs mb-1">Objeto reportado</p>
               <p className="text-white font-medium text-base">{CATEGORY_EMOJI[obj.category]} {obj.title}</p>
             </div>
+
+            {/* O que acontece agora — timeline */}
+            <div className="bg-white/[0.03] border border-white/[0.07] rounded-2xl p-5 mb-6">
+              <p className="text-white/60 text-xs font-semibold uppercase tracking-wider mb-4">O que acontece agora</p>
+              <div className="space-y-4">
+                <div className="flex gap-3">
+                  <div className="flex flex-col items-center">
+                    <div className="w-7 h-7 rounded-full bg-teal-500 flex items-center justify-center text-xs font-bold text-white flex-shrink-0">1</div>
+                    <div className="w-px flex-1 bg-white/[0.06] mt-1" />
+                  </div>
+                  <div className="pb-4">
+                    <p className="text-white text-sm font-semibold">Dono recebe notificação agora</p>
+                    <p className="text-white/40 text-xs mt-0.5 leading-relaxed">Via push, email ou SMS — dependendo das configurações dele.</p>
+                  </div>
+                </div>
+                <div className="flex gap-3">
+                  <div className="flex flex-col items-center">
+                    <div className="w-7 h-7 rounded-full bg-white/[0.08] border border-white/[0.12] flex items-center justify-center text-xs font-semibold text-white/50 flex-shrink-0">2</div>
+                    <div className="w-px flex-1 bg-white/[0.06] mt-1" />
+                  </div>
+                  <div className="pb-4">
+                    <p className="text-white/70 text-sm font-semibold">Dono entra em contato</p>
+                    <p className="text-white/40 text-xs mt-0.5 leading-relaxed">Ele responde pelo Backfindr — seu número fica protegido.</p>
+                  </div>
+                </div>
+                <div className="flex gap-3">
+                  <div className="w-7 h-7 rounded-full bg-white/[0.08] border border-white/[0.12] flex items-center justify-center text-xs font-semibold text-white/50 flex-shrink-0">3</div>
+                  <div>
+                    <p className="text-white/70 text-sm font-semibold">Vocês combinam a devolução</p>
+                    <p className="text-white/40 text-xs mt-0.5 leading-relaxed">Sempre em local público e seguro — a plataforma orienta os dois.</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* CTA secundário — sem pressão */}
+            <p className="text-center text-white/30 text-xs mb-3">Quer receber avisos se alguém encontrar seus objetos também?</p>
             <Link
               href="/auth/register"
-              className="inline-flex items-center gap-2 bg-teal-500 hover:bg-teal-400 text-white font-semibold px-6 py-3 rounded-xl transition-colors text-sm"
+              className="flex items-center justify-center gap-2 bg-white/[0.05] border border-white/[0.1] hover:bg-white/[0.08] text-white/70 font-semibold px-6 py-3 rounded-xl transition-colors text-sm w-full"
             >
-              Proteja seus objetos também <ChevronRight className="w-4 h-4" />
+              Cadastrar meus objetos <ChevronRight className="w-4 h-4" />
             </Link>
           </div>
         ) : (
