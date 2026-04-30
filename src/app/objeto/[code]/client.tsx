@@ -21,6 +21,11 @@ const CATEGORY_LABEL: Record<string, string> = {
   jewelry: 'Joia / Relógio', electronics: 'Eletrônico', clothing: 'Roupa', other: 'Objeto',
 };
 
+const CATEGORY_EMOJI: Record<string, string> = {
+  phone: '📱', wallet: '👛', keys: '🔑', bag: '🎒', pet: '🐾',
+  bike: '🚲', vehicle: '🚗', document: '📄', jewelry: '💍', electronics: '💻', clothing: '👕', other: '📦',
+};
+
 const STATUS_LABEL: Record<string, string> = {
   lost: 'Perdido', found: 'Achado', stolen: 'Roubado', returned: 'Recuperado', protected: 'Protegido',
 };
