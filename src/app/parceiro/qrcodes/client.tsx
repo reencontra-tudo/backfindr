@@ -1,5 +1,5 @@
 'use client';
- 
+
 import { useState } from 'react';
 import { QrCode, Plus, Download, Copy, CheckCircle2 } from 'lucide-react';
 
