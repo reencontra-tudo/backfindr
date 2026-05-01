@@ -17,23 +17,17 @@ const STATUS_STYLE: Record<string, string> = {
   found:    'text-teal-400 bg-teal-500/10 border-teal-500/20',
   returned: 'text-green-400 bg-green-500/10 border-green-500/20',
 };
-const STATUS_LABEL: Record<string, string> = {
-  found: 'Achado', returned: 'Devolvido',
-};
-const EMOJI: Record<string, string> = {
-  phone: '📱', wallet: '👛', keys: '🔑', bag: '🎒', other: '📦',
-};
+const STATUS_LABEL: Record<string, string> = { found: 'Achado', returned: 'Devolvido' };
+const EMOJI: Record<string, string> = { phone: '📱', wallet: '👛', keys: '🔑', bag: '🎒', other: '📦' };
 
 export default function ParceiroObjetosClient() {
   const [search, setSearch] = useState('');
   const [filter, setFilter] = useState('all');
-
   const filtered = MOCK_OBJECTS.filter(o => {
     const matchSearch = o.title.toLowerCase().includes(search.toLowerCase()) || o.location.toLowerCase().includes(search.toLowerCase());
     const matchFilter = filter === 'all' || o.status === filter;
     return matchSearch && matchFilter;
   });
-
   return (
     <div className="p-6 space-y-6">
       <div className="flex items-center justify-between gap-4 flex-wrap">
@@ -48,7 +42,7 @@ export default function ParceiroObjetosClient() {
       <div className="flex gap-2 flex-wrap">
         {[{value:'all',label:'Todos'},{value:'found',label:'Achados'},{value:'returned',label:'Devolvidos'}].map(f => (
           <button key={f.value} onClick={() => setFilter(f.value)}
-            className={`px-3 py-1.5 rounded-lg text-xs font-medium border transition-all ${filter === f.value ? 'bg-teal-500/20 border-teal-500/40 text-teal-300' : 'bg-white/[0.03] border-white/[0.08] text-white/40 hover:border-white/20'}`}>
+            className={`px-3 py-1.5 rounded-lg text-xs font-medium border transition-all ${filter === f.value ? 'bg-teal-500/20 border-teal-500/40 text-teal-300' : 'bg-white/[0.03] border-white/[0.08] text-white/40'}`}>
             {f.label}
           </button>
         ))}

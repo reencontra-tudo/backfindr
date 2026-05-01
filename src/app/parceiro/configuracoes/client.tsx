@@ -35,10 +35,10 @@ export default function ParceiroConfiguracoesClient() {
             <h2 className="text-white font-semibold text-sm">Dados da organização</h2>
           </div>
           {[
-            { key: 'orgName', label: 'Nome',            type: 'text',  placeholder: 'Nome da organização' },
-            { key: 'address', label: 'Endereço',         type: 'text',  placeholder: 'Endereço completo'   },
-            { key: 'email',   label: 'Email de contato', type: 'email', placeholder: 'email@empresa.com'   },
-            { key: 'phone',   label: 'Telefone',         type: 'tel',   placeholder: '(11) 99999-9999'     },
+            { key: 'orgName', label: 'Nome',             type: 'text',  placeholder: 'Nome da organização' },
+            { key: 'address', label: 'Endereço',          type: 'text',  placeholder: 'Endereço completo'   },
+            { key: 'email',   label: 'Email de contato',  type: 'email', placeholder: 'email@empresa.com'   },
+            { key: 'phone',   label: 'Telefone',          type: 'tel',   placeholder: '(11) 99999-9999'     },
           ].map(field => (
             <div key={field.key}>
               <label className="block text-white/40 text-xs mb-1.5">{field.label}</label>
@@ -74,9 +74,9 @@ export default function ParceiroConfiguracoesClient() {
             <h2 className="text-white font-semibold text-sm">Notificações</h2>
           </div>
           {[
-            { key: 'notifyNew',    label: 'Novo objeto registrado'     },
-            { key: 'notifyMatch',  label: 'Match identificado pela IA' },
-            { key: 'notifyReturn', label: 'Objeto devolvido'           },
+            { key: 'notifyNew',    label: 'Novo objeto registrado'      },
+            { key: 'notifyMatch',  label: 'Match identificado pela IA'  },
+            { key: 'notifyReturn', label: 'Objeto devolvido'            },
           ].map(({ key, label }) => (
             <div key={key} className="flex items-center justify-between">
               <span className="text-white/60 text-sm">{label}</span>
