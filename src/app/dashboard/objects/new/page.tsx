@@ -14,6 +14,7 @@ import axios from 'axios';
 import { objectsApi, parseApiError } from '@/lib/api';
 import { compressImages } from '@/lib/compressImage';
 import { ObjectCategory, ObjectStatus } from '@/types';
+import { LocationPicker } from '@/components/ui/LocationPicker';
 
 // ─── Schema ──────────────────────────────────────────────────────────────────
 const schema = z.object({
@@ -84,6 +85,7 @@ function NewObjectForm() {
   const [compressing, setCompressing] = useState(false);
 
   const [offerReward, setOfferReward] = useState(false);
+  const [locationVal, setLocationVal] = useState<{ address: string; lat?: number; lng?: number }>({ address: '' });
 
   useEffect(() => {
     if (photos.length === 0) { setPreviews([]); return; }
@@ -99,7 +101,10 @@ function NewObjectForm() {
     // Prefill vindo dos fluxos (/flow/*)
     if (prefillTitle)    setValue('title',    prefillTitle);
     if (prefillCategory) setValue('category', prefillCategory as ObjectCategory);
-    if (prefillLocation) setValue('address',  prefillLocation);
+    if (prefillLocation) {
+      setValue('address', prefillLocation);
+      setLocationVal(prev => ({ ...prev, address: prefillLocation }));
+    }
     if (prefillBreed)    setValue('pet_breed', prefillBreed);
     if (prefillColor)    setValue('pet_color', prefillColor);
   // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -555,47 +560,17 @@ function NewObjectForm() {
               Onde ocorreu?
             </h2>
             <p className="text-slate-400 text-sm">
-              Informe o local aproximado — isso ajuda o algoritmo de matching a encontrar objetos na mesma região.
+              Busque o endereço ou clique no mapa para marcar o local — isso ajuda o algoritmo de matching a encontrar objetos na mesma região.
             </p>
-            <div>
-              <label className="block text-sm font-medium text-slate-300 mb-1.5">
-                Endereço ou referência
-              </label>
-              <input
-                {...register('address')}
-                placeholder="Ex: Metrô Paulista, Av. Paulista, São Paulo"
-                className="w-full bg-surface border border-surface-border rounded-xl px-4 py-3 text-slate-100 placeholder-slate-500 text-sm outline-none focus:border-brand-500 transition-colors"
-              />
-            </div>
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <label className="block text-xs text-slate-400 mb-1">Latitude (opcional)</label>
-                <input
-                  type="number"
-                  step="any"
-                  onChange={(e) => setValue('lat', parseFloat(e.target.value))}
-                  placeholder="-23.5613"
-                  className="w-full bg-surface border border-surface-border rounded-xl px-3 py-2.5 text-slate-100 placeholder-slate-500 text-sm outline-none focus:border-brand-500 transition-colors"
-                />
-              </div>
-              <div>
-                <label className="block text-xs text-slate-400 mb-1">Longitude (opcional)</label>
-                <input
-                  type="number"
-                  step="any"
-                  onChange={(e) => setValue('lng', parseFloat(e.target.value))}
-                  placeholder="-46.6558"
-                  className="w-full bg-surface border border-surface-border rounded-xl px-3 py-2.5 text-slate-100 placeholder-slate-500 text-sm outline-none focus:border-brand-500 transition-colors"
-                />
-              </div>
-            </div>
-
-            {/* Map placeholder */}
-            <div className="w-full h-48 bg-surface-card border border-surface-border rounded-xl flex flex-col items-center justify-center text-slate-500 gap-2">
-              <MapPin className="w-8 h-8" />
-              <p className="text-sm">Mapa interativo — integração Mapbox</p>
-              <p className="text-xs text-slate-600">Configure NEXT_PUBLIC_MAPBOX_TOKEN no .env</p>
-            </div>
+            <LocationPicker
+              value={locationVal}
+              onChange={(val) => {
+                setLocationVal(val);
+                setValue('address', val.address);
+                setValue('lat', val.lat);
+                setValue('lng', val.lng);
+              }}
+            />
           </div>
         )}
 
