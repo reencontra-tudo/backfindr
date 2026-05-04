@@ -27,7 +27,7 @@ export default function ParceiroClient() {
 
         <div className="mt-8 flex flex-col gap-4 sm:flex-row">
           <Link
-            href="/cadastrar"
+            href="/auth/register"
             className="rounded-xl bg-emerald-500 px-6 py-3 text-center font-semibold text-slate-950 hover:bg-emerald-400"
           >
             Cadastrar ocorrência grátis
