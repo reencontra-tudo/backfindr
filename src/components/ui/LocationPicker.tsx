@@ -28,6 +28,27 @@ export function LocationPicker({ value, onChange, placeholder }: LocationPickerP
   const [mapReady, setMapReady] = useState(false);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
+  // ── Geocodificar endereço pré-preenchido (prefill_location) ────────────────
+  // Quando o componente recebe um endereço sem coordenadas (vindo dos flows),
+  // geocodifica automaticamente para obter lat/lng e posicionar o pin no mapa.
+  useEffect(() => {
+    if (!token || !value.address || value.lat || value.lng) return;
+    const q = value.address;
+    fetch(
+      `https://api.mapbox.com/geocoding/v5/mapbox.places/${encodeURIComponent(q)}.json?access_token=${token}&language=pt&limit=1&country=br`
+    )
+      .then((r) => r.json())
+      .then((data) => {
+        const feature = data.features?.[0];
+        if (!feature) return;
+        const [lng, lat] = feature.center as [number, number];
+        onChange({ address: feature.place_name ?? q, lat, lng });
+        setQuery(feature.place_name ?? q);
+      })
+      .catch(() => {/* silencioso — endereço fica como texto */});
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   // ── Inicializar mapa ────────────────────────────────────────────────────────
   useEffect(() => {
     if (!token || !mapContainer.current || mapRef.current) return;
@@ -95,6 +116,15 @@ export function LocationPicker({ value, onChange, placeholder }: LocationPickerP
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [token]);
 
+  // ── Mover pin quando coordenadas mudarem externamente (ex: geocodificação do prefill) ──
+  useEffect(() => {
+    if (!mapReady || !value.lat || !value.lng || !mapRef.current) return;
+    import('mapbox-gl').then((mapboxgl) => {
+      updateMarker(mapRef.current, mapboxgl, value.lng!, value.lat!);
+    });
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [value.lat, value.lng, mapReady]);
+
   // ── Criar elemento do marcador ──────────────────────────────────────────────
   function createMarkerEl() {
     const el = document.createElement('div');
@@ -157,13 +187,6 @@ export function LocationPicker({ value, onChange, placeholder }: LocationPickerP
     setSuggestions([]);
     setShowSuggestions(false);
     onChange({ address: s.place_name, lat, lng });
-
-    // Mover mapa e marcador
-    if (mapRef.current && mapReady) {
-      import('mapbox-gl').then((mapboxgl) => {
-        updateMarker(mapRef.current, mapboxgl, lng, lat);
-      });
-    }
   };
 
   const handleClear = () => {
@@ -178,13 +201,6 @@ export function LocationPicker({ value, onChange, placeholder }: LocationPickerP
     navigator.geolocation.getCurrentPosition(async (pos) => {
       const { latitude: lat, longitude: lng } = pos.coords;
 
-      if (mapRef.current && mapReady) {
-      import('mapbox-gl').then((mapboxgl) => {
-        updateMarker(mapRef.current, mapboxgl, lng, lat);
-      });
-    }
-
-    // Reverse geocoding
       if (token) {
         try {
           const res = await fetch(
