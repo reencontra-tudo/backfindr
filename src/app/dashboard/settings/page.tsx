@@ -36,10 +36,35 @@ export default function SettingsPage() {
     finally { setSaving(false); }
   };
 
+  // Detecta iOS (iPhone/iPad)
+  const isIOS = typeof window !== 'undefined' &&
+    /iphone|ipad|ipod/i.test(navigator.userAgent);
+  // Detecta se está rodando como PWA (tela inicial)
+  const isPWA = typeof window !== 'undefined' &&
+    (window.matchMedia('(display-mode: standalone)').matches ||
+     (window.navigator as { standalone?: boolean }).standalone === true);
+  // Suporte real a push
+  const hasPushSupport = typeof window !== 'undefined' &&
+    'serviceWorker' in navigator && 'PushManager' in window;
+
   const enablePush = async () => {
+    if (!hasPushSupport) {
+      if (isIOS && !isPWA) {
+        toast.info('Adicione o app à tela inicial para ativar notificações no iPhone.');
+      } else {
+        toast.error('Seu navegador não suporta notificações push.');
+      }
+      return;
+    }
+    if ('Notification' in window && Notification.permission === 'denied') {
+      toast.error('Notificações bloqueadas. Vá em Ajustes > Safari > Notificações para reativar.');
+      return;
+    }
     await registerPush();
-    setPushEnabled(Notification.permission === 'granted');
-    if (Notification.permission === 'granted') toast.success('Notificações ativadas!');
+    const granted = 'Notification' in window && Notification.permission === 'granted';
+    setPushEnabled(granted);
+    if (granted) toast.success('Notificações ativadas!');
+    else toast.error('Permissão negada. Verifique as configurações do navegador.');
   };
 
   const tabs = [
@@ -207,13 +232,32 @@ export default function SettingsPage() {
                     ? 'Você será notificado em tempo real sobre matches, scans e mensagens.'
                     : 'Receba alertas instantâneos mesmo com o app em segundo plano.'}
                 </p>
-                {!pushEnabled && typeof window !== 'undefined' && !('PushManager' in window) && (
-                  <div className="mt-3 p-3 bg-yellow-500/10 border border-yellow-500/20 rounded-lg">
-                    <p className="text-yellow-400 text-xs font-medium mb-1">📱 No iPhone/iPad</p>
-                    <p className="text-yellow-400/70 text-xs">
-                      Para receber notificações no iOS, adicione o Backfindr à tela inicial:
-                      toque em <strong>Compartilhar</strong> → <strong>Adicionar à Tela de Início</strong>.
+                {/* iOS sem PWA: instruções para adicionar à tela inicial */}
+                {!pushEnabled && isIOS && !isPWA && (
+                  <div className="mt-3 p-3 bg-yellow-500/10 border border-yellow-500/20 rounded-lg space-y-2">
+                    <p className="text-yellow-400 text-xs font-semibold">📱 Como ativar no iPhone/iPad</p>
+                    <ol className="text-yellow-400/80 text-xs space-y-1 list-none">
+                      <li>1. Toque em <strong>Compartilhar</strong> (ícone de seta para cima)</li>
+                      <li>2. Selecione <strong>Adicionar à Tela de Início</strong></li>
+                      <li>3. Abra o app pela tela inicial e volte aqui</li>
+                    </ol>
+                  </div>
+                )}
+                {/* Permissão bloqueada */}
+                {'Notification' in window && Notification.permission === 'denied' && !pushEnabled && (
+                  <div className="mt-3 p-3 bg-red-500/10 border border-red-500/20 rounded-lg">
+                    <p className="text-red-400 text-xs font-semibold mb-1">🚫 Notificações bloqueadas</p>
+                    <p className="text-red-400/70 text-xs">
+                      {isIOS
+                        ? 'Vá em Ajustes > Apps > Safari > Notificações e permita para este site.'
+                        : 'Clique no cadeado na barra de endereço e permita notificações.'}
                     </p>
+                  </div>
+                )}
+                {/* Navegador sem suporte (não iOS) */}
+                {!hasPushSupport && !isIOS && (
+                  <div className="mt-3 p-3 bg-white/[0.04] border border-white/[0.08] rounded-lg">
+                    <p className="text-white/50 text-xs">Seu navegador não suporta notificações push. Use Chrome ou Firefox.</p>
                   </div>
                 )}
               </div>
