@@ -9,6 +9,7 @@ import {
   AlertTriangle, Clock, Package, ExternalLink, Copy, Gift, Zap, Star
 } from 'lucide-react';
 import RecoveredCelebration from '@/components/RecoveredCelebration';
+import PosterModal from '@/components/PosterModal';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
@@ -223,6 +224,7 @@ export default function ObjectDetailPage() {
   const { id } = useParams<{ id: string }>();
   const router = useRouter();
   const [showRecoveredModal, setShowRecoveredModal] = useState(false);
+  const [showPoster, setShowPoster] = useState(false);
   const [obj, setObj] = useState<RegisteredObject | null>(null);
   const [loading, setLoading] = useState(true);
   const [deleting, setDeleting] = useState(false);
@@ -498,7 +500,13 @@ export default function ObjectDetailPage() {
         {/* Right — QR Code + quick actions */}
         <div className="space-y-4">
           <QRCodeDisplay code={obj.unique_code} title={obj.title} status={obj.status} />
-
+          {/* Gerar Cartaz */}
+          <button
+            onClick={() => setShowPoster(true)}
+            className="w-full flex items-center justify-center gap-2.5 py-3 border border-white/[0.10] hover:border-brand-500/40 hover:bg-brand-500/5 rounded-2xl text-white/60 hover:text-brand-300 text-sm font-semibold transition-all"
+          >
+            🖼️ Gerar cartaz para divulgar
+          </button>
           {/* Change status */}
           <div className="glass rounded-2xl p-5">
             <h3 className="font-display font-semibold text-white text-sm mb-3">Atualizar status</h3>
@@ -590,6 +598,15 @@ export default function ObjectDetailPage() {
         </div>
       </div>
 
+      {/* ── Modal de Cartaz ── */}
+      {showPoster && obj && (
+        <PosterModal
+          objectId={id}
+          objectCode={obj.unique_code}
+          objectTitle={obj.title}
+          onClose={() => setShowPoster(false)}
+        />
+      )}
       {/* ── Modal de Celebração — Objeto Recuperado ── */}
       {showRecoveredModal && obj && (
         <RecoveredCelebration
