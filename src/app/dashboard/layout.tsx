@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import {
   MapPin, LayoutDashboard, Package, Search,
-  QrCode, Bell, Settings, LogOut, Plus, Menu, X, CreditCard, Building2
+  QrCode, Bell, Settings, LogOut, Plus, Menu, X, CreditCard, Building2, Truck
 } from 'lucide-react';
 import Cookies from 'js-cookie';
 import { useAuthStore } from '@/hooks/useAuth';
@@ -17,6 +17,8 @@ const NAV = [
   { href: '/dashboard/search',           icon: Search,          label: 'Buscar Achados' },
   { href: '/dashboard/matches',          icon: QrCode,          label: 'Matches' },
   { href: '/dashboard/notifications',    icon: Bell,            label: 'Notificações' },
+  { href: '/dashboard/encomendas',       icon: Package,         label: 'Encomendas' },
+  { href: '/dashboard/delivery',         icon: Truck,           label: 'Delivery' },
   { href: '/dashboard/billing',          icon: CreditCard,      label: 'Plano' },
   { href: '/dashboard/settings',         icon: Settings,        label: 'Configurações' },
 ];

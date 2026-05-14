@@ -70,7 +70,7 @@ export async function POST(req: NextRequest) {
 
       // Registrar na tabela subscriptions
       await query(
-        `INSERT INTO subscriptions
+        `INSERT INTO subscriptions_p1
            (user_id, plan_slug, provider, provider_sub_id, status, amount_brl, started_at, expires_at, created_at)
          VALUES ($1, $2, 'mercadopago', $3, 'active', $4, NOW(), $5, NOW())`,
         [

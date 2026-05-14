@@ -13,7 +13,7 @@ export function getPostLoginRedirect(role?: string | null): string {
     case 'admin':
       return '/admin/dashboard';
     case 'b2b_admin':
-      return '/admin/b2b-portal';
+      return '/parceiro';
     default:
       return '/dashboard';
   }

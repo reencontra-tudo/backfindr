@@ -5,23 +5,10 @@ import { successResponse, notFoundResponse, internalErrorResponse } from '@/lib/
 import { sendPushToUser, scanPayload } from '@/lib/pushNotification';
 
 export async function POST(
-  request: NextRequest,
+  _request: NextRequest,
   { params }: { params: { code: string } }
 ) {
   try {
-    // Localização opcional enviada pelo finder
-    let finderLat: number | null = null;
-    let finderLng: number | null = null;
-    let finderAddress: string | null = null;
-    try {
-      const body = await request.json();
-      if (body.lat && body.lng) {
-        finderLat     = parseFloat(body.lat);
-        finderLng     = parseFloat(body.lng);
-        finderAddress = body.address ?? null;
-      }
-    } catch { /* body vazio ou não-JSON — ok */ }
-
     // Buscar objeto pelo QR code
     const objectResult = await query(
       `SELECT id, user_id, title FROM objects WHERE qr_code = $1`,
@@ -34,23 +21,15 @@ export async function POST(
 
     const object = objectResult.rows[0] as { id: string; user_id: string; title: string };
 
-    // Montar mensagem com localização se disponível
-    const locationMsg = finderAddress
-      ? ` Localização aproximada: ${finderAddress}.`
-      : finderLat && finderLng
-        ? ` Localização: ${finderLat.toFixed(5)}, ${finderLng.toFixed(5)}.`
-        : '';
-
-    // Registrar notificação para o dono com localização
+    // Registrar scan na tabela de scans (se existir) e criar notificação para o dono
     await query(
-      `INSERT INTO notifications (user_id, title, message, type, metadata, created_at)
-       VALUES ($1, $2, $3, $4, $5, NOW())`,
+      `INSERT INTO notifications (user_id, title, message, type, created_at)
+       VALUES ($1, $2, $3, $4, NOW())`,
       [
         object.user_id,
         'Seu objeto foi encontrado! 🎉',
-        `Alguém escaneou o QR Code do seu objeto "${object.title}" e quer devolvê-lo.${locationMsg}`,
+        `Alguém escaneou o QR Code do seu objeto "${object.title}" e quer devolvê-lo.`,
         'scan',
-        JSON.stringify({ object_id: object.id, finder_lat: finderLat, finder_lng: finderLng, finder_address: finderAddress }),
       ]
     );
 

@@ -47,35 +47,7 @@ export default function ScanPage() {
   const [notFound, setNotFound] = useState(false);
   const [contactSent, setContactSent] = useState(false);
   const [sending, setSending] = useState(false);
-  const [finderLocation, setFinderLocation] = useState<{ lat: number; lng: number; address?: string } | null>(null);
   const { open: openLightbox, close: closeLightbox, lightbox } = useLightbox();
-
-  // Capturar localização do finder silenciosamente ao carregar
-  useEffect(() => {
-    if (!navigator.geolocation) return;
-    navigator.geolocation.getCurrentPosition(
-      async (pos) => {
-        const { latitude: lat, longitude: lng } = pos.coords;
-        const token = process.env.NEXT_PUBLIC_MAPBOX_TOKEN;
-        if (token) {
-          try {
-            const res = await fetch(
-              `https://api.mapbox.com/geocoding/v5/mapbox.places/${lng},${lat}.json?access_token=${token}&language=pt&limit=1`
-            );
-            const data = await res.json();
-            const address = data.features?.[0]?.place_name;
-            setFinderLocation({ lat, lng, address });
-          } catch {
-            setFinderLocation({ lat, lng });
-          }
-        } else {
-          setFinderLocation({ lat, lng });
-        }
-      },
-      () => { /* usuário negou — ok, envia sem localização */ },
-      { timeout: 8000, maximumAge: 60000 }
-    );
-  }, []);
 
   useEffect(() => {
     api.get(`/objects/scan/${code}`)
@@ -88,7 +60,7 @@ export default function ScanPage() {
     if (sending) return;
     setSending(true);
     try {
-      await api.post(`/objects/scan/${code}/notify`, finderLocation ?? {});
+      await api.post(`/objects/scan/${code}/notify`);
       setContactSent(true);
     } catch (err) {
       console.error(parseApiError(err));

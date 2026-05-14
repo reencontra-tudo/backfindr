@@ -40,7 +40,7 @@ export async function GET(req: NextRequest) {
       SELECT
         TO_CHAR(DATE_TRUNC('month', started_at), 'Mon YY') AS month,
         SUM(amount_brl) AS total
-      FROM subscriptions
+      FROM subscriptions_p1
       WHERE status = 'active'
         AND started_at >= NOW() - INTERVAL '7 months'
       GROUP BY DATE_TRUNC('month', started_at)
@@ -76,7 +76,7 @@ export async function GET(req: NextRequest) {
         s.status,
         s.provider,
         TO_CHAR(s.created_at, 'DD/MM/YYYY') AS date
-      FROM subscriptions s
+      FROM subscriptions_p1 s
       JOIN users u ON u.id = s.user_id
       ORDER BY s.created_at DESC
       LIMIT 20
@@ -112,7 +112,7 @@ export async function GET(req: NextRequest) {
     // ── Cancelamentos nos últimos 30 dias ────────────────────────────────────
     const cancelResult = await query(`
       SELECT COUNT(*) AS count
-      FROM subscriptions
+      FROM subscriptions_p1
       WHERE status = 'cancelled'
         AND cancelled_at >= NOW() - INTERVAL '30 days'
     `);

@@ -15,6 +15,7 @@ import { ptBR } from 'date-fns/locale';
 import OnboardingChecklist from '@/components/ui/OnboardingChecklist';
 import WelcomeModal from '@/components/ui/WelcomeModal';
 import OnboardingTour, { TourStep } from '@/components/ui/OnboardingTour';
+import CondominioContextBanner from '@/components/CondominioContextBanner';
 
 const EMOJI: Record<string, string> = {
   phone:'📱',wallet:'👛',keys:'🔑',bag:'🎒',pet:'🐾',
