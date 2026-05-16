@@ -203,7 +203,7 @@ function Navbar() {
         </div>
 
         <div className="flex items-center gap-3">
-          <Link href="/auth/login" className="hidden text-sm text-white/50 transition-colors hover:text-white sm:block">
+          <Link href="/auth/login" className="text-sm text-white/50 transition-colors hover:text-white">
             Entrar
           </Link>
           <Link
