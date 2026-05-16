@@ -38,6 +38,42 @@ function detectTipoItem(texto: string): string {
   return 'outro';
 }
 
+// ─── Extrair campos do item do actor facebook-post-search-scraper ─────────────
+// O actor retorna: message, url, timestamp (unix seconds), comments_count,
+// reactions_count, author (objeto {id, name, url}), author_title
+function extractItemFields(item: Record<string, unknown>) {
+  // Texto: message ou text ou content
+  const texto = String(item.message || item.text || item.content || '');
+
+  // Link: url ou link
+  const link = String(item.url || item.link || item.postUrl || '');
+
+  // Usuário: author.name (objeto) ou authorName ou username
+  let usuario = '';
+  if (item.author && typeof item.author === 'object') {
+    usuario = String((item.author as Record<string, unknown>).name || '');
+  }
+  if (!usuario) {
+    usuario = String(item.authorName || item.author_title || item.username || item.user || '');
+  }
+
+  // Comentários: comments_count ou commentsCount ou comments
+  const comentarios = Number(item.comments_count || item.commentsCount || item.comments || 0);
+
+  // Data: timestamp (unix seconds) ou createdAt ou date
+  let dataPost: Date;
+  if (typeof item.timestamp === 'number') {
+    // Unix timestamp em segundos
+    dataPost = new Date(item.timestamp * 1000);
+  } else if (item.createdAt || item.date || item.timestamp) {
+    dataPost = new Date(String(item.createdAt || item.date || item.timestamp));
+  } else {
+    dataPost = new Date();
+  }
+
+  return { texto, link, usuario, comentarios, dataPost };
+}
+
 // ─── POST /api/v1/admin/marketing/apify/run ──────────────────────────────────
 export async function POST(req: NextRequest) {
   const auth = await requireAdmin(req);
@@ -59,7 +95,8 @@ export async function POST(req: NextRequest) {
     let finalKeyword = keyword;
     let finalActorId = actor_id || 'powerai/facebook-post-search-scraper';
     let finalMaxResults = max_results;
-    let configDbId = config_id;
+    let finalRede = rede;
+    const configDbId = config_id;
 
     if (config_id) {
       const configRes = await query(
@@ -71,12 +108,16 @@ export async function POST(req: NextRequest) {
         finalKeyword = cfg.keyword;
         finalActorId = cfg.actor_id;
         finalMaxResults = cfg.max_results;
+        finalRede = cfg.rede || rede;
       }
     }
 
     if (!finalKeyword) {
       return NextResponse.json({ detail: 'keyword é obrigatória' }, { status: 400 });
     }
+
+    // Garantir maxResults mínimo de 10 (requisito do actor)
+    if (finalMaxResults < 10) finalMaxResults = 10;
 
     // Disparar run no Apify
     const runBody = {
@@ -155,18 +196,12 @@ export async function POST(req: NextRequest) {
 
     for (const item of items) {
       try {
-        const texto = String(item.text || item.message || item.content || '');
+        const { texto, link, usuario, comentarios, dataPost } = extractItemFields(item);
         if (!texto || texto.length < 10) continue;
 
-        const link = String(item.url || item.link || item.postUrl || '');
-        const usuario = String(item.authorName || item.username || item.user || '');
-        const comentarios = Number(item.commentsCount || item.comments || 0);
-        const dataPost = item.createdAt || item.date || item.timestamp
-          ? new Date(String(item.createdAt || item.date || item.timestamp))
-          : new Date();
         const sourceUrl = link;
 
-        // Deduplication
+        // Deduplication por source_url
         if (sourceUrl) {
           const existing = await query(
             `SELECT id FROM marketing_leads WHERE source_url = $1 LIMIT 1`,
@@ -187,7 +222,7 @@ export async function POST(req: NextRequest) {
             (rede, keyword, texto, link, usuario, data_post, comentarios, cidade, tipo_item,
              score, prioridade, status, origem, source_url)
            VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,'novo',$12,$13)`,
-          [rede, finalKeyword, texto, link, usuario, dataPost, comentarios, cidade, tipoItem,
+          [finalRede, finalKeyword, texto, link, usuario, dataPost, comentarios, cidade, tipoItem,
            score, prioridade, 'apify-import', sourceUrl]
         );
         saved++;
@@ -211,8 +246,8 @@ export async function POST(req: NextRequest) {
   }
 }
 
-// ─── POST /api/v1/admin/marketing/apify/run (importar dataset existente) ─────
-// Também aceita importar um dataset já existente via run_id
+// ─── PUT /api/v1/admin/marketing/apify/run (importar dataset existente) ──────
+// Importa um dataset já existente via run_id (útil quando o run demorou mais que 120s)
 export async function PUT(req: NextRequest) {
   const auth = await requireAdmin(req);
   if (auth instanceof NextResponse) return auth;
@@ -250,15 +285,9 @@ export async function PUT(req: NextRequest) {
 
     for (const item of items) {
       try {
-        const texto = String(item.text || item.message || item.content || '');
+        const { texto, link, usuario, comentarios, dataPost } = extractItemFields(item);
         if (!texto || texto.length < 10) continue;
 
-        const link = String(item.url || item.link || item.postUrl || '');
-        const usuario = String(item.authorName || item.username || item.user || '');
-        const comentarios = Number(item.commentsCount || item.comments || 0);
-        const dataPost = item.createdAt || item.date
-          ? new Date(String(item.createdAt || item.date))
-          : new Date();
         const sourceUrl = link;
 
         if (sourceUrl) {
