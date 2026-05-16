@@ -85,8 +85,8 @@ const TOUR_STEPS: TourStep[] = [
   },
 ];
 
-function StatCard({ icon, label, value, sub, color }: {
-  icon: React.ReactNode; label: string; value: number|string; sub?: string; color: string;
+function StatCard({ icon, label, value, sub, color, hint }: {
+  icon: React.ReactNode; label: string; value: number|string; sub?: string; color: string; hint?: string;
 }) {
   return (
     <div className="bg-white/[0.03] border border-white/[0.07] rounded-xl p-4">
@@ -94,7 +94,8 @@ function StatCard({ icon, label, value, sub, color }: {
         {icon}
       </div>
       <p className="text-2xl font-bold text-white tracking-tight">{value}</p>
-      <p className="text-white/40 text-xs mt-0.5">{label}</p>
+      <p className="text-white/55 text-xs font-medium mt-0.5">{label}</p>
+      {hint && <p className="text-white/25 text-[10px] mt-0.5 leading-tight">{hint}</p>}
       {sub && <p className="text-white/20 text-[10px] mt-1">{sub}</p>}
     </div>
   );
@@ -208,7 +209,7 @@ export default function DashboardPage() {
             <h1 className="font-display text-2xl font-bold text-white">
               {greeting}{firstName ? `, ${firstName}` : ''} 👋
             </h1>
-            <p className="text-white/40 text-sm mt-0.5">Aqui está um resumo dos seus objetos.</p>
+            <p className="text-white/40 text-sm mt-0.5">Seus objetos registrados e status pessoal.</p>
           </div>
           <Link
             href="/dashboard/objects/new"
@@ -287,25 +288,29 @@ export default function DashboardPage() {
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-8" data-tour-id="stats-grid">
           <StatCard
             icon={<Package className="w-4 h-4 text-white/60" />}
-            label="Total registrados"
+            label="Meus objetos"
+            hint="total que você cadastrou"
             value={loading ? '—' : objects.length}
             color="bg-white/[0.06]"
           />
           <StatCard
             icon={<AlertTriangle className="w-4 h-4 text-red-400" />}
-            label="Perdidos ativos"
+            label="Buscando"
+            hint="seus objetos perdidos ativos"
             value={loading ? '—' : lost}
             color="bg-red-500/10"
           />
           <StatCard
             icon={<CheckCircle2 className="w-4 h-4 text-green-400" />}
             label="Recuperados"
+            hint="seus objetos devolvidos"
             value={loading ? '—' : returned}
             color="bg-green-500/10"
           />
           <StatCard
             icon={<Zap className="w-4 h-4 text-yellow-400" />}
             label="Matches IA"
+            hint="para seus objetos"
             value={loading ? '—' : pending}
             sub="aguardando avaliação"
             color="bg-yellow-500/10"
