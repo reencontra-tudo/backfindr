@@ -284,6 +284,29 @@ export default function DashboardPage() {
           </Link>
         )}
 
+        {/* Quick actions */}
+        <div className="grid grid-cols-2 gap-3 mb-6">
+          <Link href="/dashboard/search"
+            className="flex items-center gap-3 p-4 bg-white/[0.02] border border-white/[0.06] hover:border-white/[0.12] rounded-xl transition-all group">
+            <div className="w-8 h-8 rounded-lg bg-white/[0.06] flex items-center justify-center flex-shrink-0">
+              <Package className="w-4 h-4 text-white/40" />
+            </div>
+            <div>
+              <p className="text-white text-sm font-medium">Buscar achados</p>
+              <p className="text-white/30 text-xs">Pesquisar objetos encontrados</p>
+            </div>
+          </Link>
+          <Link href="/map"
+            className="flex items-center gap-3 p-4 bg-white/[0.02] border border-white/[0.06] hover:border-white/[0.12] rounded-xl transition-all group">
+            <div className="w-8 h-8 rounded-lg bg-white/[0.06] flex items-center justify-center flex-shrink-0">
+              <QrCode className="w-4 h-4 text-white/40" />
+            </div>
+            <div>
+              <p className="text-white text-sm font-medium">Mapa público</p>
+              <p className="text-white/30 text-xs">Ver objetos na região</p>
+            </div>
+          </Link>
+        </div>
         {/* Stats */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-8" data-tour-id="stats-grid">
           <StatCard
@@ -365,29 +388,7 @@ export default function DashboardPage() {
           )}
         </div>
 
-        {/* Quick actions */}
-        <div className="grid grid-cols-2 gap-3">
-          <Link href="/dashboard/search"
-            className="flex items-center gap-3 p-4 bg-white/[0.02] border border-white/[0.06] hover:border-white/[0.12] rounded-xl transition-all group">
-            <div className="w-8 h-8 rounded-lg bg-white/[0.06] flex items-center justify-center flex-shrink-0">
-              <Package className="w-4 h-4 text-white/40" />
-            </div>
-            <div>
-              <p className="text-white text-sm font-medium">Buscar achados</p>
-              <p className="text-white/30 text-xs">Pesquisar objetos encontrados</p>
-            </div>
-          </Link>
-          <Link href="/map"
-            className="flex items-center gap-3 p-4 bg-white/[0.02] border border-white/[0.06] hover:border-white/[0.12] rounded-xl transition-all group">
-            <div className="w-8 h-8 rounded-lg bg-white/[0.06] flex items-center justify-center flex-shrink-0">
-              <QrCode className="w-4 h-4 text-white/40" />
-            </div>
-            <div>
-              <p className="text-white text-sm font-medium">Mapa público</p>
-              <p className="text-white/30 text-xs">Ver objetos na região</p>
-            </div>
-          </Link>
-        </div>
+
 
         {/* Botão para rever o tour (rodapé discreto) */}
         <div className="mt-8 text-center">
