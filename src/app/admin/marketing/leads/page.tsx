@@ -335,9 +335,18 @@ function StatsPanel() {
 // ─── WebhookPanel ─────────────────────────────────────────────────────────────
 function WebhookPanel() {
   const [copied, setCopied] = useState<string | null>(null);
+  const [logs, setLogs] = useState<Lead[]>([]);
+  const [loadingLogs, setLoadingLogs] = useState(false);
   const base = 'https://backfindr.com';
   const token = 'backfindr-webhook-secret-2024';
   const endpoint = `${base}/api/v1/admin/marketing/webhook`;
+  const fetchLogs = async () => {
+    setLoadingLogs(true);
+    const r = await fetch('/api/v1/admin/marketing/leads?origem=webhook&limit=10');
+    if (r.ok) { const d = await r.json() as { leads: Lead[] }; setLogs(d.leads ?? []); }
+    setLoadingLogs(false);
+  };
+  useEffect(() => { fetchLogs(); }, []);
   const copy = (text: string, key: string) => { navigator.clipboard.writeText(text); setCopied(key); setTimeout(() => setCopied(null), 2000); };
   const curl = `curl -X POST ${endpoint} \\
   -H "Content-Type: application/json" \\
@@ -367,7 +376,12 @@ function WebhookPanel() {
   return (
     <div className="p-4 max-w-3xl mx-auto">
       <h2 className="text-lg font-bold mb-1" style={{ color: 'oklch(0.88 0.015 240)' }}>Webhook de Leads</h2>
-      <p className="text-sm mb-6" style={{ color: 'oklch(0.5 0.015 240)' }}>Receba leads automaticamente de ferramentas como TexAu, Make, Zapier ou qualquer fonte externa via HTTP POST.</p>
+      <p className="text-sm mb-4" style={{ color: 'oklch(0.5 0.015 240)' }}>Receba leads automaticamente de ferramentas como TexAu, Make, Zapier ou qualquer fonte externa via HTTP POST.</p>
+      {/* Resposta de sucesso */}
+      <div className="rounded-xl p-4 mb-5" style={{ background: 'oklch(0.08 0.02 150 / 0.4)', border: '1px solid oklch(0.25 0.08 150 / 0.4)' }}>
+        <p className="text-xs font-semibold tracking-widest mb-2" style={{ color: 'oklch(0.45 0.015 240)' }}>RESPOSTA DE SUCESSO (201)</p>
+        <pre className="text-xs" style={{ color: '#34D399', fontFamily: 'monospace' }}>{`{ "id": 42, "score": 8, "prioridade": "alta", "message": "Lead criado com sucesso" }`}</pre>
+      </div>
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
         {[
           { label: 'ENDPOINT', text: `POST ${endpoint}`, key: 'ep', color: '#60A5FA', copy: endpoint },
@@ -399,6 +413,29 @@ function WebhookPanel() {
             ))}</tbody>
           </table>
         </div>
+      </div>
+      {/* Log de webhooks recebidos */}
+      <div className="rounded-xl p-4 mb-5" style={{ background: 'oklch(0.1 0.015 240)', border: '1px solid oklch(0.18 0.015 240)' }}>
+        <div className="flex items-center justify-between mb-3">
+          <p className="text-xs font-semibold tracking-widest" style={{ color: 'oklch(0.45 0.015 240)' }}>LOG DE WEBHOOKS RECEBIDOS</p>
+          <button onClick={fetchLogs} disabled={loadingLogs} className="flex items-center gap-1 px-2 py-1 rounded text-xs" style={{ background: 'oklch(0.15 0.015 240)', color: 'oklch(0.55 0.015 240)', border: '1px solid oklch(0.22 0.015 240)' }}>
+            {loadingLogs ? <Loader2 size={11} className="animate-spin" /> : <RefreshCw size={11} />} Atualizar
+          </button>
+        </div>
+        {logs.length === 0 ? (
+          <p className="text-xs text-center py-4" style={{ color: 'oklch(0.4 0.015 240)' }}>Nenhum webhook recebido ainda</p>
+        ) : (
+          <div className="space-y-2">
+            {logs.map((l) => (
+              <div key={l.id} className="flex items-center gap-3 p-2 rounded-lg" style={{ background: 'oklch(0.065 0.015 240)' }}>
+                <span className="text-xs font-mono px-1.5 py-0.5 rounded" style={{ background: PLATFORM[l.rede]?.bg ?? '#ffffff10', color: PLATFORM[l.rede]?.color ?? '#fff' }}>{l.rede}</span>
+                <span className="flex-1 text-xs truncate" style={{ color: 'oklch(0.65 0.015 240)' }}>{l.texto?.slice(0, 80)}...</span>
+                <span className="text-xs" style={{ color: sc(l.score) }}>score {l.score}</span>
+                <span className="text-xs" style={{ color: 'oklch(0.4 0.015 240)' }}>{ago(l.created_at)}</span>
+              </div>
+            ))}
+          </div>
+        )}
       </div>
       <div className="rounded-xl p-4" style={{ background: 'oklch(0.1 0.015 240)', border: '1px solid oklch(0.18 0.015 240)' }}>
         <div className="flex items-center justify-between mb-3">
@@ -520,6 +557,7 @@ function AutomacaoPanel({ onLeadReceived }: { onLeadReceived: () => void }) {
       <div className="rounded-xl p-4" style={{ background: 'oklch(0.1 0.015 240)', border: '1px solid oklch(0.18 0.015 240)' }}>
         <p className="text-xs font-semibold tracking-widest mb-2" style={{ color: 'oklch(0.45 0.015 240)' }}>IMPORTAR MANUALMENTE (RUN ID)</p>
         <p className="text-xs mb-3" style={{ color: 'oklch(0.45 0.015 240)' }}>Rodou o actor diretamente no Apify? Cole o Run ID abaixo para importar os posts sem precisar configurar webhook.</p>
+        <p className="text-xs mb-3" style={{ color: 'oklch(0.38 0.015 240)' }}>Como funciona: Ao clicar em &quot;Disparar&quot;, o sistema inicia o actor no Apify com a keyword configurada. Quando o actor termina, ele envia os posts automaticamente via webhook e os leads aparecem na fila. O processo leva entre 1-5 minutos dependendo do volume.</p>
         <div className="flex gap-2 mb-2">
           <input type="text" value={importRunId} onChange={(e) => setImportRunId(e.target.value)} placeholder="Run ID (ex: rVct0VjBkQBHhIGia)" className="flex-1 px-3 py-2 rounded-lg text-sm" style={{ background: 'oklch(0.065 0.015 240)', border: '1px solid oklch(0.2 0.015 240)', color: 'oklch(0.85 0.015 240)' }} />
           <input type="text" value={importKeyword} onChange={(e) => setImportKeyword(e.target.value)} placeholder="Keyword (opcional)" className="w-36 px-3 py-2 rounded-lg text-sm" style={{ background: 'oklch(0.065 0.015 240)', border: '1px solid oklch(0.2 0.015 240)', color: 'oklch(0.85 0.015 240)' }} />
@@ -530,11 +568,110 @@ function AutomacaoPanel({ onLeadReceived }: { onLeadReceived: () => void }) {
         <p className="text-xs" style={{ color: 'oklch(0.4 0.015 240)' }}>O Run ID aparece na URL do Apify: <code style={{ color: '#60A5FA' }}>console.apify.com/actors/.../runs/SEU_RUN_ID/output</code></p>
         {importMsg && <div className="mt-2 p-2 rounded text-xs" style={{ background: 'oklch(0.1 0.015 240)', border: '1px solid oklch(0.2 0.015 240)', color: 'oklch(0.7 0.015 240)' }}>{importMsg}</div>}
       </div>
+      {/* Status da integração */}
+      <div className="rounded-xl p-4 mt-5" style={{ background: 'oklch(0.1 0.015 240)', border: '1px solid oklch(0.18 0.015 240)' }}>
+        <p className="text-xs font-semibold tracking-widest mb-4" style={{ color: 'oklch(0.45 0.015 240)' }}>STATUS DA INTEGRAÇÃO</p>
+        <div className="grid grid-cols-4 gap-3 mb-4">
+          {[['Status','Online','green'],['Recebidos','—','neutral'],['Sucesso','—','neutral'],['Taxa','—','neutral']].map(([label, val, c]) => (
+            <div key={label} className="text-center">
+              <p className="text-xs mb-1" style={{ color: 'oklch(0.45 0.015 240)' }}>{label}</p>
+              <p className="text-sm font-bold" style={{ color: c === 'green' ? '#34D399' : 'oklch(0.7 0.015 240)' }}>
+                {label === 'Status' ? <span className="flex items-center justify-center gap-1"><span className="w-2 h-2 rounded-full inline-block" style={{ background: '#34D399' }}></span>Online</span> : val}
+              </p>
+            </div>
+          ))}
+        </div>
+        <div className="mb-2">
+          <p className="text-xs mb-1" style={{ color: 'oklch(0.45 0.015 240)' }}>Endpoint</p>
+          <p className="text-xs font-mono" style={{ color: '#60A5FA' }}>https://backfindr.com/api/v1/admin/marketing/webhook</p>
+        </div>
+        <div>
+          <p className="text-xs mb-1" style={{ color: 'oklch(0.45 0.015 240)' }}>Token de autenticação</p>
+          <p className="text-xs font-mono" style={{ color: 'oklch(0.6 0.015 240)' }}>backfindr-we•••••••••••••</p>
+        </div>
+      </div>
+      {/* Guias de integração por rede */}
+      <div className="rounded-xl p-4 mt-5" style={{ background: 'oklch(0.1 0.015 240)', border: '1px solid oklch(0.18 0.015 240)' }}>
+        <p className="text-xs font-semibold tracking-widest mb-4" style={{ color: 'oklch(0.45 0.015 240)' }}>GUIAS DE INTEGRAÇÃO POR REDE</p>
+        {[
+          { label: 'Facebook — Apify (Recomendado)', badge: 'Principal', badgeColor: '#3B82F6' },
+          { label: 'Facebook — Make + TexAu (Alternativa)', badge: 'Alternativa', badgeColor: '#8B5CF6' },
+          { label: 'Instagram — Hashtags + Make', badge: 'Reforço', badgeColor: '#EC4899' },
+          { label: 'Twitter/X — Busca Tempo Real + Make', badge: 'Baixo Volume', badgeColor: '#6B7280' },
+          { label: 'Reddit — Comunidades + Make', badge: 'Confiança', badgeColor: '#F59E0B' },
+        ].map((g) => (
+          <div key={g.label} className="flex items-center justify-between py-3" style={{ borderBottom: '1px solid oklch(0.13 0.015 240)' }}>
+            <div className="flex items-center gap-2">
+              <ChevronDown size={14} style={{ color: 'oklch(0.4 0.015 240)' }} />
+              <span className="text-sm" style={{ color: 'oklch(0.75 0.015 240)' }}>{g.label}</span>
+            </div>
+            <span className="text-xs px-2 py-0.5 rounded-full font-medium" style={{ background: `${g.badgeColor}20`, color: g.badgeColor }}>{g.badge}</span>
+          </div>
+        ))}
+      </div>
+      {/* Testar integração agora */}
+      <div className="rounded-xl p-4 mt-5" style={{ background: 'oklch(0.1 0.015 240)', border: '1px solid oklch(0.18 0.015 240)' }}>
+        <p className="text-xs font-semibold tracking-widest mb-1" style={{ color: 'oklch(0.45 0.015 240)' }}>TESTAR INTEGRAÇÃO AGORA</p>
+        <div className="mb-5">
+          <p className="text-sm font-semibold mb-1" style={{ color: 'oklch(0.75 0.015 240)' }}>Lead único (cURL)</p>
+          <p className="text-xs mb-3" style={{ color: 'oklch(0.45 0.015 240)' }}>Execute no terminal para enviar um lead de teste ao sistema.</p>
+          <div className="rounded-lg p-3 relative" style={{ background: 'oklch(0.065 0.015 240)', border: '1px solid oklch(0.18 0.015 240)' }}>
+            <pre className="text-xs overflow-x-auto leading-relaxed" style={{ color: 'oklch(0.65 0.015 240)', fontFamily: 'monospace' }}>{`curl -X POST https://backfindr.com/api/v1/admin/marketing/webhook \\\n  -H "Content-Type: application/json" \\\n  -H "Authorization: Bearer backfindr-webhook-secret-2024" \\\n  -d '{\n    "rede": "facebook",\n    "texto": "Perdi meu celular ontem na Paulista, urgente!",\n    "link": "https://facebook.com/post/123",\n    "keyword": "perdi celular",\n    "usuario": "@joao_silva",\n    "cidade": "São Paulo",\n    "tipoItem": "celular",\n    "comentarios": 3,\n    "dataPost": "${new Date().toISOString()}"\n  }'`}</pre>
+          </div>
+        </div>
+        <div>
+          <p className="text-sm font-semibold mb-1" style={{ color: 'oklch(0.75 0.015 240)' }}>Batch — múltiplos leads (cURL)</p>
+          <p className="text-xs mb-3" style={{ color: 'oklch(0.45 0.015 240)' }}>Envie um array de leads em uma única requisição — ideal para o Make processar lotes do TexAu.</p>
+          <div className="rounded-lg p-3" style={{ background: 'oklch(0.065 0.015 240)', border: '1px solid oklch(0.18 0.015 240)' }}>
+            <pre className="text-xs overflow-x-auto leading-relaxed" style={{ color: 'oklch(0.65 0.015 240)', fontFamily: 'monospace' }}>{`curl -X POST https://backfindr.com/api/v1/admin/marketing/webhook \\\n  -H "Content-Type: application/json" \\\n  -H "Authorization: Bearer backfindr-webhook-secret-2024" \\\n  -d '[\n    {\n      "rede": "instagram",\n      "texto": "Perdi meu cachorro no parque!",\n      "link": "https://instagram.com/p/abc123",\n      "keyword": "petsperdidos",\n      "tipoItem": "pet",\n      "comentarios": 1\n    },\n    {\n      "rede": "twitter",\n      "texto": "Roubaram minha mochila com notebook",\n      "link": "https://twitter.com/user/status/456",\n      "tipoItem": "notebook",\n      "comentarios": 0\n    }\n  ]'`}</pre>
+          </div>
+        </div>
+        <div className="mt-4 p-3 rounded-lg" style={{ background: 'oklch(0.09 0.04 60 / 0.3)', border: '1px solid oklch(0.25 0.08 60 / 0.4)' }}>
+          <p className="text-xs font-semibold mb-2" style={{ color: '#FBBF24' }}>⚡ Após enviar, vá para a aba Fila de Leads e veja o lead aparecer com score calculado automaticamente.</p>
+          <p className="text-xs" style={{ color: 'oklch(0.55 0.015 240)' }}>Leads com score ≥ 6 geram notificação ao owner.</p>
+        </div>
+      </div>
+      {/* Referência de campos */}
+      <div className="rounded-xl p-4 mt-5" style={{ background: 'oklch(0.1 0.015 240)', border: '1px solid oklch(0.18 0.015 240)' }}>
+        <p className="text-xs font-semibold tracking-widest mb-4" style={{ color: 'oklch(0.45 0.015 240)' }}>REFERÊNCIA DE CAMPOS</p>
+        <table className="w-full text-xs">
+          <thead><tr>{['Campo','Tipo','Obrigatório','Valores aceitos'].map((h) => <th key={h} className="text-left py-2 pr-4 font-semibold" style={{ color: 'oklch(0.45 0.015 240)', borderBottom: '1px solid oklch(0.18 0.015 240)' }}>{h}</th>)}</tr></thead>
+          <tbody>
+            {[
+              { campo: 'texto', tipo: 'string', req: true, val: 'Texto do post' },
+              { campo: 'link', tipo: 'string', req: true, val: 'URL do post' },
+              { campo: 'rede', tipo: 'string', req: false, val: 'facebook, instagram, twitter, reddit, tiktok' },
+              { campo: 'keyword', tipo: 'string', req: false, val: 'Palavra-chave que gerou o lead' },
+              { campo: 'usuario', tipo: 'string', req: false, val: '@usuario ou nome' },
+              { campo: 'cidade', tipo: 'string', req: false, val: 'Nome da cidade' },
+              { campo: 'tipoItem', tipo: 'string', req: false, val: 'celular, pet, documentos, carteira, chaves, mochila, notebook, outro' },
+              { campo: 'comentarios', tipo: 'number', req: false, val: 'Número de comentários no post' },
+              { campo: 'dataPost', tipo: 'string ISO', req: false, val: 'Ex: 2026-04-23T10:00:00Z' },
+            ].map((c) => (
+              <tr key={c.campo} style={{ borderBottom: '1px solid oklch(0.13 0.015 240)' }}>
+                <td className="py-2 pr-4 font-mono font-semibold" style={{ color: '#60A5FA' }}>{c.campo}</td>
+                <td className="py-2 pr-4 font-mono" style={{ color: '#A78BFA' }}>{c.tipo}</td>
+                <td className="py-2 pr-4">{c.req ? <span style={{ color: '#34D399' }}>✅ Sim</span> : <span style={{ color: 'oklch(0.4 0.015 240)' }}>— (default: {c.campo === 'rede' ? 'facebook' : c.campo === 'tipoItem' ? 'outro' : c.campo === 'comentarios' ? '0' : 'agora'})</span>}</td>
+                <td className="py-2" style={{ color: 'oklch(0.6 0.015 240)' }}>{c.val}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+      {/* Regras de Ouro */}
+      <div className="rounded-xl p-4 mt-5" style={{ background: 'oklch(0.09 0.04 60 / 0.2)', border: '1px solid oklch(0.25 0.08 60 / 0.3)' }}>
+        <p className="text-sm font-semibold mb-3" style={{ color: '#FBBF24' }}>⚡ Regras de Ouro — Nunca parecer spam</p>
+        <ul className="space-y-1.5 text-xs" style={{ color: 'oklch(0.65 0.015 240)' }}>
+          <li>• Nunca automatize comentários em massa — use o sistema para identificar leads quentes e aborde manualmente</li>
+          <li>• Responda sempre de forma humana e contextualizada — a IA gera a resposta, você revisa e envia</li>
+          <li>• Foque em leads com score ≥ 6 — qualidade acima de volume</li>
+          <li>• Respeite o limite de abordagens por rede: Facebook (20/dia), Instagram (15/dia), Twitter (30/dia)</li>
+        </ul>
+      </div>
     </div>
   );
 }
-
-// ─── Página Principal ─────────────────────────────────────────────────────────
+// ─── Página Principal ──────────────────────────────────────────────────────────
 export default function MarketingLeadsPage() {
   const [leads, setLeads] = useState<Lead[]>([]);
   const [total, setTotal] = useState(0);
