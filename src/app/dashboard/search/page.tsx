@@ -1,8 +1,8 @@
 'use client';
 
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect, useRef } from 'react';
 import Link from 'next/link';
-import { Search, MapPin, Filter, Package, ArrowRight, Loader2 } from 'lucide-react';
+import { Search, MapPin, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { formatDistanceToNow } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
@@ -35,29 +35,23 @@ export default function SearchPage() {
   const [loading, setLoading] = useState(false);
   const [searched, setSearched] = useState(false);
 
-  const search = useCallback(async () => {
-    if (!query.trim() && !category) {
-      toast.error('Digite algo para buscar ou selecione uma categoria.');
-      return;
-    }
+  // Ref para evitar busca duplicada na montagem inicial
+  const didMount = useRef(false);
+
+  const search = useCallback(async (overrideCategory?: string) => {
+    const cat = overrideCategory !== undefined ? overrideCategory : category;
     setLoading(true);
     try {
-      const { data } = await objectsApi.listPublic({
+      const params: Record<string, unknown> = {
         status: 'found',
-        category: category || undefined,
-        size: 50,
-      });
+        size: 100,
+      };
+      if (cat) params.category = cat;
+      if (query.trim()) params.q = query.trim();
+
+      const { data } = await objectsApi.listPublic(params);
       const items: RegisteredObject[] = data?.items ?? [];
-
-      // Client-side text filter
-      const filtered = query.trim()
-        ? items.filter(o =>
-            o.title.toLowerCase().includes(query.toLowerCase()) ||
-            o.description.toLowerCase().includes(query.toLowerCase())
-          )
-        : items;
-
-      setResults(filtered);
+      setResults(items);
       setSearched(true);
     } catch (e) {
       toast.error(parseApiError(e));
@@ -66,16 +60,32 @@ export default function SearchPage() {
     }
   }, [query, category]);
 
+  // Dispara busca automaticamente ao mudar categoria
+  const handleCategoryClick = (val: string) => {
+    setCategory(val);
+    search(val);
+  };
+
+  // Dispara busca ao pressionar Enter
   const handleKey = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter') search();
   };
 
+  // Carrega resultados iniciais (todos os achados) ao montar a página
+  useEffect(() => {
+    if (!didMount.current) {
+      didMount.current = true;
+      search('');
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   return (
-    <div className="p-8">
-      <div className="mb-8">
+    <div className="p-6 md:p-8">
+      <div className="mb-6">
         <h1 className="font-display text-2xl font-bold text-white">Buscar Achados</h1>
         <p className="text-white/40 text-sm mt-0.5">
-          Pesquise entre os objetos encontrados e registrados na plataforma.
+          Objetos encontrados e registrados na plataforma. Filtre por categoria ou palavra-chave.
         </p>
       </div>
 
@@ -92,7 +102,7 @@ export default function SearchPage() {
           />
         </div>
         <button
-          onClick={search}
+          onClick={() => search()}
           disabled={loading}
           className="flex items-center gap-2 bg-teal-500 hover:bg-teal-400 disabled:opacity-60 text-white font-semibold px-5 py-3 rounded-xl transition-all text-sm flex-shrink-0"
           style={{ boxShadow: '0 0 0 1px rgba(20,184,166,0.4)' }}
@@ -107,7 +117,7 @@ export default function SearchPage() {
         {CATEGORIES.map(cat => (
           <button
             key={cat.value}
-            onClick={() => setCategory(cat.value)}
+            onClick={() => handleCategoryClick(cat.value)}
             className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${
               category === cat.value
                 ? 'bg-teal-500/15 text-teal-400 border border-teal-500/30'
@@ -121,25 +131,30 @@ export default function SearchPage() {
         ))}
       </div>
 
-      {/* Results */}
-      {!searched && !loading && (
-        <div className="text-center py-20">
-          <Search className="w-10 h-10 text-white/10 mx-auto mb-4" />
-          <p className="text-white/30 text-sm">
-            Busque por objetos encontrados próximos a você.
-          </p>
-          <p className="text-white/20 text-xs mt-2">
-            Digite palavras-chave como cor, marca, modelo ou tipo do objeto.
-          </p>
+      {/* Loading skeleton */}
+      {loading && (
+        <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
+          {[1,2,3,4,5,6].map(i => (
+            <div key={i} className="bg-white/[0.03] border border-white/[0.07] rounded-2xl overflow-hidden animate-pulse">
+              <div className="w-full h-36 bg-white/[0.04]" />
+              <div className="p-4 space-y-2">
+                <div className="h-3 bg-white/[0.06] rounded w-3/4" />
+                <div className="h-3 bg-white/[0.04] rounded w-1/2" />
+              </div>
+            </div>
+          ))}
         </div>
       )}
 
-      {searched && results.length === 0 && (
+      {/* Empty state */}
+      {!loading && searched && results.length === 0 && (
         <div className="text-center py-16">
           <div className="text-4xl mb-4">🔍</div>
-          <p className="text-white font-display font-semibold text-lg mb-2">Nenhum resultado encontrado</p>
+          <p className="text-white font-display font-semibold text-lg mb-2">Nenhum achado encontrado</p>
           <p className="text-white/40 text-sm max-w-sm mx-auto">
-            Tente termos diferentes ou cadastre seu objeto como perdido para ser alertado quando aparecer.
+            {category
+              ? `Não há objetos da categoria "${CATEGORIES.find(c => c.value === category)?.label ?? category}" registrados como achados no momento.`
+              : 'Tente termos diferentes ou cadastre seu objeto como perdido para ser alertado quando aparecer.'}
           </p>
           <Link
             href="/dashboard/objects/new"
@@ -150,10 +165,12 @@ export default function SearchPage() {
         </div>
       )}
 
-      {results.length > 0 && (
+      {/* Results */}
+      {!loading && results.length > 0 && (
         <div>
           <p className="text-white/30 text-xs mb-4 uppercase tracking-wider">
-            {results.length} resultado{results.length !== 1 ? 's' : ''} encontrado{results.length !== 1 ? 's' : ''}
+            {results.length} achado{results.length !== 1 ? 's' : ''} encontrado{results.length !== 1 ? 's' : ''}
+            {category ? ` em "${CATEGORIES.find(c => c.value === category)?.label ?? category}"` : ''}
           </p>
           <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
             {results.map(obj => (
