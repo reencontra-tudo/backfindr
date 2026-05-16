@@ -40,6 +40,11 @@ export async function GET(request: NextRequest) {
     if (status && status !== 'all') {
       params.push(status);
       conditions.push(`status = $${params.length}`);
+      // Quando buscando achados (found), excluir registros legados do webjetos
+      // que contêm ocorrências de desaparecimento de pessoas importadas incorretamente
+      if (status === 'found') {
+        conditions.push(`(is_legacy = false OR is_legacy IS NULL)`);
+      }
     } else {
       conditions.push(`status IN ('lost', 'found', 'stolen')`);
     }
@@ -127,6 +132,9 @@ export async function GET(request: NextRequest) {
       if (status && status !== 'all') {
         countParams.push(status);
         countConds.push(`status = $${countParams.length}`);
+        if (status === 'found') {
+          countConds.push(`(is_legacy = false OR is_legacy IS NULL)`);
+        }
       } else {
         countConds.push(`status IN ('lost', 'found', 'stolen')`);
       }
