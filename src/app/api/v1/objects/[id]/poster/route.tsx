@@ -305,7 +305,7 @@ export async function GET(
                 >
                   <span style={{ fontSize: '28px' }}>🎁</span>
                   <span style={{ color: '#F59E0B', fontSize: '28px', fontWeight: 700 }}>
-                    Recompensa: R$ {obj.reward_amount.toFixed(2).replace('.', ',')}
+                    Recompensa: R$ {Number(obj.reward_amount).toFixed(2).replace('.', ',')}
                   </span>
                 </div>
               )}
