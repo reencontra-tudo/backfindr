@@ -258,9 +258,12 @@ function NewObjectForm() {
               }`}
             />
             <span
-              className={`text-xs ${i === step ? 'text-brand-400' : i < step ? 'text-slate-400' : 'text-slate-600'}`}
+              className={`text-xs flex items-center gap-1 ${
+                i === step ? 'text-brand-400 font-semibold' : i < step ? 'text-slate-400' : 'text-slate-600'
+              }`}
             >
               {s}
+              {i === 3 && i === step && <span className="text-brand-400 animate-pulse">📍</span>}
             </span>
           </div>
         ))}
@@ -555,13 +558,19 @@ function NewObjectForm() {
         {/* Step 3 — Location */}
         {step === 3 && (
           <div className="space-y-5">
-            <h2 className="font-display font-semibold text-white text-lg flex items-center gap-2">
-              <MapPin className="w-5 h-5 text-brand-400" />
-              Onde ocorreu?
-            </h2>
-            <p className="text-slate-400 text-sm">
-              Busque o endereço ou clique no mapa para marcar o local — isso ajuda o algoritmo de matching a encontrar objetos na mesma região.
-            </p>
+            <div className="bg-brand-500/10 border border-brand-500/30 rounded-xl p-4 mb-2">
+              <h2 className="font-display font-semibold text-white text-lg flex items-center gap-2 mb-2">
+                <MapPin className="w-5 h-5 text-brand-400" />
+                📍 Onde ocorreu?
+              </h2>
+              <p className="text-slate-300 text-sm leading-relaxed">
+                Defina a localização do objeto para que nosso algoritmo de matching encontre pessoas na mesma região que possam ajudar. Quanto mais preciso, melhor!
+              </p>
+            </div>
+            <div className="bg-blue-500/5 border border-blue-500/20 rounded-xl p-3 flex gap-2 text-xs text-blue-300">
+              <span className="flex-shrink-0">💡</span>
+              <span>Dica: Use a busca por bairro, rua ou referência (ex: "Metrô Paulista"). Você também pode clicar no mapa para marcar o ponto exato.</span>
+            </div>
             <LocationPicker
               value={locationVal}
               onChange={(val) => {
