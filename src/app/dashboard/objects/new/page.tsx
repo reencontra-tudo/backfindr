@@ -15,6 +15,7 @@ import { objectsApi, parseApiError } from '@/lib/api';
 import { compressImages } from '@/lib/compressImage';
 import { ObjectCategory, ObjectStatus } from '@/types';
 import { LocationPicker } from '@/components/ui/LocationPicker';
+import { DynamicCategoryFields } from '@/components/ui/DynamicCategoryFields';
 
 // ─── Schema ──────────────────────────────────────────────────────────────────
 const schema = z.object({
@@ -381,7 +382,19 @@ function NewObjectForm() {
               )}
             </div>
 
-            {/* Pet fields */}
+            {/* Dynamic Category Fields */}
+            {category && !['other', 'bag'].includes(category) && (
+              <div className="pt-2 border-t border-surface-border">
+                <DynamicCategoryFields
+                  category={category}
+                  values={watch()}
+                  onChange={(fieldName, value) => setValue(fieldName as any, value)}
+                  errors={errors as any}
+                />
+              </div>
+            )}
+
+            {/* Legacy Pet fields (kept for backward compatibility) */}
             {isPet && (
               <div className="space-y-4 pt-2 border-t border-surface-border">
                 <p className="text-brand-400 text-sm font-medium flex items-center gap-2">
