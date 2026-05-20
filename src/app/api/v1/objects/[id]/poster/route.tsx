@@ -362,8 +362,8 @@ export async function GET(
       status: imageResponse.status,
       headers,
     });
-  } catch (error) {
+  } catch (error: any) {
     console.error('[poster] erro:', error);
-    return new Response('Erro ao gerar cartaz', { status: 500 });
+    return new Response(`Erro ao gerar cartaz: ${error?.message || 'Erro desconhecido'}`, { status: 500 });
   }
 }
