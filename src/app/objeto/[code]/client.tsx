@@ -65,7 +65,7 @@ function StaticMap({ lat, lng, title }: { lat: number; lng: number; title: strin
   );
 }
 
-function ShareButtons({ url, title }: { url: string; title: string }) {
+function ShareButtons({ url, title, objectId, objectCode }: { url: string; title: string; objectId: string; objectCode: string }) {
   const text = encodeURIComponent(`🔍 Objeto perdido: ${title} — Se você encontrou, avise o dono pelo link:`);
   const encodedUrl = encodeURIComponent(url);
 
@@ -80,10 +80,19 @@ function ShareButtons({ url, title }: { url: string; title: string }) {
     }
   };
 
+  const downloadPoster = (format: 'square' | 'vertical') => {
+    const posterUrl = `/api/v1/objects/${objectId}/poster?format=${format}`;
+    const link = document.createElement('a');
+    link.href = posterUrl;
+    link.download = `cartaz-${objectCode}-${format}.png`;
+    link.click();
+    toast.success(`Cartaz ${format === 'square' ? 'quadrado' : 'vertical'} baixado!`);
+  };
+
   return (
     <div className="mb-6">
       <p className="text-white/30 text-xs mb-3 uppercase tracking-wider">Compartilhar e ajudar a encontrar</p>
-      <div className="grid grid-cols-3 gap-2">
+      <div className="grid grid-cols-3 gap-2 mb-3">
         {/* WhatsApp */}
         <a
           href={`https://wa.me/?text=${text}%20${encodedUrl}`}
@@ -97,21 +106,20 @@ function ShareButtons({ url, title }: { url: string; title: string }) {
           <span className="text-[#25D366] text-xs font-medium">WhatsApp</span>
         </a>
 
-        {/* Instagram Stories (copia o link) */}
-        <button
-          onClick={async () => {
-            await navigator.clipboard.writeText(url);
-            toast.success('Link copiado! Cole nos Stories do Instagram.');
-          }}
-          className="flex flex-col items-center gap-1.5 bg-[#E1306C]/10 border border-[#E1306C]/20 hover:bg-[#E1306C]/20 rounded-xl py-3 px-2 transition-all"
+        {/* Facebook */}
+        <a
+          href={`https://www.facebook.com/sharer/sharer.php?u=${encodedUrl}`}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="flex flex-col items-center gap-1.5 bg-[#1877F2]/10 border border-[#1877F2]/20 hover:bg-[#1877F2]/20 rounded-xl py-3 px-2 transition-all"
         >
-          <svg viewBox="0 0 24 24" className="w-5 h-5 fill-[#E1306C]">
-            <path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z"/>
+          <svg viewBox="0 0 24 24" className="w-5 h-5 fill-[#1877F2]">
+            <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/>
           </svg>
-          <span className="text-[#E1306C] text-xs font-medium">Instagram</span>
-        </button>
+          <span className="text-[#1877F2] text-xs font-medium">Facebook</span>
+        </a>
 
-        {/* Compartilhar / Copiar */}
+        {/* Mais */}
         <button
           onClick={handleNativeShare}
           className="flex flex-col items-center gap-1.5 bg-white/[0.04] border border-white/[0.10] hover:bg-white/[0.08] rounded-xl py-3 px-2 transition-all"
@@ -119,8 +127,34 @@ function ShareButtons({ url, title }: { url: string; title: string }) {
           <Share2 className="w-5 h-5 text-white/60" />
           <span className="text-white/60 text-xs font-medium">Mais</span>
         </button>
-        </div>
       </div>
+
+      <div className="grid grid-cols-2 gap-2">
+        {/* Instagram Stories (Download + Link) */}
+        <button
+          onClick={() => {
+            downloadPoster('vertical');
+            navigator.clipboard.writeText(url);
+            toast.info('Cartaz baixado e link copiado! Publique nos Stories.');
+          }}
+          className="flex items-center justify-center gap-2 bg-[#E1306C]/10 border border-[#E1306C]/20 hover:bg-[#E1306C]/20 rounded-xl py-3 px-3 transition-all"
+        >
+          <svg viewBox="0 0 24 24" className="w-4 h-4 fill-[#E1306C]">
+            <path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z"/>
+          </svg>
+          <span className="text-[#E1306C] text-xs font-bold">Instagram Stories</span>
+        </button>
+
+        {/* Baixar Cartaz Quadrado */}
+        <button
+          onClick={() => downloadPoster('square')}
+          className="flex items-center justify-center gap-2 bg-white/[0.05] border border-white/[0.1] hover:bg-white/[0.08] rounded-xl py-3 px-3 transition-all"
+        >
+          <Download className="w-4 h-4 text-white/60" />
+          <span className="text-white/70 text-xs font-bold">Baixar Cartaz</span>
+        </button>
+      </div>
+    </div>
   );
 }
 
@@ -373,8 +407,13 @@ export default function PublicObjectClient({ obj }: { obj: RegisteredObject }) {
               </div>
             )}
 
-            {/* ── Compartilhamento WhatsApp / Instagram / Mais ── */}
-            <ShareButtons url={shareUrl} title={obj.title} />
+          {/* ── Compartilhamento WhatsApp / Instagram / Mais ── */}
+          <ShareButtons
+            url={shareUrl}
+            title={obj.title}
+            objectId={obj.id}
+            objectCode={obj.unique_code}
+          />
 
             {/* Promo */}
             <div className="border border-white/[0.06] rounded-xl p-4 flex items-center justify-between gap-3">

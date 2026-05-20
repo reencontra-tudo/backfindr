@@ -39,7 +39,14 @@ export async function generateMetadata({ params }: { params: { code: string } })
       title: `${obj.title} | Backfindr`,
       description: descriptionFull,
       url: canonicalUrl,
-      images: obj.photos?.[0] ? [{ url: obj.photos[0], alt: obj.title }] : ['/icons/og-image.png'],
+      images: [
+        {
+          url: `${APP_URL}/api/v1/objects/${obj.unique_code}/poster?format=square`,
+          width: 1080,
+          height: 1080,
+          alt: `Cartaz de ${obj.title} - Backfindr`,
+        }
+      ],
       type: 'website',
       locale: 'pt_BR',
       siteName: 'Backfindr',
@@ -48,7 +55,7 @@ export async function generateMetadata({ params }: { params: { code: string } })
       card: 'summary_large_image',
       title: `${obj.title} | Backfindr`,
       description: descriptionFull,
-      images: obj.photos?.[0] ? [obj.photos[0]] : ['/icons/og-image.png'],
+      images: [`${APP_URL}/api/v1/objects/${obj.unique_code}/poster?format=square`],
     },
   };
 }
