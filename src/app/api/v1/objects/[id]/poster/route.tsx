@@ -89,6 +89,26 @@ export async function GET(
     const pageUrl   = `${appUrl}/scan/${obj.qr_code}`;
     const qrUrl     = `https://api.qrserver.com/v1/create-qr-code/?size=280x280&data=${encodeURIComponent(pageUrl)}&bgcolor=ffffff&color=0a0e14&margin=10`;
 
+    // Tentar converter imagens para Base64 para evitar fetch externo no ImageResponse
+    const getBase64 = async (imageUrl: string) => {
+      try {
+        const res = await fetch(imageUrl);
+        if (!res.ok) return null;
+        const buffer = await res.arrayBuffer();
+        const base64 = Buffer.from(buffer).toString('base64');
+        const contentType = res.headers.get('content-type') || 'image/png';
+        return `data:${contentType};base64,${base64}`;
+      } catch (e) {
+        console.error('Erro ao converter imagem para base64:', e);
+        return null;
+      }
+    };
+
+    const [photoBase64, qrBase64] = await Promise.all([
+      photoUrl ? getBase64(photoUrl) : Promise.resolve(null),
+      getBase64(qrUrl)
+    ]);
+
     // Truncar descrição
     const desc = obj.description ?? '';
     const descTrunc = desc.length > 160 ? desc.slice(0, 157) + '…' : desc;
@@ -179,7 +199,7 @@ export async function GET(
           </div>
 
           {/* Foto do objeto */}
-          {photoUrl ? (
+          {photoBase64 ? (
             <div
               style={{
                 margin: '0 64px',
@@ -192,7 +212,7 @@ export async function GET(
             >
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
-                src={photoUrl}
+                src={photoBase64}
                 alt={obj.title}
                 width={width - 128}
                 height={photoH}
@@ -309,12 +329,14 @@ export async function GET(
                   display: 'flex',
                 }}
               >
-                <img
-                  src={qrUrl}
-                  alt="QR Code"
-                  width={isVertical ? 260 : 200}
-                  height={isVertical ? 260 : 200}
-                />
+                {qrBase64 && (
+                  <img
+                    src={qrBase64}
+                    alt="QR Code"
+                    width={isVertical ? 260 : 200}
+                    height={isVertical ? 260 : 200}
+                  />
+                )}
               </div>
               <span
                 style={{
