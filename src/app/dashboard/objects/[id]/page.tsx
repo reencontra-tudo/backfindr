@@ -499,6 +499,47 @@ export default function ObjectDetailPage() {
         <div className="space-y-4">
           <QRCodeDisplay code={obj.unique_code} title={obj.title} status={obj.status} />
 
+          {/* Poster download */}
+          <div className="glass rounded-2xl p-5">
+            <div className="flex items-center gap-2 mb-4">
+              <Download className="w-4 h-4 text-blue-400" />
+              <h3 className="font-display font-semibold text-white text-sm">Baixar Pôster</h3>
+            </div>
+            <p className="text-slate-500 text-xs mb-4 leading-relaxed">
+              Imprima e compartilhe o pôster do seu objeto em locais públicos.
+            </p>
+            <div className="flex flex-col gap-2">
+              <button
+                onClick={() => {
+                  const url = objectsApi.getPosterUrl(id, 'square');
+                  const link = document.createElement('a');
+                  link.href = url;
+                  link.download = `cartaz-${obj.unique_code}-square.png`;
+                  link.click();
+                  toast.success('Pôster quadrado baixado!');
+                }}
+                className="w-full flex items-center justify-center gap-2 bg-blue-500/10 hover:bg-blue-500/20 border border-blue-500/20 text-blue-400 hover:text-blue-300 text-xs font-medium py-2.5 rounded-lg transition-all"
+              >
+                <Download className="w-3.5 h-3.5" />
+                Quadrado (1080x1080)
+              </button>
+              <button
+                onClick={() => {
+                  const url = objectsApi.getPosterUrl(id, 'vertical');
+                  const link = document.createElement('a');
+                  link.href = url;
+                  link.download = `cartaz-${obj.unique_code}-vertical.png`;
+                  link.click();
+                  toast.success('Pôster vertical baixado!');
+                }}
+                className="w-full flex items-center justify-center gap-2 bg-blue-500/10 hover:bg-blue-500/20 border border-blue-500/20 text-blue-400 hover:text-blue-300 text-xs font-medium py-2.5 rounded-lg transition-all"
+              >
+                <Download className="w-3.5 h-3.5" />
+                Vertical (1080x1920)
+              </button>
+            </div>
+          </div>
+
           {/* Change status */}
           <div className="glass rounded-2xl p-5">
             <h3 className="font-display font-semibold text-white text-sm mb-3">Atualizar status</h3>

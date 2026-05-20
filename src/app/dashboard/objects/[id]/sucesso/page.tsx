@@ -5,7 +5,7 @@ import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import {
   CheckCircle2, Share2, ArrowRight, QrCode,
-  Copy, MessageCircle, Bell, MapPin
+  Copy, MessageCircle, Bell, MapPin, Download
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { objectsApi } from '@/lib/api';
@@ -67,6 +67,15 @@ export default function SucessoPage() {
   const copyLink = () => {
     navigator.clipboard.writeText(publicUrl);
     toast.success('Link copiado!');
+  };
+
+  const downloadPoster = (format: 'square' | 'vertical') => {
+    const posterUrl = objectsApi.getPosterUrl(id, format);
+    const link = document.createElement('a');
+    link.href = posterUrl;
+    link.download = `cartaz-${obj.unique_code}-${format}.png`;
+    link.click();
+    toast.success(`Pôster ${format === 'square' ? 'quadrado' : 'vertical'} baixado!`);
   };
 
   return (
@@ -138,8 +147,8 @@ export default function SucessoPage() {
                 <QrCode className="w-3.5 h-3.5 text-blue-400" />
               </div>
               <div>
-                <p className="text-white text-sm font-medium">Baixe o QR Code</p>
-                <p className="text-white/40 text-xs">Cole na mochila, carteira, coleira ou documento.</p>
+                <p className="text-white text-sm font-medium">Baixe o pôster ou QR Code</p>
+                <p className="text-white/40 text-xs">Imprima e cole na mochila, carteira, coleira ou documento.</p>
               </div>
             </div>
             <div className="flex items-start gap-3">
@@ -151,6 +160,27 @@ export default function SucessoPage() {
                 <p className="text-white/40 text-xs">Seu registro já está visível para toda a rede.</p>
               </div>
             </div>
+          </div>
+        </div>
+
+        {/* Botões de download do pôster */}
+        <div className="bg-white/[0.02] border border-white/[0.06] rounded-2xl p-5 mb-6 text-left">
+          <p className="text-white/40 text-xs font-semibold uppercase tracking-wider mb-3">Baixar pôster</p>
+          <div className="flex gap-2">
+            <button
+              onClick={() => downloadPoster('square')}
+              className="flex-1 flex items-center justify-center gap-2 bg-blue-500/10 hover:bg-blue-500/20 border border-blue-500/20 text-blue-400 hover:text-blue-300 text-xs font-medium py-2.5 rounded-lg transition-all"
+            >
+              <Download className="w-4 h-4" />
+              Quadrado
+            </button>
+            <button
+              onClick={() => downloadPoster('vertical')}
+              className="flex-1 flex items-center justify-center gap-2 bg-blue-500/10 hover:bg-blue-500/20 border border-blue-500/20 text-blue-400 hover:text-blue-300 text-xs font-medium py-2.5 rounded-lg transition-all"
+            >
+              <Download className="w-4 h-4" />
+              Vertical
+            </button>
           </div>
         </div>
 
