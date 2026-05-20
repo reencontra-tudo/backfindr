@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { ImageLightbox, useLightbox } from '@/components/ImageLightbox';
 import Link from 'next/link';
-import { MapPin, MessageCircle, CheckCircle2, ChevronRight, Shield, Share2 } from 'lucide-react';
+import { MapPin, MessageCircle, CheckCircle2, ChevronRight, Shield, Share2, Download } from 'lucide-react';
 import { toast } from 'sonner';
 import { api, parseApiError } from '@/lib/api';
 import { RegisteredObject } from '@/types';
@@ -175,7 +175,7 @@ export default function PublicObjectClient({ obj }: { obj: RegisteredObject }) {
     }
   };
 
-  const shareUrl = typeof window !== 'undefined' ? window.location.href : `https://backfindr.com/objeto/${obj.unique_code}`;
+  const shareUrl = typeof window !== 'undefined' ? window.location.href : `${process.env.NEXT_PUBLIC_APP_URL || 'https://backfindr.com'}/objeto/${obj.unique_code}`;
   const location = obj.location as { lat?: number; lng?: number; address?: string } | null;
   const allPhotos = obj.photos ?? [];
 
