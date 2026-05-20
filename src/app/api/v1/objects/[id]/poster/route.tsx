@@ -65,10 +65,19 @@ export async function GET(
     // Foto do objeto
     let photos: string[] = [];
     try {
-      photos = Array.isArray(obj.images)
-        ? obj.images
-        : JSON.parse(obj.images as string);
-    } catch { photos = []; }
+      if (Array.isArray(obj.images)) {
+        photos = obj.images;
+      } else if (typeof obj.images === 'string') {
+        if (obj.images.startsWith('[') || obj.images.startsWith('{')) {
+          photos = JSON.parse(obj.images);
+        } else if (obj.images.trim() !== '') {
+          // Trata como uma única URL se não for JSON
+          photos = [obj.images.trim()];
+        }
+      }
+    } catch {
+      photos = [];
+    }
     const photoUrl = photos[0] ?? null;
 
     // Config de status
