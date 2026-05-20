@@ -138,59 +138,82 @@ export async function GET(
             flexDirection: 'column',
             position: 'relative',
             overflow: 'hidden',
+            fontFamily: 'sans-serif',
           }}
         >
-          {/* Gradiente decorativo no topo */}
+          {/* Background Decorativo - Círculos de Luz */}
           <div
             style={{
               position: 'absolute',
-              top: 0, left: 0, right: 0, height: '400px',
-              background: `linear-gradient(180deg, ${statusCfg.bg}22 0%, transparent 100%)`,
+              top: '-200px',
+              right: '-200px',
+              width: '800px',
+              height: '800px',
+              borderRadius: '400px',
+              background: `radial-gradient(circle, ${statusCfg.bg}15 0%, transparent 70%)`,
+              display: 'flex',
+            }}
+          />
+          <div
+            style={{
+              position: 'absolute',
+              bottom: '-100px',
+              left: '-100px',
+              width: '600px',
+              height: '600px',
+              borderRadius: '300px',
+              background: `radial-gradient(circle, #14B8A610 0%, transparent 70%)`,
               display: 'flex',
             }}
           />
 
-          {/* Header */}
+          {/* Header com Glassmorphism */}
           <div
             style={{
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'space-between',
-              padding: '48px 64px 32px',
+              padding: '60px 80px 40px',
               position: 'relative',
-              zIndex: 1,
+              zIndex: 10,
             }}
           >
-            {/* Logo Backfindr */}
-            <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '20px' }}>
               <div
                 style={{
-                  width: '52px', height: '52px',
-                  background: '#14B8A6',
-                  borderRadius: '14px',
+                  width: '64px', height: '64px',
+                  background: 'linear-gradient(135deg, #14B8A6 0%, #0D9488 100%)',
+                  borderRadius: '18px',
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
-                  fontSize: '28px',
+                  fontSize: '32px',
+                  boxShadow: '0 10px 20px rgba(20, 184, 166, 0.3)',
                 }}
               >
                 📍
               </div>
-              <span style={{ color: '#ffffff', fontSize: '28px', fontWeight: 700 }}>
-                backfindr
-              </span>
+              <div style={{ display: 'flex', flexDirection: 'column' }}>
+                <span style={{ color: '#ffffff', fontSize: '36px', fontWeight: 800, letterSpacing: '-1px' }}>
+                  backfindr
+                </span>
+                <span style={{ color: '#ffffff60', fontSize: '18px', fontWeight: 500 }}>
+                  Recuperação Inteligente
+                </span>
+              </div>
             </div>
 
-            {/* Badge de status */}
             <div
               style={{
                 background: statusCfg.bg,
                 color: statusCfg.color,
-                fontSize: '30px',
+                fontSize: '32px',
                 fontWeight: 900,
-                padding: '12px 32px',
-                borderRadius: '100px',
-                letterSpacing: '3px',
+                padding: '16px 48px',
+                borderRadius: '20px',
+                boxShadow: `0 15px 30px ${statusCfg.bg}44`,
+                textTransform: 'uppercase',
+                letterSpacing: '4px',
                 display: 'flex',
               }}
             >
@@ -198,70 +221,90 @@ export async function GET(
             </div>
           </div>
 
-          {/* Foto do objeto */}
-          {photoBase64 ? (
-            <div
-              style={{
-                margin: '0 64px',
-                height: `${photoH}px`,
-                borderRadius: '24px',
-                overflow: 'hidden',
-                position: 'relative',
-                display: 'flex',
-              }}
-            >
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
-                src={photoBase64}
-                alt={obj.title}
-                width={width - 128}
-                height={photoH}
+          {/* Container da Foto com Moldura e Sombra */}
+          <div
+            style={{
+              margin: '0 80px',
+              height: `${photoH}px`,
+              borderRadius: '40px',
+              padding: '12px',
+              background: 'rgba(255, 255, 255, 0.05)',
+              border: '1px solid rgba(255, 255, 255, 0.1)',
+              boxShadow: '0 30px 60px rgba(0, 0, 0, 0.5)',
+              display: 'flex',
+              position: 'relative',
+              zIndex: 5,
+            }}
+          >
+            {photoBase64 ? (
+              <div
                 style={{
-                  objectFit: 'cover',
+                  width: '100%',
+                  height: '100%',
+                  borderRadius: '32px',
+                  overflow: 'hidden',
+                  display: 'flex',
                 }}
-              />
-            </div>
-          ) : (
-            /* Placeholder sem foto */
-            <div
-              style={{
-                margin: '0 64px',
-                height: `${photoH}px`,
-                borderRadius: '24px',
-                background: '#1a1f2a',
-                border: '2px solid #ffffff10',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                fontSize: '140px',
-              }}
-            >
-              {emoji}
-            </div>
-          )}
+              >
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src={photoBase64}
+                  alt={obj.title}
+                  width={width - 184}
+                  height={photoH - 24}
+                  style={{
+                    objectFit: 'cover',
+                  }}
+                />
+              </div>
+            ) : (
+              <div
+                style={{
+                  width: '100%',
+                  height: '100%',
+                  borderRadius: '32px',
+                  background: 'linear-gradient(135deg, #1a1f2a 0%, #0a0e14 100%)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  fontSize: '180px',
+                }}
+              >
+                {emoji}
+              </div>
+            )}
+          </div>
 
-          {/* Conteúdo principal */}
+          {/* Conteúdo Principal */}
           <div
             style={{
               display: 'flex',
               flexDirection: isVertical ? 'column' : 'row',
               flex: 1,
-              padding: '40px 64px',
-              gap: '40px',
-              alignItems: isVertical ? 'stretch' : 'flex-start',
+              padding: '60px 80px',
+              gap: '60px',
+              alignItems: isVertical ? 'center' : 'flex-start',
+              position: 'relative',
+              zIndex: 10,
             }}
           >
-            {/* Texto */}
-            <div style={{ display: 'flex', flexDirection: 'column', flex: 1, gap: '16px' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                <span style={{ fontSize: '36px' }}>{emoji}</span>
+            {/* Bloco de Texto */}
+            <div style={{ display: 'flex', flexDirection: 'column', flex: 1, gap: '24px' }}>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+                  <span style={{ fontSize: '48px' }}>{emoji}</span>
+                  <span style={{ color: '#14B8A6', fontSize: '24px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '2px' }}>
+                    {obj.category}
+                  </span>
+                </div>
                 <h1
                   style={{
                     color: '#ffffff',
-                    fontSize: isVertical ? '64px' : '52px',
+                    fontSize: isVertical ? '84px' : '72px',
                     fontWeight: 900,
-                    lineHeight: 1.1,
+                    lineHeight: 1,
                     margin: 0,
+                    letterSpacing: '-2px',
                     display: 'flex',
                   }}
                 >
@@ -272,10 +315,11 @@ export async function GET(
               {descTrunc && (
                 <p
                   style={{
-                    color: '#ffffff99',
-                    fontSize: isVertical ? '32px' : '26px',
-                    lineHeight: 1.5,
+                    color: '#ffffffcc',
+                    fontSize: isVertical ? '36px' : '30px',
+                    lineHeight: 1.4,
                     margin: 0,
+                    fontWeight: 400,
                     display: 'flex',
                   }}
                 >
@@ -283,86 +327,93 @@ export async function GET(
                 </p>
               )}
 
-              {address && (
-                <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                  <span style={{ fontSize: '24px' }}>📍</span>
-                  <span style={{ color: '#ffffff60', fontSize: '24px' }}>{address}</span>
-                </div>
-              )}
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                {address && (
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '16px', background: 'rgba(255,255,255,0.03)', padding: '12px 20px', borderRadius: '16px', border: '1px solid rgba(255,255,255,0.05)' }}>
+                    <span style={{ fontSize: '32px' }}>📍</span>
+                    <span style={{ color: '#ffffff90', fontSize: '28px', fontWeight: 500 }}>{address}</span>
+                  </div>
+                )}
 
-              {obj.reward_amount && (
-                <div
-                  style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '12px',
-                    background: '#F59E0B22',
-                    border: '2px solid #F59E0B44',
-                    borderRadius: '16px',
-                    padding: '16px 24px',
-                    marginTop: '8px',
-                  }}
-                >
-                  <span style={{ fontSize: '28px' }}>🎁</span>
-                  <span style={{ color: '#F59E0B', fontSize: '28px', fontWeight: 700 }}>
-                    Recompensa: R$ {Number(obj.reward_amount).toFixed(2).replace('.', ',')}
-                  </span>
-                </div>
-              )}
+                {obj.reward_amount && (
+                  <div
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '20px',
+                      background: 'linear-gradient(90deg, #F59E0B22 0%, #F59E0B11 100%)',
+                      border: '2px solid #F59E0B44',
+                      borderRadius: '24px',
+                      padding: '24px 32px',
+                      boxShadow: '0 10px 30px rgba(245, 158, 11, 0.1)',
+                    }}
+                  >
+                    <span style={{ fontSize: '48px' }}>💰</span>
+                    <div style={{ display: 'flex', flexDirection: 'column' }}>
+                      <span style={{ color: '#F59E0B90', fontSize: '20px', fontWeight: 700, textTransform: 'uppercase' }}>Recompensa Oferecida</span>
+                      <span style={{ color: '#F59E0B', fontSize: '42px', fontWeight: 900 }}>
+                        R$ {Number(obj.reward_amount).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                      </span>
+                    </div>
+                  </div>
+                )}
+              </div>
             </div>
 
-            {/* QR Code */}
+            {/* Bloco do QR Code com Call to Action */}
             <div
               style={{
                 display: 'flex',
                 flexDirection: 'column',
                 alignItems: 'center',
-                gap: '16px',
+                gap: '24px',
+                background: 'rgba(255, 255, 255, 0.03)',
+                padding: '40px',
+                borderRadius: '40px',
+                border: '1px solid rgba(255, 255, 255, 0.08)',
                 flexShrink: 0,
               }}
             >
               <div
                 style={{
                   background: '#ffffff',
-                  borderRadius: '20px',
-                  padding: '16px',
+                  borderRadius: '30px',
+                  padding: '24px',
                   display: 'flex',
+                  boxShadow: '0 20px 40px rgba(0, 0, 0, 0.3)',
                 }}
               >
                 {qrBase64 && (
                   <img
                     src={qrBase64}
                     alt="QR Code"
-                    width={isVertical ? 260 : 200}
-                    height={isVertical ? 260 : 200}
+                    width={isVertical ? 320 : 240}
+                    height={isVertical ? 320 : 240}
                   />
                 )}
               </div>
-              <span
-                style={{
-                  color: '#ffffff60',
-                  fontSize: '20px',
-                  textAlign: 'center',
-                  display: 'flex',
-                }}
-              >
-                Escaneie para ajudar
-              </span>
+              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px' }}>
+                <span style={{ color: '#ffffff', fontSize: '28px', fontWeight: 700 }}>AJUDE A ENCONTRAR</span>
+                <span style={{ color: '#ffffff60', fontSize: '20px', fontWeight: 500 }}>Escaneie o código acima</span>
+              </div>
             </div>
           </div>
 
-          {/* Footer */}
+          {/* Footer Elegante */}
           <div
             style={{
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
-              padding: '24px 64px 40px',
-              borderTop: '1px solid #ffffff10',
+              padding: '40px 80px 60px',
+              background: 'rgba(0, 0, 0, 0.2)',
+              borderTop: '1px solid rgba(255, 255, 255, 0.05)',
+              position: 'relative',
+              zIndex: 10,
             }}
           >
-            <span style={{ color: '#ffffff40', fontSize: '22px' }}>
-              {appUrl.replace('https://', '')} · Plataforma de recuperação de objetos perdidos
+            <span style={{ color: '#ffffff30', fontSize: '24px', fontWeight: 500, letterSpacing: '1px' }}>
+              {appUrl.replace('https://', '').toUpperCase()} · REDE GLOBAL DE RECUPERAÇÃO
             </span>
           </div>
         </div>
