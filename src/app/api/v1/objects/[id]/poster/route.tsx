@@ -42,7 +42,7 @@ export async function GET(
       `SELECT id, title, description, status, category, qr_code, images,
               location, reward_amount
        FROM objects
-       WHERE id = $1 OR qr_code = $1`,
+       WHERE id::text = $1 OR qr_code = $1`,
       [params.id]
     );
 
