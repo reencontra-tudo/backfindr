@@ -16,20 +16,34 @@ export default function CheckoutPendingPage() {
         <div className="space-y-2">
           <h1 className="text-2xl font-bold text-white">Pagamento em processamento</h1>
           <p className="text-gray-400">
-            Seu pagamento está sendo processado. Isso pode levar alguns minutos.
+            Recebemos seu pedido! Agora estamos aguardando a confirmação do banco.
           </p>
         </div>
 
-        <div className="bg-gray-900 border border-yellow-800/30 rounded-xl p-4 space-y-3">
-          <div className="flex items-center gap-3">
-            <Mail className="w-5 h-5 text-yellow-400 flex-shrink-0" />
-            <p className="text-sm text-gray-400 text-left">
-              Você receberá um email de confirmação assim que o pagamento for aprovado.
-            </p>
+        <div className="bg-gray-900 border border-yellow-800/30 rounded-xl p-6 space-y-4">
+          <div className="flex items-start gap-3">
+            <div className="w-10 h-10 bg-yellow-500/10 rounded-full flex items-center justify-center flex-shrink-0">
+              <Clock className="w-5 h-5 text-yellow-400" />
+            </div>
+            <div className="text-left">
+              <p className="text-sm font-medium text-white">Aguardando confirmação</p>
+              <p className="text-xs text-gray-400 mt-0.5">
+                Pagamentos via Pix costumam ser confirmados em até 5 minutos. Não se preocupe se o dinheiro já saiu da sua conta, o sistema processará automaticamente.
+              </p>
+            </div>
           </div>
-          <p className="text-xs text-gray-600">
-            Pagamentos via PIX e boleto podem levar até 1 dia útil para serem confirmados.
-          </p>
+          
+          <div className="flex items-start gap-3">
+            <div className="w-10 h-10 bg-emerald-500/10 rounded-full flex items-center justify-center flex-shrink-0">
+              <Mail className="w-5 h-5 text-emerald-400" />
+            </div>
+            <div className="text-left">
+              <p className="text-sm font-medium text-white">Aviso por E-mail</p>
+              <p className="text-xs text-gray-400 mt-0.5">
+                Enviaremos uma confirmação para o seu e-mail assim que o plano for ativado.
+              </p>
+            </div>
+          </div>
         </div>
 
         <div className="flex flex-col gap-3">

@@ -32,7 +32,7 @@ function SuccessContent() {
     }
 
     let attempts = 0;
-    const maxAttempts = 5;
+    const maxAttempts = 10; // Aumentado para 30s total
 
     const check = async () => {
       try {
@@ -60,7 +60,7 @@ function SuccessContent() {
       }
     };
 
-    setTimeout(check, 2000); // aguardar 2s para o webhook processar
+    setTimeout(check, 3000); // aguardar 3s para o webhook processar
   }, [type, ref]);
 
   // Redirecionar para dashboard após 8 segundos
@@ -132,13 +132,18 @@ function SuccessContent() {
                 Plano confirmado no sistema
               </div>
             ) : (
-              <p className="text-sm text-gray-500">
-                O plano pode levar alguns minutos para ser ativado. Verifique em{" "}
-                <Link href="/dashboard/billing" className="text-emerald-400 hover:underline">
-                  Plano & Billing
-                </Link>
-                .
-              </p>
+              <div className="space-y-2">
+                <p className="text-sm text-gray-400">
+                  O pagamento foi recebido, mas a ativação via Pix pode levar de 1 a 5 minutos.
+                </p>
+                <p className="text-xs text-gray-500">
+                  Não se preocupe, você receberá um e-mail assim que estiver tudo pronto. Você já pode navegar pelo{" "}
+                  <Link href="/dashboard" className="text-emerald-400 hover:underline">
+                    Dashboard
+                  </Link>
+                  .
+                </p>
+              </div>
             )}
           </div>
         )}
