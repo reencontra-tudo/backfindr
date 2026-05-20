@@ -69,6 +69,13 @@ export async function sendWelcomeEmail(user: { name: string; email: string }) {
                     <table width="100%" cellpadding="0" cellspacing="0">
                       <tr>
                         <td style="padding:8px 0;vertical-align:top;">
+                          <span style="font-size:20px;margin-right:12px;">📱</span>
+                          <span style="color:white;font-size:14px;font-weight:600;">Instalar o App</span><br/>
+                          <span style="color:rgba(255,255,255,0.4);font-size:13px;">Adicione à tela inicial para receber alertas em tempo real quando seu objeto for encontrado.</span>
+                        </td>
+                      </tr>
+                      <tr>
+                        <td style="padding:8px 0;vertical-align:top;">
                           <span style="font-size:20px;margin-right:12px;">🔒</span>
                           <span style="color:white;font-size:14px;font-weight:600;">Proteger seus objetos</span><br/>
                           <span style="color:rgba(255,255,255,0.4);font-size:13px;">Gere um QR Code único para mochila, carteira, pet ou documento.</span>
@@ -869,5 +876,125 @@ export async function sendTipPhotosEmail(user: { name: string; email: string }) 
     }
   } catch (err) {
     console.error('[email] Exceção ao enviar dica de fotos:', err);
+  }
+}
+
+// ─── E-mail de incentivo PWA (Lifecycle Dia 3) ────────────────────────────────
+export async function sendPWAIncentiveEmail(user: { name: string; email: string }) {
+  const firstName = user.name.split(' ')[0];
+  const dashboardUrl = 'https://www.backfindr.com/dashboard';
+
+  const html = `
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Instale o Backfindr no seu celular</title>
+</head>
+<body style="margin:0;padding:0;background:#080b0f;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;">
+  <table width="100%" cellpadding="0" cellspacing="0" style="background:#080b0f;padding:40px 20px;">
+    <tr>
+      <td align="center">
+        <table width="100%" cellpadding="0" cellspacing="0" style="max-width:520px;background:#0f1318;border:1px solid rgba(255,255,255,0.08);border-radius:20px;overflow:hidden;">
+
+          <!-- Header -->
+          <tr>
+            <td style="padding:32px 32px 0;text-align:center;">
+              <div style="display:inline-flex;align-items:center;gap:10px;margin-bottom:8px;">
+                <div style="width:36px;height:36px;background:#14b8a6;border-radius:10px;display:inline-flex;align-items:center;justify-content:center;">
+                  <span style="color:white;font-size:18px;">📱</span>
+                </div>
+                <span style="color:white;font-size:18px;font-weight:700;">Backfindr App</span>
+              </div>
+            </td>
+          </tr>
+
+          <!-- Body -->
+          <tr>
+            <td style="padding:28px 32px 32px;">
+              <h1 style="color:white;font-size:24px;font-weight:700;margin:0 0 12px;line-height:1.3;text-align:center;">
+                Tenha o Backfindr sempre à mão! 🚀
+              </h1>
+              <p style="color:rgba(255,255,255,0.55);font-size:15px;line-height:1.6;margin:0 0 24px;text-align:center;">
+                Você sabia que pode instalar o Backfindr no seu celular sem precisar baixar nada na App Store ou Play Store?
+              </p>
+
+              <!-- Benefícios -->
+              <table width="100%" cellpadding="0" cellspacing="0" style="background:rgba(20,184,166,0.05);border:1px solid rgba(20,184,166,0.15);border-radius:14px;margin-bottom:24px;">
+                <tr>
+                  <td style="padding:20px 24px;">
+                    <table width="100%" cellpadding="0" cellspacing="0">
+                      <tr>
+                        <td style="padding:8px 0;vertical-align:top;">
+                          <span style="color:#14b8a6;font-weight:700;margin-right:8px;">✓</span>
+                          <span style="color:white;font-size:14px;"><b>Notificações em tempo real</b> quando seu objeto for encontrado.</span>
+                        </td>
+                      </tr>
+                      <tr>
+                        <td style="padding:8px 0;vertical-align:top;">
+                          <span style="#14b8a6;font-weight:700;margin-right:8px;">✓</span>
+                          <span style="color:white;font-size:14px;"><b>Acesso rápido</b> direto pela tela inicial do seu celular.</span>
+                        </td>
+                      </tr>
+                      <tr>
+                        <td style="padding:8px 0;vertical-align:top;">
+                          <span style="#14b8a6;font-weight:700;margin-right:8px;">✓</span>
+                          <span style="color:white;font-size:14px;"><b>Mais leve</b> que um aplicativo comum e sempre atualizado.</span>
+                        </td>
+                      </tr>
+                    </table>
+                  </td>
+                </tr>
+              </table>
+
+              <!-- Instruções -->
+              <h3 style="color:white;font-size:16px;font-weight:600;margin:0 0 12px;">Como instalar:</h3>
+              <div style="color:rgba(255,255,255,0.5);font-size:14px;line-height:1.6;margin-bottom:24px;">
+                1. Abra <b>backfindr.com</b> no navegador do seu celular.<br/>
+                2. Toque no ícone de <b>Compartilhar</b> (iOS/Safari) ou no <b>Menu ⋮</b> (Android/Chrome).<br/>
+                3. Selecione <b>"Adicionar à Tela de Início"</b> ou <b>"Instalar Aplicativo"</b>.<br/>
+                4. Pronto! O ícone aparecerá na sua área de trabalho.
+              </div>
+
+              <table width="100%" cellpadding="0" cellspacing="0">
+                <tr>
+                  <td align="center">
+                    <a href="${dashboardUrl}"
+                       style="display:inline-block;background:#14b8a6;color:white;font-size:15px;font-weight:700;text-decoration:none;padding:14px 32px;border-radius:12px;box-shadow:0 4px 20px rgba(20,184,166,0.25);">
+                      Abrir meu Dashboard →
+                    </a>
+                  </td>
+                </tr>
+              </table>
+            </td>
+          </tr>
+
+          <!-- Footer -->
+          <tr>
+            <td style="padding:20px 32px;border-top:1px solid rgba(255,255,255,0.06);text-align:center;">
+              <p style="color:rgba(255,255,255,0.2);font-size:12px;margin:0;">
+                © 2026 Backfindr · <a href="https://www.backfindr.com" style="color:rgba(255,255,255,0.3);text-decoration:none;">www.backfindr.com</a>
+              </p>
+            </td>
+          </tr>
+
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>
+  `.trim();
+
+  try {
+    await getResend().emails.send({
+      from: FROM,
+      to: [user.email],
+      subject: `📱 Instale o Backfindr e receba alertas em tempo real`,
+      html,
+    });
+  } catch (err) {
+    console.error('[email] Erro ao enviar incentivo PWA:', err);
   }
 }

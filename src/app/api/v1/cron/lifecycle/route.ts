@@ -7,6 +7,7 @@ import {
   sendGuideCarTheftEmail,
   sendGuideLostPetEmail,
   sendTipPhotosEmail,
+  sendPWAIncentiveEmail,
 } from '@/lib/email';
 import { sendPushToUser } from '@/lib/pushNotification';
 
@@ -92,7 +93,7 @@ export async function GET(request: NextRequest) {
 
       for (const user of day3Result.rows) {
         try {
-          await sendWelcomeEmail(user);
+          await sendPWAIncentiveEmail(user);
 
           // Registrar evento
           await query(
