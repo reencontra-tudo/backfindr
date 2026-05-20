@@ -116,7 +116,6 @@ export async function GET(
             background: '#0a0e14',
             display: 'flex',
             flexDirection: 'column',
-            fontFamily: 'sans-serif',
             position: 'relative',
             overflow: 'hidden',
           }}
@@ -191,22 +190,14 @@ export async function GET(
                 display: 'flex',
               }}
             >
+              {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
                 src={photoUrl}
                 alt={obj.title}
+                width={width - 128}
+                height={photoH}
                 style={{
-                  width: '100%',
-                  height: '100%',
                   objectFit: 'cover',
-                }}
-              />
-              {/* Overlay sutil na foto */}
-              <div
-                style={{
-                  position: 'absolute',
-                  inset: 0,
-                  background: 'linear-gradient(180deg, transparent 60%, #0a0e1466 100%)',
-                  display: 'flex',
                 }}
               />
             </div>
