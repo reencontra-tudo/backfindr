@@ -480,6 +480,24 @@ export default function ObjectDetailPage() {
                   <span className="text-slate-200 ml-auto text-right max-w-[60%]">{obj.location.address}</span>
                 </div>
               )}
+
+              {/* Dynamic Category Fields Display */}
+              {obj.category_fields && Object.keys(obj.category_fields).length > 0 && (
+                <div className="pt-3 mt-3 border-t border-surface-border space-y-3">
+                  {Object.entries(obj.category_fields).map(([key, value]) => {
+                    if (!value) return null;
+                    // Formatar o label (ex: "serial_number" -> "Serial Number")
+                    const label = key.split('_').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ');
+                    return (
+                      <div key={key} className="flex items-start gap-3 text-sm">
+                        <Info className="w-4 h-4 text-brand-400 flex-shrink-0 mt-0.5" />
+                        <span className="text-slate-400">{label}</span>
+                        <span className="text-slate-200 ml-auto text-right font-medium">{String(value)}</span>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
             </div>
           </div>
 
