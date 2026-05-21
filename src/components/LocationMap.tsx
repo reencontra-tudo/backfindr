@@ -30,20 +30,25 @@ export default function LocationMap({ lat, lng, title, address }: LocationMapPro
         interactive: false,
       });
 
-      // Marcador SVG inline — confiável em todos os browsers/mobile
-      const el = document.createElement('div');
-      el.style.cssText = 'width:36px;height:44px;cursor:default;';
-      el.innerHTML = `
-        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 36 44" width="36" height="44">
-          <path d="M18 0C8.06 0 0 8.06 0 18c0 13.5 18 26 18 26S36 31.5 36 18C36 8.06 27.94 0 18 0z"
-            fill="#14b8a6" stroke="white" stroke-width="2"/>
+      // Aguarda o mapa carregar completamente antes de adicionar o marcador
+      map.on('load', () => {
+        const el = document.createElement('div');
+        el.setAttribute('style', [
+          'width:36px',
+          'height:44px',
+          'position:relative',
+          'z-index:9999',
+          'pointer-events:none',
+        ].join(';'));
+        el.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 36 44" width="36" height="44" style="display:block;overflow:visible;">
+          <path d="M18 0C8.06 0 0 8.06 0 18c0 13.5 18 26 18 26S36 31.5 36 18C36 8.06 27.94 0 18 0z" fill="#14b8a6" stroke="white" stroke-width="2"/>
           <circle cx="18" cy="18" r="7" fill="white"/>
-        </svg>
-      `;
+        </svg>`;
 
-      new mapboxgl.default.Marker({ element: el, anchor: 'bottom' })
-        .setLngLat([lng, lat])
-        .addTo(map);
+        new mapboxgl.default.Marker({ element: el, anchor: 'bottom' })
+          .setLngLat([lng, lat])
+          .addTo(map);
+      });
 
       mapRef.current = map;
     });
