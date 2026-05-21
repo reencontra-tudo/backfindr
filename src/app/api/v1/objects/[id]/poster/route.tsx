@@ -159,7 +159,7 @@ export async function GET(
     // Alturas proporcionais
     const headerPad  = Math.round(60  * scale);
     const sidePad    = Math.round(80  * scale);
-    const photoH     = Math.round((format === 'vertical' ? 680 : format === 'a4' ? 900 : 460) * (isA4 ? 1 : 1));
+    const photoH     = Math.round((format === 'vertical' ? 560 : format === 'a4' ? 900 : 460) * (isA4 ? 1 : 1));
     const gap        = Math.round(40  * scale);
 
     // Cores
@@ -324,14 +324,14 @@ export async function GET(
             display: 'flex',
             flexDirection: format === 'square' ? 'row' : 'column',
             flex: 1,
-            padding: `${gap}px ${sidePad}px`,
-            gap: `${gap}px`,
+            padding: `${gap / 2}px ${sidePad}px ${gap}px`,
+            gap: `${Math.round(gap * 0.6)}px`,
             alignItems: format === 'square' ? 'flex-start' : 'stretch',
             position: 'relative',
             zIndex: 10,
           }}>
             {/* Bloco de Texto */}
-            <div style={{ display: 'flex', flexDirection: 'column', flex: 1, gap: `${Math.round(20 * scale)}px` }}>
+            <div style={{ display: 'flex', flexDirection: 'column', flex: 1, gap: `${Math.round(14 * scale)}px` }}>
 
               {/* Título + categoria */}
               <div style={{ display: 'flex', flexDirection: 'column', gap: `${8 * scale}px` }}>
@@ -347,7 +347,7 @@ export async function GET(
                 </div>
                 <h1 style={{
                   color: '#ffffff',
-                  fontSize: format === 'a4' ? `${60 * scale}px` : format === 'vertical' ? `${72 * scale}px` : `${56 * scale}px`,
+                  fontSize: format === 'a4' ? `${60 * scale}px` : format === 'vertical' ? `${60 * scale}px` : `${56 * scale}px`,
                   fontWeight: 900, lineHeight: 1.05, margin: 0, letterSpacing: '-1px',
                   display: 'flex',
                 }}>
@@ -442,8 +442,8 @@ export async function GET(
                   <img
                     src={qrBase64}
                     alt="QR Code"
-                    width={isA4 ? 400 : format === 'vertical' ? 300 : 220}
-                    height={isA4 ? 400 : format === 'vertical' ? 300 : 220}
+                    width={isA4 ? 400 : format === 'vertical' ? 240 : 220}
+                    height={isA4 ? 400 : format === 'vertical' ? 240 : 220}
                   />
                 )}
               </div>
