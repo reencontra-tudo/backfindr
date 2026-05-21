@@ -98,7 +98,7 @@ export const objectsApi = {
   scan: (code: string) => api.get(`/objects/scan/${code}`),
   notify: (code: string) => api.post(`/objects/scan/${code}/notify`),
   listPublic: (params?: object) => api.get('/objects/public', { params }),
-  getPosterUrl: (id: string, format: 'square' | 'vertical' = 'square') => `${api.defaults.baseURL}/objects/${id}/poster?format=${format}`,
+  getPosterUrl: (id: string, format: 'square' | 'vertical' | 'a4' = 'vertical') => `${api.defaults.baseURL}/objects/${id}/poster?format=${format}`,
 };
 
 export const matchesApi = {

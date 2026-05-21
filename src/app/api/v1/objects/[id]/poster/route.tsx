@@ -9,6 +9,7 @@ export const dynamic = 'force-dynamic';
 const FORMATS = {
   square:   { width: 1080, height: 1080 },
   vertical: { width: 1080, height: 1920 },
+  a4:       { width: 2480, height: 3508 }, // A4 retrato a 300dpi — ideal para impressão
 } as const;
 
 type Format = keyof typeof FORMATS;
@@ -21,28 +22,35 @@ const STATUS_CONFIG: Record<string, { label: string; bg: string; color: string }
   protected: { label: 'PROTEGIDO',  bg: '#3B82F6', color: '#ffffff' },
 };
 
+const CATEGORY_LABEL: Record<string, string> = {
+  phone: 'Celular / Smartphone', wallet: 'Carteira / Bolsa', keys: 'Chaves',
+  bag: 'Bolsa / Mochila', pet: 'Animal de Estimação', bike: 'Bicicleta',
+  vehicle: 'Veículo', document: 'Documento', jewelry: 'Joia / Acessório',
+  electronics: 'Eletrônico', clothing: 'Roupa / Vestuário', other: 'Outro',
+};
+
 const CATEGORY_EMOJI: Record<string, string> = {
   phone: '📱', wallet: '👛', keys: '🔑', bag: '🎒', pet: '🐾',
   bike: '🚲', vehicle: '🚗', document: '📄', jewelry: '💍',
   electronics: '💻', clothing: '👕', other: '📦',
 };
 
-// GET /api/v1/objects/[id]/poster?format=square|vertical&template=simple|rich
+// GET /api/v1/objects/[id]/poster?format=square|vertical|a4&template=simple|rich
 export async function GET(
   request: NextRequest,
   { params }: { params: { id: string } }
 ) {
   try {
     const url      = new URL(request.url);
-    const format   = (url.searchParams.get('format') ?? 'square') as Format;
+    const format   = (url.searchParams.get('format') ?? 'vertical') as Format;
     const template = (url.searchParams.get('template') ?? 'simple') as 'simple' | 'rich';
-    const { width, height } = FORMATS[format] ?? FORMATS.square;
+    const { width, height } = FORMATS[format] ?? FORMATS.vertical;
 
-    // Buscar objeto no banco
+    // Buscar objeto no banco — incluindo created_at
     const result = await query(
       `SELECT 
         o.id, o.title, o.description, o.status, o.category, o.qr_code, o.images,
-        o.location, o.reward_amount,
+        o.location, o.reward_amount, o.created_at,
         CASE 
           WHEN b.id IS NOT NULL AND b.status = 'active' AND b.expires_at > NOW() 
           THEN true 
@@ -70,11 +78,12 @@ export async function GET(
       images: string | string[];
       location: string | null;
       reward_amount: number | null;
+      created_at: string;
       has_active_boost: boolean;
       boost_type: string | null;
     };
 
-    // Determinar template automaticamente se houver boost ativo
+    // Template automático se houver boost ativo
     const effectiveTemplate = obj.has_active_boost ? 'rich' : template;
 
     // Foto do objeto
@@ -94,16 +103,16 @@ export async function GET(
     }
     const photoUrl = photos[0] ?? null;
 
-    // Config de status
     const statusCfg = STATUS_CONFIG[obj.status] ?? STATUS_CONFIG.lost;
     const emoji     = CATEGORY_EMOJI[obj.category] ?? '📦';
+    const catLabel  = CATEGORY_LABEL[obj.category] ?? obj.category;
 
-    // URL da ocorrência e QR
-    const appUrl    = process.env.NEXT_PUBLIC_APP_URL ?? 'https://backfindr.com';
-    const pageUrl   = `${appUrl}/scan/${obj.qr_code}`;
-    const qrUrl     = `https://api.qrserver.com/v1/create-qr-code/?size=280x280&data=${encodeURIComponent(pageUrl)}&bgcolor=ffffff&color=0a0e14&margin=10`;
+    const appUrl  = process.env.NEXT_PUBLIC_APP_URL ?? 'https://backfindr.com';
+    const pageUrl = `${appUrl}/scan/${obj.qr_code}`;
+    const qrSize  = format === 'a4' ? 400 : 280;
+    const qrUrl   = `https://api.qrserver.com/v1/create-qr-code/?size=${qrSize}x${qrSize}&data=${encodeURIComponent(pageUrl)}&bgcolor=ffffff&color=0a0e14&margin=10`;
 
-    // Tentar converter imagens para Base64 para evitar fetch externo no ImageResponse
+    // Converter imagens para Base64
     const getBase64 = async (imageUrl: string) => {
       try {
         const res = await fetch(imageUrl);
@@ -112,8 +121,7 @@ export async function GET(
         const base64 = Buffer.from(buffer).toString('base64');
         const contentType = res.headers.get('content-type') || 'image/png';
         return `data:${contentType};base64,${base64}`;
-      } catch (e) {
-        console.error('Erro ao converter imagem para base64:', e);
+      } catch {
         return null;
       }
     };
@@ -123,36 +131,51 @@ export async function GET(
       getBase64(qrUrl)
     ]);
 
-    // Truncar descrição
-    const desc = obj.description ?? '';
-    const descTrunc = desc.length > 160 ? desc.slice(0, 157) + '…' : desc;
-    const title = obj.title.length > 50 ? obj.title.slice(0, 47) + '…' : obj.title;
+    // Textos truncados — A4 suporta mais texto
+    const maxDesc  = format === 'a4' ? 300 : 180;
+    const maxTitle = format === 'a4' ? 80  : 55;
+    const desc     = obj.description ?? '';
+    const descTrunc  = desc.length > maxDesc  ? desc.slice(0, maxDesc - 3) + '…'  : desc;
+    const title      = obj.title.length > maxTitle ? obj.title.slice(0, maxTitle - 3) + '…' : obj.title;
 
     // Localização
     let address = '';
     try {
       if (obj.location) {
-        const loc = JSON.parse(obj.location as string);
+        const loc = typeof obj.location === 'string' ? JSON.parse(obj.location) : obj.location;
         address = loc.address ?? '';
       }
     } catch { address = ''; }
 
-    const isVertical = format === 'vertical';
-    const photoH     = isVertical ? 700 : 480;
+    // Data de registro
+    const createdAt = obj.created_at
+      ? new Date(obj.created_at).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric' })
+      : '';
 
-    // Cores para template rich
-    const richBg = 'linear-gradient(135deg, #0a0e14 0%, #1a1f2a 100%)';
-    const richAccent = '#FFD700'; // Ouro para premium
-    const richGlow = 'rgba(255, 215, 0, 0.3)';
+    // Escala para A4 (tudo ~2.3x maior)
+    const scale = format === 'a4' ? 2.3 : 1;
+    const isA4  = format === 'a4';
 
-    // ─── Layout do cartaz ────────────────────────────────────────────────────
+    // Alturas proporcionais
+    const headerPad  = Math.round(60  * scale);
+    const sidePad    = Math.round(80  * scale);
+    const photoH     = Math.round((format === 'vertical' ? 680 : format === 'a4' ? 900 : 460) * (isA4 ? 1 : 1));
+    const gap        = Math.round(40  * scale);
+
+    // Cores
+    const richAccent = '#FFD700';
+    const richGlow   = 'rgba(255, 215, 0, 0.3)';
+    const isRich     = effectiveTemplate === 'rich';
+
     const imageResponse = new ImageResponse(
       (
         <div
           style={{
             width: `${width}px`,
             height: `${height}px`,
-            background: effectiveTemplate === 'rich' ? richBg : '#0a0e14',
+            background: isRich
+              ? 'linear-gradient(135deg, #0a0e14 0%, #1a1f2a 100%)'
+              : '#0a0e14',
             display: 'flex',
             flexDirection: 'column',
             position: 'relative',
@@ -160,366 +183,299 @@ export async function GET(
             fontFamily: 'sans-serif',
           }}
         >
-          {/* Background Decorativo - Círculos de Luz */}
-          <div
-            style={{
-              position: 'absolute',
-              top: '-200px',
-              right: '-200px',
-              width: '800px',
-              height: '800px',
-              borderRadius: '400px',
-              background: `radial-gradient(circle, ${statusCfg.bg}15 0%, transparent 70%)`,
-              display: 'flex',
-            }}
-          />
-          <div
-            style={{
-              position: 'absolute',
-              bottom: '-100px',
-              left: '-100px',
-              width: '600px',
-              height: '600px',
-              borderRadius: '300px',
-              background: effectiveTemplate === 'rich' 
-                ? `radial-gradient(circle, ${richGlow} 0%, transparent 70%)`
-                : `radial-gradient(circle, #14B8A610 0%, transparent 70%)`,
-              display: 'flex',
-            }}
-          />
+          {/* Círculos decorativos de fundo */}
+          <div style={{
+            position: 'absolute', top: '-200px', right: '-200px',
+            width: `${800 * scale}px`, height: `${800 * scale}px`,
+            borderRadius: '50%',
+            background: `radial-gradient(circle, ${statusCfg.bg}15 0%, transparent 70%)`,
+            display: 'flex',
+          }} />
+          <div style={{
+            position: 'absolute', bottom: '-100px', left: '-100px',
+            width: `${600 * scale}px`, height: `${600 * scale}px`,
+            borderRadius: '50%',
+            background: isRich
+              ? `radial-gradient(circle, ${richGlow} 0%, transparent 70%)`
+              : `radial-gradient(circle, #14B8A610 0%, transparent 70%)`,
+            display: 'flex',
+          }} />
 
-          {/* Badge de Premium (apenas para Rich) */}
-          {effectiveTemplate === 'rich' && (
-            <div
-              style={{
-                position: 'absolute',
-                top: '40px',
-                right: '40px',
-                background: `linear-gradient(135deg, ${richAccent} 0%, #FFA500 100%)`,
-                color: '#0a0e14',
-                padding: '12px 32px',
-                borderRadius: '50px',
-                fontSize: '20px',
-                fontWeight: 900,
-                zIndex: 20,
-                boxShadow: `0 10px 30px ${richGlow}`,
-                textTransform: 'uppercase',
-                letterSpacing: '2px',
-                display: 'flex',
-                alignItems: 'center',
-                gap: '8px',
-              }}
-            >
+          {/* Badge Premium */}
+          {isRich && (
+            <div style={{
+              position: 'absolute', top: `${40 * scale}px`, right: `${40 * scale}px`,
+              background: `linear-gradient(135deg, ${richAccent} 0%, #FFA500 100%)`,
+              color: '#0a0e14', padding: `${12 * scale}px ${32 * scale}px`,
+              borderRadius: `${50 * scale}px`, fontSize: `${20 * scale}px`,
+              fontWeight: 900, zIndex: 20,
+              boxShadow: `0 10px 30px ${richGlow}`,
+              textTransform: 'uppercase', letterSpacing: '2px',
+              display: 'flex', alignItems: 'center', gap: `${8 * scale}px`,
+            }}>
               ⭐ IMPULSIONADO
             </div>
           )}
 
-          {/* Header com Glassmorphism */}
-          <div
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'space-between',
-              padding: '60px 80px 40px',
-              position: 'relative',
-              zIndex: 10,
-            }}
-          >
-            <div style={{ display: 'flex', alignItems: 'center', gap: '20px' }}>
-              <div
-                style={{
-                  width: '64px', height: '64px',
-                  background: effectiveTemplate === 'rich'
-                    ? `linear-gradient(135deg, ${richAccent} 0%, #FFA500 100%)`
-                    : 'linear-gradient(135deg, #14B8A6 0%, #0D9488 100%)',
-                  borderRadius: '18px',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  fontSize: '32px',
-                  boxShadow: effectiveTemplate === 'rich'
-                    ? `0 10px 20px ${richGlow}`
-                    : '0 10px 20px rgba(20, 184, 166, 0.3)',
-                }}
-              >
+          {/* Header */}
+          <div style={{
+            display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+            padding: `${headerPad}px ${sidePad}px ${Math.round(40 * scale)}px`,
+            position: 'relative', zIndex: 10,
+          }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: `${20 * scale}px` }}>
+              <div style={{
+                width: `${64 * scale}px`, height: `${64 * scale}px`,
+                background: isRich
+                  ? `linear-gradient(135deg, ${richAccent} 0%, #FFA500 100%)`
+                  : 'linear-gradient(135deg, #14B8A6 0%, #0D9488 100%)',
+                borderRadius: `${18 * scale}px`,
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                fontSize: `${32 * scale}px`,
+                boxShadow: isRich
+                  ? `0 10px 20px ${richGlow}`
+                  : '0 10px 20px rgba(20, 184, 166, 0.3)',
+              }}>
                 📍
               </div>
               <div style={{ display: 'flex', flexDirection: 'column' }}>
-                <span style={{ color: '#ffffff', fontSize: '36px', fontWeight: 800, letterSpacing: '-1px' }}>
+                <span style={{ color: '#ffffff', fontSize: `${36 * scale}px`, fontWeight: 800, letterSpacing: '-1px' }}>
                   backfindr
                 </span>
-                <span style={{ color: '#ffffff60', fontSize: '18px', fontWeight: 500 }}>
-                  {effectiveTemplate === 'rich' ? 'Recuperação Premium' : 'Recuperação Inteligente'}
+                <span style={{ color: '#ffffff60', fontSize: `${18 * scale}px`, fontWeight: 500 }}>
+                  {isRich ? 'Recuperação Premium' : 'Recuperação Inteligente'}
                 </span>
               </div>
             </div>
-
-            <div
-              style={{
-                background: statusCfg.bg,
-                color: statusCfg.color,
-                fontSize: '32px',
-                fontWeight: 900,
-                padding: '16px 48px',
-                borderRadius: '20px',
-                boxShadow: `0 15px 30px ${statusCfg.bg}44`,
-                textTransform: 'uppercase',
-                letterSpacing: '4px',
-                display: 'flex',
-              }}
-            >
+            <div style={{
+              background: statusCfg.bg, color: statusCfg.color,
+              fontSize: `${32 * scale}px`, fontWeight: 900,
+              padding: `${16 * scale}px ${48 * scale}px`,
+              borderRadius: `${20 * scale}px`,
+              boxShadow: `0 15px 30px ${statusCfg.bg}44`,
+              textTransform: 'uppercase', letterSpacing: '4px',
+              display: 'flex',
+            }}>
               {statusCfg.label}
             </div>
           </div>
 
-          {/* Container da Foto com Moldura e Sombra */}
-          <div
-            style={{
-              margin: '0 80px',
-              height: `${photoH}px`,
-              borderRadius: '40px',
-              padding: '12px',
-              background: effectiveTemplate === 'rich'
-                ? `linear-gradient(135deg, rgba(255, 215, 0, 0.1) 0%, rgba(255, 165, 0, 0.05) 100%)`
-                : 'rgba(255, 255, 255, 0.05)',
-              border: effectiveTemplate === 'rich'
-                ? `2px solid ${richAccent}66`
-                : '1px solid rgba(255, 255, 255, 0.1)',
-              boxShadow: effectiveTemplate === 'rich'
-                ? `0 30px 60px ${richGlow}, inset 0 0 30px ${richGlow}`
-                : '0 30px 60px rgba(0, 0, 0, 0.5)',
-              display: 'flex',
-              position: 'relative',
-              zIndex: 5,
-            }}
-          >
+          {/* Foto — object-fit: contain para não cortar */}
+          <div style={{
+            margin: `0 ${sidePad}px`,
+            height: `${photoH}px`,
+            borderRadius: `${40 * scale}px`,
+            padding: `${12 * scale}px`,
+            background: isRich
+              ? `linear-gradient(135deg, rgba(255,215,0,0.1) 0%, rgba(255,165,0,0.05) 100%)`
+              : 'rgba(255,255,255,0.05)',
+            border: isRich
+              ? `${2 * scale}px solid ${richAccent}66`
+              : `${1 * scale}px solid rgba(255,255,255,0.1)`,
+            boxShadow: isRich
+              ? `0 30px 60px ${richGlow}, inset 0 0 30px ${richGlow}`
+              : '0 30px 60px rgba(0,0,0,0.5)',
+            display: 'flex',
+            position: 'relative',
+            zIndex: 5,
+            overflow: 'hidden',
+          }}>
             {photoBase64 ? (
-              <div
-                style={{
-                  width: '100%',
-                  height: '100%',
-                  borderRadius: '32px',
-                  overflow: 'hidden',
-                  display: 'flex',
-                }}
-              >
+              <div style={{
+                width: '100%', height: '100%',
+                borderRadius: `${32 * scale}px`,
+                overflow: 'hidden',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                background: '#ffffff',
+              }}>
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img
                   src={photoBase64}
                   alt={obj.title}
-                  width={width - 184}
+                  width={width - sidePad * 2 - 24}
                   height={photoH - 24}
                   style={{
-                    objectFit: 'cover',
+                    objectFit: 'contain',
+                    objectPosition: 'center center',
+                    maxWidth: '100%',
+                    maxHeight: '100%',
                   }}
                 />
               </div>
             ) : (
-              <div
-                style={{
-                  width: '100%',
-                  height: '100%',
-                  borderRadius: '32px',
-                  background: effectiveTemplate === 'rich'
-                    ? `linear-gradient(135deg, #2a2f3a 0%, #1a1f2a 100%)`
-                    : 'linear-gradient(135deg, #1a1f2a 0%, #0a0e14 100%)',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  fontSize: '180px',
-                }}
-              >
+              <div style={{
+                width: '100%', height: '100%',
+                borderRadius: `${32 * scale}px`,
+                background: isRich
+                  ? 'linear-gradient(135deg, #2a2f3a 0%, #1a1f2a 100%)'
+                  : 'linear-gradient(135deg, #1a1f2a 0%, #0a0e14 100%)',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                fontSize: `${180 * scale}px`,
+              }}>
                 {emoji}
               </div>
             )}
           </div>
 
           {/* Conteúdo Principal */}
-          <div
-            style={{
-              display: 'flex',
-              flexDirection: isVertical ? 'column' : 'row',
-              flex: 1,
-              padding: '60px 80px',
-              gap: '60px',
-              alignItems: isVertical ? 'center' : 'flex-start',
-              position: 'relative',
-              zIndex: 10,
-            }}
-          >
+          <div style={{
+            display: 'flex',
+            flexDirection: format === 'square' ? 'row' : 'column',
+            flex: 1,
+            padding: `${gap}px ${sidePad}px`,
+            gap: `${gap}px`,
+            alignItems: format === 'square' ? 'flex-start' : 'stretch',
+            position: 'relative',
+            zIndex: 10,
+          }}>
             {/* Bloco de Texto */}
-            <div style={{ display: 'flex', flexDirection: 'column', flex: 1, gap: '24px' }}>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
-                  <span style={{ fontSize: '48px' }}>{emoji}</span>
+            <div style={{ display: 'flex', flexDirection: 'column', flex: 1, gap: `${Math.round(20 * scale)}px` }}>
+
+              {/* Título + categoria */}
+              <div style={{ display: 'flex', flexDirection: 'column', gap: `${8 * scale}px` }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: `${12 * scale}px` }}>
+                  <span style={{ fontSize: `${40 * scale}px` }}>{emoji}</span>
                   <span style={{
-                    color: effectiveTemplate === 'rich' ? richAccent : '#14B8A6',
-                    fontSize: '24px',
-                    fontWeight: 700,
-                    textTransform: 'uppercase',
-                    letterSpacing: '2px'
+                    color: isRich ? richAccent : '#14B8A6',
+                    fontSize: `${22 * scale}px`, fontWeight: 700,
+                    textTransform: 'uppercase', letterSpacing: '2px',
                   }}>
-                    {obj.category}
+                    {catLabel}
                   </span>
                 </div>
-                <h1
-                  style={{
-                    color: '#ffffff',
-                    fontSize: isVertical ? '84px' : '72px',
-                    fontWeight: 900,
-                    lineHeight: 1,
-                    margin: 0,
-                    letterSpacing: '-2px',
-                    display: 'flex',
-                  }}
-                >
+                <h1 style={{
+                  color: '#ffffff',
+                  fontSize: format === 'a4' ? `${60 * scale}px` : format === 'vertical' ? `${72 * scale}px` : `${56 * scale}px`,
+                  fontWeight: 900, lineHeight: 1.05, margin: 0, letterSpacing: '-1px',
+                  display: 'flex',
+                }}>
                   {title}
                 </h1>
               </div>
 
+              {/* Descrição */}
               {descTrunc && (
-                <p
-                  style={{
+                <div style={{
+                  background: 'rgba(255,255,255,0.04)',
+                  border: '1px solid rgba(255,255,255,0.08)',
+                  borderRadius: `${16 * scale}px`,
+                  padding: `${16 * scale}px ${20 * scale}px`,
+                  display: 'flex',
+                }}>
+                  <p style={{
                     color: '#ffffffcc',
-                    fontSize: isVertical ? '36px' : '30px',
-                    lineHeight: 1.4,
-                    margin: 0,
-                    fontWeight: 400,
+                    fontSize: `${26 * scale}px`,
+                    lineHeight: 1.5, margin: 0, fontWeight: 400,
                     display: 'flex',
-                  }}
-                >
-                  {descTrunc}
-                </p>
+                  }}>
+                    {descTrunc}
+                  </p>
+                </div>
               )}
 
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-                {address && (
-                  <div style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '16px',
-                    background: effectiveTemplate === 'rich'
-                      ? `rgba(255, 215, 0, 0.05)`
-                      : 'rgba(255,255,255,0.03)',
-                    padding: '12px 20px',
-                    borderRadius: '16px',
-                    border: effectiveTemplate === 'rich'
-                      ? `1px solid ${richAccent}44`
-                      : '1px solid rgba(255,255,255,0.05)'
-                  }}>
-                    <span style={{ fontSize: '32px' }}>📍</span>
-                    <span style={{ color: '#ffffff90', fontSize: '28px', fontWeight: 500 }}>{address}</span>
+              {/* Dados da ocorrência */}
+              <div style={{
+                display: 'flex', flexDirection: 'column',
+                gap: `${12 * scale}px`,
+                background: 'rgba(255,255,255,0.03)',
+                border: isRich ? `1px solid ${richAccent}33` : '1px solid rgba(255,255,255,0.07)',
+                borderRadius: `${16 * scale}px`,
+                padding: `${16 * scale}px ${20 * scale}px`,
+              }}>
+                {createdAt && (
+                  <div style={{ display: 'flex', alignItems: 'center', gap: `${12 * scale}px` }}>
+                    <span style={{ fontSize: `${22 * scale}px` }}>📅</span>
+                    <span style={{ color: '#ffffff60', fontSize: `${22 * scale}px`, fontWeight: 600 }}>Registrado em</span>
+                    <span style={{ color: '#ffffffcc', fontSize: `${22 * scale}px`, fontWeight: 700, marginLeft: 'auto' }}>{createdAt}</span>
                   </div>
                 )}
-
-                {obj.reward_amount && (
-                  <div
-                    style={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: '20px',
-                      background: 'linear-gradient(90deg, #F59E0B22 0%, #F59E0B11 100%)',
-                      border: '2px solid #F59E0B44',
-                      borderRadius: '24px',
-                      padding: '24px 32px',
-                      boxShadow: '0 10px 30px rgba(245, 158, 11, 0.1)',
-                    }}
-                  >
-                    <span style={{ fontSize: '48px' }}>💰</span>
-                    <div style={{ display: 'flex', flexDirection: 'column' }}>
-                      <span style={{ color: '#F59E0B90', fontSize: '20px', fontWeight: 700, textTransform: 'uppercase' }}>Recompensa Oferecida</span>
-                      <span style={{ color: '#F59E0B', fontSize: '42px', fontWeight: 900 }}>
-                        R$ {Number(obj.reward_amount).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
-                      </span>
-                    </div>
+                {address && (
+                  <div style={{ display: 'flex', alignItems: 'flex-start', gap: `${12 * scale}px` }}>
+                    <span style={{ fontSize: `${22 * scale}px`, flexShrink: 0 }}>📍</span>
+                    <span style={{ color: '#ffffff60', fontSize: `${22 * scale}px`, fontWeight: 600, flexShrink: 0 }}>Local</span>
+                    <span style={{ color: '#ffffffcc', fontSize: `${22 * scale}px`, fontWeight: 500, marginLeft: 'auto', textAlign: 'right' }}>{address}</span>
                   </div>
                 )}
               </div>
+
+              {/* Recompensa */}
+              {obj.reward_amount && (
+                <div style={{
+                  display: 'flex', alignItems: 'center', gap: `${20 * scale}px`,
+                  background: 'linear-gradient(90deg, #F59E0B22 0%, #F59E0B11 100%)',
+                  border: `2px solid #F59E0B44`,
+                  borderRadius: `${24 * scale}px`,
+                  padding: `${20 * scale}px ${28 * scale}px`,
+                }}>
+                  <span style={{ fontSize: `${40 * scale}px` }}>💰</span>
+                  <div style={{ display: 'flex', flexDirection: 'column' }}>
+                    <span style={{ color: '#F59E0B90', fontSize: `${18 * scale}px`, fontWeight: 700, textTransform: 'uppercase' }}>Recompensa Oferecida</span>
+                    <span style={{ color: '#F59E0B', fontSize: `${36 * scale}px`, fontWeight: 900 }}>
+                      R$ {Number(obj.reward_amount).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                    </span>
+                  </div>
+                </div>
+              )}
             </div>
 
-            {/* Bloco do QR Code com Call to Action */}
-            <div
-              style={{
-                display: 'flex',
-                flexDirection: 'column',
-                alignItems: 'center',
-                gap: '24px',
-                background: effectiveTemplate === 'rich'
-                  ? `linear-gradient(135deg, rgba(255, 215, 0, 0.08) 0%, rgba(255, 165, 0, 0.04) 100%)`
-                  : 'rgba(255, 255, 255, 0.03)',
-                padding: '40px',
-                borderRadius: '40px',
-                border: effectiveTemplate === 'rich'
-                  ? `1px solid ${richAccent}44`
-                  : '1px solid rgba(255, 255, 255, 0.08)',
-                flexShrink: 0,
-                boxShadow: effectiveTemplate === 'rich'
-                  ? `0 10px 30px ${richGlow}`
-                  : 'none',
-              }}
-            >
-              <div
-                style={{
-                  background: '#ffffff',
-                  borderRadius: '30px',
-                  padding: effectiveTemplate === 'rich' ? '32px' : '24px',
-                  display: 'flex',
-                  boxShadow: effectiveTemplate === 'rich'
-                    ? `0 20px 40px ${richGlow}`
-                    : '0 20px 40px rgba(0, 0, 0, 0.3)',
-                }}
-              >
+            {/* QR Code */}
+            <div style={{
+              display: 'flex', flexDirection: 'column', alignItems: 'center',
+              gap: `${20 * scale}px`,
+              background: isRich
+                ? `linear-gradient(135deg, rgba(255,215,0,0.08) 0%, rgba(255,165,0,0.04) 100%)`
+                : 'rgba(255,255,255,0.03)',
+              padding: `${32 * scale}px`,
+              borderRadius: `${32 * scale}px`,
+              border: isRich ? `1px solid ${richAccent}44` : '1px solid rgba(255,255,255,0.08)',
+              flexShrink: 0,
+              alignSelf: format === 'square' ? 'flex-start' : 'center',
+            }}>
+              <div style={{
+                background: '#ffffff', borderRadius: `${24 * scale}px`,
+                padding: `${24 * scale}px`, display: 'flex',
+                boxShadow: isRich ? `0 20px 40px ${richGlow}` : '0 20px 40px rgba(0,0,0,0.3)',
+              }}>
                 {qrBase64 && (
                   <img
                     src={qrBase64}
                     alt="QR Code"
-                    width={isVertical ? 320 : 240}
-                    height={isVertical ? 320 : 240}
+                    width={isA4 ? 400 : format === 'vertical' ? 300 : 220}
+                    height={isA4 ? 400 : format === 'vertical' ? 300 : 220}
                   />
                 )}
               </div>
-              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px' }}>
-                <span style={{ color: '#ffffff', fontSize: '28px', fontWeight: 700 }}>AJUDE A ENCONTRAR</span>
-                <span style={{ color: '#ffffff60', fontSize: '20px', fontWeight: 500 }}>Escaneie o código acima</span>
+              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: `${4 * scale}px` }}>
+                <span style={{ color: '#ffffff', fontSize: `${24 * scale}px`, fontWeight: 700 }}>AJUDE A ENCONTRAR</span>
+                <span style={{ color: '#ffffff60', fontSize: `${18 * scale}px`, fontWeight: 500 }}>Escaneie o código acima</span>
               </div>
             </div>
           </div>
 
-          {/* Footer Elegante */}
-          <div
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              padding: '40px 80px 60px',
-              background: effectiveTemplate === 'rich'
-                ? `linear-gradient(90deg, rgba(255, 215, 0, 0.05) 0%, rgba(255, 165, 0, 0.02) 100%)`
-                : 'rgba(0, 0, 0, 0.2)',
-              borderTop: effectiveTemplate === 'rich'
-                ? `1px solid ${richAccent}22`
-                : '1px solid rgba(255, 255, 255, 0.05)',
-              position: 'relative',
-              zIndex: 10,
-            }}
-          >
+          {/* Footer */}
+          <div style={{
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            padding: `${Math.round(30 * scale)}px ${sidePad}px ${Math.round(50 * scale)}px`,
+            background: isRich
+              ? `linear-gradient(90deg, rgba(255,215,0,0.05) 0%, rgba(255,165,0,0.02) 100%)`
+              : 'rgba(0,0,0,0.2)',
+            borderTop: isRich ? `1px solid ${richAccent}22` : '1px solid rgba(255,255,255,0.05)',
+            position: 'relative', zIndex: 10,
+          }}>
             <span style={{
-              color: effectiveTemplate === 'rich' ? richAccent : '#ffffff30',
-              fontSize: '24px',
-              fontWeight: 500,
-              letterSpacing: '1px'
+              color: isRich ? richAccent : '#ffffff30',
+              fontSize: `${22 * scale}px`, fontWeight: 500, letterSpacing: '1px',
             }}>
               {appUrl.replace('https://', '').toUpperCase()} · REDE GLOBAL DE RECUPERAÇÃO
             </span>
           </div>
         </div>
       ),
-      {
-        width,
-        height,
-      }
+      { width, height }
     );
 
-    // Adicionar header de download
     const headers = new Headers(imageResponse.headers);
     headers.set(
       'Content-Disposition',
@@ -530,8 +486,9 @@ export async function GET(
       status: imageResponse.status,
       headers,
     });
-  } catch (error: any) {
-    console.error('[poster] erro:', error);
-    return new Response(`Erro ao gerar cartaz: ${error?.message || 'Erro desconhecido'}`, { status: 500 });
+  } catch (error: unknown) {
+    const msg = error instanceof Error ? error.message : 'Erro desconhecido';
+    console.error('[poster] erro:', msg);
+    return new Response(`Erro ao gerar cartaz: ${msg}`, { status: 500 });
   }
 }

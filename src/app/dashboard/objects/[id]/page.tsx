@@ -575,6 +575,20 @@ export default function ObjectDetailPage() {
                   <Download className="w-3.5 h-3.5" />
                   Vertical (1080×1920)
                 </button>
+                <button
+                  onClick={() => {
+                    const url = objectsApi.getPosterUrl(id, 'a4');
+                    const link = document.createElement('a');
+                    link.href = url;
+                    link.download = `cartaz-${obj.unique_code}-a4.png`;
+                    link.click();
+                    toast.success('Pôster A4 baixado!');
+                  }}
+                  className="w-full flex items-center justify-center gap-2 bg-teal-500/10 hover:bg-teal-500/20 border border-teal-500/20 text-teal-400 hover:text-teal-300 text-xs font-medium py-2.5 rounded-lg transition-all"
+                >
+                  <Download className="w-3.5 h-3.5" />
+                  A4 Retrato — Impressão
+                </button>
               </div>
             </div>
 
