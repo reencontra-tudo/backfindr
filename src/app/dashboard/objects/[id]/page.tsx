@@ -626,7 +626,7 @@ export default function ObjectDetailPage() {
                       setPosterLoading(null);
                     }
                   }}
-                  className="w-full flex items-center justify-center gap-2 bg-teal-500/10 hover:bg-teal-500/20 border border-teal-500/20 text-teal-400 hover:text-teal-300 text-xs font-medium py-2.5 rounded-lg transition-all disabled:opacity-60 disabled:cursor-not-allowed"
+                  className="w-full flex items-center justify-center gap-2 bg-blue-500/10 hover:bg-blue-500/20 border border-blue-500/20 text-blue-400 hover:text-blue-300 text-xs font-medium py-2.5 rounded-lg transition-all disabled:opacity-60 disabled:cursor-not-allowed"
                 >
                   {posterLoading === 'a4'
                     ? <><Loader2 className="w-3.5 h-3.5 animate-spin" /> Gerando pôster…</>
