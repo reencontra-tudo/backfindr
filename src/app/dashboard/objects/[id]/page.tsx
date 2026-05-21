@@ -5,7 +5,7 @@ import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import {
   ChevronLeft, QrCode, MapPin, Calendar, Tag,
-  Share2, Trash2, Edit2, Download, CheckCircle2,
+  Share2, Trash2, Edit2, Download, ArrowDownToLine, CheckCircle2,
   AlertTriangle, Clock, Package, ExternalLink, Copy, Gift, Zap, Star, Info, Loader2
 } from 'lucide-react';
 import RecoveredCelebration from '@/components/RecoveredCelebration';
@@ -575,7 +575,7 @@ export default function ObjectDetailPage() {
                 >
                   {posterLoading === 'square'
                     ? <><Loader2 className="w-3.5 h-3.5 animate-spin" /> Gerando pôster…</>
-                    : <><Download className="w-3.5 h-3.5" /> Quadrado (1080×1080)</>}
+                    : <><ArrowDownToLine className="w-3.5 h-3.5" /> Quadrado (1080×1080)</>}
                 </button>
 
                 {/* Botão Vertical */}
@@ -607,7 +607,7 @@ export default function ObjectDetailPage() {
                 >
                   {posterLoading === 'vertical'
                     ? <><Loader2 className="w-3.5 h-3.5 animate-spin" /> Gerando pôster…</>
-                    : <><Download className="w-3.5 h-3.5" /> Vertical (1080×1920)</>}
+                    : <><ArrowDownToLine className="w-3.5 h-3.5" /> Vertical (1080×1920)</>}
                 </button>
 
                 {/* Botão A4 */}
@@ -639,7 +639,7 @@ export default function ObjectDetailPage() {
                 >
                   {posterLoading === 'a4'
                     ? <><Loader2 className="w-3.5 h-3.5 animate-spin" /> Gerando pôster…</>
-                    : <><Download className="w-3.5 h-3.5" /> A4 Retrato — Impressão</>}
+                    : <><ArrowDownToLine className="w-3.5 h-3.5" /> A4 Retrato — Impressão</>}
                 </button>
               </div>
             </div>
