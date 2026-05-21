@@ -188,7 +188,7 @@ export async function GET(
       const colGap = 80;
       const colW   = (width - pad * 2 - colGap) / 2;
       const headH  = 320;
-      const photoH = 1200;
+      const photoH = 900;
       const footH  = 280;
       const contentH = height - headH - footH;
 
@@ -340,7 +340,6 @@ export async function GET(
 
                 {/* QR Code + CTA */}
                 <div style={{
-                  marginTop: 'auto',
                   background: `${accent}10`,
                   border: `3px solid ${accent}44`,
                   borderRadius: '32px', padding: '48px',
