@@ -559,7 +559,10 @@ export default function ObjectDetailPage() {
                       const link = document.createElement('a');
                       link.href = blobUrl;
                       link.download = `cartaz-${obj.unique_code}-square.png`;
+                      link.style.display = 'none';
+                      document.body.appendChild(link);
                       link.click();
+                      document.body.removeChild(link);
                       URL.revokeObjectURL(blobUrl);
                       toast.success('Pôster quadrado baixado!');
                     } catch {
@@ -588,7 +591,10 @@ export default function ObjectDetailPage() {
                       const link = document.createElement('a');
                       link.href = blobUrl;
                       link.download = `cartaz-${obj.unique_code}-vertical.png`;
+                      link.style.display = 'none';
+                      document.body.appendChild(link);
                       link.click();
+                      document.body.removeChild(link);
                       URL.revokeObjectURL(blobUrl);
                       toast.success('Pôster vertical baixado!');
                     } catch {
@@ -617,7 +623,10 @@ export default function ObjectDetailPage() {
                       const link = document.createElement('a');
                       link.href = blobUrl;
                       link.download = `cartaz-${obj.unique_code}-a4.png`;
+                      link.style.display = 'none';
+                      document.body.appendChild(link);
                       link.click();
+                      document.body.removeChild(link);
                       URL.revokeObjectURL(blobUrl);
                       toast.success('Pôster A4 baixado!');
                     } catch {
