@@ -534,10 +534,8 @@ export default function ObjectDetailPage() {
             )}
           </div>
 
-          {/* ── Coluna direita — QR + ações ── */}
+          {/* ── Coluna direita — Pôster + QR + ações ── */}
           <div className="space-y-4">
-            <QRCodeDisplay code={obj.unique_code} title={obj.title} status={obj.status} />
-
             {/* Baixar Pôster */}
             <div className="glass rounded-2xl p-4 sm:p-5">
               <div className="flex items-center gap-2 mb-3">
@@ -636,6 +634,8 @@ export default function ObjectDetailPage() {
                 </button>
               </div>
             </div>
+
+            <QRCodeDisplay code={obj.unique_code} title={obj.title} status={obj.status} />
 
             {/* Atualizar status */}
             <div className="glass rounded-2xl p-4 sm:p-5">
