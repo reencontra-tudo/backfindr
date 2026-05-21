@@ -1,4 +1,3 @@
-'use server';
 import { NextRequest } from 'next/server';
 import { ImageResponse } from 'next/og';
 import { query } from '@/lib/db';
