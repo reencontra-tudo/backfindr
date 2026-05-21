@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import {
@@ -26,13 +26,39 @@ const NAV = [
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const router = useRouter();
-  const { user, isAuthenticated, logout } = useAuthStore();
+  const { user, isAuthenticated, logout, fetchMe } = useAuthStore();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [pendingMatches, setPendingMatches] = useState(0);
+  const [hydrated, setHydrated] = useState(false);
+  const initDone = useRef(false);
 
+  // Aguarda a reidratação do Zustand persist antes de redirecionar
   useEffect(() => {
-    if (!isAuthenticated) router.replace('/auth/login');
-  }, [isAuthenticated, router]);
+    const unsub = useAuthStore.persist.onFinishHydration(() => setHydrated(true));
+    // Se já hidratou (chamada síncrona no SSR/cliente rápido)
+    if (useAuthStore.persist.hasHydrated()) setHydrated(true);
+    return () => unsub();
+  }, []);
+
+  // Após hidratação: se não autenticado mas tem cookie, tenta renovar silenciosamente
+  useEffect(() => {
+    if (!hydrated || initDone.current) return;
+    initDone.current = true;
+    if (!isAuthenticated) {
+      const token = Cookies.get('access_token') || Cookies.get('refresh_token');
+      if (token) {
+        // Cookie existe — tenta restaurar sessão via fetchMe (o interceptor renova o JWT se necessário)
+        fetchMe().catch(() => router.replace('/auth/login'));
+      } else {
+        router.replace('/auth/login');
+      }
+    }
+  }, [hydrated, isAuthenticated, fetchMe, router]);
+
+  // Redireciona se perder autenticação após já estar hidratado
+  useEffect(() => {
+    if (hydrated && !isAuthenticated && initDone.current) router.replace('/auth/login');
+  }, [hydrated, isAuthenticated, router]);
 
   // Buscar contagem real de matches pendentes
   useEffect(() => {
@@ -55,6 +81,8 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   // Close sidebar on route change
   useEffect(() => { setSidebarOpen(false); }, [pathname]);
 
+  // Enquanto aguarda hidratação, não renderiza nada (evita flash de redirect)
+  if (!hydrated) return null;
   if (!isAuthenticated) return null;
 
   const initials = user?.name
