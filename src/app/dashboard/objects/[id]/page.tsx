@@ -6,10 +6,11 @@ import Link from 'next/link';
 import {
   ChevronLeft, QrCode, MapPin, Calendar, Tag,
   Share2, Trash2, Edit2, Download, CheckCircle2,
-  AlertTriangle, Clock, Package, ExternalLink, Copy, Gift, Zap, Star
+  AlertTriangle, Clock, Package, ExternalLink, Copy, Gift, Zap, Star, Info
 } from 'lucide-react';
 import RecoveredCelebration from '@/components/RecoveredCelebration';
 import LocationMap from '@/components/LocationMap';
+import BoostRenewalSuggestion from '@/components/BoostRenewalSuggestion';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
@@ -228,7 +229,7 @@ export default function ObjectDetailPage() {
   const [loading, setLoading] = useState(true);
   const [deleting, setDeleting] = useState(false);
   const [boostLoading, setBoostLoading] = useState<string | null>(null);
-  const [activeBoost, setActiveBoost] = useState<{ type: string; expires_at: string } | null>(null);
+  const [activeBoost, setActiveBoost] = useState<{ id: string; type: string; expires_at: string } | null>(null);
   const { open: openLightbox, close: closeLightbox, lightbox } = useLightbox();
 
   // Buscar boost ativo do objeto
@@ -650,6 +651,15 @@ export default function ObjectDetailPage() {
           )}
         </div>
       </div>
+
+      {/* ── Banner de renovação de boost ── */}
+      {activeBoost && (
+        <BoostRenewalSuggestion
+          objectId={id}
+          activeBoost={activeBoost}
+          onRenew={() => handleBoost(activeBoost.type as '7d' | '30d' | 'alert')}
+        />
+      )}
 
       {/* ── Modal de Celebração — Objeto Recuperado ── */}
       {showRecoveredModal && obj && (

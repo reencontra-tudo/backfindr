@@ -998,3 +998,13 @@ export async function sendPWAIncentiveEmail(user: { name: string; email: string 
     console.error('[email] Erro ao enviar incentivo PWA:', err);
   }
 }
+
+// ─── Função genérica sendEmail (usada pelo boost-expiration cron) ─────────────
+export async function sendEmail({ to, subject, html }: { to: string; subject: string; html: string }) {
+  try {
+    const { error } = await getResend().emails.send({ from: FROM, to: [to], subject, html });
+    if (error) console.error('[email] sendEmail error:', error);
+  } catch (err) {
+    console.error('[email] sendEmail exception:', err);
+  }
+}
