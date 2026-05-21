@@ -397,16 +397,20 @@ export default function ObjectDetailPage() {
             {obj.photos?.length > 0 && (
               <div className="glass rounded-2xl p-4 sm:p-5">
                 <h2 className="font-display font-semibold text-white text-sm mb-4">Fotos</h2>
-                <div className="grid grid-cols-3 gap-2 sm:gap-3">
+                <div className="flex gap-3 overflow-x-auto pb-1 scrollbar-hide">
                   {obj.photos.map((url, i) => (
-                    // eslint-disable-next-line @next/next/no-img-element
-                    <img
+                    <button
                       key={i}
-                      src={url}
-                      alt={`${obj.title} — foto ${i + 1}`}
                       onClick={() => openLightbox(obj.photos, i)}
-                      className="w-full aspect-square object-cover rounded-xl border border-surface-border cursor-zoom-in"
-                    />
+                      className="relative flex-shrink-0 w-32 h-32 rounded-xl overflow-hidden border border-surface-border hover:border-brand-500 transition-colors group"
+                    >
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img
+                        src={url}
+                        alt={`${obj.title} — foto ${i + 1}`}
+                        className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
+                      />
+                    </button>
                   ))}
                 </div>
               </div>
@@ -615,51 +619,62 @@ export default function ObjectDetailPage() {
 
             {/* Boost — apenas para perdidos/roubados */}
             {(obj.status === 'lost' || obj.status === 'stolen') && (
-              <div className="glass rounded-2xl p-4 sm:p-5 border border-orange-500/20 bg-orange-500/5">
-                <div className="flex items-center gap-2 mb-3">
-                  <Zap className="w-4 h-4 text-orange-400" />
-                  <h3 className="font-display font-semibold text-white text-sm">Boost — Aumentar visibilidade</h3>
+              <div className="relative overflow-hidden glass rounded-2xl p-4 sm:p-5 border border-amber-500/20 bg-amber-500/5 group">
+                {/* Ícone decorativo de fundo */}
+                <div className="absolute top-0 right-0 p-3 opacity-10 group-hover:opacity-20 transition-opacity pointer-events-none">
+                  <Zap className="w-20 h-20 text-amber-500" />
                 </div>
 
-                {activeBoost ? (
-                  <div className="flex items-center gap-2 bg-green-500/10 border border-green-500/20 rounded-xl px-3 py-2.5 mb-3">
-                    <Star className="w-4 h-4 text-green-400 flex-shrink-0" />
-                    <div>
-                      <p className="text-green-400 text-xs font-semibold">Boost ativo</p>
-                      <p className="text-white/50 text-xs">
-                        Expira em {new Date(activeBoost.expires_at).toLocaleDateString('pt-BR')}
-                      </p>
+                <div className="relative">
+                  <div className="flex items-center gap-2 mb-1">
+                    <div className="p-1.5 bg-gradient-to-br from-amber-500 to-orange-600 rounded-lg flex-shrink-0">
+                      <Zap className="w-3.5 h-3.5 text-white" />
                     </div>
+                    <h3 className="font-display font-bold text-white text-sm">Impulsionar Visibilidade</h3>
                   </div>
-                ) : (
-                  <p className="text-white/40 text-xs mb-3">
-                    Coloque sua publicação em destaque no mapa e no feed para mais pessoas verem.
+                  <p className="text-slate-400 text-xs mb-4 leading-relaxed">
+                    Destaque seu objeto no mapa e no feed para que mais pessoas o vejam.
                   </p>
-                )}
 
-                <div className="space-y-2">
-                  {([
-                    { type: '7d'    as const, label: 'Boost 7 dias',   price: 'R$ 9,90',  desc: 'Destaque por 7 dias' },
-                    { type: '30d'   as const, label: 'Boost 30 dias',  price: 'R$ 24,90', desc: 'Destaque por 30 dias + notificação' },
-                    { type: 'alert' as const, label: 'Alerta de Área', price: 'R$ 14,90', desc: 'Notificação para usuários próximos' },
-                  ]).map(b => (
-                    <button
-                      key={b.type}
-                      onClick={() => handleBoost(b.type)}
-                      disabled={boostLoading === b.type || !!activeBoost}
-                      className="w-full flex items-center justify-between px-3 py-2.5 rounded-lg text-sm border border-orange-500/20 bg-orange-500/5 hover:bg-orange-500/10 text-orange-300 hover:text-orange-200 disabled:opacity-40 disabled:cursor-not-allowed transition-all"
-                    >
-                      <div className="text-left min-w-0">
-                        <p className="font-medium text-xs">{b.label}</p>
-                        <p className="text-orange-400/60 text-xs truncate">{b.desc}</p>
+                  {activeBoost && (
+                    <div className="mb-4 px-3 py-2.5 bg-green-500/10 border border-green-500/20 rounded-xl flex items-center gap-3">
+                      <div className="relative flex h-2.5 w-2.5 flex-shrink-0">
+                        <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
+                        <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-green-500"></span>
                       </div>
-                      <span className="font-bold text-xs flex-shrink-0 ml-2">
-                        {boostLoading === b.type ? (
-                          <div className="w-3.5 h-3.5 border border-current/30 border-t-current rounded-full animate-spin" />
-                        ) : b.price}
-                      </span>
-                    </button>
-                  ))}
+                      <div>
+                        <p className="text-green-400 text-xs font-bold">Boost Ativo</p>
+                        <p className="text-slate-500 text-[10px]">
+                          Expira em {new Date(activeBoost.expires_at).toLocaleDateString('pt-BR')}
+                        </p>
+                      </div>
+                    </div>
+                  )}
+
+                  <div className="space-y-2">
+                    {([
+                      { type: '7d'    as const, label: '⚡ Boost 7 dias',   price: 'R$ 9,90',  desc: 'Destaque total por uma semana' },
+                      { type: '30d'   as const, label: '⭐ Boost 30 dias',  price: 'R$ 24,90', desc: 'Destaque mensal + notificações' },
+                      { type: 'alert' as const, label: '🔔 Alerta de Área', price: 'R$ 14,90', desc: 'Notificação para usuários próximos' },
+                    ]).map(b => (
+                      <button
+                        key={b.type}
+                        onClick={() => handleBoost(b.type)}
+                        disabled={boostLoading === b.type || !!activeBoost}
+                        className="w-full flex items-center justify-between p-3 rounded-xl bg-gradient-to-r from-slate-800 to-slate-900 border border-slate-700 hover:border-amber-500/50 disabled:opacity-40 disabled:cursor-not-allowed transition-all"
+                      >
+                        <div className="text-left min-w-0">
+                          <p className="text-white font-semibold text-xs">{b.label}</p>
+                          <p className="text-slate-500 text-[10px] truncate">{b.desc}</p>
+                        </div>
+                        <span className="text-amber-400 font-bold text-xs flex-shrink-0 ml-2">
+                          {boostLoading === b.type ? (
+                            <div className="w-3.5 h-3.5 border border-amber-400/30 border-t-amber-400 rounded-full animate-spin" />
+                          ) : b.price}
+                        </span>
+                      </button>
+                    ))}
+                  </div>
                 </div>
               </div>
             )}
