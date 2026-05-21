@@ -166,6 +166,17 @@ export async function GET(
     const richAccent = '#FFD700';
     const richGlow   = 'rgba(255, 215, 0, 0.3)';
     const isRich     = effectiveTemplate === 'rich';
+    const isPrint    = isA4; // A4 usa tema claro para economizar tinta
+
+    // Paleta dinâmica (escura para digital, clara para impressão)
+    const bg         = isPrint ? '#ffffff' : (isRich ? 'linear-gradient(135deg, #0a0e14 0%, #1a1f2a 100%)' : '#0a0e14');
+    const textPrimary   = isPrint ? '#111827' : '#ffffff';
+    const textSecondary = isPrint ? '#6b7280' : '#ffffff60';
+    const textMuted     = isPrint ? '#9ca3af' : '#ffffff30';
+    const cardBg        = isPrint ? '#f9fafb' : 'rgba(255,255,255,0.04)';
+    const cardBorder    = isPrint ? '#e5e7eb' : 'rgba(255,255,255,0.08)';
+    const photoBg       = isPrint ? '#f3f4f6' : (isRich ? 'rgba(255,215,0,0.1)' : 'rgba(255,255,255,0.05)');
+    const photoBorder   = isPrint ? '#e5e7eb' : (isRich ? `${richAccent}66` : 'rgba(255,255,255,0.1)');
 
     const imageResponse = new ImageResponse(
       (
@@ -173,9 +184,7 @@ export async function GET(
           style={{
             width: `${width}px`,
             height: `${height}px`,
-            background: isRich
-              ? 'linear-gradient(135deg, #0a0e14 0%, #1a1f2a 100%)'
-              : '#0a0e14',
+            background: bg,
             display: 'flex',
             flexDirection: 'column',
             position: 'relative',
@@ -188,16 +197,16 @@ export async function GET(
             position: 'absolute', top: '-200px', right: '-200px',
             width: `${800 * scale}px`, height: `${800 * scale}px`,
             borderRadius: '50%',
-            background: `radial-gradient(circle, ${statusCfg.bg}15 0%, transparent 70%)`,
+            background: isPrint ? 'transparent' : `radial-gradient(circle, ${statusCfg.bg}15 0%, transparent 70%)`,
             display: 'flex',
           }} />
           <div style={{
             position: 'absolute', bottom: '-100px', left: '-100px',
             width: `${600 * scale}px`, height: `${600 * scale}px`,
             borderRadius: '50%',
-            background: isRich
+            background: isPrint ? 'transparent' : (isRich
               ? `radial-gradient(circle, ${richGlow} 0%, transparent 70%)`
-              : `radial-gradient(circle, #14B8A610 0%, transparent 70%)`,
+              : `radial-gradient(circle, #14B8A610 0%, transparent 70%)`),
             display: 'flex',
           }} />
 
@@ -239,10 +248,10 @@ export async function GET(
                 📍
               </div>
               <div style={{ display: 'flex', flexDirection: 'column' }}>
-                <span style={{ color: '#ffffff', fontSize: `${36 * scale}px`, fontWeight: 800, letterSpacing: '-1px' }}>
+                <span style={{ color: textPrimary, fontSize: `${36 * scale}px`, fontWeight: 800, letterSpacing: '-1px' }}>
                   backfindr
                 </span>
-                <span style={{ color: '#ffffff60', fontSize: `${18 * scale}px`, fontWeight: 500 }}>
+                <span style={{ color: textSecondary, fontSize: `${18 * scale}px`, fontWeight: 500 }}>
                   {isRich ? 'Recuperação Premium' : 'Recuperação Inteligente'}
                 </span>
               </div>
@@ -266,15 +275,11 @@ export async function GET(
             height: `${photoH}px`,
             borderRadius: `${40 * scale}px`,
             padding: `${12 * scale}px`,
-            background: isRich
-              ? `linear-gradient(135deg, rgba(255,215,0,0.1) 0%, rgba(255,165,0,0.05) 100%)`
-              : 'rgba(255,255,255,0.05)',
-            border: isRich
-              ? `${2 * scale}px solid ${richAccent}66`
-              : `${1 * scale}px solid rgba(255,255,255,0.1)`,
-            boxShadow: isRich
+            background: photoBg,
+            border: `${isPrint ? 1 : (isRich ? 2 : 1) * scale}px solid ${photoBorder}`,
+            boxShadow: isPrint ? '0 4px 12px rgba(0,0,0,0.08)' : (isRich
               ? `0 30px 60px ${richGlow}, inset 0 0 30px ${richGlow}`
-              : '0 30px 60px rgba(0,0,0,0.5)',
+              : '0 30px 60px rgba(0,0,0,0.5)'),
             display: 'flex',
             position: 'relative',
             zIndex: 5,
@@ -338,7 +343,7 @@ export async function GET(
                 <div style={{ display: 'flex', alignItems: 'center', gap: `${12 * scale}px` }}>
                   <span style={{ fontSize: `${40 * scale}px` }}>{emoji}</span>
                   <span style={{
-                    color: isRich ? richAccent : '#14B8A6',
+                    color: isPrint ? '#0D9488' : (isRich ? richAccent : '#14B8A6'),
                     fontSize: `${22 * scale}px`, fontWeight: 700,
                     textTransform: 'uppercase', letterSpacing: '2px',
                   }}>
@@ -346,7 +351,7 @@ export async function GET(
                   </span>
                 </div>
                 <h1 style={{
-                  color: '#ffffff',
+                  color: textPrimary,
                   fontSize: format === 'a4' ? `${60 * scale}px` : format === 'vertical' ? `${60 * scale}px` : `${56 * scale}px`,
                   fontWeight: 900, lineHeight: 1.05, margin: 0, letterSpacing: '-1px',
                   display: 'flex',
@@ -358,14 +363,14 @@ export async function GET(
               {/* Descrição */}
               {descTrunc && (
                 <div style={{
-                  background: 'rgba(255,255,255,0.04)',
-                  border: '1px solid rgba(255,255,255,0.08)',
+                  background: cardBg,
+                  border: `1px solid ${cardBorder}`,
                   borderRadius: `${16 * scale}px`,
                   padding: `${16 * scale}px ${20 * scale}px`,
                   display: 'flex',
                 }}>
                   <p style={{
-                    color: '#ffffffcc',
+                    color: isPrint ? '#374151' : '#ffffffcc',
                     fontSize: `${26 * scale}px`,
                     lineHeight: 1.5, margin: 0, fontWeight: 400,
                     display: 'flex',
@@ -379,23 +384,23 @@ export async function GET(
               <div style={{
                 display: 'flex', flexDirection: 'column',
                 gap: `${12 * scale}px`,
-                background: 'rgba(255,255,255,0.03)',
-                border: isRich ? `1px solid ${richAccent}33` : '1px solid rgba(255,255,255,0.07)',
+                background: cardBg,
+                border: `1px solid ${cardBorder}`,
                 borderRadius: `${16 * scale}px`,
                 padding: `${16 * scale}px ${20 * scale}px`,
               }}>
                 {createdAt && (
                   <div style={{ display: 'flex', alignItems: 'center', gap: `${12 * scale}px` }}>
                     <span style={{ fontSize: `${22 * scale}px` }}>📅</span>
-                    <span style={{ color: '#ffffff60', fontSize: `${22 * scale}px`, fontWeight: 600 }}>Registrado em</span>
-                    <span style={{ color: '#ffffffcc', fontSize: `${22 * scale}px`, fontWeight: 700, marginLeft: 'auto' }}>{createdAt}</span>
+                    <span style={{ color: textSecondary, fontSize: `${22 * scale}px`, fontWeight: 600 }}>Registrado em</span>
+                    <span style={{ color: textPrimary, fontSize: `${22 * scale}px`, fontWeight: 700, marginLeft: 'auto' }}>{createdAt}</span>
                   </div>
                 )}
                 {address && (
                   <div style={{ display: 'flex', alignItems: 'flex-start', gap: `${12 * scale}px` }}>
                     <span style={{ fontSize: `${22 * scale}px`, flexShrink: 0 }}>📍</span>
-                    <span style={{ color: '#ffffff60', fontSize: `${22 * scale}px`, fontWeight: 600, flexShrink: 0 }}>Local</span>
-                    <span style={{ color: '#ffffffcc', fontSize: `${22 * scale}px`, fontWeight: 500, marginLeft: 'auto', textAlign: 'right' }}>{address}</span>
+                    <span style={{ color: textSecondary, fontSize: `${22 * scale}px`, fontWeight: 600, flexShrink: 0 }}>Local</span>
+                    <span style={{ color: textPrimary, fontSize: `${22 * scale}px`, fontWeight: 500, marginLeft: 'auto', textAlign: 'right' }}>{address}</span>
                   </div>
                 )}
               </div>
@@ -424,12 +429,12 @@ export async function GET(
             <div style={{
               display: 'flex', flexDirection: 'column', alignItems: 'center',
               gap: `${20 * scale}px`,
-              background: isRich
+              background: isPrint ? '#f0fdfa' : (isRich
                 ? `linear-gradient(135deg, rgba(255,215,0,0.08) 0%, rgba(255,165,0,0.04) 100%)`
-                : 'rgba(255,255,255,0.03)',
+                : 'rgba(255,255,255,0.03)'),
               padding: `${32 * scale}px`,
               borderRadius: `${32 * scale}px`,
-              border: isRich ? `1px solid ${richAccent}44` : '1px solid rgba(255,255,255,0.08)',
+              border: isPrint ? '2px solid #0D9488' : (isRich ? `1px solid ${richAccent}44` : '1px solid rgba(255,255,255,0.08)'),
               flexShrink: 0,
               alignSelf: format === 'square' ? 'flex-start' : 'center',
             }}>
@@ -448,8 +453,8 @@ export async function GET(
                 )}
               </div>
               <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: `${4 * scale}px` }}>
-                <span style={{ color: '#ffffff', fontSize: `${24 * scale}px`, fontWeight: 700 }}>AJUDE A ENCONTRAR</span>
-                <span style={{ color: '#ffffff60', fontSize: `${18 * scale}px`, fontWeight: 500 }}>Escaneie o código acima</span>
+                <span style={{ color: isPrint ? '#0D9488' : '#ffffff', fontSize: `${24 * scale}px`, fontWeight: 700 }}>AJUDE A ENCONTRAR</span>
+                <span style={{ color: isPrint ? '#6b7280' : '#ffffff60', fontSize: `${18 * scale}px`, fontWeight: 500 }}>Escaneie o código acima</span>
               </div>
             </div>
           </div>
@@ -458,14 +463,14 @@ export async function GET(
           <div style={{
             display: 'flex', alignItems: 'center', justifyContent: 'center',
             padding: `${Math.round(30 * scale)}px ${sidePad}px ${Math.round(50 * scale)}px`,
-            background: isRich
+            background: isPrint ? '#f9fafb' : (isRich
               ? `linear-gradient(90deg, rgba(255,215,0,0.05) 0%, rgba(255,165,0,0.02) 100%)`
-              : 'rgba(0,0,0,0.2)',
-            borderTop: isRich ? `1px solid ${richAccent}22` : '1px solid rgba(255,255,255,0.05)',
+              : 'rgba(0,0,0,0.2)'),
+            borderTop: isPrint ? '1px solid #e5e7eb' : (isRich ? `1px solid ${richAccent}22` : '1px solid rgba(255,255,255,0.05)'),
             position: 'relative', zIndex: 10,
           }}>
             <span style={{
-              color: isRich ? richAccent : '#ffffff30',
+              color: isPrint ? '#9ca3af' : (isRich ? richAccent : '#ffffff30'),
               fontSize: `${22 * scale}px`, fontWeight: 500, letterSpacing: '1px',
             }}>
               {appUrl.replace('https://', '').toUpperCase()} · REDE GLOBAL DE RECUPERAÇÃO
