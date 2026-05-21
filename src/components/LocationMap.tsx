@@ -30,15 +30,15 @@ export default function LocationMap({ lat, lng, title, address }: LocationMapPro
         interactive: false,
       });
 
-      // Marcador personalizado
+      // Marcador SVG inline — confiável em todos os browsers/mobile
       const el = document.createElement('div');
-      el.style.cssText = `
-        width: 32px; height: 32px;
-        background: #14b8a6;
-        border: 3px solid white;
-        border-radius: 50% 50% 50% 0;
-        transform: rotate(-45deg);
-        box-shadow: 0 2px 8px rgba(0,0,0,0.4);
+      el.style.cssText = 'width:36px;height:44px;cursor:default;';
+      el.innerHTML = `
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 36 44" width="36" height="44">
+          <path d="M18 0C8.06 0 0 8.06 0 18c0 13.5 18 26 18 26S36 31.5 36 18C36 8.06 27.94 0 18 0z"
+            fill="#14b8a6" stroke="white" stroke-width="2"/>
+          <circle cx="18" cy="18" r="7" fill="white"/>
+        </svg>
       `;
 
       new mapboxgl.default.Marker({ element: el, anchor: 'bottom' })
