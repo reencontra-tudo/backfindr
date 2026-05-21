@@ -13,7 +13,6 @@ const FORMATS = {
 
 type Format = keyof typeof FORMATS;
 
-// Configuração completa por status
 const STATUS_CONFIG: Record<string, {
   label: string; bg: string; color: string;
   headline: (cat: string) => string;
@@ -86,8 +85,7 @@ export async function GET(
         CASE 
           WHEN b.id IS NOT NULL AND b.status = 'active' AND b.expires_at > NOW() 
           THEN true ELSE false 
-        END as has_active_boost,
-        b.type as boost_type
+        END as has_active_boost
        FROM objects o
        LEFT JOIN boosts b ON o.id = b.object_id
        WHERE o.id::text = $1 OR o.qr_code = $1
@@ -104,7 +102,7 @@ export async function GET(
       status: string; category: string; qr_code: string;
       images: string | string[]; location: string | null;
       reward_amount: number | null; created_at: string;
-      has_active_boost: boolean; boost_type: string | null;
+      has_active_boost: boolean;
     };
 
     // Foto
@@ -129,8 +127,8 @@ export async function GET(
     const appUrl  = process.env.NEXT_PUBLIC_APP_URL ?? 'https://backfindr.com';
     const pageUrl = `${appUrl}/scan/${obj.qr_code}`;
     const isA4    = format === 'a4';
-    const qrSize  = isA4 ? 400 : 280;
-    const qrUrl   = `https://api.qrserver.com/v1/create-qr-code/?size=${qrSize}x${qrSize}&data=${encodeURIComponent(pageUrl)}&bgcolor=ffffff&color=111827&margin=10`;
+    const qrPx    = isA4 ? 360 : 240;
+    const qrUrl   = `https://api.qrserver.com/v1/create-qr-code/?size=${qrPx}x${qrPx}&data=${encodeURIComponent(pageUrl)}&bgcolor=ffffff&color=111827&margin=8`;
 
     const getBase64 = async (imageUrl: string) => {
       try {
@@ -138,8 +136,8 @@ export async function GET(
         if (!res.ok) return null;
         const buffer = await res.arrayBuffer();
         const base64 = Buffer.from(buffer).toString('base64');
-        const contentType = res.headers.get('content-type') || 'image/png';
-        return `data:${contentType};base64,${base64}`;
+        const ct = res.headers.get('content-type') || 'image/png';
+        return `data:${ct};base64,${base64}`;
       } catch { return null; }
     };
 
@@ -160,18 +158,26 @@ export async function GET(
       ? new Date(obj.created_at).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric' })
       : '';
 
-    const maxDesc  = isA4 ? 400 : 160;
-    const desc     = obj.description ?? '';
-    const descTrunc = desc.length > maxDesc ? desc.slice(0, maxDesc - 3) + '…' : desc;
+    const desc = obj.description ?? '';
 
     // ─────────────────────────────────────────────────────────────────────────
     // TEMPLATE 2 — MINIMAL CLEAN — A4 (2480×3508)
-    // Fundo branco, econômico em tinta, logo teal, headline thin+black,
-    // foto centralizada grande, chips de borda teal, QR centralizado no rodapé
+    // Layout: header (logo+badge) → headline → foto grande → info → rodapé QR
+    // Sem espaços mortos: cada seção tem altura calculada para preencher o canvas
     // ─────────────────────────────────────────────────────────────────────────
     if (format === 'a4') {
-      const pad    = 140;
-      const photoH = 1400;
+      const pad    = 160;
+      // Alturas fixas das seções não-foto
+      const headerH   = 180;   // logo + badge
+      const headlineH = 380;   // duas linhas headline
+      const dividerH  = 4;
+      const infoH     = 480;   // descrição + chips
+      const footerH   = 480;   // QR + CTA
+      const used = headerH + headlineH + dividerH + infoH + footerH + pad * 2 + 80 * 4; // 80 = gaps
+      const photoH = height - used;
+
+      const descTrunc = desc.length > 500 ? desc.slice(0, 497) + '…' : desc;
+      const addrShort = address.length > 50 ? address.slice(0, 47) + '…' : address;
 
       const imageResponse = new ImageResponse(
         (
@@ -181,150 +187,129 @@ export async function GET(
             display: 'flex', flexDirection: 'column',
             fontFamily: 'sans-serif', overflow: 'hidden',
           }}>
-            {/* ── Header: logo + badge de status ── */}
+            {/* ── Header ── */}
             <div style={{
               display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-              padding: `${pad}px ${pad}px 60px`,
+              padding: `${pad}px ${pad}px 0`,
+              height: `${headerH + pad}px`, flexShrink: 0,
             }}>
-              {/* Logo backfindr */}
-              <div style={{ display: 'flex', alignItems: 'center', gap: '24px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '28px' }}>
                 <div style={{
-                  width: '80px', height: '80px', borderRadius: '50%',
+                  width: '88px', height: '88px', borderRadius: '50%',
                   background: teal, display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  fontSize: '44px',
+                  fontSize: '48px',
                 }}>📍</div>
-                <span style={{ color: '#111827', fontSize: '56px', fontWeight: 800, letterSpacing: '-1px' }}>
+                <span style={{ color: '#111827', fontSize: '60px', fontWeight: 800, letterSpacing: '-1px' }}>
                   backfindr
                 </span>
               </div>
-              {/* Badge de status */}
               <div style={{
                 background: accent, borderRadius: '100px',
-                padding: '20px 56px', display: 'flex',
+                padding: '22px 64px', display: 'flex',
               }}>
-                <span style={{ color: '#ffffff', fontSize: '44px', fontWeight: 800, letterSpacing: '2px' }}>
+                <span style={{ color: '#ffffff', fontSize: '48px', fontWeight: 800, letterSpacing: '3px' }}>
                   {statusCfg.label}
                 </span>
               </div>
             </div>
 
-            {/* ── Headline: linha fina + linha ultra-bold ── */}
+            {/* ── Headline ── */}
             <div style={{
               display: 'flex', flexDirection: 'column',
-              padding: `0 ${pad}px 80px`,
-              gap: '0px',
+              padding: `60px ${pad}px 0`,
+              flexShrink: 0,
             }}>
               <span style={{
-                color: '#9ca3af',
-                fontSize: '120px',
-                fontWeight: 300,
-                letterSpacing: '-2px',
-                lineHeight: 1.0,
-                display: 'flex',
+                color: '#9ca3af', fontSize: '130px', fontWeight: 300,
+                letterSpacing: '-3px', lineHeight: 1.0, display: 'flex',
               }}>{headlineParts[0]}</span>
               <span style={{
-                color: '#111827',
-                fontSize: '160px',
-                fontWeight: 900,
-                letterSpacing: '-4px',
-                lineHeight: 0.9,
-                display: 'flex',
+                color: '#111827', fontSize: '180px', fontWeight: 900,
+                letterSpacing: '-5px', lineHeight: 0.88, display: 'flex',
               }}>{headlineParts[1] ?? ''}</span>
             </div>
 
-            {/* ── Foto centralizada com borda ── */}
+            {/* ── Foto ── */}
             <div style={{
-              margin: `0 ${pad}px`,
+              margin: `60px ${pad}px 0`,
               height: `${photoH}px`,
               border: '3px solid #e5e7eb',
-              borderRadius: '24px',
+              borderRadius: '32px',
               overflow: 'hidden',
               display: 'flex', alignItems: 'center', justifyContent: 'center',
-              background: '#f9fafb',
+              background: '#f3f4f6',
               flexShrink: 0,
             }}>
               {photoBase64 ? (
-                <img src={photoBase64} style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
+                <img src={photoBase64} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
               ) : (
-                <span style={{ fontSize: '240px' }}>{emoji}</span>
+                <span style={{ fontSize: '260px' }}>{emoji}</span>
               )}
             </div>
 
             {/* ── Linha divisória ── */}
             <div style={{
-              margin: `80px ${pad}px 60px`,
-              height: '2px',
-              background: '#e5e7eb',
-              display: 'flex',
+              margin: `60px ${pad}px 0`,
+              height: `${dividerH}px`, background: '#e5e7eb', display: 'flex', flexShrink: 0,
             }} />
 
-            {/* ── Seção inferior: descrição (esq) + chips data/local (dir) ── */}
+            {/* ── Info: título + descrição (esq) | chips data/local (dir) ── */}
             <div style={{
               display: 'flex', flexDirection: 'row',
-              padding: `0 ${pad}px`,
+              padding: `60px ${pad}px 0`,
               gap: '80px',
-              flex: 1,
+              height: `${infoH}px`,
+              flexShrink: 0,
             }}>
-              {/* Coluna esquerda: título + descrição */}
-              <div style={{
-                display: 'flex', flexDirection: 'column', gap: '24px',
-                width: '1000px', flexShrink: 0,
-              }}>
-                <span style={{ color: teal, fontSize: '32px', fontWeight: 700, letterSpacing: '3px', textTransform: 'uppercase', display: 'flex' }}>
-                  DESCRIÇÃO
+              {/* Esquerda */}
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '20px', flex: 1 }}>
+                <span style={{ color: teal, fontSize: '32px', fontWeight: 700, letterSpacing: '3px', display: 'flex' }}>
+                  {catLabel.toUpperCase()}
                 </span>
-                {descTrunc ? (
-                  <p style={{
-                    color: '#374151', fontSize: '40px', lineHeight: 1.6,
-                    margin: 0, fontWeight: 400, display: 'flex', flexWrap: 'wrap',
-                  }}>{descTrunc}</p>
-                ) : (
-                  <p style={{
-                    color: '#9ca3af', fontSize: '40px', lineHeight: 1.6,
-                    margin: 0, fontWeight: 400, display: 'flex',
-                  }}>Sem descrição adicional.</p>
+                <span style={{
+                  color: '#111827', fontSize: '64px', fontWeight: 800,
+                  lineHeight: 1.1, display: 'flex', flexWrap: 'wrap',
+                }}>{obj.title}</span>
+                {descTrunc && (
+                  <span style={{
+                    color: '#6b7280', fontSize: '38px', lineHeight: 1.5,
+                    display: 'flex', flexWrap: 'wrap',
+                  }}>{descTrunc}</span>
                 )}
               </div>
-
-              {/* Coluna direita: chips data + local */}
+              {/* Direita: chips */}
               <div style={{
                 display: 'flex', flexDirection: 'column', gap: '28px',
-                flex: 1,
+                width: '900px', flexShrink: 0, justifyContent: 'center',
               }}>
                 {createdAt && (
                   <div style={{
                     display: 'flex', alignItems: 'center', gap: '24px',
-                    border: `2px solid ${teal}`,
-                    borderRadius: '16px', padding: '28px 40px',
+                    border: `2px solid ${teal}`, borderRadius: '20px', padding: '28px 40px',
                   }}>
-                    <span style={{ fontSize: '48px', flexShrink: 0 }}>📅</span>
-                    <span style={{ color: '#111827', fontSize: '44px', fontWeight: 700 }}>{createdAt}</span>
+                    <span style={{ fontSize: '48px' }}>📅</span>
+                    <span style={{ color: '#111827', fontSize: '48px', fontWeight: 700 }}>{createdAt}</span>
                   </div>
                 )}
-                {address && (
+                {addrShort && (
                   <div style={{
                     display: 'flex', alignItems: 'center', gap: '24px',
-                    border: `2px solid ${teal}`,
-                    borderRadius: '16px', padding: '28px 40px',
+                    border: `2px solid ${teal}`, borderRadius: '20px', padding: '28px 40px',
                   }}>
                     <span style={{ fontSize: '48px', flexShrink: 0 }}>📍</span>
-                    <span style={{
-                      color: '#111827', fontSize: '40px', fontWeight: 700,
-                      display: 'flex', flexWrap: 'wrap',
-                    }}>{address.length > 40 ? address.slice(0, 37) + '…' : address}</span>
+                    <span style={{ color: '#111827', fontSize: '44px', fontWeight: 700, display: 'flex', flexWrap: 'wrap' }}>{addrShort}</span>
                   </div>
                 )}
                 {obj.reward_amount && obj.reward_amount > 0 && (
                   <div style={{
                     display: 'flex', alignItems: 'center', gap: '24px',
-                    border: `2px solid #F59E0B`,
-                    borderRadius: '16px', padding: '28px 40px',
+                    border: '2px solid #F59E0B', borderRadius: '20px', padding: '28px 40px',
                     background: '#fffbeb',
                   }}>
-                    <span style={{ fontSize: '48px', flexShrink: 0 }}>🏆</span>
+                    <span style={{ fontSize: '48px' }}>🏆</span>
                     <div style={{ display: 'flex', flexDirection: 'column' }}>
                       <span style={{ color: '#92400e', fontSize: '28px', fontWeight: 600 }}>Recompensa</span>
-                      <span style={{ color: '#b45309', fontSize: '44px', fontWeight: 900 }}>
+                      <span style={{ color: '#b45309', fontSize: '52px', fontWeight: 900 }}>
                         R$ {obj.reward_amount.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
                       </span>
                     </div>
@@ -333,26 +318,33 @@ export async function GET(
               </div>
             </div>
 
-            {/* ── Rodapé: QR centralizado + CTA ── */}
+            {/* ── Rodapé QR ── */}
             <div style={{
-              display: 'flex', flexDirection: 'column', alignItems: 'center',
+              display: 'flex', flexDirection: 'row', alignItems: 'center',
               padding: `60px ${pad}px ${pad}px`,
-              gap: '24px',
+              gap: '60px',
+              height: `${footerH}px`,
+              flexShrink: 0,
             }}>
               {qrBase64 && (
                 <div style={{
                   background: '#ffffff', border: '3px solid #e5e7eb',
-                  borderRadius: '20px', padding: '20px', display: 'flex',
+                  borderRadius: '24px', padding: '20px', display: 'flex', flexShrink: 0,
                 }}>
-                  <img src={qrBase64} style={{ width: '280px', height: '280px' }} />
+                  <img src={qrBase64} style={{ width: `${qrPx}px`, height: `${qrPx}px` }} />
                 </div>
               )}
-              <span style={{ color: '#374151', fontSize: '40px', fontWeight: 500 }}>
-                Escaneie para ajudar
-              </span>
-              <span style={{ color: '#9ca3af', fontSize: '34px' }}>
-                {appUrl.replace('https://', '')}
-              </span>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                <span style={{ color: accent, fontSize: '64px', fontWeight: 900, letterSpacing: '-1px', display: 'flex' }}>
+                  AJUDE A ENCONTRAR
+                </span>
+                <span style={{ color: '#374151', fontSize: '44px', lineHeight: 1.4, display: 'flex', flexWrap: 'wrap' }}>
+                  {statusCfg.cta}
+                </span>
+                <span style={{ color: '#9ca3af', fontSize: '36px' }}>
+                  {appUrl.replace('https://', '')}
+                </span>
+              </div>
             </div>
           </div>
         ),
@@ -366,13 +358,24 @@ export async function GET(
 
     // ─────────────────────────────────────────────────────────────────────────
     // TEMPLATE 3 — URGENT DARK — VERTICAL (1080×1920)
-    // Fundo dark #0d1117, foto hero com borda teal luminosa, linha vermelha,
-    // headline: primeira linha em vermelho, segunda em branco ultra-bold,
-    // descrição + data+local em linha, rodapé QR com CTA teal
+    // Layout: header → foto hero GRANDE → linha vermelha → headline → título →
+    //         descrição → data+local → rodapé QR (sem espaço morto)
     // ─────────────────────────────────────────────────────────────────────────
     if (format === 'vertical') {
-      const pad    = 56;
-      const photoH = 680;
+      const pad    = 52;
+      // Alturas fixas
+      const headerH  = 100;
+      const divH     = 3;
+      const headlineH = 240;  // duas linhas
+      const titleH   = 100;
+      const descH    = 120;
+      const metaH    = 72;
+      const footerH  = 220;
+      const gaps     = pad * 2 + 24 + 20 + 20 + 24 + 24; // espaçamentos entre seções
+      const photoH   = height - headerH - divH - headlineH - titleH - descH - metaH - footerH - gaps;
+
+      const descTrunc = desc.length > 140 ? desc.slice(0, 137) + '…' : desc;
+      const addrShort = address.length > 45 ? address.slice(0, 42) + '…' : address;
 
       const imageResponse = new ImageResponse(
         (
@@ -382,10 +385,11 @@ export async function GET(
             display: 'flex', flexDirection: 'column',
             fontFamily: 'sans-serif', overflow: 'hidden',
           }}>
-            {/* ── Header: logo + badge ── */}
+            {/* ── Header ── */}
             <div style={{
               display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-              padding: `${pad}px ${pad}px 32px`,
+              padding: `${pad}px ${pad}px 24px`,
+              height: `${headerH + pad}px`, flexShrink: 0,
             }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
                 <div style={{
@@ -405,7 +409,7 @@ export async function GET(
               </div>
             </div>
 
-            {/* ── Foto hero com borda teal luminosa ── */}
+            {/* ── Foto hero com borda teal ── */}
             <div style={{
               margin: `0 ${pad}px`,
               height: `${photoH}px`,
@@ -415,130 +419,114 @@ export async function GET(
               display: 'flex', alignItems: 'center', justifyContent: 'center',
               background: '#1a2030',
               flexShrink: 0,
-              boxShadow: `0 0 40px ${teal}44`,
             }}>
               {photoBase64 ? (
-                <img src={photoBase64} style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
+                <img src={photoBase64} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
               ) : (
                 <span style={{ fontSize: '180px' }}>{emoji}</span>
               )}
             </div>
 
-            {/* ── Linha vermelha separadora ── */}
+            {/* ── Linha vermelha ── */}
             <div style={{
-              margin: `32px ${pad}px 24px`,
-              height: '3px',
-              background: '#EF4444',
-              display: 'flex',
+              margin: `24px ${pad}px 0`,
+              height: `${divH}px`, background: '#EF4444', display: 'flex', flexShrink: 0,
             }} />
 
-            {/* ── Headline: linha 1 em vermelho, linha 2 em branco ── */}
+            {/* ── Headline ── */}
             <div style={{
-              padding: `0 ${pad}px`,
-              display: 'flex', flexDirection: 'column', gap: '0px',
+              padding: `20px ${pad}px 0`,
+              display: 'flex', flexDirection: 'column',
+              height: `${headlineH}px`, flexShrink: 0,
             }}>
               <span style={{
-                color: '#EF4444',
-                fontSize: '72px',
-                fontWeight: 900,
-                letterSpacing: '-1px',
-                lineHeight: 1.0,
-                display: 'flex',
+                color: '#EF4444', fontSize: '68px', fontWeight: 900,
+                letterSpacing: '-1px', lineHeight: 1.0, display: 'flex',
               }}>{headlineParts[0]}</span>
               <span style={{
-                color: '#ffffff',
-                fontSize: '108px',
-                fontWeight: 900,
-                letterSpacing: '-3px',
-                lineHeight: 0.9,
-                display: 'flex', flexWrap: 'wrap',
+                color: '#ffffff', fontSize: '100px', fontWeight: 900,
+                letterSpacing: '-3px', lineHeight: 0.92, display: 'flex', flexWrap: 'wrap',
               }}>{headlineParts[1] ?? ''}</span>
+            </div>
+
+            {/* ── Título do objeto ── */}
+            <div style={{
+              padding: `0 ${pad}px`,
+              height: `${titleH}px`, flexShrink: 0,
+              display: 'flex', alignItems: 'center',
+            }}>
+              <span style={{
+                color: '#ffffffdd', fontSize: '44px', fontWeight: 700,
+                lineHeight: 1.1, display: 'flex', flexWrap: 'wrap',
+              }}>{obj.title}</span>
             </div>
 
             {/* ── Descrição ── */}
             {descTrunc && (
               <div style={{
-                padding: `24px ${pad}px 0`,
-                display: 'flex',
+                padding: `0 ${pad}px`,
+                height: `${descH}px`, flexShrink: 0,
+                display: 'flex', alignItems: 'flex-start',
               }}>
-                <p style={{
-                  color: '#ffffffcc', fontSize: '32px', lineHeight: 1.5,
-                  margin: 0, fontWeight: 400, display: 'flex', flexWrap: 'wrap',
-                }}>{descTrunc}</p>
+                <span style={{
+                  color: '#ffffff99', fontSize: '30px', lineHeight: 1.5,
+                  display: 'flex', flexWrap: 'wrap',
+                }}>{descTrunc}</span>
               </div>
             )}
 
-            {/* ── Data + Local em linha ── */}
+            {/* ── Data + Local ── */}
             <div style={{
               padding: `20px ${pad}px 0`,
-              display: 'flex', flexDirection: 'row', gap: '20px', flexWrap: 'wrap',
+              display: 'flex', flexDirection: 'row', gap: '24px', alignItems: 'center',
+              height: `${metaH}px`, flexShrink: 0,
             }}>
               {createdAt && (
-                <div style={{
-                  display: 'flex', alignItems: 'center', gap: '12px',
-                }}>
-                  <span style={{ fontSize: '28px' }}>📅</span>
-                  <span style={{ color: '#ffffffaa', fontSize: '28px' }}>{createdAt}</span>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                  <span style={{ fontSize: '26px' }}>📅</span>
+                  <span style={{ color: '#ffffffaa', fontSize: '28px', fontWeight: 600 }}>{createdAt}</span>
                 </div>
               )}
-              {address && (
+              {addrShort && (
                 <>
-                  <span style={{ color: '#ffffff30', fontSize: '28px', display: 'flex', alignItems: 'center' }}>|</span>
-                  <div style={{
-                    display: 'flex', alignItems: 'center', gap: '12px',
-                  }}>
-                    <span style={{ fontSize: '28px', flexShrink: 0 }}>📍</span>
-                    <span style={{ color: '#ffffffaa', fontSize: '28px' }}>
-                      {address.length > 40 ? address.slice(0, 37) + '…' : address}
-                    </span>
+                  <span style={{ color: '#ffffff25', fontSize: '28px' }}>|</span>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flex: 1 }}>
+                    <span style={{ fontSize: '26px', flexShrink: 0 }}>📍</span>
+                    <span style={{ color: '#ffffffaa', fontSize: '28px', fontWeight: 600 }}>{addrShort}</span>
                   </div>
                 </>
               )}
             </div>
 
-            {/* Spacer */}
-            <div style={{ flex: 1, display: 'flex' }} />
-
-            {/* ── Rodapé: QR + CTA ── */}
+            {/* ── Rodapé QR ── */}
             <div style={{
-              margin: `0 ${pad}px ${pad}px`,
-              background: 'rgba(20,184,166,0.08)',
+              margin: `24px ${pad}px ${pad}px`,
+              background: `rgba(20,184,166,0.10)`,
               border: `2px solid ${teal}55`,
               borderRadius: '20px',
-              padding: '28px 32px',
-              display: 'flex', flexDirection: 'row', alignItems: 'center', gap: '28px',
+              padding: '24px 28px',
+              display: 'flex', flexDirection: 'row', alignItems: 'center', gap: '24px',
+              flex: 1,
             }}>
               {qrBase64 && (
                 <div style={{
                   background: '#ffffff', borderRadius: '12px',
                   padding: '10px', display: 'flex', flexShrink: 0,
                 }}>
-                  <img src={qrBase64} style={{ width: '160px', height: '160px' }} />
+                  <img src={qrBase64} style={{ width: `${qrPx}px`, height: `${qrPx}px` }} />
                 </div>
               )}
               <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', flex: 1 }}>
-                <span style={{
-                  color: teal, fontSize: '36px', fontWeight: 900,
-                  display: 'flex', flexWrap: 'wrap',
-                }}>AJUDE A ENCONTRAR</span>
+                <span style={{ color: teal, fontSize: '34px', fontWeight: 900, display: 'flex', flexWrap: 'wrap' }}>
+                  AJUDE A ENCONTRAR
+                </span>
                 <span style={{ color: '#ffffffcc', fontSize: '26px', lineHeight: 1.4, display: 'flex', flexWrap: 'wrap' }}>
                   {statusCfg.cta}
                 </span>
-                <span style={{ color: teal, fontSize: '22px', marginTop: '4px' }}>
+                <span style={{ color: teal, fontSize: '22px' }}>
                   {appUrl.replace('https://', '')}
                 </span>
               </div>
-            </div>
-
-            {/* ── Rodapé inferior ── */}
-            <div style={{
-              display: 'flex', alignItems: 'center', justifyContent: 'center',
-              padding: `16px ${pad}px`,
-              borderTop: '1px solid rgba(255,255,255,0.08)',
-            }}>
-              <span style={{ color: '#ffffff30', fontSize: '22px', letterSpacing: '2px' }}>
-                {appUrl.replace('https://', '').toUpperCase()} · REDE GLOBAL DE RECUPERAÇÃO
-              </span>
             </div>
           </div>
         ),
@@ -552,16 +540,17 @@ export async function GET(
 
     // ─────────────────────────────────────────────────────────────────────────
     // TEMPLATE 1 — BOLD IMPACT — QUADRADO (1080×1080)
-    // Faixa colorida (cor do status) no topo com headline enorme branca,
-    // corpo branco com foto (esq) + dados (dir),
-    // rodapé teal com QR e CTA "AJUDE A ENCONTRAR"
+    // Layout: faixa colorida com headline (topo, ~35%) → corpo branco com
+    //         foto grande (esq) + título+dados (dir) → rodapé teal com QR
     // ─────────────────────────────────────────────────────────────────────────
-    // format === 'square'
-    const pad      = 48;
-    const topH     = 340;
-    const bodyH    = 480;
-    const footH    = 260;
-    const photoW   = 380;
+    const topH    = 340;   // faixa colorida
+    const footH   = 240;   // rodapé teal
+    const bodyH   = height - topH - footH;  // 500px para foto+dados
+    const pad     = 40;
+    const photoW  = 420;
+
+    const descShort = desc.length > 100 ? desc.slice(0, 97) + '…' : desc;
+    const addrShort = address.length > 32 ? address.slice(0, 29) + '…' : address;
 
     const imageResponse = new ImageResponse(
       (
@@ -571,7 +560,7 @@ export async function GET(
           display: 'flex', flexDirection: 'column',
           fontFamily: 'sans-serif', overflow: 'hidden',
         }}>
-          {/* ── Faixa colorida no topo ── */}
+          {/* ── Faixa colorida com headline ── */}
           <div style={{
             width: '100%', height: `${topH}px`,
             background: accent,
@@ -581,20 +570,12 @@ export async function GET(
             flexShrink: 0,
           }}>
             <span style={{
-              color: '#ffffff',
-              fontSize: '88px',
-              fontWeight: 900,
-              letterSpacing: '-2px',
-              lineHeight: 1.0,
-              display: 'flex',
+              color: '#ffffff', fontSize: '84px', fontWeight: 900,
+              letterSpacing: '-2px', lineHeight: 1.0, display: 'flex',
             }}>{headlineParts[0]}</span>
             <span style={{
-              color: '#ffffff',
-              fontSize: '108px',
-              fontWeight: 900,
-              letterSpacing: '-3px',
-              lineHeight: 0.9,
-              display: 'flex', flexWrap: 'wrap',
+              color: '#ffffff', fontSize: '104px', fontWeight: 900,
+              letterSpacing: '-3px', lineHeight: 0.9, display: 'flex', flexWrap: 'wrap',
             }}>{headlineParts[1] ?? ''}</span>
           </div>
 
@@ -617,7 +598,7 @@ export async function GET(
               flexShrink: 0,
             }}>
               {photoBase64 ? (
-                <img src={photoBase64} style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
+                <img src={photoBase64} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
               ) : (
                 <span style={{ fontSize: '120px' }}>{emoji}</span>
               )}
@@ -625,86 +606,86 @@ export async function GET(
 
             {/* Dados */}
             <div style={{
-              display: 'flex', flexDirection: 'column', justifyContent: 'center',
-              gap: '20px', flex: 1,
+              display: 'flex', flexDirection: 'column', justifyContent: 'space-between',
+              flex: 1, overflow: 'hidden',
             }}>
-              {/* Categoria */}
-              <span style={{
-                color: teal, fontSize: '26px', fontWeight: 700,
-                letterSpacing: '2px', textTransform: 'uppercase', display: 'flex',
-              }}>{catLabel}</span>
-
-              {/* Título */}
-              <span style={{
-                color: '#111827', fontSize: '44px', fontWeight: 800,
-                lineHeight: 1.1, display: 'flex', flexWrap: 'wrap',
-              }}>{obj.title}</span>
-
-              {/* Descrição curta */}
-              {descTrunc && (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
                 <span style={{
-                  color: '#6b7280', fontSize: '28px', lineHeight: 1.4,
-                  display: 'flex', flexWrap: 'wrap',
-                }}>{descTrunc.length > 80 ? descTrunc.slice(0, 77) + '…' : descTrunc}</span>
-              )}
-
-              {/* Data */}
-              {createdAt && (
-                <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                  <span style={{ fontSize: '28px' }}>📅</span>
-                  <span style={{ color: '#374151', fontSize: '32px', fontWeight: 700 }}>{createdAt}</span>
-                </div>
-              )}
-
-              {/* Local */}
-              {address && (
-                <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                  <span style={{ fontSize: '28px', flexShrink: 0 }}>📍</span>
-                  <span style={{ color: '#374151', fontSize: '30px', fontWeight: 700, display: 'flex', flexWrap: 'wrap' }}>
-                    {address.length > 35 ? address.slice(0, 32) + '…' : address}
-                  </span>
-                </div>
-              )}
+                  color: teal, fontSize: '24px', fontWeight: 700,
+                  letterSpacing: '2px', textTransform: 'uppercase', display: 'flex',
+                }}>{catLabel}</span>
+                <span style={{
+                  color: '#111827', fontSize: '44px', fontWeight: 800,
+                  lineHeight: 1.1, display: 'flex', flexWrap: 'wrap',
+                }}>{obj.title}</span>
+                {descShort && (
+                  <span style={{
+                    color: '#6b7280', fontSize: '26px', lineHeight: 1.4,
+                    display: 'flex', flexWrap: 'wrap',
+                  }}>{descShort}</span>
+                )}
+              </div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                {createdAt && (
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                    <span style={{ fontSize: '26px' }}>📅</span>
+                    <span style={{ color: '#374151', fontSize: '30px', fontWeight: 700 }}>{createdAt}</span>
+                  </div>
+                )}
+                {addrShort && (
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                    <span style={{ fontSize: '26px', flexShrink: 0 }}>📍</span>
+                    <span style={{ color: '#374151', fontSize: '28px', fontWeight: 700, display: 'flex', flexWrap: 'wrap' }}>{addrShort}</span>
+                  </div>
+                )}
+                {obj.reward_amount && obj.reward_amount > 0 && (
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                    <span style={{ fontSize: '26px' }}>🏆</span>
+                    <span style={{ color: '#b45309', fontSize: '30px', fontWeight: 800 }}>
+                      Recompensa: R$ {obj.reward_amount.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                    </span>
+                  </div>
+                )}
+              </div>
             </div>
           </div>
 
-          {/* ── Rodapé teal: QR + CTA + logo ── */}
+          {/* ── Rodapé teal ── */}
           <div style={{
             flex: 1,
             background: teal,
             display: 'flex', flexDirection: 'row', alignItems: 'center',
             padding: `0 ${pad}px`,
-            gap: '28px',
+            gap: '24px',
           }}>
             {qrBase64 && (
               <div style={{
                 background: '#ffffff', borderRadius: '12px',
-                padding: '10px', display: 'flex', flexShrink: 0,
+                padding: '8px', display: 'flex', flexShrink: 0,
               }}>
-                <img src={qrBase64} style={{ width: '140px', height: '140px' }} />
+                <img src={qrBase64} style={{ width: `${qrPx}px`, height: `${qrPx}px` }} />
               </div>
             )}
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', flex: 1 }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', flex: 1 }}>
               <span style={{
-                color: '#ffffff', fontSize: '44px', fontWeight: 900,
+                color: '#ffffff', fontSize: '42px', fontWeight: 900,
                 letterSpacing: '-1px', display: 'flex', flexWrap: 'wrap',
               }}>AJUDE A ENCONTRAR</span>
-              <span style={{ color: '#ffffffcc', fontSize: '26px', display: 'flex', flexWrap: 'wrap' }}>
+              <span style={{ color: '#ffffffdd', fontSize: '24px', display: 'flex', flexWrap: 'wrap' }}>
                 {statusCfg.cta}
               </span>
             </div>
-            {/* Logo backfindr no canto */}
             <div style={{
               display: 'flex', flexDirection: 'column', alignItems: 'center',
-              gap: '6px', flexShrink: 0,
+              gap: '4px', flexShrink: 0,
             }}>
               <div style={{
-                width: '48px', height: '48px', borderRadius: '50%',
+                width: '44px', height: '44px', borderRadius: '50%',
                 background: 'rgba(255,255,255,0.2)',
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
-                fontSize: '26px',
+                fontSize: '24px',
               }}>📍</div>
-              <span style={{ color: '#ffffffcc', fontSize: '20px', fontWeight: 700 }}>backfindr</span>
+              <span style={{ color: '#ffffffcc', fontSize: '18px', fontWeight: 700 }}>backfindr</span>
             </div>
           </div>
         </div>
