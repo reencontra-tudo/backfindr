@@ -2,9 +2,11 @@
 
 import { useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { CheckCircle, ArrowRight, Loader2 } from "lucide-react";
+import { CheckCircle, ArrowRight, Loader2, Download, Share2 } from "lucide-react";
 import Link from "next/link";
 import { Suspense } from "react";
+import { toast } from "sonner";
+import Cookies from "js-cookie";
 
 const PLAN_NAMES: Record<string, string> = { pro: "Pro", business: "Business" };
 const BOOST_NAMES: Record<string, string> = {
@@ -20,12 +22,51 @@ function SuccessContent() {
   const searchParams = useSearchParams();
   const type = searchParams.get("type");
   const ref  = searchParams.get("ref");
+  const objectId = searchParams.get("object_id");
 
   const [checking, setChecking] = useState(true);
   const [planConfirmed, setPlanConfirmed] = useState(false);
+  const [boostData, setBoostData] = useState<any>(null);
+  const [objectData, setObjectData] = useState<any>(null);
 
   // Verificar se o plano foi ativado (polling por até 15s)
   useEffect(() => {
+    if (type === "boost" && objectId) {
+      // Verificar boost ativado
+      let attempts = 0;
+      const maxAttempts = 10;
+
+      const checkBoost = async () => {
+        try {
+          const token = Cookies.get("access_token");
+          if (!token) { setChecking(false); return; }
+
+          const res = await fetch(`/api/v1/boost?object_id=${objectId}`, {
+            headers: { Authorization: `Bearer ${token}` },
+          });
+          if (res.ok) {
+            const data = await res.json();
+            if (data.data?.active_boost) {
+              setBoostData(data.data.active_boost);
+              setPlanConfirmed(true);
+              setChecking(false);
+              return;
+            }
+          }
+        } catch { /* ignorar */ }
+
+        attempts++;
+        if (attempts < maxAttempts) {
+          setTimeout(checkBoost, 3000);
+        } else {
+          setChecking(false);
+        }
+      };
+
+      setTimeout(checkBoost, 3000);
+      return;
+    }
+
     if (type !== "plan") {
       setChecking(false);
       return;
@@ -61,15 +102,87 @@ function SuccessContent() {
     };
 
     setTimeout(check, 3000); // aguardar 3s para o webhook processar
-  }, [type, ref]);
+  }, [type, ref, objectId]);
 
-  // Redirecionar para dashboard após 8 segundos
+  // Redirecionar para dashboard após 8 segundos (apenas para planos)
   useEffect(() => {
-    const timer = setTimeout(() => {
-      router.push("/dashboard/billing");
-    }, 8000);
-    return () => clearTimeout(timer);
-  }, [router]);
+    if (type === "plan") {
+      const timer = setTimeout(() => {
+        router.push("/dashboard/billing");
+      }, 8000);
+      return () => clearTimeout(timer);
+    }
+  }, [router, type]);
+
+  // Buscar dados do objeto para boost
+  useEffect(() => {
+    if (type === "boost" && objectId) {
+      const fetchObjectData = async () => {
+        try {
+          const token = Cookies.get("access_token");
+          if (!token) return;
+
+          const res = await fetch(`/api/v1/objects/${objectId}`, {
+            headers: { Authorization: `Bearer ${token}` },
+          });
+          if (res.ok) {
+            const data = await res.json();
+            setObjectData(data.data || data);
+          }
+        } catch { /* ignorar */ }
+      };
+
+      fetchObjectData();
+    }
+  }, [type, objectId]);
+
+  const downloadPoster = async () => {
+    try {
+      const format = "vertical";
+      const response = await fetch(
+        `/api/v1/objects/${objectId}/poster?format=${format}&template=rich`,
+        { method: "GET" }
+      );
+
+      if (!response.ok) throw new Error("Erro ao baixar pôster");
+
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `cartaz-${objectData?.qr_code || "backfindr"}-${format}-rich.png`;
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
+
+      toast.success("Pôster baixado com sucesso!");
+    } catch (err) {
+      console.error("Erro ao baixar pôster:", err);
+      toast.error("Erro ao baixar pôster");
+    }
+  };
+
+  const sharePoster = () => {
+    if (!objectData?.qr_code) {
+      toast.error("Dados do objeto não disponíveis");
+      return;
+    }
+
+    const scanUrl = `${process.env.NEXT_PUBLIC_APP_URL || "https://backfindr.com"}/scan/${objectData.qr_code}`;
+    const message = `Encontrei um objeto perdido! Ajude a encontrar o dono: ${scanUrl}`;
+
+    if (navigator.share) {
+      navigator.share({
+        title: "Backfindr - Objeto Perdido",
+        text: message,
+        url: scanUrl,
+      }).catch(() => {});
+    } else {
+      navigator.clipboard.writeText(message);
+      toast.success("Link copiado para compartilhar!");
+    }
+  };
 
   const getMessage = () => {
     if (type === "plan") {
@@ -148,7 +261,27 @@ function SuccessContent() {
           </div>
         )}
 
-        {type !== "plan" && (
+        {type === "boost" && (
+          <div className="bg-gray-900 border border-gray-800 rounded-xl p-4">
+            {checking ? (
+              <div className="flex items-center justify-center gap-2 text-gray-400 text-sm">
+                <Loader2 className="w-4 h-4 animate-spin" />
+                Ativando seu boost...
+              </div>
+            ) : planConfirmed ? (
+              <div className="flex items-center justify-center gap-2 text-emerald-400 text-sm">
+                <CheckCircle className="w-4 h-4" />
+                Boost confirmado no sistema
+              </div>
+            ) : (
+              <p className="text-sm text-gray-400">
+                Processando seu pagamento...
+              </p>
+            )}
+          </div>
+        )}
+
+        {type !== "plan" && type !== "boost" && (
           <div className="bg-gray-900 border border-gray-800 rounded-xl p-4">
             <p className="text-sm text-gray-500">
               Você será redirecionado automaticamente em alguns segundos...
@@ -158,19 +291,46 @@ function SuccessContent() {
 
         {/* Ações */}
         <div className="flex flex-col gap-3">
-          <Link
-            href="/dashboard/billing"
-            className="flex items-center justify-center gap-2 bg-emerald-500 hover:bg-emerald-400 text-black font-semibold py-3 px-6 rounded-xl transition-colors"
-          >
-            Ver meu plano
-            <ArrowRight className="w-4 h-4" />
-          </Link>
-          <Link
-            href="/dashboard"
-            className="text-gray-500 hover:text-gray-300 text-sm transition-colors"
-          >
-            Ir para o Dashboard
-          </Link>
+          {type === "boost" && objectId ? (
+            <>
+              <button
+                onClick={downloadPoster}
+                className="flex items-center justify-center gap-2 bg-blue-500 hover:bg-blue-600 text-white font-semibold py-3 px-6 rounded-xl transition-colors"
+              >
+                <Download className="w-4 h-4" />
+                Baixar Pôster
+              </button>
+              <button
+                onClick={sharePoster}
+                className="flex items-center justify-center gap-2 bg-purple-500 hover:bg-purple-600 text-white font-semibold py-3 px-6 rounded-xl transition-colors"
+              >
+                <Share2 className="w-4 h-4" />
+                Compartilhar
+              </button>
+              <Link
+                href={`/dashboard/objects/${objectId}`}
+                className="text-gray-500 hover:text-gray-300 text-sm transition-colors"
+              >
+                Voltar ao objeto
+              </Link>
+            </>
+          ) : (
+            <>
+              <Link
+                href="/dashboard/billing"
+                className="flex items-center justify-center gap-2 bg-emerald-500 hover:bg-emerald-400 text-black font-semibold py-3 px-6 rounded-xl transition-colors"
+              >
+                Ver meu plano
+                <ArrowRight className="w-4 h-4" />
+              </Link>
+              <Link
+                href="/dashboard"
+                className="text-gray-500 hover:text-gray-300 text-sm transition-colors"
+              >
+                Ir para o Dashboard
+              </Link>
+            </>
+          )}
         </div>
       </div>
     </div>

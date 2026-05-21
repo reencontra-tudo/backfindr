@@ -27,22 +27,32 @@ const CATEGORY_EMOJI: Record<string, string> = {
   electronics: '💻', clothing: '👕', other: '📦',
 };
 
-// GET /api/v1/objects/[id]/poster?format=square|vertical
+// GET /api/v1/objects/[id]/poster?format=square|vertical&template=simple|rich
 export async function GET(
   request: NextRequest,
   { params }: { params: { id: string } }
 ) {
   try {
-    const url    = new URL(request.url);
-    const format = (url.searchParams.get('format') ?? 'square') as Format;
+    const url      = new URL(request.url);
+    const format   = (url.searchParams.get('format') ?? 'square') as Format;
+    const template = (url.searchParams.get('template') ?? 'simple') as 'simple' | 'rich';
     const { width, height } = FORMATS[format] ?? FORMATS.square;
 
     // Buscar objeto no banco
     const result = await query(
-      `SELECT id, title, description, status, category, qr_code, images,
-              location, reward_amount
-       FROM objects
-       WHERE id::text = $1 OR qr_code = $1`,
+      `SELECT 
+        o.id, o.title, o.description, o.status, o.category, o.qr_code, o.images,
+        o.location, o.reward_amount,
+        CASE 
+          WHEN b.id IS NOT NULL AND b.status = 'active' AND b.expires_at > NOW() 
+          THEN true 
+          ELSE false 
+        END as has_active_boost,
+        b.type as boost_type
+       FROM objects o
+       LEFT JOIN boosts b ON o.id = b.object_id
+       WHERE o.id::text = $1 OR o.qr_code = $1
+       LIMIT 1`,
       [params.id]
     );
 
@@ -60,7 +70,12 @@ export async function GET(
       images: string | string[];
       location: string | null;
       reward_amount: number | null;
+      has_active_boost: boolean;
+      boost_type: string | null;
     };
+
+    // Determinar template automaticamente se houver boost ativo
+    const effectiveTemplate = obj.has_active_boost ? 'rich' : template;
 
     // Foto do objeto
     let photos: string[] = [];
@@ -71,7 +86,6 @@ export async function GET(
         if (obj.images.startsWith('[') || obj.images.startsWith('{')) {
           photos = JSON.parse(obj.images);
         } else if (obj.images.trim() !== '') {
-          // Trata como uma única URL se não for JSON
           photos = [obj.images.trim()];
         }
       }
@@ -126,6 +140,11 @@ export async function GET(
     const isVertical = format === 'vertical';
     const photoH     = isVertical ? 700 : 480;
 
+    // Cores para template rich
+    const richBg = 'linear-gradient(135deg, #0a0e14 0%, #1a1f2a 100%)';
+    const richAccent = '#FFD700'; // Ouro para premium
+    const richGlow = 'rgba(255, 215, 0, 0.3)';
+
     // ─── Layout do cartaz ────────────────────────────────────────────────────
     const imageResponse = new ImageResponse(
       (
@@ -133,7 +152,7 @@ export async function GET(
           style={{
             width: `${width}px`,
             height: `${height}px`,
-            background: '#0a0e14',
+            background: effectiveTemplate === 'rich' ? richBg : '#0a0e14',
             display: 'flex',
             flexDirection: 'column',
             position: 'relative',
@@ -162,10 +181,38 @@ export async function GET(
               width: '600px',
               height: '600px',
               borderRadius: '300px',
-              background: `radial-gradient(circle, #14B8A610 0%, transparent 70%)`,
+              background: effectiveTemplate === 'rich' 
+                ? `radial-gradient(circle, ${richGlow} 0%, transparent 70%)`
+                : `radial-gradient(circle, #14B8A610 0%, transparent 70%)`,
               display: 'flex',
             }}
           />
+
+          {/* Badge de Premium (apenas para Rich) */}
+          {effectiveTemplate === 'rich' && (
+            <div
+              style={{
+                position: 'absolute',
+                top: '40px',
+                right: '40px',
+                background: `linear-gradient(135deg, ${richAccent} 0%, #FFA500 100%)`,
+                color: '#0a0e14',
+                padding: '12px 32px',
+                borderRadius: '50px',
+                fontSize: '20px',
+                fontWeight: 900,
+                zIndex: 20,
+                boxShadow: `0 10px 30px ${richGlow}`,
+                textTransform: 'uppercase',
+                letterSpacing: '2px',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '8px',
+              }}
+            >
+              ⭐ IMPULSIONADO
+            </div>
+          )}
 
           {/* Header com Glassmorphism */}
           <div
@@ -182,13 +229,17 @@ export async function GET(
               <div
                 style={{
                   width: '64px', height: '64px',
-                  background: 'linear-gradient(135deg, #14B8A6 0%, #0D9488 100%)',
+                  background: effectiveTemplate === 'rich'
+                    ? `linear-gradient(135deg, ${richAccent} 0%, #FFA500 100%)`
+                    : 'linear-gradient(135deg, #14B8A6 0%, #0D9488 100%)',
                   borderRadius: '18px',
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
                   fontSize: '32px',
-                  boxShadow: '0 10px 20px rgba(20, 184, 166, 0.3)',
+                  boxShadow: effectiveTemplate === 'rich'
+                    ? `0 10px 20px ${richGlow}`
+                    : '0 10px 20px rgba(20, 184, 166, 0.3)',
                 }}
               >
                 📍
@@ -198,7 +249,7 @@ export async function GET(
                   backfindr
                 </span>
                 <span style={{ color: '#ffffff60', fontSize: '18px', fontWeight: 500 }}>
-                  Recuperação Inteligente
+                  {effectiveTemplate === 'rich' ? 'Recuperação Premium' : 'Recuperação Inteligente'}
                 </span>
               </div>
             </div>
@@ -228,9 +279,15 @@ export async function GET(
               height: `${photoH}px`,
               borderRadius: '40px',
               padding: '12px',
-              background: 'rgba(255, 255, 255, 0.05)',
-              border: '1px solid rgba(255, 255, 255, 0.1)',
-              boxShadow: '0 30px 60px rgba(0, 0, 0, 0.5)',
+              background: effectiveTemplate === 'rich'
+                ? `linear-gradient(135deg, rgba(255, 215, 0, 0.1) 0%, rgba(255, 165, 0, 0.05) 100%)`
+                : 'rgba(255, 255, 255, 0.05)',
+              border: effectiveTemplate === 'rich'
+                ? `2px solid ${richAccent}66`
+                : '1px solid rgba(255, 255, 255, 0.1)',
+              boxShadow: effectiveTemplate === 'rich'
+                ? `0 30px 60px ${richGlow}, inset 0 0 30px ${richGlow}`
+                : '0 30px 60px rgba(0, 0, 0, 0.5)',
               display: 'flex',
               position: 'relative',
               zIndex: 5,
@@ -263,7 +320,9 @@ export async function GET(
                   width: '100%',
                   height: '100%',
                   borderRadius: '32px',
-                  background: 'linear-gradient(135deg, #1a1f2a 0%, #0a0e14 100%)',
+                  background: effectiveTemplate === 'rich'
+                    ? `linear-gradient(135deg, #2a2f3a 0%, #1a1f2a 100%)`
+                    : 'linear-gradient(135deg, #1a1f2a 0%, #0a0e14 100%)',
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
@@ -293,7 +352,13 @@ export async function GET(
               <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
                   <span style={{ fontSize: '48px' }}>{emoji}</span>
-                  <span style={{ color: '#14B8A6', fontSize: '24px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '2px' }}>
+                  <span style={{
+                    color: effectiveTemplate === 'rich' ? richAccent : '#14B8A6',
+                    fontSize: '24px',
+                    fontWeight: 700,
+                    textTransform: 'uppercase',
+                    letterSpacing: '2px'
+                  }}>
                     {obj.category}
                   </span>
                 </div>
@@ -329,7 +394,19 @@ export async function GET(
 
               <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
                 {address && (
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '16px', background: 'rgba(255,255,255,0.03)', padding: '12px 20px', borderRadius: '16px', border: '1px solid rgba(255,255,255,0.05)' }}>
+                  <div style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '16px',
+                    background: effectiveTemplate === 'rich'
+                      ? `rgba(255, 215, 0, 0.05)`
+                      : 'rgba(255,255,255,0.03)',
+                    padding: '12px 20px',
+                    borderRadius: '16px',
+                    border: effectiveTemplate === 'rich'
+                      ? `1px solid ${richAccent}44`
+                      : '1px solid rgba(255,255,255,0.05)'
+                  }}>
                     <span style={{ fontSize: '32px' }}>📍</span>
                     <span style={{ color: '#ffffff90', fontSize: '28px', fontWeight: 500 }}>{address}</span>
                   </div>
@@ -367,20 +444,29 @@ export async function GET(
                 flexDirection: 'column',
                 alignItems: 'center',
                 gap: '24px',
-                background: 'rgba(255, 255, 255, 0.03)',
+                background: effectiveTemplate === 'rich'
+                  ? `linear-gradient(135deg, rgba(255, 215, 0, 0.08) 0%, rgba(255, 165, 0, 0.04) 100%)`
+                  : 'rgba(255, 255, 255, 0.03)',
                 padding: '40px',
                 borderRadius: '40px',
-                border: '1px solid rgba(255, 255, 255, 0.08)',
+                border: effectiveTemplate === 'rich'
+                  ? `1px solid ${richAccent}44`
+                  : '1px solid rgba(255, 255, 255, 0.08)',
                 flexShrink: 0,
+                boxShadow: effectiveTemplate === 'rich'
+                  ? `0 10px 30px ${richGlow}`
+                  : 'none',
               }}
             >
               <div
                 style={{
                   background: '#ffffff',
                   borderRadius: '30px',
-                  padding: '24px',
+                  padding: effectiveTemplate === 'rich' ? '32px' : '24px',
                   display: 'flex',
-                  boxShadow: '0 20px 40px rgba(0, 0, 0, 0.3)',
+                  boxShadow: effectiveTemplate === 'rich'
+                    ? `0 20px 40px ${richGlow}`
+                    : '0 20px 40px rgba(0, 0, 0, 0.3)',
                 }}
               >
                 {qrBase64 && (
@@ -406,13 +492,22 @@ export async function GET(
               alignItems: 'center',
               justifyContent: 'center',
               padding: '40px 80px 60px',
-              background: 'rgba(0, 0, 0, 0.2)',
-              borderTop: '1px solid rgba(255, 255, 255, 0.05)',
+              background: effectiveTemplate === 'rich'
+                ? `linear-gradient(90deg, rgba(255, 215, 0, 0.05) 0%, rgba(255, 165, 0, 0.02) 100%)`
+                : 'rgba(0, 0, 0, 0.2)',
+              borderTop: effectiveTemplate === 'rich'
+                ? `1px solid ${richAccent}22`
+                : '1px solid rgba(255, 255, 255, 0.05)',
               position: 'relative',
               zIndex: 10,
             }}
           >
-            <span style={{ color: '#ffffff30', fontSize: '24px', fontWeight: 500, letterSpacing: '1px' }}>
+            <span style={{
+              color: effectiveTemplate === 'rich' ? richAccent : '#ffffff30',
+              fontSize: '24px',
+              fontWeight: 500,
+              letterSpacing: '1px'
+            }}>
               {appUrl.replace('https://', '').toUpperCase()} · REDE GLOBAL DE RECUPERAÇÃO
             </span>
           </div>
@@ -428,7 +523,7 @@ export async function GET(
     const headers = new Headers(imageResponse.headers);
     headers.set(
       'Content-Disposition',
-      `attachment; filename="cartaz-${obj.qr_code}-${format}.png"`
+      `attachment; filename="cartaz-${obj.qr_code}-${format}-${effectiveTemplate}.png"`
     );
 
     return new Response(imageResponse.body, {
