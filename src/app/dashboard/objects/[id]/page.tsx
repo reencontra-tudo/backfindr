@@ -6,7 +6,7 @@ import Link from 'next/link';
 import {
   ChevronLeft, QrCode, MapPin, Calendar, Tag,
   Share2, Trash2, Edit2, Download, CheckCircle2,
-  AlertTriangle, Clock, Package, ExternalLink, Copy, Gift, Zap, Star, Info
+  AlertTriangle, Clock, Package, ExternalLink, Copy, Gift, Zap, Star, Info, Loader2
 } from 'lucide-react';
 import RecoveredCelebration from '@/components/RecoveredCelebration';
 import LocationMap from '@/components/LocationMap';
@@ -240,6 +240,7 @@ export default function ObjectDetailPage() {
   const [loading, setLoading] = useState(true);
   const [deleting, setDeleting] = useState(false);
   const [boostLoading, setBoostLoading] = useState<string | null>(null);
+  const [posterLoading, setPosterLoading] = useState<'square' | 'vertical' | 'a4' | null>(null);
   const [activeBoost, setActiveBoost] = useState<{ id: string; type: string; expires_at: string } | null>(null);
   const { open: openLightbox, close: closeLightbox, lightbox } = useLightbox();
 
@@ -547,47 +548,91 @@ export default function ObjectDetailPage() {
                 Imprima e compartilhe o pôster do seu objeto em locais públicos.
               </p>
               <div className="flex flex-col gap-2">
+                {/* Botão Quadrado */}
                 <button
-                  onClick={() => {
-                    const url = objectsApi.getPosterUrl(id, 'square');
-                    const link = document.createElement('a');
-                    link.href = url;
-                    link.download = `cartaz-${obj.unique_code}-square.png`;
-                    link.click();
-                    toast.success('Pôster quadrado baixado!');
+                  disabled={posterLoading !== null}
+                  onClick={async () => {
+                    setPosterLoading('square');
+                    try {
+                      const url = objectsApi.getPosterUrl(id, 'square');
+                      const res = await fetch(url);
+                      const blob = await res.blob();
+                      const blobUrl = URL.createObjectURL(blob);
+                      const link = document.createElement('a');
+                      link.href = blobUrl;
+                      link.download = `cartaz-${obj.unique_code}-square.png`;
+                      link.click();
+                      URL.revokeObjectURL(blobUrl);
+                      toast.success('Pôster quadrado baixado!');
+                    } catch {
+                      toast.error('Erro ao gerar pôster. Tente novamente.');
+                    } finally {
+                      setPosterLoading(null);
+                    }
                   }}
-                  className="w-full flex items-center justify-center gap-2 bg-blue-500/10 hover:bg-blue-500/20 border border-blue-500/20 text-blue-400 hover:text-blue-300 text-xs font-medium py-2.5 rounded-lg transition-all"
+                  className="w-full flex items-center justify-center gap-2 bg-blue-500/10 hover:bg-blue-500/20 border border-blue-500/20 text-blue-400 hover:text-blue-300 text-xs font-medium py-2.5 rounded-lg transition-all disabled:opacity-60 disabled:cursor-not-allowed"
                 >
-                  <Download className="w-3.5 h-3.5" />
-                  Quadrado (1080×1080)
+                  {posterLoading === 'square'
+                    ? <><Loader2 className="w-3.5 h-3.5 animate-spin" /> Gerando pôster…</>
+                    : <><Download className="w-3.5 h-3.5" /> Quadrado (1080×1080)</>}
                 </button>
+
+                {/* Botão Vertical */}
                 <button
-                  onClick={() => {
-                    const url = objectsApi.getPosterUrl(id, 'vertical');
-                    const link = document.createElement('a');
-                    link.href = url;
-                    link.download = `cartaz-${obj.unique_code}-vertical.png`;
-                    link.click();
-                    toast.success('Pôster vertical baixado!');
+                  disabled={posterLoading !== null}
+                  onClick={async () => {
+                    setPosterLoading('vertical');
+                    try {
+                      const url = objectsApi.getPosterUrl(id, 'vertical');
+                      const res = await fetch(url);
+                      const blob = await res.blob();
+                      const blobUrl = URL.createObjectURL(blob);
+                      const link = document.createElement('a');
+                      link.href = blobUrl;
+                      link.download = `cartaz-${obj.unique_code}-vertical.png`;
+                      link.click();
+                      URL.revokeObjectURL(blobUrl);
+                      toast.success('Pôster vertical baixado!');
+                    } catch {
+                      toast.error('Erro ao gerar pôster. Tente novamente.');
+                    } finally {
+                      setPosterLoading(null);
+                    }
                   }}
-                  className="w-full flex items-center justify-center gap-2 bg-blue-500/10 hover:bg-blue-500/20 border border-blue-500/20 text-blue-400 hover:text-blue-300 text-xs font-medium py-2.5 rounded-lg transition-all"
+                  className="w-full flex items-center justify-center gap-2 bg-blue-500/10 hover:bg-blue-500/20 border border-blue-500/20 text-blue-400 hover:text-blue-300 text-xs font-medium py-2.5 rounded-lg transition-all disabled:opacity-60 disabled:cursor-not-allowed"
                 >
-                  <Download className="w-3.5 h-3.5" />
-                  Vertical (1080×1920)
+                  {posterLoading === 'vertical'
+                    ? <><Loader2 className="w-3.5 h-3.5 animate-spin" /> Gerando pôster…</>
+                    : <><Download className="w-3.5 h-3.5" /> Vertical (1080×1920)</>}
                 </button>
+
+                {/* Botão A4 */}
                 <button
-                  onClick={() => {
-                    const url = objectsApi.getPosterUrl(id, 'a4');
-                    const link = document.createElement('a');
-                    link.href = url;
-                    link.download = `cartaz-${obj.unique_code}-a4.png`;
-                    link.click();
-                    toast.success('Pôster A4 baixado!');
+                  disabled={posterLoading !== null}
+                  onClick={async () => {
+                    setPosterLoading('a4');
+                    try {
+                      const url = objectsApi.getPosterUrl(id, 'a4');
+                      const res = await fetch(url);
+                      const blob = await res.blob();
+                      const blobUrl = URL.createObjectURL(blob);
+                      const link = document.createElement('a');
+                      link.href = blobUrl;
+                      link.download = `cartaz-${obj.unique_code}-a4.png`;
+                      link.click();
+                      URL.revokeObjectURL(blobUrl);
+                      toast.success('Pôster A4 baixado!');
+                    } catch {
+                      toast.error('Erro ao gerar pôster. Tente novamente.');
+                    } finally {
+                      setPosterLoading(null);
+                    }
                   }}
-                  className="w-full flex items-center justify-center gap-2 bg-teal-500/10 hover:bg-teal-500/20 border border-teal-500/20 text-teal-400 hover:text-teal-300 text-xs font-medium py-2.5 rounded-lg transition-all"
+                  className="w-full flex items-center justify-center gap-2 bg-teal-500/10 hover:bg-teal-500/20 border border-teal-500/20 text-teal-400 hover:text-teal-300 text-xs font-medium py-2.5 rounded-lg transition-all disabled:opacity-60 disabled:cursor-not-allowed"
                 >
-                  <Download className="w-3.5 h-3.5" />
-                  A4 Retrato — Impressão
+                  {posterLoading === 'a4'
+                    ? <><Loader2 className="w-3.5 h-3.5 animate-spin" /> Gerando pôster…</>
+                    : <><Download className="w-3.5 h-3.5" /> A4 Retrato — Impressão</>}
                 </button>
               </div>
             </div>
