@@ -5,7 +5,7 @@ import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import {
   ChevronLeft, QrCode, MapPin, Calendar, Tag,
-  Share2, Trash2, Edit2, Download, ArrowDownToLine, CheckCircle2,
+  Share2, Trash2, Edit2, Download, CheckCircle2,
   AlertTriangle, Clock, Package, ExternalLink, Copy, Gift, Zap, Star, Info, Loader2
 } from 'lucide-react';
 import RecoveredCelebration from '@/components/RecoveredCelebration';
@@ -547,54 +547,91 @@ export default function ObjectDetailPage() {
               </p>
               <div className="flex flex-col gap-2">
                 {/* Botão Quadrado */}
-                {(['square', 'vertical', 'a4'] as const).map((fmt) => {
-                  const labels = {
-                    square: 'Quadrado (1080×1080)',
-                    vertical: 'Vertical (1080×1920)',
-                    a4: 'A4 Retrato — Impressão',
-                  };
-                  const toasts = {
-                    square: 'Pôster quadrado baixado!',
-                    vertical: 'Pôster vertical baixado!',
-                    a4: 'Pôster A4 baixado!',
-                  };
-                  return (
-                    <button
-                      key={fmt}
-                      disabled={posterLoading !== null}
-                      onClick={async () => {
-                        setPosterLoading(fmt);
-                        try {
-                          const url = objectsApi.getPosterUrl(id, fmt);
-                          const res = await fetch(url);
-                          if (!res.ok) throw new Error();
-                          const blob = await res.blob();
-                          const blobUrl = URL.createObjectURL(blob);
-                          const link = document.createElement('a');
-                          link.href = blobUrl;
-                          link.download = `cartaz-${obj.unique_code}-${fmt}.png`;
-                          link.style.cssText = 'position:fixed;top:-9999px;left:-9999px;opacity:0';
-                          document.body.appendChild(link);
-                          link.click();
-                          setTimeout(() => {
-                            document.body.removeChild(link);
-                            URL.revokeObjectURL(blobUrl);
-                          }, 200);
-                          toast.success(toasts[fmt]);
-                        } catch {
-                          toast.error('Erro ao gerar pôster. Tente novamente.');
-                        } finally {
-                          setPosterLoading(null);
-                        }
-                      }}
-                      className="w-full flex items-center justify-center gap-2 bg-blue-500/10 hover:bg-blue-500/20 border border-blue-500/20 text-blue-400 hover:text-blue-300 text-xs font-medium py-2.5 rounded-lg transition-all disabled:opacity-60 disabled:cursor-not-allowed"
-                    >
-                      {posterLoading === fmt
-                        ? <span className="flex items-center justify-center gap-2"><Loader2 className="w-3.5 h-3.5 animate-spin" /> Gerando pôster…</span>
-                        : <span className="flex items-center justify-center gap-2"><ArrowDownToLine className="w-3.5 h-3.5" /> {labels[fmt]}</span>}
-                    </button>
-                  );
-                })}
+                <button
+                  disabled={posterLoading !== null}
+                  onClick={async () => {
+                    setPosterLoading('square');
+                    try {
+                      const url = objectsApi.getPosterUrl(id, 'square');
+                      const res = await fetch(url);
+                      const blob = await res.blob();
+                      const blobUrl = URL.createObjectURL(blob);
+                      const link = document.createElement('a');
+                      link.href = blobUrl;
+                      link.download = `cartaz-${obj.unique_code}-square.png`;
+                      link.click();
+                      URL.revokeObjectURL(blobUrl);
+                      toast.success('Pôster quadrado baixado!');
+                    } catch {
+                      toast.error('Erro ao gerar pôster. Tente novamente.');
+                    } finally {
+                      setPosterLoading(null);
+                    }
+                  }}
+                  className="w-full flex items-center justify-center gap-2 bg-blue-500/10 hover:bg-blue-500/20 border border-blue-500/20 text-blue-400 hover:text-blue-300 text-xs font-medium py-2.5 rounded-lg transition-all disabled:opacity-60 disabled:cursor-not-allowed"
+                >
+                  {posterLoading === 'square'
+                    ? <><Loader2 className="w-3.5 h-3.5 animate-spin" /> Gerando pôster…</>
+                    : <><Download className="w-3.5 h-3.5" /> Quadrado (1080×1080)</>}
+                </button>
+
+                {/* Botão Vertical */}
+                <button
+                  disabled={posterLoading !== null}
+                  onClick={async () => {
+                    setPosterLoading('vertical');
+                    try {
+                      const url = objectsApi.getPosterUrl(id, 'vertical');
+                      const res = await fetch(url);
+                      const blob = await res.blob();
+                      const blobUrl = URL.createObjectURL(blob);
+                      const link = document.createElement('a');
+                      link.href = blobUrl;
+                      link.download = `cartaz-${obj.unique_code}-vertical.png`;
+                      link.click();
+                      URL.revokeObjectURL(blobUrl);
+                      toast.success('Pôster vertical baixado!');
+                    } catch {
+                      toast.error('Erro ao gerar pôster. Tente novamente.');
+                    } finally {
+                      setPosterLoading(null);
+                    }
+                  }}
+                  className="w-full flex items-center justify-center gap-2 bg-blue-500/10 hover:bg-blue-500/20 border border-blue-500/20 text-blue-400 hover:text-blue-300 text-xs font-medium py-2.5 rounded-lg transition-all disabled:opacity-60 disabled:cursor-not-allowed"
+                >
+                  {posterLoading === 'vertical'
+                    ? <><Loader2 className="w-3.5 h-3.5 animate-spin" /> Gerando pôster…</>
+                    : <><Download className="w-3.5 h-3.5" /> Vertical (1080×1920)</>}
+                </button>
+
+                {/* Botão A4 */}
+                <button
+                  disabled={posterLoading !== null}
+                  onClick={async () => {
+                    setPosterLoading('a4');
+                    try {
+                      const url = objectsApi.getPosterUrl(id, 'a4');
+                      const res = await fetch(url);
+                      const blob = await res.blob();
+                      const blobUrl = URL.createObjectURL(blob);
+                      const link = document.createElement('a');
+                      link.href = blobUrl;
+                      link.download = `cartaz-${obj.unique_code}-a4.png`;
+                      link.click();
+                      URL.revokeObjectURL(blobUrl);
+                      toast.success('Pôster A4 baixado!');
+                    } catch {
+                      toast.error('Erro ao gerar pôster. Tente novamente.');
+                    } finally {
+                      setPosterLoading(null);
+                    }
+                  }}
+                  className="w-full flex items-center justify-center gap-2 bg-blue-500/10 hover:bg-blue-500/20 border border-blue-500/20 text-blue-400 hover:text-blue-300 text-xs font-medium py-2.5 rounded-lg transition-all disabled:opacity-60 disabled:cursor-not-allowed"
+                >
+                  {posterLoading === 'a4'
+                    ? <><Loader2 className="w-3.5 h-3.5 animate-spin" /> Gerando pôster…</>
+                    : <><Download className="w-3.5 h-3.5" /> A4 Retrato — Impressão</>}
+                </button>
               </div>
             </div>
 
