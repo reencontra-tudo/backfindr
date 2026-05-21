@@ -9,6 +9,7 @@ import {
   AlertTriangle, Clock, Package, ExternalLink, Copy, Gift, Zap, Star
 } from 'lucide-react';
 import RecoveredCelebration from '@/components/RecoveredCelebration';
+import LocationMap from '@/components/LocationMap';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
@@ -501,14 +502,15 @@ export default function ObjectDetailPage() {
             </div>
           </div>
 
-          {/* Location map placeholder */}
-          {obj.location?.lat && (
+          {/* Location map */}
+          {obj.location?.lat && obj.location?.lng && (
             <div className="glass rounded-2xl overflow-hidden">
-              <div className="h-48 bg-surface-card flex flex-col items-center justify-center text-slate-500 gap-2">
-                <MapPin className="w-8 h-8" />
-                <p className="text-sm">Mapa — lat {obj.location.lat.toFixed(4)}, lng {obj.location.lng.toFixed(4)}</p>
-                <p className="text-xs text-slate-600">Configure NEXT_PUBLIC_MAPBOX_TOKEN para ativar</p>
-              </div>
+              <LocationMap
+                lat={obj.location.lat}
+                lng={obj.location.lng}
+                title={obj.title}
+                address={obj.location.address}
+              />
             </div>
           )}
         </div>
