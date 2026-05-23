@@ -1,6 +1,7 @@
-import { NextRequest } from 'next/server';
 import { ImageResponse } from 'next/og';
+import { NextRequest } from 'next/server';
 import { query } from '@/lib/db';
+import { buildPosterData } from '@/lib/posterFormatter';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -14,41 +15,12 @@ const FORMATS = {
 type Format = keyof typeof FORMATS;
 
 const BRAND = {
-  black:    '#0B0F14',
-  teal:     '#16C7B7',
-  paper:    '#FFFFFF',
+  black: '#0B0F14',
+  teal:  '#16C7B7',
+  paper: '#FFFFFF',
 };
 
-const STATUS_CONFIG: Record<string, {
-  label: string;
-  accent: string;
-  headlinePrefix: string;
-  action: string;
-  cta: string;
-}> = {
-  lost:              { label: 'PERDIDO',    accent: '#EF4444', headlinePrefix: 'PERDI MINHA',    action: 'ESCANEIE SE VOCÊ VIU',  cta: 'Você viu? Escaneie e avise o dono!' },
-  found:             { label: 'ENCONTRADO', accent: '#16C7B7', headlinePrefix: 'ENCONTREI UMA',  action: 'ESCANEIE SE FOR SEU',   cta: 'É seu? Escaneie o QR Code e reivindique!' },
-  stolen:            { label: 'ROUBADO',    accent: '#DC2626', headlinePrefix: 'ROUBARAM MINHA', action: 'ESCANEIE SE VOCÊ VIU',  cta: 'Viu este objeto? Escaneie e denuncie!' },
-  stolen_pickpocket: { label: 'FURTADO',    accent: '#B91C1C', headlinePrefix: 'FURTARAM MINHA', action: 'ESCANEIE SE VOCÊ VIU',  cta: 'Viu este objeto? Escaneie e denuncie!' },
-  in_possession:     { label: 'EM POSSE',   accent: '#F59E0B', headlinePrefix: 'ESTOU COM UMA',  action: 'ESCANEIE PARA AVISAR',  cta: 'Reconhece? Escaneie e entre em contato!' },
-  returned:          { label: 'RECUPERADO', accent: '#22C55E', headlinePrefix: 'RECUPEREI MINHA',action: 'VEJA A HISTÓRIA',       cta: 'Objeto recuperado com sucesso via Backfindr' },
-  protected:         { label: 'PROTEGIDO',  accent: '#3B82F6', headlinePrefix: 'OBJETO PROTEGIDO',action: 'ESCANEIE O QR CODE',   cta: 'Escaneie o QR Code para mais informações' },
-};
-
-const CATEGORY_LABEL: Record<string, string> = {
-  phone: 'Celular', wallet: 'Carteira', keys: 'Chaves',
-  bag: 'Mochila', pet: 'Pet', bike: 'Bicicleta',
-  vehicle: 'Veículo', document: 'Documento', jewelry: 'Joia',
-  electronics: 'Eletrônico', clothing: 'Roupa', other: 'Objeto',
-};
-
-const CATEGORY_EMOJI: Record<string, string> = {
-  phone: '📱', wallet: '👛', keys: '🔑', bag: '🎒', pet: '🐾',
-  bike: '🚲', vehicle: '🚗', document: '📄', jewelry: '💍',
-  electronics: '💻', clothing: '👕', other: '📦',
-};
-
-// ── Utilitários ──────────────────────────────────────────────────────────────
+// ── Utilitários de imagem ─────────────────────────────────────────────────────
 
 function normalizeImages(value: unknown): string[] {
   try {
@@ -66,27 +38,6 @@ function normalizeImages(value: unknown): string[] {
   } catch { return []; }
 }
 
-function locationToText(value: unknown): string {
-  try {
-    if (!value) return '';
-    if (typeof value === 'object' && value !== null && 'address' in value)
-      return String((value as Record<string, unknown>).address ?? '');
-    if (typeof value !== 'string') return '';
-    const clean = value.trim();
-    if (!clean) return '';
-    if (clean.startsWith('{')) {
-      const parsed = JSON.parse(clean);
-      return String(parsed.address ?? parsed.label ?? '');
-    }
-    return clean;
-  } catch { return ''; }
-}
-
-function clip(text: string | null | undefined, max: number): string {
-  const value = (text ?? '').replace(/\s+/g, ' ').trim();
-  return value.length > max ? `${value.slice(0, Math.max(0, max - 1))}…` : value;
-}
-
 async function toDataUrl(imageUrl: string | null): Promise<string | null> {
   if (!imageUrl) return null;
   try {
@@ -99,11 +50,6 @@ async function toDataUrl(imageUrl: string | null): Promise<string | null> {
   } catch { return null; }
 }
 
-function moneyBRL(value: number | null | undefined): string {
-  if (!value || value <= 0) return '';
-  return `R$ ${Number(value).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
-}
-
 // ── Handler ───────────────────────────────────────────────────────────────────
 
 export async function GET(
@@ -111,10 +57,10 @@ export async function GET(
   { params }: { params: { id: string } }
 ) {
   try {
-    const url       = new URL(request.url);
-    const formatParam = url.searchParams.get('format') as Format | null;
+    const url          = new URL(request.url);
+    const formatParam  = url.searchParams.get('format') as Format | null;
     const format: Format = formatParam && formatParam in FORMATS ? formatParam : 'vertical';
-    const inkSaver  = url.searchParams.get('inkSaver') === '1' || url.searchParams.get('bw') === '1';
+    const inkSaver     = url.searchParams.get('inkSaver') === '1' || url.searchParams.get('bw') === '1';
     const { width, height } = FORMATS[format];
 
     const result = await query(
@@ -144,43 +90,31 @@ export async function GET(
       has_active_boost: boolean;
     };
 
-    const statusCfg  = STATUS_CONFIG[obj.status] ?? STATUS_CONFIG.lost;
-    const catLabel   = CATEGORY_LABEL[obj.category] ?? 'Objeto';
-    const emoji      = CATEGORY_EMOJI[obj.category] ?? '📦';
-    const title      = clip(obj.title || catLabel, 52);
-    const description = clip(obj.description, format === 'a4' ? 180 : 110);
-    const address    = clip(locationToText(obj.location), format === 'a4' ? 70 : 48);
-    const reward     = moneyBRL(obj.reward_amount);
-    const createdAt  = obj.created_at
-      ? new Date(obj.created_at).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric' })
-      : '';
+    const appUrl = (process.env.NEXT_PUBLIC_APP_URL ?? 'https://backfindr.com').replace(/\/$/, '');
 
-    const appUrl  = (process.env.NEXT_PUBLIC_APP_URL ?? 'https://backfindr.com').replace(/\/$/, '');
-    const pageUrl = `${appUrl}/scan/${obj.qr_code}`;
+    // ── buildPosterData: ÚNICA fonte de verdade para comunicação visual ────────
+    const pd = buildPosterData({
+      title:       obj.title,
+      description: obj.description,
+      category:    obj.category,
+      status:      obj.status,
+      created_at:  obj.created_at,
+      location:    obj.location,
+      reward:      obj.reward_amount,
+      qr_code:     obj.qr_code,
+      photo_url:   normalizeImages(obj.images)[0] ?? null,
+    }, appUrl);
+
+    // ── Imagens ───────────────────────────────────────────────────────────────
     const qrSize  = format === 'a4' ? 520 : format === 'vertical' ? 260 : 230;
-    const qrUrl   = `https://api.qrserver.com/v1/create-qr-code/?size=${qrSize}x${qrSize}&data=${encodeURIComponent(pageUrl)}&bgcolor=ffffff&color=111827&margin=10`;
+    const qrApiUrl = `https://api.qrserver.com/v1/create-qr-code/?size=${qrSize}x${qrSize}&data=${encodeURIComponent(pd.qrUrl)}&bgcolor=ffffff&color=111827&margin=10`;
 
     const [photo, qr] = await Promise.all([
-      toDataUrl(normalizeImages(obj.images)[0] ?? null),
-      toDataUrl(qrUrl),
+      toDataUrl(pd.photoUrl),
+      toDataUrl(qrApiUrl),
     ]);
 
-    const renderPhoto = (size: {
-      width?: string; height?: string; fontSize: string;
-      radius: string; border?: string; bg?: string; fit?: 'cover' | 'contain';
-    }) => (
-      <div style={{
-        width: size.width ?? '100%', height: size.height ?? '100%',
-        borderRadius: size.radius, overflow: 'hidden',
-        display: 'flex', alignItems: 'center', justifyContent: 'center',
-        background: size.bg ?? '#F3F4F6', border: size.border ?? 'none', flexShrink: 0,
-      }}>
-        {photo
-          ? <img src={photo} style={{ width: '100%', height: '100%', objectFit: size.fit ?? 'cover' }} />
-          : <span style={{ fontSize: size.fontSize }}>{emoji}</span>
-        }
-      </div>
-    );
+    // ── Helpers de render ─────────────────────────────────────────────────────
 
     const renderQr = (sizePx: number, radius = 24) => (
       <div style={{
@@ -196,14 +130,11 @@ export async function GET(
 
     // ─────────────────────────────────────────────────────────────────────────
     // TEMPLATE A4 — MINIMAL CLEAN — 2480×3508
-    // Fundo branco, header escuro, headline gigante, foto+bullets laterais,
-    // QR grande com CTA, rodapé de compartilhamento
     // ─────────────────────────────────────────────────────────────────────────
     if (format === 'a4') {
-      const black    = inkSaver ? '#FFFFFF' : BRAND.black;
-      const topText  = inkSaver ? BRAND.black : '#FFFFFF';
-      const border   = inkSaver ? '8px solid #0B0F14' : 'none';
-      const headlineObject = title.toUpperCase();
+      const black   = inkSaver ? '#FFFFFF' : BRAND.black;
+      const topText = inkSaver ? BRAND.black : '#FFFFFF';
+      const border  = inkSaver ? '8px solid #0B0F14' : 'none';
 
       const imageResponse = new ImageResponse(
         (
@@ -228,25 +159,25 @@ export async function GET(
                   <span style={{ fontSize: 58, fontWeight: 900, letterSpacing: -2 }}>backfindr</span>
                 </div>
                 <div style={{
-                  background: statusCfg.accent, color: '#fff',
+                  background: pd.statusColor, color: '#fff',
                   borderRadius: 999, padding: '24px 64px',
                   fontSize: 52, fontWeight: 900, letterSpacing: 3,
                   display: 'flex',
-                }}>{statusCfg.label}</div>
+                }}>{pd.statusLabel}</div>
               </div>
             </div>
 
-            {/* ── Headline ── */}
+            {/* ── Headline controlada ── */}
             <div style={{ padding: '58px 120px 0', display: 'flex', flexDirection: 'column', flexShrink: 0 }}>
               <div style={{
-                color: statusCfg.accent, fontSize: 96, fontWeight: 950,
+                color: pd.statusColor, fontSize: 96, fontWeight: 950,
                 lineHeight: 0.95, letterSpacing: -2, display: 'flex',
-              }}>{statusCfg.headlinePrefix}</div>
+              }}>{pd.eyebrow}</div>
               <div style={{
                 color: BRAND.black,
-                fontSize: headlineObject.length > 20 ? 136 : 166,
+                fontSize: pd.headline.length > 20 ? 136 : 166,
                 fontWeight: 950, lineHeight: 0.92, letterSpacing: -5, display: 'flex',
-              }}>{headlineObject}</div>
+              }}>{pd.headline}</div>
             </div>
 
             {/* ── Foto + Bullets laterais ── */}
@@ -261,9 +192,20 @@ export async function GET(
                 borderRadius: 48, padding: 20,
                 display: 'flex', background: '#fff',
               }}>
-                {renderPhoto({ height: '100%', fontSize: '300px', radius: '32px', bg: '#F8FAFC', fit: 'contain' })}
+                <div style={{
+                  width: '100%', height: '100%',
+                  borderRadius: 32, overflow: 'hidden',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  background: '#F8FAFC',
+                }}>
+                  {photo
+                    ? <img src={photo} style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
+                    : <span style={{ fontSize: '300px' }}>📦</span>
+                  }
+                </div>
               </div>
-              {/* Bullets */}
+
+              {/* Bullets de reconhecimento rápido */}
               <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 30, justifyContent: 'center' }}>
                 <div style={{
                   background: BRAND.black, color: '#fff',
@@ -274,30 +216,34 @@ export async function GET(
                     RECONHECIMENTO RÁPIDO
                   </div>
                   <div style={{ fontSize: 52, lineHeight: 1.18, fontWeight: 850, display: 'flex' }}>
-                    • {catLabel}
+                    • {pd.categoryLabel}
                   </div>
-                  {description && (
+                  {/* Subtítulo: título truncado do usuário */}
+                  <div style={{ fontSize: 46, lineHeight: 1.15, fontWeight: 800, color: '#F3F4F6', display: 'flex', flexWrap: 'wrap' }}>
+                    • {pd.subtitle}
+                  </div>
+                  {pd.description && (
                     <div style={{ fontSize: 42, lineHeight: 1.28, fontWeight: 700, color: '#E5E7EB', display: 'flex', flexWrap: 'wrap' }}>
-                      • {description}
+                      • {pd.description}
                     </div>
                   )}
-                  {address && (
+                  {pd.locationShort && (
                     <div style={{ fontSize: 40, lineHeight: 1.25, fontWeight: 700, color: '#E5E7EB', display: 'flex', flexWrap: 'wrap' }}>
-                      • Local: {address}
+                      • Local: {pd.locationShort}
                     </div>
                   )}
-                  {createdAt && (
+                  {pd.date && (
                     <div style={{ fontSize: 40, lineHeight: 1.2, fontWeight: 700, color: '#E5E7EB', display: 'flex' }}>
-                      • Data: {createdAt}
+                      • Data: {pd.date}
                     </div>
                   )}
                 </div>
-                {reward && (
+                {pd.reward && (
                   <div style={{
                     background: '#FEF3C7', border: '6px solid #F59E0B',
                     borderRadius: 30, padding: '34px 44px',
                     color: '#92400E', fontSize: 58, fontWeight: 950, display: 'flex',
-                  }}>RECOMPENSA: {reward}</div>
+                  }}>RECOMPENSA: {pd.reward}</div>
                 )}
               </div>
             </div>
@@ -311,10 +257,10 @@ export async function GET(
               {renderQr(520, 26)}
               <div style={{ display: 'flex', flexDirection: 'column', gap: 14, flex: 1 }}>
                 <div style={{ color: '#031B1A', fontSize: 92, fontWeight: 1000, lineHeight: 0.92, letterSpacing: -2, display: 'flex', flexWrap: 'wrap' }}>
-                  {statusCfg.action}
+                  ESCANEIE SE VOCÊ VIU
                 </div>
                 <div style={{ color: '#053B38', fontSize: 44, fontWeight: 800, lineHeight: 1.22, display: 'flex', flexWrap: 'wrap' }}>
-                  O QR Code abre a página do objeto no Backfindr. Ajude compartilhando ou avisando onde viu.
+                  O QR Code abre a página do objeto. Ajude compartilhando ou avisando onde viu.
                 </div>
                 <div style={{ color: '#053B38', fontSize: 34, fontWeight: 700, display: 'flex' }}>
                   {appUrl.replace('https://', '')}/scan/{obj.qr_code}
@@ -352,21 +298,13 @@ export async function GET(
       const pad       = 52;
       const headerH   = 100;
       const divH      = 3;
-      const headlineH = 240;
-      const titleH    = 100;
-      const descH     = 120;
+      const headlineH = 200;
+      const subtitleH = 80;
+      const descH     = 110;
       const metaH     = 120;
       const footerH   = 220;
       const gaps      = pad * 2 + 24 + 20 + 20 + 24 + 24;
-      const photoH    = height - headerH - divH - headlineH - titleH - descH - metaH - footerH - gaps;
-
-      const descTrunc = description;
-      const addrShort = address;
-
-      // headline split: "PERDI MINHA" / "MOCHILA"
-      const hlParts   = statusCfg.headlinePrefix.split(' ');
-      const hlLine1   = hlParts.slice(0, -1).join(' ');
-      const hlLine2   = hlParts[hlParts.length - 1];
+      const photoH    = height - headerH - divH - headlineH - subtitleH - descH - metaH - footerH - gaps;
 
       const imageResponse = new ImageResponse(
         (
@@ -391,11 +329,11 @@ export async function GET(
                 <span style={{ color: '#ffffff', fontSize: '36px', fontWeight: 800 }}>backfindr</span>
               </div>
               <div style={{
-                background: statusCfg.accent, borderRadius: '100px',
+                background: pd.statusColor, borderRadius: '100px',
                 padding: '12px 32px', display: 'flex',
               }}>
                 <span style={{ color: '#ffffff', fontSize: '28px', fontWeight: 800, letterSpacing: '1px' }}>
-                  {statusCfg.label}
+                  {pd.statusLabel}
                 </span>
               </div>
             </div>
@@ -411,46 +349,46 @@ export async function GET(
             }}>
               {photo
                 ? <img src={photo} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                : <span style={{ fontSize: '180px' }}>{emoji}</span>
+                : <span style={{ fontSize: '180px' }}>📦</span>
               }
             </div>
 
-            {/* ── Linha vermelha ── */}
+            {/* ── Linha divisória ── */}
             <div style={{
               margin: `24px ${pad}px 0`,
               height: `${divH}px`, background: '#EF4444', display: 'flex', flexShrink: 0,
             }} />
 
-            {/* ── Headline ── */}
+            {/* ── Headline controlada (máx 24 chars) ── */}
             <div style={{
               padding: `20px ${pad}px 0`,
               display: 'flex', flexDirection: 'column',
               height: `${headlineH}px`, flexShrink: 0,
             }}>
               <span style={{
-                color: '#EF4444', fontSize: '68px', fontWeight: 900,
+                color: '#EF4444', fontSize: '52px', fontWeight: 900,
                 letterSpacing: '-1px', lineHeight: 1.0, display: 'flex',
-              }}>{hlLine1}</span>
+              }}>{pd.eyebrow}</span>
               <span style={{
-                color: '#ffffff', fontSize: '100px', fontWeight: 900,
+                color: '#ffffff', fontSize: '80px', fontWeight: 900,
                 letterSpacing: '-3px', lineHeight: 0.92, display: 'flex', flexWrap: 'wrap',
-              }}>{hlLine2} {title.toUpperCase()}</span>
+              }}>{pd.headline}</span>
             </div>
 
-            {/* ── Título do objeto ── */}
+            {/* ── Subtítulo: título truncado do usuário (máx 40 chars) ── */}
             <div style={{
               padding: `0 ${pad}px`,
-              height: `${titleH}px`, flexShrink: 0,
+              height: `${subtitleH}px`, flexShrink: 0,
               display: 'flex', alignItems: 'center',
             }}>
               <span style={{
-                color: 'rgba(255,255,255,0.87)', fontSize: '44px', fontWeight: 700,
+                color: 'rgba(255,255,255,0.87)', fontSize: '38px', fontWeight: 700,
                 lineHeight: 1.1, display: 'flex', flexWrap: 'wrap',
-              }}>{obj.title}</span>
+              }}>{pd.subtitle}</span>
             </div>
 
-            {/* ── Descrição ── */}
-            {descTrunc && (
+            {/* ── Descrição (máx 120 chars) ── */}
+            {pd.description && (
               <div style={{
                 padding: `0 ${pad}px`,
                 height: `${descH}px`, flexShrink: 0,
@@ -459,7 +397,7 @@ export async function GET(
                 <span style={{
                   color: 'rgba(255,255,255,0.6)', fontSize: '30px', lineHeight: 1.5,
                   display: 'flex', flexWrap: 'wrap',
-                }}>{descTrunc}</span>
+                }}>{pd.description}</span>
               </div>
             )}
 
@@ -469,16 +407,16 @@ export async function GET(
               display: 'flex', flexDirection: 'column', gap: '12px',
               height: `${metaH}px`, flexShrink: 0,
             }}>
-              {createdAt && (
+              {pd.date && (
                 <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
                   <span style={{ fontSize: '26px' }}>📅</span>
-                  <span style={{ color: 'rgba(255,255,255,0.67)', fontSize: '28px', fontWeight: 600 }}>{createdAt}</span>
+                  <span style={{ color: 'rgba(255,255,255,0.67)', fontSize: '28px', fontWeight: 600 }}>{pd.date}</span>
                 </div>
               )}
-              {addrShort && (
+              {pd.locationShort && (
                 <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
                   <span style={{ fontSize: '26px', flexShrink: 0 }}>📍</span>
-                  <span style={{ color: 'rgba(255,255,255,0.67)', fontSize: '28px', fontWeight: 600, display: 'flex', flexWrap: 'wrap' }}>{addrShort}</span>
+                  <span style={{ color: 'rgba(255,255,255,0.67)', fontSize: '28px', fontWeight: 600, display: 'flex', flexWrap: 'wrap' }}>{pd.locationShort}</span>
                 </div>
               )}
             </div>
@@ -487,10 +425,10 @@ export async function GET(
             <div style={{
               margin: `24px ${pad}px ${pad}px`,
               background: 'rgba(20,184,166,0.10)',
-              border: `2px solid rgba(20,184,166,0.33)`,
+              border: '2px solid rgba(20,184,166,0.33)',
               borderRadius: '20px', padding: '24px 28px',
               display: 'flex', flexDirection: 'row', alignItems: 'center', gap: '24px',
-              flex: 1,
+              height: `${footerH}px`, flexShrink: 0,
             }}>
               {qr && (
                 <div style={{ background: '#ffffff', borderRadius: '12px', padding: '10px', display: 'flex', flexShrink: 0 }}>
@@ -502,7 +440,7 @@ export async function GET(
                   AJUDE A ENCONTRAR
                 </span>
                 <span style={{ color: 'rgba(255,255,255,0.8)', fontSize: '26px', lineHeight: 1.4, display: 'flex', flexWrap: 'wrap' }}>
-                  {statusCfg.cta}
+                  Você viu? Escaneie e avise o dono!
                 </span>
                 <span style={{ color: teal, fontSize: '22px', display: 'flex' }}>
                   {appUrl.replace('https://', '')}
@@ -522,20 +460,12 @@ export async function GET(
     // ─────────────────────────────────────────────────────────────────────────
     // TEMPLATE QUADRADO — BOLD IMPACT — 1080×1080
     // ─────────────────────────────────────────────────────────────────────────
-    const teal      = '#14B8A6';
-    const topH      = 340;
-    const footH     = 240;
-    const bodyH     = height - topH - footH;
-    const pad       = 40;
-    const photoW    = 420;
-
-    const descShort = description;
-    const addrShort = address;
-
-    // headline split para quadrado
-    const sqParts  = statusCfg.headlinePrefix.split(' ');
-    const sqLine1  = sqParts.slice(0, -1).join(' ');
-    const sqLine2  = sqParts[sqParts.length - 1];
+    const teal   = '#14B8A6';
+    const topH   = 300;
+    const footH  = 240;
+    const bodyH  = height - topH - footH;
+    const pad    = 40;
+    const photoW = 420;
 
     const imageResponse = new ImageResponse(
       (
@@ -545,22 +475,23 @@ export async function GET(
           display: 'flex', flexDirection: 'column',
           fontFamily: 'sans-serif', overflow: 'hidden',
         }}>
-          {/* ── Faixa colorida com headline ── */}
+          {/* ── Faixa colorida com headline controlada ── */}
           <div style={{
             width: '100%', height: `${topH}px`,
-            background: statusCfg.accent,
+            background: pd.statusColor,
             display: 'flex', flexDirection: 'column',
             alignItems: 'flex-start', justifyContent: 'center',
             padding: `0 ${pad}px`, flexShrink: 0,
           }}>
             <span style={{
-              color: '#ffffff', fontSize: '84px', fontWeight: 900,
-              letterSpacing: '-2px', lineHeight: 1.0, display: 'flex',
-            }}>{sqLine1}</span>
+              color: '#ffffff', fontSize: '64px', fontWeight: 900,
+              letterSpacing: '-1px', lineHeight: 1.0, display: 'flex',
+            }}>{pd.eyebrow}</span>
+            {/* headline: máx 24 chars — nunca transborda */}
             <span style={{
-              color: '#ffffff', fontSize: '104px', fontWeight: 900,
-              letterSpacing: '-3px', lineHeight: 0.9, display: 'flex', flexWrap: 'wrap',
-            }}>{sqLine2} {title.toUpperCase()}</span>
+              color: '#ffffff', fontSize: '88px', fontWeight: 900,
+              letterSpacing: '-3px', lineHeight: 0.9, display: 'flex',
+            }}>{pd.headline}</span>
           </div>
 
           {/* ── Corpo: foto (esq) + dados (dir) ── */}
@@ -579,7 +510,7 @@ export async function GET(
             }}>
               {photo
                 ? <img src={photo} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                : <span style={{ fontSize: '120px' }}>{emoji}</span>
+                : <span style={{ fontSize: '120px' }}>📦</span>
               }
             </div>
 
@@ -588,40 +519,41 @@ export async function GET(
               display: 'flex', flexDirection: 'column', justifyContent: 'space-between',
               flex: 1, overflow: 'hidden',
             }}>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
                 <span style={{
                   color: teal, fontSize: '24px', fontWeight: 700,
                   letterSpacing: '2px', textTransform: 'uppercase', display: 'flex',
-                }}>{catLabel}</span>
+                }}>{pd.categoryLabel}</span>
+                {/* Subtítulo: título truncado (máx 40 chars) */}
                 <span style={{
-                  color: '#111827', fontSize: '44px', fontWeight: 800,
+                  color: '#111827', fontSize: '40px', fontWeight: 800,
                   lineHeight: 1.1, display: 'flex', flexWrap: 'wrap',
-                }}>{obj.title}</span>
-                {descShort && (
+                }}>{pd.subtitle}</span>
+                {pd.description && (
                   <span style={{
                     color: '#6b7280', fontSize: '26px', lineHeight: 1.4,
                     display: 'flex', flexWrap: 'wrap',
-                  }}>{descShort}</span>
+                  }}>{pd.description}</span>
                 )}
               </div>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                {createdAt && (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                {pd.date && (
                   <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
                     <span style={{ fontSize: '26px' }}>📅</span>
-                    <span style={{ color: '#374151', fontSize: '30px', fontWeight: 700 }}>{createdAt}</span>
+                    <span style={{ color: '#374151', fontSize: '28px', fontWeight: 700 }}>{pd.date}</span>
                   </div>
                 )}
-                {addrShort && (
+                {pd.locationShort && (
                   <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
                     <span style={{ fontSize: '26px', flexShrink: 0 }}>📍</span>
-                    <span style={{ color: '#374151', fontSize: '28px', fontWeight: 700, display: 'flex', flexWrap: 'wrap' }}>{addrShort}</span>
+                    <span style={{ color: '#374151', fontSize: '26px', fontWeight: 700, display: 'flex', flexWrap: 'wrap' }}>{pd.locationShort}</span>
                   </div>
                 )}
-                {obj.reward_amount && obj.reward_amount > 0 && (
+                {pd.reward && (
                   <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
                     <span style={{ fontSize: '26px' }}>🏆</span>
-                    <span style={{ color: '#b45309', fontSize: '30px', fontWeight: 800 }}>
-                      {reward}
+                    <span style={{ color: '#b45309', fontSize: '28px', fontWeight: 800 }}>
+                      {pd.reward}
                     </span>
                   </div>
                 )}
@@ -646,7 +578,7 @@ export async function GET(
                 letterSpacing: '-1px', display: 'flex', flexWrap: 'wrap',
               }}>AJUDE A ENCONTRAR</span>
               <span style={{ color: 'rgba(255,255,255,0.87)', fontSize: '24px', display: 'flex', flexWrap: 'wrap' }}>
-                {statusCfg.cta}
+                Você viu? Escaneie e avise o dono!
               </span>
             </div>
             <div style={{
