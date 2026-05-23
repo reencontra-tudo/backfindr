@@ -327,8 +327,7 @@ export async function GET(
               display: 'flex', flexDirection: 'row', alignItems: 'center',
               padding: `60px ${pad}px ${pad}px`,
               gap: '60px',
-              height: `${footerH}px`,
-              flexShrink: 0,
+              flex: 1,
             }}>
               {qrBase64 && (
                 <div style={{
@@ -373,7 +372,7 @@ export async function GET(
       const headlineH = 240;  // duas linhas
       const titleH   = 100;
       const descH    = 120;
-      const metaH    = 72;
+      const metaH    = 120;
       const footerH  = 220;
       const gaps     = pad * 2 + 24 + 20 + 20 + 24 + 24; // espaçamentos entre seções
       const photoH   = height - headerH - divH - headlineH - titleH - descH - metaH - footerH - gaps;
@@ -482,7 +481,7 @@ export async function GET(
             {/* ── Data + Local ── */}
             <div style={{
               padding: `20px ${pad}px 0`,
-              display: 'flex', flexDirection: 'row', gap: '24px', alignItems: 'center',
+              display: 'flex', flexDirection: 'column', gap: '12px',
               height: `${metaH}px`, flexShrink: 0,
             }}>
               {createdAt && (
@@ -492,13 +491,10 @@ export async function GET(
                 </div>
               )}
               {addrShort && (
-                <>
-                  <span style={{ color: '#ffffff25', fontSize: '28px' }}>|</span>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flex: 1 }}>
-                    <span style={{ fontSize: '26px', flexShrink: 0 }}>📍</span>
-                    <span style={{ color: '#ffffffaa', fontSize: '28px', fontWeight: 600 }}>{addrShort}</span>
-                  </div>
-                </>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                  <span style={{ fontSize: '26px', flexShrink: 0 }}>📍</span>
+                  <span style={{ color: '#ffffffaa', fontSize: '28px', fontWeight: 600, display: 'flex', flexWrap: 'wrap' }}>{addrShort}</span>
+                </div>
               )}
             </div>
 
@@ -554,7 +550,7 @@ export async function GET(
     const photoW  = 420;
 
     const descShort = desc.length > 100 ? desc.slice(0, 97) + '…' : desc;
-    const addrShort = address.length > 32 ? address.slice(0, 29) + '…' : address;
+    const addrShort = address.length > 45 ? address.slice(0, 42) + '…' : address;
 
     const imageResponse = new ImageResponse(
       (
