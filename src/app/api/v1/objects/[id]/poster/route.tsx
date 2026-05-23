@@ -175,8 +175,8 @@ export async function GET(
       const headerH   = 180;
       const headlineH = 380;
       const dividerH  = 4;
-      const infoH     = 480;
-      const footerH   = 480;
+      const infoH     = 380;
+      const footerH   = 600;
       const used = headerH + headlineH + dividerH + infoH + footerH + pad * 2 + 80 * 4;
       const photoH = height - used;
 
