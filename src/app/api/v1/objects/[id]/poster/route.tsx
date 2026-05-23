@@ -171,7 +171,14 @@ export async function GET(
     // ─────────────────────────────────────────────────────────────────────────
     if (format === 'a4') {
       const pad    = 160;
+      // Alturas fixas das seções não-foto
+      const headerH   = 180;
+      const headlineH = 380;
       const dividerH  = 4;
+      const infoH     = 480;
+      const footerH   = 480;
+      const used = headerH + headlineH + dividerH + infoH + footerH + pad * 2 + 80 * 4;
+      const photoH = height - used;
 
       const descTrunc = desc.length > 500 ? desc.slice(0, 497) + '…' : desc;
       const addrShort = address.length > 50 ? address.slice(0, 47) + '…' : address;
@@ -229,13 +236,13 @@ export async function GET(
             {/* ── Foto ── */}
             <div style={{
               margin: `60px ${pad}px 0`,
-              flex: 2,
-              minHeight: '800px',
+              height: `${photoH}px`,
               border: '3px solid #e5e7eb',
               borderRadius: '32px',
               overflow: 'hidden',
               display: 'flex', alignItems: 'center', justifyContent: 'center',
               background: '#f3f4f6',
+              flexShrink: 0,
             }}>
               {photoBase64 ? (
                 <img src={photoBase64} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
@@ -255,7 +262,8 @@ export async function GET(
               display: 'flex', flexDirection: 'row',
               padding: `60px ${pad}px 0`,
               gap: '80px',
-              flex: 1,
+              height: `${infoH}px`,
+              flexShrink: 0,
             }}>
               {/* Esquerda */}
               <div style={{ display: 'flex', flexDirection: 'column', gap: '20px', flex: 1 }}>
@@ -319,8 +327,7 @@ export async function GET(
               display: 'flex', flexDirection: 'row', alignItems: 'center',
               padding: `60px ${pad}px ${pad}px`,
               gap: '60px',
-              flexShrink: 0,
-              minHeight: '480px',
+              flex: 1,
             }}>
               {qrBase64 && (
                 <div style={{
