@@ -294,7 +294,7 @@ export async function GET(
                     display: 'flex', flexWrap: 'wrap',
                   }}>{characteristics}</span>
                 )}
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', marginTop: 'auto' }}>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
                   {createdAt && (
                     <div style={{ display: 'flex', alignItems: 'center', gap: '20px' }}>
                       <span style={{ fontSize: '44px' }}>📅</span>
@@ -474,7 +474,7 @@ export async function GET(
               display: 'flex', alignItems: 'center',
             }}>
               <span style={{
-                color: '#ffffffdd', fontSize: '40px', fontWeight: 700,
+                color: 'rgba(255,255,255,0.87)', fontSize: '40px', fontWeight: 700,
                 lineHeight: 1.1, display: 'flex', flexWrap: 'wrap',
               }}>{obj.title}</span>
             </div>
@@ -501,13 +501,13 @@ export async function GET(
               {createdAt && (
                 <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
                   <span style={{ fontSize: '24px' }}>📅</span>
-                  <span style={{ color: '#ffffffaa', fontSize: '26px', fontWeight: 600 }}>{createdAt}</span>
+                  <span style={{ color: 'rgba(255,255,255,0.67)', fontSize: '26px', fontWeight: 600 }}>{createdAt}</span>
                 </div>
               )}
               {address && (
                 <div style={{ display: 'flex', alignItems: 'flex-start', gap: '10px' }}>
-                  <span style={{ fontSize: '24px', flexShrink: 0, marginTop: '2px' }}>📍</span>
-                  <span style={{ color: '#ffffffaa', fontSize: '26px', fontWeight: 600, display: 'flex', flexWrap: 'wrap', lineHeight: 1.3 }}>{address}</span>
+                  <span style={{ fontSize: '24px', flexShrink: 0 }}>📍</span>
+                  <span style={{ color: 'rgba(255,255,255,0.67)', fontSize: '26px', fontWeight: 600, display: 'flex', flexWrap: 'wrap', lineHeight: 1.3 }}>{address}</span>
                 </div>
               )}
             </div>
@@ -519,7 +519,7 @@ export async function GET(
                 flexShrink: 0,
               }}>
                 <span style={{
-                  color: '#ffffff80', fontSize: '28px', lineHeight: 1.5,
+                  color: 'rgba(255,255,255,0.50)', fontSize: '28px', lineHeight: 1.5,
                   display: 'flex', flexWrap: 'wrap',
                 }}>{descTrunc}</span>
               </div>
@@ -543,7 +543,7 @@ export async function GET(
             <div style={{
               margin: `20px ${pad}px ${pad}px`,
               background: 'rgba(20,184,166,0.10)',
-              border: `2px solid ${teal}55`,
+              border: '2px solid rgba(20,184,166,0.33)',
               borderRadius: '20px',
               padding: '20px 24px',
               display: 'flex', flexDirection: 'row', alignItems: 'center', gap: '20px',
@@ -561,7 +561,7 @@ export async function GET(
                 <span style={{ color: teal, fontSize: '30px', fontWeight: 900, display: 'flex', flexWrap: 'wrap' }}>
                   AJUDE A ENCONTRAR
                 </span>
-                <span style={{ color: '#ffffffcc', fontSize: '24px', lineHeight: 1.4, display: 'flex', flexWrap: 'wrap' }}>
+                <span style={{ color: 'rgba(255,255,255,0.80)', fontSize: '24px', lineHeight: 1.4, display: 'flex', flexWrap: 'wrap' }}>
                   {statusCfg.cta}
                 </span>
                 <span style={{ color: teal, fontSize: '20px' }}>
@@ -719,7 +719,7 @@ export async function GET(
                 color: '#ffffff', fontSize: '38px', fontWeight: 900,
                 letterSpacing: '-1px', display: 'flex', flexWrap: 'wrap',
               }}>AJUDE A ENCONTRAR</span>
-              <span style={{ color: '#ffffffdd', fontSize: '22px', display: 'flex', flexWrap: 'wrap' }}>
+              <span style={{ color: 'rgba(255,255,255,0.87)', fontSize: '22px', display: 'flex', flexWrap: 'wrap' }}>
                 {statusCfg.cta}
               </span>
             </div>
@@ -733,7 +733,7 @@ export async function GET(
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
                 fontSize: '22px',
               }}>📍</div>
-              <span style={{ color: '#ffffffcc', fontSize: '16px', fontWeight: 700 }}>backfindr</span>
+              <span style={{ color: 'rgba(255,255,255,0.80)', fontSize: '16px', fontWeight: 700 }}>backfindr</span>
             </div>
           </div>
         </div>
@@ -746,7 +746,8 @@ export async function GET(
     });
 
   } catch (err) {
-    console.error('[poster]', err);
-    return new Response('Erro ao gerar pôster', { status: 500 });
+    const msg = err instanceof Error ? err.message + '\n' + err.stack : String(err);
+    console.error('[poster]', msg);
+    return new Response('Erro: ' + msg.slice(0, 500), { status: 500 });
   }
 }
