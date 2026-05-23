@@ -81,7 +81,9 @@ export async function GET(
     const result = await query(
       `SELECT 
         o.id, o.title, o.description, o.status, o.category, o.qr_code, o.images,
-        o.location, o.reward_amount, o.created_at,
+        o.location, o.latitude, o.longitude,
+        o.color, o.brand, o.breed,
+        o.reward_amount, o.reward_description, o.created_at,
         CASE 
           WHEN b.id IS NOT NULL AND b.status = 'active' AND b.expires_at > NOW() 
           THEN true ELSE false 
@@ -101,11 +103,13 @@ export async function GET(
       id: string; title: string; description: string | null;
       status: string; category: string; qr_code: string;
       images: string | string[]; location: string | null;
-      reward_amount: number | null; created_at: string;
-      has_active_boost: boolean;
+      latitude: string | null; longitude: string | null;
+      color: string | null; brand: string | null; breed: string | null;
+      reward_amount: number | null; reward_description: string | null;
+      created_at: string; has_active_boost: boolean;
     };
 
-    // Foto
+    // ── Foto ──
     let photos: string[] = [];
     try {
       if (Array.isArray(obj.images)) photos = obj.images;
@@ -115,6 +119,33 @@ export async function GET(
       }
     } catch { photos = []; }
     const photoUrl = photos[0] ?? null;
+
+    // ── Endereço — replica normalizeObject do route.ts ──
+    let address = '';
+    try {
+      const lat = obj.latitude ? parseFloat(obj.latitude) : null;
+      const lng = obj.longitude ? parseFloat(obj.longitude) : null;
+      if (lat && lng && !Number.isNaN(lat) && !Number.isNaN(lng)) {
+        // latitude/longitude existem — address está em location como texto
+        address = obj.location ?? '';
+      } else if (obj.location && typeof obj.location === 'string') {
+        try {
+          const p = JSON.parse(obj.location);
+          if (p.address) address = p.address;
+          else if (p.lat && p.lng) address = ''; // JSON sem address textual
+        } catch {
+          // location é texto direto
+          address = obj.location;
+        }
+      }
+    } catch { address = ''; }
+
+    // ── Características do objeto ──
+    const charParts: string[] = [];
+    if (obj.color) charParts.push(obj.color);
+    if (obj.brand) charParts.push(obj.brand);
+    if (obj.breed) charParts.push(obj.breed);
+    const characteristics = charParts.join(' · ');
 
     const statusCfg     = STATUS_CONFIG[obj.status] ?? STATUS_CONFIG.lost;
     const emoji         = CATEGORY_EMOJI[obj.category] ?? '📦';
@@ -127,7 +158,7 @@ export async function GET(
     const appUrl  = process.env.NEXT_PUBLIC_APP_URL ?? 'https://backfindr.com';
     const pageUrl = `${appUrl}/scan/${obj.qr_code}`;
     const isA4    = format === 'a4';
-    const qrPx    = isA4 ? 360 : 240;
+    const qrPx    = isA4 ? 360 : 220;
     const qrUrl   = `https://api.qrserver.com/v1/create-qr-code/?size=${qrPx}x${qrPx}&data=${encodeURIComponent(pageUrl)}&bgcolor=ffffff&color=111827&margin=8`;
 
     const getBase64 = async (imageUrl: string) => {
@@ -146,14 +177,6 @@ export async function GET(
       getBase64(qrUrl),
     ]);
 
-    let address = '';
-    try {
-      if (obj.location) {
-        const loc = typeof obj.location === 'string' ? JSON.parse(obj.location) : obj.location;
-        address = loc.address ?? '';
-      }
-    } catch { address = ''; }
-
     const createdAt = obj.created_at
       ? new Date(obj.created_at).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric' })
       : '';
@@ -161,23 +184,24 @@ export async function GET(
     const desc = obj.description ?? '';
 
     // ─────────────────────────────────────────────────────────────────────────
-    // TEMPLATE 2 — MINIMAL CLEAN — A4 (2480×3508)
-    // Layout: header (logo+badge) → headline → foto grande → info → rodapé QR
-    // Sem espaços mortos: cada seção tem altura calculada para preencher o canvas
+    // TEMPLATE A4 — MINIMAL CLEAN (2480×3508)
+    // Hierarquia: header (logo+badge) → headline → foto grande →
+    //   título + características + data + endereço (esq) | descrição (dir) →
+    //   recompensa (se houver) → rodapé QR
     // ─────────────────────────────────────────────────────────────────────────
     if (format === 'a4') {
-      const pad    = 160;
-      // Alturas fixas das seções não-foto
-      const headerH   = 180;   // logo + badge
-      const headlineH = 380;   // duas linhas headline
-      const dividerH  = 4;
-      const infoH     = 480;   // descrição + chips
-      const footerH   = 480;   // QR + CTA
-      const used = headerH + headlineH + dividerH + infoH + footerH + pad * 2 + 80 * 4; // 80 = gaps
-      const photoH = height - used;
+      const pad       = 160;
+      const headerH   = 200;
+      const headlineH = 420;
+      const infoH     = 560;
+      const rewardH   = (obj.reward_amount && obj.reward_amount > 0) ? 140 : 0;
+      const footerH   = 500;
+      const gaps      = 80 * 5; // 5 gaps entre seções
+      const used      = headerH + headlineH + infoH + rewardH + footerH + gaps + pad * 2;
+      const photoH    = Math.max(600, height - used);
 
-      const descTrunc = desc.length > 500 ? desc.slice(0, 497) + '…' : desc;
-      const addrShort = address.length > 50 ? address.slice(0, 47) + '…' : address;
+      // Descrição: máx 3 linhas (~180 chars no A4)
+      const descTrunc = desc.length > 180 ? desc.slice(0, 177) + '…' : desc;
 
       const imageResponse = new ImageResponse(
         (
@@ -199,15 +223,15 @@ export async function GET(
                   background: teal, display: 'flex', alignItems: 'center', justifyContent: 'center',
                   fontSize: '48px',
                 }}>📍</div>
-                <span style={{ color: '#111827', fontSize: '60px', fontWeight: 800, letterSpacing: '-1px' }}>
+                <span style={{ color: '#111827', fontSize: '64px', fontWeight: 800, letterSpacing: '-1px' }}>
                   backfindr
                 </span>
               </div>
               <div style={{
                 background: accent, borderRadius: '100px',
-                padding: '22px 64px', display: 'flex',
+                padding: '24px 72px', display: 'flex',
               }}>
-                <span style={{ color: '#ffffff', fontSize: '48px', fontWeight: 800, letterSpacing: '3px' }}>
+                <span style={{ color: '#ffffff', fontSize: '52px', fontWeight: 800, letterSpacing: '3px' }}>
                   {statusCfg.label}
                 </span>
               </div>
@@ -216,12 +240,12 @@ export async function GET(
             {/* ── Headline ── */}
             <div style={{
               display: 'flex', flexDirection: 'column',
-              padding: `60px ${pad}px 0`,
+              padding: `80px ${pad}px 0`,
               flexShrink: 0,
             }}>
               <span style={{
-                color: '#9ca3af', fontSize: '130px', fontWeight: 300,
-                letterSpacing: '-3px', lineHeight: 1.0, display: 'flex',
+                color: '#9ca3af', fontSize: '120px', fontWeight: 300,
+                letterSpacing: '-2px', lineHeight: 1.0, display: 'flex',
               }}>{headlineParts[0]}</span>
               <span style={{
                 color: '#111827', fontSize: '180px', fontWeight: 900,
@@ -231,7 +255,7 @@ export async function GET(
 
             {/* ── Foto ── */}
             <div style={{
-              margin: `60px ${pad}px 0`,
+              margin: `80px ${pad}px 0`,
               height: `${photoH}px`,
               border: '3px solid #e5e7eb',
               borderRadius: '32px',
@@ -247,83 +271,82 @@ export async function GET(
               )}
             </div>
 
-            {/* ── Linha divisória ── */}
-            <div style={{
-              margin: `60px ${pad}px 0`,
-              height: `${dividerH}px`, background: '#e5e7eb', display: 'flex', flexShrink: 0,
-            }} />
-
-            {/* ── Info: título + descrição (esq) | chips data/local (dir) ── */}
+            {/* ── Info: esq (título+características+data+endereço) | dir (descrição) ── */}
             <div style={{
               display: 'flex', flexDirection: 'row',
-              padding: `60px ${pad}px 0`,
+              padding: `80px ${pad}px 0`,
               gap: '80px',
               height: `${infoH}px`,
               flexShrink: 0,
             }}>
-              {/* Esquerda */}
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '20px', flex: 1 }}>
-                <span style={{ color: teal, fontSize: '32px', fontWeight: 700, letterSpacing: '3px', display: 'flex' }}>
+              {/* Coluna esquerda */}
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '24px', flex: 1 }}>
+                <span style={{ color: teal, fontSize: '36px', fontWeight: 700, letterSpacing: '3px', display: 'flex' }}>
                   {catLabel.toUpperCase()}
                 </span>
                 <span style={{
-                  color: '#111827', fontSize: '64px', fontWeight: 800,
-                  lineHeight: 1.1, display: 'flex', flexWrap: 'wrap',
+                  color: '#111827', fontSize: '72px', fontWeight: 800,
+                  lineHeight: 1.05, display: 'flex', flexWrap: 'wrap',
                 }}>{obj.title}</span>
-                {descTrunc && (
+                {characteristics && (
                   <span style={{
-                    color: '#6b7280', fontSize: '38px', lineHeight: 1.5,
+                    color: '#6b7280', fontSize: '40px', fontWeight: 500,
+                    display: 'flex', flexWrap: 'wrap',
+                  }}>{characteristics}</span>
+                )}
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', marginTop: 'auto' }}>
+                  {createdAt && (
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '20px' }}>
+                      <span style={{ fontSize: '44px' }}>📅</span>
+                      <span style={{ color: '#374151', fontSize: '44px', fontWeight: 700 }}>{createdAt}</span>
+                    </div>
+                  )}
+                  {address && (
+                    <div style={{ display: 'flex', alignItems: 'flex-start', gap: '20px' }}>
+                      <span style={{ fontSize: '44px', flexShrink: 0 }}>📍</span>
+                      <span style={{ color: '#374151', fontSize: '40px', fontWeight: 700, display: 'flex', flexWrap: 'wrap', lineHeight: 1.3 }}>{address}</span>
+                    </div>
+                  )}
+                </div>
+              </div>
+              {/* Coluna direita: descrição */}
+              {descTrunc && (
+                <div style={{
+                  width: '900px', flexShrink: 0,
+                  display: 'flex', flexDirection: 'column', justifyContent: 'flex-end',
+                  paddingBottom: '8px',
+                }}>
+                  <span style={{ color: '#6b7280', fontSize: '36px', fontWeight: 600, letterSpacing: '2px', display: 'flex', marginBottom: '16px' }}>
+                    DESCRIÇÃO
+                  </span>
+                  <span style={{
+                    color: '#374151', fontSize: '42px', lineHeight: 1.6,
                     display: 'flex', flexWrap: 'wrap',
                   }}>{descTrunc}</span>
-                )}
-              </div>
-              {/* Direita: chips */}
-              <div style={{
-                display: 'flex', flexDirection: 'column', gap: '28px',
-                width: '900px', flexShrink: 0, justifyContent: 'center',
-              }}>
-                {createdAt && (
-                  <div style={{
-                    display: 'flex', alignItems: 'center', gap: '24px',
-                    border: `2px solid ${teal}`, borderRadius: '20px', padding: '28px 40px',
-                  }}>
-                    <span style={{ fontSize: '48px' }}>📅</span>
-                    <span style={{ color: '#111827', fontSize: '48px', fontWeight: 700 }}>{createdAt}</span>
-                  </div>
-                )}
-                {addrShort && (
-                  <div style={{
-                    display: 'flex', alignItems: 'center', gap: '24px',
-                    border: `2px solid ${teal}`, borderRadius: '20px', padding: '28px 40px',
-                  }}>
-                    <span style={{ fontSize: '48px', flexShrink: 0 }}>📍</span>
-                    <span style={{ color: '#111827', fontSize: '44px', fontWeight: 700, display: 'flex', flexWrap: 'wrap' }}>{addrShort}</span>
-                  </div>
-                )}
-                {obj.reward_amount && obj.reward_amount > 0 && (
-                  <div style={{
-                    display: 'flex', alignItems: 'center', gap: '24px',
-                    border: '2px solid #F59E0B', borderRadius: '20px', padding: '28px 40px',
-                    background: '#fffbeb',
-                  }}>
-                    <span style={{ fontSize: '48px' }}>🏆</span>
-                    <div style={{ display: 'flex', flexDirection: 'column' }}>
-                      <span style={{ color: '#92400e', fontSize: '28px', fontWeight: 600 }}>Recompensa</span>
-                      <span style={{ color: '#b45309', fontSize: '52px', fontWeight: 900 }}>
-                        R$ {obj.reward_amount.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
-                      </span>
-                    </div>
-                  </div>
-                )}
-              </div>
+                </div>
+              )}
             </div>
+
+            {/* ── Recompensa (discreta, quando houver) ── */}
+            {obj.reward_amount && obj.reward_amount > 0 && (
+              <div style={{
+                display: 'flex', alignItems: 'center', gap: '24px',
+                padding: `40px ${pad}px 0`,
+                height: `${rewardH}px`,
+                flexShrink: 0,
+              }}>
+                <span style={{ fontSize: '44px' }}>🏆</span>
+                <span style={{ color: '#b45309', fontSize: '44px', fontWeight: 700 }}>
+                  Recompensa: R$ {Number(obj.reward_amount).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                </span>
+              </div>
+            )}
 
             {/* ── Rodapé QR ── */}
             <div style={{
               display: 'flex', flexDirection: 'row', alignItems: 'center',
-              padding: `60px ${pad}px ${pad}px`,
+              padding: `80px ${pad}px ${pad}px`,
               gap: '60px',
-              height: `${footerH}px`,
               flexShrink: 0,
             }}>
               {qrBase64 && (
@@ -335,13 +358,13 @@ export async function GET(
                 </div>
               )}
               <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-                <span style={{ color: accent, fontSize: '64px', fontWeight: 900, letterSpacing: '-1px', display: 'flex' }}>
+                <span style={{ color: accent, fontSize: '72px', fontWeight: 900, letterSpacing: '-1px', display: 'flex' }}>
                   AJUDE A ENCONTRAR
                 </span>
-                <span style={{ color: '#374151', fontSize: '44px', lineHeight: 1.4, display: 'flex', flexWrap: 'wrap' }}>
+                <span style={{ color: '#374151', fontSize: '48px', lineHeight: 1.4, display: 'flex', flexWrap: 'wrap' }}>
                   {statusCfg.cta}
                 </span>
-                <span style={{ color: '#9ca3af', fontSize: '36px' }}>
+                <span style={{ color: '#9ca3af', fontSize: '40px' }}>
                   {appUrl.replace('https://', '')}
                 </span>
               </div>
@@ -357,25 +380,26 @@ export async function GET(
     }
 
     // ─────────────────────────────────────────────────────────────────────────
-    // TEMPLATE 3 — URGENT DARK — VERTICAL (1080×1920)
-    // Layout: header → foto hero GRANDE → linha vermelha → headline → título →
-    //         descrição → data+local → rodapé QR (sem espaço morto)
+    // TEMPLATE VERTICAL — URGENT DARK (1080×1920)
+    // Hierarquia: header (logo+badge) → foto hero GRANDE →
+    //   headline → título → características → data + endereço →
+    //   descrição → recompensa (se houver) → rodapé QR
     // ─────────────────────────────────────────────────────────────────────────
     if (format === 'vertical') {
-      const pad    = 52;
-      // Alturas fixas
-      const headerH  = 100;
-      const divH     = 3;
-      const headlineH = 240;  // duas linhas
-      const titleH   = 100;
-      const descH    = 120;
-      const metaH    = 72;
-      const footerH  = 220;
-      const gaps     = pad * 2 + 24 + 20 + 20 + 24 + 24; // espaçamentos entre seções
-      const photoH   = height - headerH - divH - headlineH - titleH - descH - metaH - footerH - gaps;
+      const pad       = 48;
+      const headerH   = 96;
+      const headlineH = 220;
+      const titleH    = 80;
+      const charH     = characteristics ? 56 : 0;
+      const metaH     = 64;
+      const descH     = 100;
+      const rewardH   = (obj.reward_amount && obj.reward_amount > 0) ? 56 : 0;
+      const footerH   = 200;
+      const gaps      = pad + 20 + 16 + 16 + 16 + 16 + 20;
+      const photoH    = height - headerH - headlineH - titleH - charH - metaH - descH - rewardH - footerH - gaps - pad * 2;
 
-      const descTrunc = desc.length > 140 ? desc.slice(0, 137) + '…' : desc;
-      const addrShort = address.length > 45 ? address.slice(0, 42) + '…' : address;
+      // Descrição: máx 2 linhas (~120 chars no vertical)
+      const descTrunc = desc.length > 120 ? desc.slice(0, 117) + '…' : desc;
 
       const imageResponse = new ImageResponse(
         (
@@ -388,28 +412,28 @@ export async function GET(
             {/* ── Header ── */}
             <div style={{
               display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-              padding: `${pad}px ${pad}px 24px`,
+              padding: `${pad}px ${pad}px 20px`,
               height: `${headerH + pad}px`, flexShrink: 0,
             }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
                 <div style={{
-                  width: '52px', height: '52px', borderRadius: '50%',
+                  width: '48px', height: '48px', borderRadius: '50%',
                   background: teal, display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  fontSize: '28px',
+                  fontSize: '26px',
                 }}>📍</div>
-                <span style={{ color: '#ffffff', fontSize: '36px', fontWeight: 800 }}>backfindr</span>
+                <span style={{ color: '#ffffff', fontSize: '34px', fontWeight: 800 }}>backfindr</span>
               </div>
               <div style={{
                 background: accent, borderRadius: '100px',
-                padding: '12px 32px', display: 'flex',
+                padding: '10px 28px', display: 'flex',
               }}>
-                <span style={{ color: '#ffffff', fontSize: '28px', fontWeight: 800, letterSpacing: '1px' }}>
+                <span style={{ color: '#ffffff', fontSize: '26px', fontWeight: 800, letterSpacing: '1px' }}>
                   {statusCfg.label}
                 </span>
               </div>
             </div>
 
-            {/* ── Foto hero com borda teal ── */}
+            {/* ── Foto hero ── */}
             <div style={{
               margin: `0 ${pad}px`,
               height: `${photoH}px`,
@@ -427,103 +451,120 @@ export async function GET(
               )}
             </div>
 
-            {/* ── Linha vermelha ── */}
-            <div style={{
-              margin: `24px ${pad}px 0`,
-              height: `${divH}px`, background: '#EF4444', display: 'flex', flexShrink: 0,
-            }} />
-
             {/* ── Headline ── */}
             <div style={{
               padding: `20px ${pad}px 0`,
               display: 'flex', flexDirection: 'column',
-              height: `${headlineH}px`, flexShrink: 0,
+              flexShrink: 0,
             }}>
               <span style={{
-                color: '#EF4444', fontSize: '68px', fontWeight: 900,
+                color: accent, fontSize: '60px', fontWeight: 900,
                 letterSpacing: '-1px', lineHeight: 1.0, display: 'flex',
               }}>{headlineParts[0]}</span>
               <span style={{
-                color: '#ffffff', fontSize: '100px', fontWeight: 900,
-                letterSpacing: '-3px', lineHeight: 0.92, display: 'flex', flexWrap: 'wrap',
+                color: '#ffffff', fontSize: '96px', fontWeight: 900,
+                letterSpacing: '-3px', lineHeight: 0.9, display: 'flex', flexWrap: 'wrap',
               }}>{headlineParts[1] ?? ''}</span>
             </div>
 
-            {/* ── Título do objeto ── */}
+            {/* ── Título ── */}
             <div style={{
-              padding: `0 ${pad}px`,
-              height: `${titleH}px`, flexShrink: 0,
+              padding: `16px ${pad}px 0`,
+              flexShrink: 0,
               display: 'flex', alignItems: 'center',
             }}>
               <span style={{
-                color: '#ffffffdd', fontSize: '44px', fontWeight: 700,
+                color: '#ffffffdd', fontSize: '40px', fontWeight: 700,
                 lineHeight: 1.1, display: 'flex', flexWrap: 'wrap',
               }}>{obj.title}</span>
+            </div>
+
+            {/* ── Características ── */}
+            {characteristics && (
+              <div style={{
+                padding: `10px ${pad}px 0`,
+                flexShrink: 0,
+              }}>
+                <span style={{
+                  color: teal, fontSize: '28px', fontWeight: 600,
+                  display: 'flex', flexWrap: 'wrap',
+                }}>{characteristics}</span>
+              </div>
+            )}
+
+            {/* ── Data + Endereço ── */}
+            <div style={{
+              padding: `16px ${pad}px 0`,
+              display: 'flex', flexDirection: 'column', gap: '8px',
+              flexShrink: 0,
+            }}>
+              {createdAt && (
+                <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                  <span style={{ fontSize: '24px' }}>📅</span>
+                  <span style={{ color: '#ffffffaa', fontSize: '26px', fontWeight: 600 }}>{createdAt}</span>
+                </div>
+              )}
+              {address && (
+                <div style={{ display: 'flex', alignItems: 'flex-start', gap: '10px' }}>
+                  <span style={{ fontSize: '24px', flexShrink: 0, marginTop: '2px' }}>📍</span>
+                  <span style={{ color: '#ffffffaa', fontSize: '26px', fontWeight: 600, display: 'flex', flexWrap: 'wrap', lineHeight: 1.3 }}>{address}</span>
+                </div>
+              )}
             </div>
 
             {/* ── Descrição ── */}
             {descTrunc && (
               <div style={{
-                padding: `0 ${pad}px`,
-                height: `${descH}px`, flexShrink: 0,
-                display: 'flex', alignItems: 'flex-start',
+                padding: `16px ${pad}px 0`,
+                flexShrink: 0,
               }}>
                 <span style={{
-                  color: '#ffffff99', fontSize: '30px', lineHeight: 1.5,
+                  color: '#ffffff80', fontSize: '28px', lineHeight: 1.5,
                   display: 'flex', flexWrap: 'wrap',
                 }}>{descTrunc}</span>
               </div>
             )}
 
-            {/* ── Data + Local ── */}
-            <div style={{
-              padding: `20px ${pad}px 0`,
-              display: 'flex', flexDirection: 'row', gap: '24px', alignItems: 'center',
-              height: `${metaH}px`, flexShrink: 0,
-            }}>
-              {createdAt && (
-                <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                  <span style={{ fontSize: '26px' }}>📅</span>
-                  <span style={{ color: '#ffffffaa', fontSize: '28px', fontWeight: 600 }}>{createdAt}</span>
-                </div>
-              )}
-              {addrShort && (
-                <>
-                  <span style={{ color: '#ffffff25', fontSize: '28px' }}>|</span>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flex: 1 }}>
-                    <span style={{ fontSize: '26px', flexShrink: 0 }}>📍</span>
-                    <span style={{ color: '#ffffffaa', fontSize: '28px', fontWeight: 600 }}>{addrShort}</span>
-                  </div>
-                </>
-              )}
-            </div>
+            {/* ── Recompensa ── */}
+            {obj.reward_amount && obj.reward_amount > 0 && (
+              <div style={{
+                padding: `12px ${pad}px 0`,
+                display: 'flex', alignItems: 'center', gap: '10px',
+                flexShrink: 0,
+              }}>
+                <span style={{ fontSize: '24px' }}>🏆</span>
+                <span style={{ color: '#fbbf24', fontSize: '28px', fontWeight: 700 }}>
+                  Recompensa: R$ {Number(obj.reward_amount).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                </span>
+              </div>
+            )}
 
             {/* ── Rodapé QR ── */}
             <div style={{
-              margin: `24px ${pad}px ${pad}px`,
-              background: `rgba(20,184,166,0.10)`,
+              margin: `20px ${pad}px ${pad}px`,
+              background: 'rgba(20,184,166,0.10)',
               border: `2px solid ${teal}55`,
               borderRadius: '20px',
-              padding: '24px 28px',
-              display: 'flex', flexDirection: 'row', alignItems: 'center', gap: '24px',
+              padding: '20px 24px',
+              display: 'flex', flexDirection: 'row', alignItems: 'center', gap: '20px',
               flex: 1,
             }}>
               {qrBase64 && (
                 <div style={{
                   background: '#ffffff', borderRadius: '12px',
-                  padding: '10px', display: 'flex', flexShrink: 0,
+                  padding: '8px', display: 'flex', flexShrink: 0,
                 }}>
                   <img src={qrBase64} style={{ width: `${qrPx}px`, height: `${qrPx}px` }} />
                 </div>
               )}
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', flex: 1 }}>
-                <span style={{ color: teal, fontSize: '34px', fontWeight: 900, display: 'flex', flexWrap: 'wrap' }}>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', flex: 1 }}>
+                <span style={{ color: teal, fontSize: '30px', fontWeight: 900, display: 'flex', flexWrap: 'wrap' }}>
                   AJUDE A ENCONTRAR
                 </span>
-                <span style={{ color: '#ffffffcc', fontSize: '26px', lineHeight: 1.4, display: 'flex', flexWrap: 'wrap' }}>
+                <span style={{ color: '#ffffffcc', fontSize: '24px', lineHeight: 1.4, display: 'flex', flexWrap: 'wrap' }}>
                   {statusCfg.cta}
                 </span>
-                <span style={{ color: teal, fontSize: '22px' }}>
+                <span style={{ color: teal, fontSize: '20px' }}>
                   {appUrl.replace('https://', '')}
                 </span>
               </div>
@@ -539,18 +580,19 @@ export async function GET(
     }
 
     // ─────────────────────────────────────────────────────────────────────────
-    // TEMPLATE 1 — BOLD IMPACT — QUADRADO (1080×1080)
-    // Layout: faixa colorida com headline (topo, ~35%) → corpo branco com
-    //         foto grande (esq) + título+dados (dir) → rodapé teal com QR
+    // TEMPLATE QUADRADO — BOLD IMPACT (1080×1080)
+    // Hierarquia: faixa colorida (headline) → corpo branco:
+    //   foto (esq, 420px) | título + características + data + endereço + descrição (dir)
+    //   → rodapé teal com QR + CTA + logo
     // ─────────────────────────────────────────────────────────────────────────
-    const topH    = 340;   // faixa colorida
-    const footH   = 240;   // rodapé teal
-    const bodyH   = height - topH - footH;  // 500px para foto+dados
-    const pad     = 40;
-    const photoW  = 420;
+    const topH   = 320;
+    const footH  = 220;
+    const bodyH  = height - topH - footH;
+    const pad    = 36;
+    const photoW = 400;
 
-    const descShort = desc.length > 100 ? desc.slice(0, 97) + '…' : desc;
-    const addrShort = address.length > 32 ? address.slice(0, 29) + '…' : address;
+    // Descrição: máx 2 linhas (~80 chars no quadrado)
+    const descShort = desc.length > 80 ? desc.slice(0, 77) + '…' : desc;
 
     const imageResponse = new ImageResponse(
       (
@@ -570,11 +612,11 @@ export async function GET(
             flexShrink: 0,
           }}>
             <span style={{
-              color: '#ffffff', fontSize: '84px', fontWeight: 900,
+              color: '#ffffff', fontSize: '80px', fontWeight: 900,
               letterSpacing: '-2px', lineHeight: 1.0, display: 'flex',
             }}>{headlineParts[0]}</span>
             <span style={{
-              color: '#ffffff', fontSize: '104px', fontWeight: 900,
+              color: '#ffffff', fontSize: '100px', fontWeight: 900,
               letterSpacing: '-3px', lineHeight: 0.9, display: 'flex', flexWrap: 'wrap',
             }}>{headlineParts[1] ?? ''}</span>
           </div>
@@ -609,40 +651,46 @@ export async function GET(
               display: 'flex', flexDirection: 'column', justifyContent: 'space-between',
               flex: 1, overflow: 'hidden',
             }}>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
                 <span style={{
-                  color: teal, fontSize: '24px', fontWeight: 700,
+                  color: teal, fontSize: '22px', fontWeight: 700,
                   letterSpacing: '2px', textTransform: 'uppercase', display: 'flex',
                 }}>{catLabel}</span>
                 <span style={{
-                  color: '#111827', fontSize: '44px', fontWeight: 800,
+                  color: '#111827', fontSize: '40px', fontWeight: 800,
                   lineHeight: 1.1, display: 'flex', flexWrap: 'wrap',
                 }}>{obj.title}</span>
+                {characteristics && (
+                  <span style={{
+                    color: teal, fontSize: '22px', fontWeight: 600,
+                    display: 'flex', flexWrap: 'wrap',
+                  }}>{characteristics}</span>
+                )}
                 {descShort && (
                   <span style={{
-                    color: '#6b7280', fontSize: '26px', lineHeight: 1.4,
+                    color: '#6b7280', fontSize: '24px', lineHeight: 1.4,
                     display: 'flex', flexWrap: 'wrap',
                   }}>{descShort}</span>
                 )}
               </div>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
                 {createdAt && (
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                    <span style={{ fontSize: '26px' }}>📅</span>
-                    <span style={{ color: '#374151', fontSize: '30px', fontWeight: 700 }}>{createdAt}</span>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <span style={{ fontSize: '22px' }}>📅</span>
+                    <span style={{ color: '#374151', fontSize: '26px', fontWeight: 700 }}>{createdAt}</span>
                   </div>
                 )}
-                {addrShort && (
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                    <span style={{ fontSize: '26px', flexShrink: 0 }}>📍</span>
-                    <span style={{ color: '#374151', fontSize: '28px', fontWeight: 700, display: 'flex', flexWrap: 'wrap' }}>{addrShort}</span>
+                {address && (
+                  <div style={{ display: 'flex', alignItems: 'flex-start', gap: '8px' }}>
+                    <span style={{ fontSize: '22px', flexShrink: 0 }}>📍</span>
+                    <span style={{ color: '#374151', fontSize: '24px', fontWeight: 700, display: 'flex', flexWrap: 'wrap', lineHeight: 1.3 }}>{address}</span>
                   </div>
                 )}
                 {obj.reward_amount && obj.reward_amount > 0 && (
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                    <span style={{ fontSize: '26px' }}>🏆</span>
-                    <span style={{ color: '#b45309', fontSize: '30px', fontWeight: 800 }}>
-                      Recompensa: R$ {obj.reward_amount.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <span style={{ fontSize: '22px' }}>🏆</span>
+                    <span style={{ color: '#b45309', fontSize: '26px', fontWeight: 700 }}>
+                      Recompensa: R$ {Number(obj.reward_amount).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
                     </span>
                   </div>
                 )}
@@ -656,7 +704,7 @@ export async function GET(
             background: teal,
             display: 'flex', flexDirection: 'row', alignItems: 'center',
             padding: `0 ${pad}px`,
-            gap: '24px',
+            gap: '20px',
           }}>
             {qrBase64 && (
               <div style={{
@@ -668,10 +716,10 @@ export async function GET(
             )}
             <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', flex: 1 }}>
               <span style={{
-                color: '#ffffff', fontSize: '42px', fontWeight: 900,
+                color: '#ffffff', fontSize: '38px', fontWeight: 900,
                 letterSpacing: '-1px', display: 'flex', flexWrap: 'wrap',
               }}>AJUDE A ENCONTRAR</span>
-              <span style={{ color: '#ffffffdd', fontSize: '24px', display: 'flex', flexWrap: 'wrap' }}>
+              <span style={{ color: '#ffffffdd', fontSize: '22px', display: 'flex', flexWrap: 'wrap' }}>
                 {statusCfg.cta}
               </span>
             </div>
@@ -680,12 +728,12 @@ export async function GET(
               gap: '4px', flexShrink: 0,
             }}>
               <div style={{
-                width: '44px', height: '44px', borderRadius: '50%',
+                width: '40px', height: '40px', borderRadius: '50%',
                 background: 'rgba(255,255,255,0.2)',
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
-                fontSize: '24px',
+                fontSize: '22px',
               }}>📍</div>
-              <span style={{ color: '#ffffffcc', fontSize: '18px', fontWeight: 700 }}>backfindr</span>
+              <span style={{ color: '#ffffffcc', fontSize: '16px', fontWeight: 700 }}>backfindr</span>
             </div>
           </div>
         </div>
