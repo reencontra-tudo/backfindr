@@ -2,9 +2,11 @@
 
 import { useEffect, useState, useCallback } from 'react';
 import Link from 'next/link';
+import Image from 'next/image';
 import {
   Package, CheckCircle2, AlertTriangle,
-  Plus, ArrowRight, Zap, QrCode, Star, CreditCard
+  Plus, ArrowRight, Zap, QrCode, Star, CreditCard,
+  Search, Map
 } from 'lucide-react';
 import Cookies from 'js-cookie';
 import { useAuthStore } from '@/hooks/useAuth';
@@ -85,22 +87,6 @@ const TOUR_STEPS: TourStep[] = [
   },
 ];
 
-function StatCard({ icon, label, value, sub, color, hint }: {
-  icon: React.ReactNode; label: string; value: number|string; sub?: string; color: string; hint?: string;
-}) {
-  return (
-    <div className="bg-white/[0.03] border border-white/[0.07] rounded-xl p-4">
-      <div className={`w-8 h-8 rounded-lg flex items-center justify-center mb-3 ${color}`}>
-        {icon}
-      </div>
-      <p className="text-2xl font-bold text-white tracking-tight">{value}</p>
-      <p className="text-white/55 text-xs font-medium mt-0.5">{label}</p>
-      {hint && <p className="text-white/25 text-[10px] mt-0.5 leading-tight">{hint}</p>}
-      {sub && <p className="text-white/20 text-[10px] mt-1">{sub}</p>}
-    </div>
-  );
-}
-
 interface PlanInfo {
   plan: string;
   is_paid: boolean;
@@ -151,9 +137,6 @@ export default function DashboardPage() {
 
   useEffect(() => { load(); }, [load]);
 
-  // O modal já é inicializado no estado correto via useState lazy init acima
-  // Não é necessário useEffect com delay — evita flash do conteúdo por baixo
-
   function handleCloseWelcome() {
     localStorage.setItem(LS_WELCOME_SHOWN, '1');
     setShowWelcome(false);
@@ -202,28 +185,92 @@ export default function DashboardPage() {
       )}
 
       {/* ── Conteúdo do dashboard ─────────────────────────────────────────── */}
-      <div className="p-6 md:p-8 max-w-4xl">
-        {/* Header */}
-        <div className="flex items-start justify-between mb-8 gap-4">
+      <div className="p-5 md:p-8 max-w-4xl space-y-6">
+
+        {/* ── Header: saudação + botão registrar ── */}
+        <div className="flex items-center justify-between gap-4">
           <div>
-            <h1 className="font-display text-2xl font-bold text-white">
+            <h1 className="font-display text-xl font-bold text-white leading-tight">
               {greeting}{firstName ? `, ${firstName}` : ''} 👋
             </h1>
-            <p className="text-white/40 text-sm mt-0.5">Seus objetos registrados e status pessoal.</p>
+            <p className="text-white/35 text-xs mt-0.5">Seus objetos e status pessoal.</p>
           </div>
           <Link
             href="/dashboard/objects/new"
             data-tour-id="register-btn-header"
-            className="flex items-center gap-1.5 bg-teal-500 hover:bg-teal-400 text-white text-sm font-semibold px-4 py-2 rounded-lg transition-all flex-shrink-0"
-            style={{ boxShadow: '0 0 0 1px rgba(20,184,166,0.4)' }}
+            className="flex items-center gap-1.5 bg-teal-500 hover:bg-teal-400 text-white text-sm font-semibold px-4 py-2 rounded-xl transition-all flex-shrink-0"
+            style={{ boxShadow: '0 0 16px rgba(20,184,166,0.25)' }}
           >
             <Plus className="w-4 h-4" strokeWidth={2.5} /> Registrar
           </Link>
         </div>
 
-        {/* Card de plano ativo */}
+        {/* ── Métricas compactas em linha ── */}
+        <div
+          className="grid grid-cols-4 gap-2 rounded-2xl bg-white/[0.025] border border-white/[0.06] p-3"
+          data-tour-id="stats-grid"
+        >
+          {/* Meus objetos */}
+          <div className="flex flex-col items-center gap-0.5 py-1">
+            <span className="text-xl font-bold text-white leading-none">
+              {loading ? '—' : objects.length}
+            </span>
+            <span className="text-[10px] text-white/40 text-center leading-tight">Objetos</span>
+          </div>
+          {/* Buscando */}
+          <div className="flex flex-col items-center gap-0.5 py-1 border-l border-white/[0.06]">
+            <span className={`text-xl font-bold leading-none ${lost > 0 ? 'text-red-400' : 'text-white/40'}`}>
+              {loading ? '—' : lost}
+            </span>
+            <span className="text-[10px] text-white/40 text-center leading-tight">Buscando</span>
+          </div>
+          {/* Recuperados */}
+          <div className="flex flex-col items-center gap-0.5 py-1 border-l border-white/[0.06]">
+            <span className={`text-xl font-bold leading-none ${returned > 0 ? 'text-green-400' : 'text-white/40'}`}>
+              {loading ? '—' : returned}
+            </span>
+            <span className="text-[10px] text-white/40 text-center leading-tight">Recuperados</span>
+          </div>
+          {/* Matches IA */}
+          <Link
+            href="/dashboard/matches"
+            className="flex flex-col items-center gap-0.5 py-1 border-l border-white/[0.06] group"
+          >
+            <span className={`text-xl font-bold leading-none transition-colors ${pending > 0 ? 'text-yellow-400 group-hover:text-yellow-300' : 'text-white/40'}`}>
+              {loading ? '—' : pending}
+            </span>
+            <span className="text-[10px] text-white/40 text-center leading-tight">Matches IA</span>
+          </Link>
+        </div>
+
+        {/* ── Alerta de matches pendentes ── */}
+        {pending > 0 && (
+          <Link href="/dashboard/matches"
+            className="flex items-center justify-between gap-3 bg-teal-500/[0.06] border border-teal-500/20 rounded-xl px-4 py-3 hover:border-teal-500/40 transition-all">
+            <div className="flex items-center gap-2.5">
+              <Zap className="w-4 h-4 text-teal-400 flex-shrink-0" />
+              <span className="text-teal-300 text-sm font-medium">
+                {pending} match{pending > 1 ? 'es' : ''} pendente{pending > 1 ? 's' : ''} — confirme para iniciar o chat
+              </span>
+            </div>
+            <ArrowRight className="w-4 h-4 text-teal-400 flex-shrink-0" />
+          </Link>
+        )}
+
+        {/* ── Onboarding checklist (colapsável) ── */}
+        {showOnboarding && (
+          <div data-tour-id="onboarding-checklist">
+            <OnboardingChecklist
+              objectsCount={objects.length}
+              objectStatuses={objects.map(o => o.status)}
+              onDismiss={() => setShowOnboarding(false)}
+            />
+          </div>
+        )}
+
+        {/* ── Card de plano ── */}
         <Link href="/dashboard/billing"
-          className={`flex items-center justify-between gap-3 ${planColors.bg} border ${planColors.border} rounded-xl px-4 py-3 mb-6 hover:opacity-90 transition-all`}>
+          className={`flex items-center justify-between gap-3 ${planColors.bg} border ${planColors.border} rounded-xl px-4 py-3 hover:opacity-90 transition-all`}>
           <div className="flex items-center gap-3">
             <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${planColors.bg} border ${planColors.border}`}>
               {currentPlan === 'free'
@@ -259,37 +306,12 @@ export default function DashboardPage() {
           </div>
         </Link>
 
-        {/* Onboarding checklist */}
-        {showOnboarding && (
-          <div data-tour-id="onboarding-checklist">
-            <OnboardingChecklist
-              objectsCount={objects.length}
-              objectStatuses={objects.map(o => o.status)}
-              onDismiss={() => setShowOnboarding(false)}
-            />
-          </div>
-        )}
-
-        {/* Matches alert */}
-        {pending > 0 && (
-          <Link href="/dashboard/matches"
-            className="flex items-center justify-between gap-3 bg-teal-500/[0.06] border border-teal-500/20 rounded-xl px-4 py-3 mb-6 hover:border-teal-500/40 transition-all">
-            <div className="flex items-center gap-2.5">
-              <Zap className="w-4 h-4 text-teal-400 flex-shrink-0" />
-              <span className="text-teal-300 text-sm font-medium">
-                {pending} match{pending > 1 ? 'es' : ''} pendente{pending > 1 ? 's' : ''} — confirme para iniciar o chat
-              </span>
-            </div>
-            <ArrowRight className="w-4 h-4 text-teal-400 flex-shrink-0" />
-          </Link>
-        )}
-
-        {/* Quick actions */}
-        <div className="grid grid-cols-2 gap-3 mb-6">
+        {/* ── Ações rápidas ── */}
+        <div className="grid grid-cols-2 gap-3">
           <Link href="/dashboard/search"
             className="flex items-center gap-3 p-4 bg-white/[0.02] border border-white/[0.06] hover:border-white/[0.12] rounded-xl transition-all group">
             <div className="w-8 h-8 rounded-lg bg-white/[0.06] flex items-center justify-center flex-shrink-0">
-              <Package className="w-4 h-4 text-white/40" />
+              <Search className="w-4 h-4 text-white/40" />
             </div>
             <div>
               <p className="text-white text-sm font-medium">Buscar achados</p>
@@ -299,7 +321,7 @@ export default function DashboardPage() {
           <Link href="/map"
             className="flex items-center gap-3 p-4 bg-white/[0.02] border border-white/[0.06] hover:border-white/[0.12] rounded-xl transition-all group">
             <div className="w-8 h-8 rounded-lg bg-white/[0.06] flex items-center justify-center flex-shrink-0">
-              <QrCode className="w-4 h-4 text-white/40" />
+              <Map className="w-4 h-4 text-white/40" />
             </div>
             <div>
               <p className="text-white text-sm font-medium">Mapa público</p>
@@ -307,42 +329,10 @@ export default function DashboardPage() {
             </div>
           </Link>
         </div>
-        {/* Stats */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-8" data-tour-id="stats-grid">
-          <StatCard
-            icon={<Package className="w-4 h-4 text-white/60" />}
-            label="Meus objetos"
-            hint="total que você cadastrou"
-            value={loading ? '—' : objects.length}
-            color="bg-white/[0.06]"
-          />
-          <StatCard
-            icon={<AlertTriangle className="w-4 h-4 text-red-400" />}
-            label="Buscando"
-            hint="seus objetos perdidos ativos"
-            value={loading ? '—' : lost}
-            color="bg-red-500/10"
-          />
-          <StatCard
-            icon={<CheckCircle2 className="w-4 h-4 text-green-400" />}
-            label="Recuperados"
-            hint="seus objetos devolvidos"
-            value={loading ? '—' : returned}
-            color="bg-green-500/10"
-          />
-          <StatCard
-            icon={<Zap className="w-4 h-4 text-yellow-400" />}
-            label="Matches IA"
-            hint="para seus objetos"
-            value={loading ? '—' : pending}
-            sub="aguardando avaliação"
-            color="bg-yellow-500/10"
-          />
-        </div>
 
-        {/* Recent objects */}
-        <div className="mb-6" data-tour-id="recent-objects">
-          <div className="flex items-center justify-between mb-4">
+        {/* ── Objetos recentes ── */}
+        <div data-tour-id="recent-objects">
+          <div className="flex items-center justify-between mb-3">
             <h2 className="text-white font-semibold text-sm">Objetos recentes</h2>
             <Link href="/dashboard/objects" className="text-teal-400 hover:text-teal-300 text-xs transition-colors flex items-center gap-1">
               Ver todos <ArrowRight className="w-3 h-3" />
@@ -351,7 +341,7 @@ export default function DashboardPage() {
 
           {loading ? (
             <div className="space-y-2">
-              {[1,2,3].map(i => <div key={i} className="h-14 bg-white/[0.03] rounded-xl animate-pulse" />)}
+              {[1,2,3].map(i => <div key={i} className="h-16 bg-white/[0.03] rounded-xl animate-pulse" />)}
             </div>
           ) : objects.length === 0 ? (
             <div className="text-center py-12 bg-white/[0.02] border border-white/[0.06] rounded-2xl">
@@ -365,33 +355,46 @@ export default function DashboardPage() {
             </div>
           ) : (
             <div className="space-y-2">
-              {objects.map(obj => (
-                <Link key={obj.id} href={`/dashboard/objects/${obj.id}`}
-                  className="flex items-center gap-3 p-3.5 bg-white/[0.03] border border-white/[0.06] hover:border-white/[0.12] rounded-xl transition-all group">
-                  <div className="w-10 h-10 rounded-xl bg-white/[0.06] flex items-center justify-center text-xl flex-shrink-0">
-                    {EMOJI[obj.category] ?? '📦'}
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-white text-sm font-medium truncate group-hover:text-teal-300 transition-colors">
-                      {obj.title}
-                    </p>
-                    <p className="text-white/30 text-xs mt-0.5">
-                      {formatDistanceToNow(new Date(obj.created_at), { addSuffix: true, locale: ptBR })}
-                    </p>
-                  </div>
-                  <span className={`text-xs font-medium px-2.5 py-1 rounded-full border flex-shrink-0 ${STATUS_COLOR[obj.status]}`}>
-                    {STATUS_LABEL[obj.status]}
-                  </span>
-                </Link>
-              ))}
+              {objects.map(obj => {
+                const thumb = obj.photos?.[0];
+                return (
+                  <Link key={obj.id} href={`/dashboard/objects/${obj.id}`}
+                    className="flex items-center gap-3 p-3 bg-white/[0.03] border border-white/[0.06] hover:border-white/[0.12] rounded-xl transition-all group">
+                    {/* Thumbnail: foto real ou emoji fallback */}
+                    <div className="w-12 h-12 rounded-xl overflow-hidden bg-white/[0.06] flex items-center justify-center flex-shrink-0">
+                      {thumb ? (
+                        <Image
+                          src={thumb}
+                          alt={obj.title}
+                          width={48}
+                          height={48}
+                          className="w-full h-full object-cover"
+                          unoptimized
+                        />
+                      ) : (
+                        <span className="text-xl">{EMOJI[obj.category] ?? '📦'}</span>
+                      )}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-white text-sm font-medium truncate group-hover:text-teal-300 transition-colors">
+                        {obj.title}
+                      </p>
+                      <p className="text-white/30 text-xs mt-0.5">
+                        {formatDistanceToNow(new Date(obj.created_at), { addSuffix: true, locale: ptBR })}
+                      </p>
+                    </div>
+                    <span className={`text-xs font-medium px-2.5 py-1 rounded-full border flex-shrink-0 ${STATUS_COLOR[obj.status]}`}>
+                      {STATUS_LABEL[obj.status]}
+                    </span>
+                  </Link>
+                );
+              })}
             </div>
           )}
         </div>
 
-
-
-        {/* Botão para rever o tour (rodapé discreto) */}
-        <div className="mt-8 text-center">
+        {/* ── Rodapé: rever tour ── */}
+        <div className="text-center pb-4">
           <button
             onClick={() => setShowTour(true)}
             className="text-white/20 hover:text-white/40 text-xs transition-colors"
@@ -399,6 +402,7 @@ export default function DashboardPage() {
             Ver tour guiado novamente
           </button>
         </div>
+
       </div>
     </>
   );
