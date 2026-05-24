@@ -151,29 +151,33 @@ export default function PosterModal({ objectId, objectCode, objectTitle, onClose
                         : 'border-white/[0.08] bg-white/[0.02] hover:bg-white/[0.05]'
                     } disabled:opacity-60`}
                   >
-                    {/* Spinner de loading sobre o botão */}
-                    {isGenerating && (
-                      <div className="absolute inset-0 flex flex-col items-center justify-center bg-[#0f1318]/80 rounded-xl gap-1">
+                    {isGenerating ? (
+                      /* Estado de loading: substitui TODO o conteúdo do botão */
+                      <div className="flex flex-col items-center justify-center gap-1 py-1">
                         <Loader2 className="w-4 h-4 animate-spin text-teal-400" />
                         <span className="text-teal-300 text-[10px] font-semibold">gerando…</span>
                       </div>
+                    ) : (
+                      /* Estado normal */
+                      <>
+                        <div className="flex items-center justify-between">
+                          <div className={`${isActive ? 'text-teal-400' : 'text-white/40'}`}>
+                            {f.icon}
+                          </div>
+                          <span className={`text-[10px] font-mono px-1.5 py-0.5 rounded-md ${
+                            isActive ? 'bg-teal-500/20 text-teal-300' : 'bg-white/[0.06] text-white/30'
+                          }`}>
+                            {f.ratio}
+                          </span>
+                        </div>
+                        <div>
+                          <p className={`text-xs font-semibold ${isActive ? 'text-white' : 'text-white/60'}`}>
+                            {f.label}
+                          </p>
+                          <p className="text-white/30 text-[10px] mt-0.5 leading-tight">{f.desc}</p>
+                        </div>
+                      </>
                     )}
-                    <div className="flex items-center justify-between">
-                      <div className={`${isActive ? 'text-teal-400' : 'text-white/40'}`}>
-                        {f.icon}
-                      </div>
-                      <span className={`text-[10px] font-mono px-1.5 py-0.5 rounded-md ${
-                        isActive ? 'bg-teal-500/20 text-teal-300' : 'bg-white/[0.06] text-white/30'
-                      }`}>
-                        {f.ratio}
-                      </span>
-                    </div>
-                    <div>
-                      <p className={`text-xs font-semibold ${isActive ? 'text-white' : 'text-white/60'}`}>
-                        {f.label}
-                      </p>
-                      <p className="text-white/30 text-[10px] mt-0.5 leading-tight">{f.desc}</p>
-                    </div>
                   </button>
                 );
               })}
