@@ -159,6 +159,73 @@ const FLOWS: Record<string, { text: string; buttons?: { label: string; action: s
     ],
   },
 
+  // ── Tips de cadastro ──
+  tips_description: {
+    text: 'Para aumentar muito a chance de match, inclua:\n\n• Cor exata (ex: "azul marinho", não só "azul")\n• Marca e modelo se souber\n• Características únicas (arranhado, adesivo, gravação)\n• Quando e onde perdeu\n• Foto, se tiver\n\nItems com boa descrição têm **3x mais matches** 📈',
+  },
+  tips_location: {
+    text: 'Se não souber o local exato, use o ponto mais próximo que você passou — bairro, rua principal ou estação de metrô.\n\nO sistema usa um raio de busca, então um local aproximado já ajuda bastante 📍',
+  },
+  tips_photo: {
+    text: 'Foto não é obrigatória, mas ajuda muito 📸\n\nSe tiver uma foto do item (mesmo que antiga), vale incluir. O sistema usa a imagem como referência adicional no matching.',
+  },
+  tips_pet: {
+    text: 'Para pets, quanto mais detalhes melhor 🐾\n\nInclua:\n• Espécie e raça\n• Cor e marcações específicas (mancha, orelha diferente)\n• Nome que responde\n• Coleira ou microchip\n• Foto mais recente\n• Bairro onde sumiu',
+  },
+
+  // ── Help de funcionalidades ──
+  qr_help: {
+    text: 'O QR Code funciona assim:\n\n1. Você cadastra o objeto\n2. O sistema gera um QR único e permanente\n3. Você imprime ou usa um adesivo e cola no item\n4. Se alguém encontrar e escanear com qualquer câmera, **você recebe notificação imediata**\n\nSeu número nunca é exposto — contato via chat protegido 🔒\n\nPara gerar o seu: Dashboard → objeto → "Imprimir QR"',
+  },
+  match_help: {
+    text: 'Para confirmar um match:\n\n1. Clique no match pendente\n2. Veja as informações do objeto do outro lado\n3. Se parecer o seu, clique em "Confirmar"\n4. O outro usuário também precisa confirmar\n5. Depois da confirmação dos dois lados, o contato direto é liberado 🤝\n\nDúvida? 👇',
+    buttons: [
+      { label: '🔍 Ver meus matches', action: 'nav_matches' },
+    ],
+  },
+  match_why: {
+    text: 'O sistema compara automaticamente:\n\n• Categoria do objeto\n• Palavras-chave na descrição (com sinônimos em PT-BR)\n• Cor e marca\n• Distância geográfica\n• Data aproximada\n\nQuando a compatibilidade é alta, os dois lados são notificados. Você confirma se faz sentido antes de qualquer contato ser liberado.',
+  },
+  notif_help: {
+    text: 'Tipos de notificação:\n\n🔴 **QR escaneado** — alguém escaneou o QR do seu objeto\n🟡 **Novo match** — IA encontrou um possível par\n🟢 **Match confirmado** — os dois lados confirmaram\n📧 **Reativação** — objeto sem match por 24h, com dicas\n\nTodas ficam em: Dashboard → Notificações',
+  },
+  privacy_help: {
+    text: 'Seu contato fica 100% protegido 🔒\n\nO número de telefone nunca é exibido publicamente. A página pública do objeto mostra apenas informações básicas do item.\n\nContato só acontece via chat interno após confirmação dos dois lados — ou via WhatsApp com número protegido.',
+  },
+  map_help: {
+    text: 'No mapa ao vivo você vê:\n\n🔴 Pin vermelho = objeto perdido\n🟢 Pin verde = objeto achado\n🟡 Pin amarelo = objeto roubado\n\nClique em qualquer pin para ver os detalhes. Ative sua localização para ver ocorrências próximas de você.\n\nFunciona sem login 👍',
+  },
+  cancel_help: {
+    text: 'Sim, pode cancelar a qualquer momento pelo painel em:\n\nhttps://backfindr.com/dashboard/billing\n\nSem fidelidade, sem multa. O plano continua ativo até o fim do período pago.',
+  },
+  contact_help: {
+    text: 'Para contatar o dono:\n\n1. Clique em "Avisar dono" na página do objeto\n2. Deixe uma mensagem — o dono recebe uma notificação imediata\n3. Ele pode responder via chat interno\n\nSeu número não é exposto em nenhum momento 🔒',
+  },
+
+  // ── Planos ──
+  plan_free: {
+    text: 'O plano Grátis resolve pra maioria das pessoas:\n\n✅ Até 3 objetos cadastrados\n✅ QR Code permanente para cada objeto\n✅ Busca na rede\n✅ Notificações de match\n\nSe precisar de mais de 3 objetos ou quiser matching automático com IA rodando 24h, aí vale ver o Pro.\n\nVer planos 👇\n\nhttps://backfindr.com/pricing',
+  },
+  plan_pro: {
+    text: 'O Pro adiciona:\n\n🚀 Até 50 objetos cadastrados\n🤖 Matching automático com IA (24h por dia)\n🔔 Notificações push + e-mail em tempo real\n🎨 QR Code personalizado\n📧 Suporte por e-mail\n\nR$ 29/mês — sem fidelidade.\n\nhttps://backfindr.com/pricing',
+  },
+  plan_business: {
+    text: 'Para empresas (hotéis, escolas, condomínios):\n\n🏢 Até 500 objetos\n⚡ Matching prioritário\n📲 Push + e-mail + SMS\n👥 Até 5 usuários\n🔗 API de integração\n\nR$ 149/mês. Para falar com a equipe:\nbusiness@backfindr.com',
+  },
+
+  // ── Roubado ──
+  stolen_bo: {
+    text: 'Além de registrar no Backfindr, recomendo:\n\n1. **B.O. eletrônico** — delegacia.sp.gov.br (gratuito e rápido)\n2. Se for celular: bloqueie pelo operadora e registre o IMEI no B.O.\n3. Avise amigos e grupos do bairro com foto e descrição\n4. Monitore marketplaces (OLX, Facebook Marketplace) — itens roubados aparecem\n\nRegistra no Backfindr também — a rede pode identificar o item 👇\n\nhttps://backfindr.com/roubado',
+  },
+
+  // ── Matches ──
+  nav_matches: {
+    text: 'Seus matches 👇\n\nhttps://backfindr.com/dashboard/matches',
+  },
+  improve_listing: {
+    text: 'Para melhorar um cadastro já existente:\n\n1. Acesse o objeto no Dashboard\n2. Clique em "Editar"\n3. Adicione: cor exata, marca, características únicas, foto e localização precisa\n\nCada detalhe extra aumenta a chance de match. Itens com foto têm **3x mais** resultado 📈',
+  },
+
   followup: {
     text: 'Posso te ajudar com mais alguma coisa? 😊',
     buttons: [
@@ -175,6 +242,163 @@ function getGreeting(): string {
   if (hour >= 5 && hour < 12) return 'Bom dia! 🌅';
   if (hour >= 12 && hour < 18) return 'Boa tarde! ☀️';
   return 'Boa noite! 🌙';
+}
+
+// ─── Abertura contextual por página ──────────────────────────────────────────
+// Em vez de sempre abrir com "Você perdeu ou encontrou algo?",
+// o bot abre com mensagem relevante para o que o usuário está fazendo.
+
+interface ContextualOpening {
+  text: string;
+  buttons?: { label: string; action: string }[];
+}
+
+function getContextualOpening(pathname: string): ContextualOpening {
+  if (pathname === '/dashboard') {
+    return {
+      text: 'Oi 👋 Posso te ajudar com alguma coisa no dashboard?',
+      buttons: [
+        { label: '➕ Registrar objeto', action: 'nav_new' },
+        { label: '🔍 Ver matches', action: 'nav_matches' },
+        { label: '🔔 Notificações', action: 'nav_notifications' },
+        { label: '❓ Como funciona?', action: 'how' },
+      ],
+    };
+  }
+  if (pathname === '/dashboard/objects') {
+    return {
+      text: 'Quer registrar um novo objeto ou tem dúvida sobre algum cadastrado?',
+      buttons: [
+        { label: '➕ Registrar novo', action: 'nav_new' },
+        { label: '❓ Como funciona o QR?', action: 'qr_help' },
+        { label: '💡 Como melhorar meu cadastro?', action: 'improve_listing' },
+      ],
+    };
+  }
+  if (pathname === '/dashboard/objects/new' || (pathname.startsWith('/dashboard/objects/') && pathname.endsWith('/edit'))) {
+    return {
+      text: 'Quer ajuda para preencher o cadastro? Quanto mais detalhes, maior a chance de match 💡',
+      buttons: [
+        { label: '📝 Dicas de descrição', action: 'tips_description' },
+        { label: '📍 Não sei a localização exata', action: 'tips_location' },
+        { label: '📸 Precisa de foto?', action: 'tips_photo' },
+      ],
+    };
+  }
+  if (pathname === '/dashboard/matches') {
+    return {
+      text: 'Aqui ficam os objetos que o sistema identificou como possível match com o seu 🎯\n\nTem dúvida sobre como confirmar?',
+      buttons: [
+        { label: '❓ Como confirmar um match?', action: 'match_help' },
+        { label: '🤔 Por que esse objeto apareceu?', action: 'match_why' },
+      ],
+    };
+  }
+  if (pathname === '/dashboard/notifications') {
+    return {
+      text: 'Aqui aparecem todos os alertas — QR escaneado, novos matches e atualizações 🔔\n\nPosso te ajudar com alguma notificação?',
+      buttons: [
+        { label: '❓ O que significa cada tipo?', action: 'notif_help' },
+        { label: '😔 Quero registrar algo perdido', action: 'lost' },
+      ],
+    };
+  }
+  if (pathname === '/dashboard/settings' || pathname === '/dashboard/billing') {
+    return {
+      text: 'Posso te ajudar com configurações ou dúvidas sobre planos 👇',
+      buttons: [
+        { label: '💳 Quais são os planos?', action: 'pricing' },
+        { label: '❓ Posso cancelar a qualquer hora?', action: 'cancel_help' },
+      ],
+    };
+  }
+  if (pathname === '/pricing') {
+    return {
+      text: 'Comparando os planos? Me conta o que você precisa que te ajudo a escolher 👇',
+      buttons: [
+        { label: '🆓 O grátis resolve pra mim?', action: 'plan_free' },
+        { label: '🚀 Qual a diferença do Pro?', action: 'plan_pro' },
+        { label: '🏢 Tenho uma empresa', action: 'plan_business' },
+      ],
+    };
+  }
+  if (pathname === '/map') {
+    return {
+      text: 'Vendo o mapa ao vivo 🗺️\n\nViu algum objeto que pode ser o seu ou que você encontrou?',
+      buttons: [
+        { label: '😔 Pode ser o meu', action: 'lost' },
+        { label: '🙌 Encontrei algo aqui', action: 'found' },
+        { label: '❓ Como usar o mapa?', action: 'map_help' },
+      ],
+    };
+  }
+  if (pathname === '/perdi' || pathname === '/flow/lost') {
+    return {
+      text: 'Sinto muito 😔 Estou aqui pra te ajudar no cadastro.\n\nSe travar em alguma etapa, é só me chamar.',
+      buttons: [
+        { label: '📝 Dicas de descrição', action: 'tips_description' },
+        { label: '📍 Não sei o local exato', action: 'tips_location' },
+      ],
+    };
+  }
+  if (pathname === '/encontrei' || pathname === '/flow/found') {
+    return {
+      text: 'Que atitude incrível tentar devolver 🙏\n\nPosso ajudar com alguma dúvida no cadastro?',
+      buttons: [
+        { label: '🔒 Meu contato fica exposto?', action: 'privacy_help' },
+        { label: '📝 O que devo preencher?', action: 'tips_description' },
+      ],
+    };
+  }
+  if (pathname === '/pet' || pathname === '/flow/pet') {
+    return {
+      text: 'Cada minuto conta quando um pet some 🐾\n\nEstou aqui — precisando de ajuda no cadastro?',
+      buttons: [
+        { label: '📝 O que descrever de um pet?', action: 'tips_pet' },
+        { label: '📍 Não sei o local exato', action: 'tips_location' },
+      ],
+    };
+  }
+  if (pathname === '/roubado' || pathname === '/flow/stolen') {
+    return {
+      text: 'Situação difícil 😔 Além do Backfindr, tem algumas medidas que ajudam bastante.\n\nQuer que eu explique o que fazer primeiro?',
+      buttons: [
+        { label: '🚔 Orientações sobre B.O.', action: 'stolen_bo' },
+        { label: '📱 Roubaram meu celular', action: 'lost_phone' },
+      ],
+    };
+  }
+  if (pathname.startsWith('/objeto/') || pathname.startsWith('/scan/')) {
+    return {
+      text: 'Você escaneou um QR Code do Backfindr 👋\n\nPosso te ajudar a contatar o dono com segurança.',
+      buttons: [
+        { label: '📞 Como contato o dono?', action: 'contact_help' },
+        { label: '🔒 Meu número fica protegido?', action: 'privacy_help' },
+      ],
+    };
+  }
+  if (pathname === '/faq') {
+    return {
+      text: 'Tem alguma dúvida específica? Me pergunta que respondo na hora 👇',
+      buttons: [
+        { label: '❓ Como funciona o QR?', action: 'qr_help' },
+        { label: '🤖 Como funciona o matching?', action: 'match_why' },
+        { label: '🆓 É mesmo gratuito?', action: 'pricing' },
+      ],
+    };
+  }
+  // Fallback — home e demais páginas
+  return {
+    text: 'Oi 👋\nVocê perdeu ou encontrou algo?',
+    buttons: [
+      { label: '😔 Perdi algo', action: 'lost' },
+      { label: '🚨 Foi roubado', action: 'stolen' },
+      { label: '🙌 Encontrei algo', action: 'found' },
+      { label: '🛡️ Quero me prevenir', action: 'prevent' },
+      { label: '🗺️ Navegar no site', action: 'navigate' },
+      { label: '❓ Como funciona?', action: 'how' },
+    ],
+  };
 }
 
 // ─── Detectar intenção por texto livre ───────────────────────────────────────
@@ -333,10 +557,11 @@ export default function AssistantWidget() {
     }
   }, [open, messages, scrollToBottom]);
 
-  // Mensagem inicial ao abrir pela primeira vez
+  // Mensagem inicial ao abrir pela primeira vez — contextual por página
   useEffect(() => {
     if (open && messages.length === 0) {
-      addBotMessage(FLOWS.initial);
+      const contextual = getContextualOpening(pathname);
+      addBotMessage(contextual);
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open]);
@@ -380,6 +605,25 @@ export default function AssistantWidget() {
       nav_new: '➕ Registrar objeto',
       nav_pets: '🐾 Pets',
       nav_notifications: '🔔 Notificações',
+      nav_matches: '🔍 Ver matches',
+      tips_description: '📝 Dicas de descrição',
+      tips_location: '📍 Não sei a localização',
+      tips_photo: '📸 Precisa de foto?',
+      tips_pet: '📝 O que descrever de um pet?',
+      qr_help: '❓ Como funciona o QR?',
+      match_help: '❓ Como confirmar um match?',
+      match_why: '🤔 Por que esse objeto apareceu?',
+      notif_help: '❓ O que significa cada tipo?',
+      privacy_help: '🔒 Meu contato fica exposto?',
+      map_help: '❓ Como usar o mapa?',
+      cancel_help: '❓ Posso cancelar a qualquer hora?',
+      contact_help: '📞 Como contato o dono?',
+      plan_free: '🆓 O grátis resolve pra mim?',
+      plan_pro: '🚀 Diferença do Pro?',
+      plan_business: '🏢 Tenho uma empresa',
+      stolen_bo: '🚔 Orientações sobre B.O.',
+      improve_listing: '💡 Como melhorar meu cadastro?',
+      pricing: '💳 Quais são os planos?',
     };
 
     const userMsg: Message = {

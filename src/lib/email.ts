@@ -303,10 +303,46 @@ export async function sendMatchAlertEmail(
 }
 
 // ─── E-mail de reativação 24h sem match ──────────────────────────────────────
-export async function sendReactivationEmail(user: { name: string; email: string }, objectTitle: string) {
+export async function sendReactivationEmail(
+  user: { name: string; email: string },
+  objectTitle: string,
+  personalizedTips?: string[],   // dicas geradas por IA (se disponíveis)
+) {
   const firstName = user.name.split(' ')[0];
   const searchUrl = `https://www.backfindr.com/buscar?keyword=${encodeURIComponent(objectTitle)}`;
   const dashboardUrl = 'https://www.backfindr.com/dashboard';
+
+  // Ícones para cada dica — rotaciona pelos disponíveis
+  const tipIcons = ['✏️', '📸', '📍', '🔔', '💡'];
+
+  // Usa dicas personalizadas se disponíveis, senão usa as genéricas padrão
+  const tips: string[] = personalizedTips && personalizedTips.length > 0
+    ? personalizedTips
+    : [
+        'Adicione mais detalhes à descrição do item',
+        'Inclua uma foto — itens com foto têm 3x mais matches',
+        'Confirme o local onde o item foi perdido',
+      ];
+
+  const tipsHtml = tips.map((tip, i) => `
+    <tr>
+      <td style="padding:8px 0;vertical-align:top;">
+        <table cellpadding="0" cellspacing="0">
+          <tr>
+            <td style="vertical-align:top;padding-right:10px;width:24px;">
+              <span style="font-size:16px;">${tipIcons[i % tipIcons.length]}</span>
+            </td>
+            <td style="vertical-align:top;">
+              <span style="color:rgba(255,255,255,0.75);font-size:13px;line-height:1.5;">${tip}</span>
+            </td>
+          </tr>
+        </table>
+      </td>
+    </tr>`).join('');
+
+  const aiLabel = personalizedTips && personalizedTips.length > 0
+    ? '<span style="display:inline-block;background:rgba(20,184,166,0.12);color:#14b8a6;font-size:10px;font-weight:600;padding:2px 8px;border-radius:20px;border:1px solid rgba(20,184,166,0.25);margin-left:8px;vertical-align:middle;">IA personalizada</span>'
+    : '';
 
   const html = `
 <!DOCTYPE html>
@@ -352,30 +388,15 @@ export async function sendReactivationEmail(user: { name: string; email: string 
                 Novos itens são registrados todos os dias — o match pode acontecer a qualquer momento.
               </p>
 
-              <!-- Dica de melhoria -->
+              <!-- Dicas personalizadas -->
               <table width="100%" cellpadding="0" cellspacing="0" style="background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.07);border-radius:14px;margin-bottom:24px;">
                 <tr>
                   <td style="padding:18px 20px;">
-                    <p style="color:rgba(255,255,255,0.35);font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:0.15em;margin:0 0 12px;">Aumente suas chances</p>
+                    <p style="color:rgba(255,255,255,0.35);font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:0.15em;margin:0 0 14px;">
+                      Aumente suas chances ${aiLabel}
+                    </p>
                     <table width="100%" cellpadding="0" cellspacing="0">
-                      <tr>
-                        <td style="padding:6px 0;vertical-align:top;">
-                          <span style="font-size:16px;margin-right:10px;">✏️</span>
-                          <span style="color:rgba(255,255,255,0.7);font-size:13px;">Adicione mais detalhes à descrição do item</span>
-                        </td>
-                      </tr>
-                      <tr>
-                        <td style="padding:6px 0;vertical-align:top;">
-                          <span style="font-size:16px;margin-right:10px;">📸</span>
-                          <span style="color:rgba(255,255,255,0.7);font-size:13px;">Inclua uma foto — itens com foto têm 3x mais matches</span>
-                        </td>
-                      </tr>
-                      <tr>
-                        <td style="padding:6px 0;vertical-align:top;">
-                          <span style="font-size:16px;margin-right:10px;">📍</span>
-                          <span style="color:rgba(255,255,255,0.7);font-size:13px;">Confirme o local onde o item foi perdido</span>
-                        </td>
-                      </tr>
+                      ${tipsHtml}
                     </table>
                   </td>
                 </tr>
