@@ -241,9 +241,8 @@ export default function ScanPage() {
         {/* Header: logo + compartilhar */}
         <div className="absolute inset-x-0 top-0 px-5 pt-12 flex items-center justify-between">
           <Link href="/" className="flex items-center gap-2 group">
-            <div className="w-8 h-8 rounded-xl bg-[#00d4aa] flex items-center justify-center shadow-lg shadow-[#00d4aa]/30">
-              <MapPin className="w-4 h-4 text-black" />
-            </div>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src="/icons/logo-backfindr.png" alt="Backfindr" width={32} height={32} style={{ borderRadius: 10, boxShadow: '0 4px 12px rgba(0,212,170,0.3)' }} />
             <span className="font-bold text-white text-sm tracking-tight drop-shadow-lg">Backfindr</span>
           </Link>
           <ShareModal

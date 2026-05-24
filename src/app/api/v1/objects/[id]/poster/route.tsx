@@ -157,12 +157,8 @@ export async function GET(
               height: 130, flexShrink: 0,
             }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 22 }}>
-                <div style={{
-                  width: 76, height: 76, borderRadius: 18,
-                  border: `5px solid ${tealA4}`,
-                  display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  fontSize: 42, color: tealA4,
-                }}>⌖</div>
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src={`${appUrl}/icons/logo-backfindr.png`} width={76} height={76} style={{ borderRadius: 18, display: 'flex' }} alt="Backfindr" />
                 <span style={{ fontSize: 50, fontWeight: 900, color: '#111827', letterSpacing: -1, display: 'flex' }}>backfindr</span>
               </div>
               <div style={{
@@ -338,11 +334,8 @@ export async function GET(
               height: `${headerH + pad}px`, flexShrink: 0,
             }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
-                <div style={{
-                  width: '52px', height: '52px', borderRadius: '50%',
-                  background: teal, display: 'flex', alignItems: 'center',
-                  justifyContent: 'center', fontSize: '28px',
-                }}>📍</div>
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src={`${appUrl}/icons/logo-backfindr.png`} width={52} height={52} style={{ borderRadius: '50%', display: 'flex' }} alt="Backfindr" />
                 <span style={{ color: '#ffffff', fontSize: '36px', fontWeight: 800 }}>backfindr</span>
               </div>
               <div style={{
@@ -602,12 +595,8 @@ export async function GET(
               display: 'flex', flexDirection: 'column', alignItems: 'center',
               gap: '4px', flexShrink: 0,
             }}>
-              <div style={{
-                width: '44px', height: '44px', borderRadius: '50%',
-                background: 'rgba(255,255,255,0.2)',
-                display: 'flex', alignItems: 'center', justifyContent: 'center',
-                fontSize: '24px',
-              }}>📍</div>
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src={`${appUrl}/icons/logo-backfindr.png`} width={44} height={44} style={{ borderRadius: '50%', display: 'flex' }} alt="Backfindr" />
               <span style={{ color: 'rgba(255,255,255,0.8)', fontSize: '18px', fontWeight: 700 }}>backfindr</span>
             </div>
           </div>

@@ -198,9 +198,8 @@ export default function PublicObjectClient({ obj }: { obj: RegisteredObject }) {
       {/* Navbar */}
       <nav className="border-b border-white/[0.06] px-5 h-14 flex items-center justify-between">
         <Link href="/" className="flex items-center gap-2">
-          <div className="w-7 h-7 rounded-lg bg-teal-500 flex items-center justify-center">
-            <MapPin className="w-3.5 h-3.5 text-white" strokeWidth={2.5} />
-          </div>
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src="/icons/logo-backfindr.png" alt="Backfindr" width={28} height={28} style={{ borderRadius: 8 }} />
           <span className="text-white font-semibold text-[15px]">Backfindr</span>
         </Link>
         {/* Badge de status */}

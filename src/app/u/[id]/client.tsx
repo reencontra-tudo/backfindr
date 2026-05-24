@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useParams } from 'next/navigation';
 import Link from 'next/link';
-import { MapPin, CheckCircle2, Package, Star, Calendar } from 'lucide-react';
+import { CheckCircle2, Package, Star, Calendar } from 'lucide-react';
 import { api, parseApiError } from '@/lib/api';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
@@ -57,9 +57,8 @@ export default function UserProfilePage() {
     <div className="min-h-screen bg-[#080b0f] text-white">
       <nav className="border-b border-white/[0.06] px-5 h-14 flex items-center">
         <Link href="/" className="flex items-center gap-2">
-          <div className="w-7 h-7 rounded-lg bg-teal-500 flex items-center justify-center">
-            <MapPin className="w-3.5 h-3.5 text-white" strokeWidth={2.5} />
-          </div>
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src="/icons/logo-backfindr.png" alt="Backfindr" width={28} height={28} style={{ borderRadius: 8 }} />
           <span className="text-white font-semibold text-[15px]">Backfindr</span>
         </Link>
       </nav>

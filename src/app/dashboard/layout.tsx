@@ -4,7 +4,7 @@ import { useEffect, useState, useRef } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import {
-  MapPin, LayoutDashboard, Package, Search,
+  LayoutDashboard, Package, Search,
   QrCode, Bell, Settings, LogOut, Plus, Menu, X, CreditCard, Building2, Truck
 } from 'lucide-react';
 import Cookies from 'js-cookie';
@@ -93,9 +93,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       {/* Brand */}
       <div className="px-5 py-4 border-b border-white/[0.06] flex items-center justify-between">
         <Link href="/" className="flex items-center gap-2.5">
-          <div className="w-7 h-7 rounded-lg bg-teal-500 flex items-center justify-center flex-shrink-0">
-            <MapPin className="w-3.5 h-3.5 text-white" strokeWidth={2.5} />
-          </div>
+          <img src="/icons/logo-backfindr.png" alt="Backfindr" width={28} height={28} style={{ borderRadius: 8, flexShrink: 0 }} />
           <span className="font-semibold text-white text-[15px]">Backfindr</span>
         </Link>
         {/* Close button — mobile only */}
@@ -228,9 +226,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             <Menu className="w-5 h-5" />
           </button>
           <Link href="/" className="flex items-center gap-2">
-            <div className="w-6 h-6 rounded-md bg-teal-500 flex items-center justify-center">
-              <MapPin className="w-3 h-3 text-white" strokeWidth={2.5} />
-            </div>
+            <img src="/icons/logo-backfindr.png" alt="Backfindr" width={24} height={24} style={{ borderRadius: 6, flexShrink: 0 }} />
             <span className="text-white font-semibold text-sm">Backfindr</span>
           </Link>
           <Link
