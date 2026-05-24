@@ -117,9 +117,9 @@ const FLOWS: Record<string, { text: string; buttons?: { label: string; action: s
   nav_home: { text: 'Indo para o início 👇\n\n' + APP_URL },
   nav_map: { text: 'Mapa ao vivo 👇\n\n' + APP_URL + '/map' },
   nav_dashboard: { text: 'Seus objetos 👇\n\n' + APP_URL + '/dashboard' },
-  nav_new: { text: 'Registrar objeto 👇\n\n' + APP_URL + '/dashboard/new' },
+  nav_new: { text: 'Registrar objeto 👇\n\n' + APP_URL + '/dashboard/objects/new' },
   nav_pets: { text: 'Área de pets 👇\n\n' + APP_URL + '/pet' },
-  nav_notifications: { text: 'Suas notificações 👇\n\n' + APP_URL + '/dashboard?tab=notifications' },
+  nav_notifications: { text: 'Suas notificações 👇\n\n' + APP_URL + '/dashboard/notifications' },
 
   // ── Buscar achados ──
   browse_found: {
@@ -268,8 +268,8 @@ function shouldEscalateToGPT(text: string, history: Message[]): boolean {
   const matchedIntents = intentKeywords.filter(re => re.test(t)).length;
   if (matchedIntents >= 2) return true;
 
-  // 2. Mensagem muito longa (mais de 80 caracteres sem intenção clara)
-  if (text.length > 80) return true;
+  // 2. Mensagem muito longa (mais de 140 caracteres sem intenção clara)
+  if (text.length > 140) return true;
 
   // 3. Linguagem emocional intensa (desespero, urgência extrema)
   if (/\b(desesperado|desesperada|chorando|imploro|por favor me ajuda|urgente|preciso urgente|tô desesperado|to desesperado|não sei o que fazer|nao sei o que fazer)\b/.test(t)) return true;
