@@ -53,19 +53,139 @@ const FLOWS: Record<string, { text: string; buttons?: { label: string; action: s
     ],
   },
   lost_pet: {
-    text: 'Sinto muito 😔\nJá estamos ajudando casos assim. Registra agora — é gratuito 👇\n\n' + APP_URL + '/pet\n\nQuanto antes publicar, maiores as chances 🙏',
+    text: 'Sinto muito 😔 Vamos tentar te ajudar agora.\n\nSeu pet sumiu há quanto tempo?',
+    buttons: [
+      { label: '⏰ Menos de 24h', action: 'lost_pet_urgent' },
+      { label: '📅 1 a 3 dias', action: 'lost_pet_days' },
+      { label: '🗓️ Mais de 3 dias', action: 'lost_pet_late' },
+    ],
+  },
+  lost_pet_urgent: {
+    text: 'Nas primeiras horas as chances são maiores 🐾\n\nFaça isso agora:\n• Avise vizinhos e porteiros\n• Poste em grupos do bairro no WhatsApp\n• Registre aqui para aparecer para quem achar 👇\n\n' + APP_URL + '/pet',
+    buttons: [
+      { label: '📋 Registrar meu pet', action: 'nav_pets' },
+      { label: '💡 Ver dicas de busca', action: 'tips_pet' },
+    ],
+  },
+  lost_pet_days: {
+    text: 'Ainda dá tempo — pets aparecem dias depois 🐾\n\nO que mais ajuda agora:\n• Expanda a busca para bairros vizinhos\n• Deixe uma peça de roupa sua perto de onde sumiu (o cheiro atrai)\n• Registre aqui para a rede continuar procurando 👇\n\n' + APP_URL + '/pet',
+    buttons: [
+      { label: '📋 Registrar meu pet', action: 'nav_pets' },
+      { label: '💡 Ver dicas de busca', action: 'tips_pet' },
+    ],
+  },
+  lost_pet_late: {
+    text: 'Não desiste — há casos de reencontro semanas depois 🙏\n\nO que ainda pode ajudar:\n• Atualize a descrição com detalhes novos\n• Verifique abrigos e clínicas veterinárias da região\n• Mantenha o alerta ativo na rede 👇\n\n' + APP_URL + '/pet',
+    buttons: [
+      { label: '📋 Registrar / atualizar alerta', action: 'nav_pets' },
+      { label: '💡 Ver dicas de busca', action: 'tips_pet' },
+    ],
   },
   lost_phone: {
-    text: 'Sinto muito 😔\nJá estamos conectando casos assim. Registra gratuitamente aqui 👇\n\n' + APP_URL + '/perdi\n\nLeva 30s e aumenta as chances.',
+    text: 'Sinto muito 😔 Vamos tentar te ajudar agora.\n\nVocê sabe o modelo e a cor do aparelho?',
+    buttons: [
+      { label: '✅ Sim, sei os detalhes', action: 'lost_phone_details' },
+      { label: '❌ Não lembro tudo', action: 'lost_phone_no_details' },
+    ],
+  },
+  lost_phone_details: {
+    text: 'Ótimo — quanto mais detalhes, maior a chance de match 📱\n\nRegistra agora com modelo, cor e IMEI se souber 👇\n\n' + APP_URL + '/perdi\n\nO sistema já começa a cruzar com aparelhos encontrados na rede.',
+    buttons: [
+      { label: '📋 Registrar meu celular', action: 'nav_new' },
+      { label: '💡 O que é IMEI e como acho?', action: 'tips_phone_imei' },
+    ],
+  },
+  lost_phone_no_details: {
+    text: 'Tudo bem — registra o que lembrar agora e edita depois 👇\n\n' + APP_URL + '/perdi\n\nDicas para aumentar a chance:\n• Cor aproximada já ajuda\n• Modelo (ex: iPhone 13, Samsung A54)\n• Onde e quando perdeu',
+    buttons: [
+      { label: '📋 Registrar mesmo assim', action: 'nav_new' },
+      { label: '💡 Dicas de descrição', action: 'tips_description' },
+    ],
+  },
+  tips_phone_imei: {
+    text: 'O IMEI é o número único do celular 📱\n\nComo encontrar:\n• Caixa do aparelho (etiqueta atrás)\n• Nota fiscal de compra\n• Digite *#06# em qualquer celular\n• Conta da operadora\n\nCom o IMEI você pode bloquear o aparelho na operadora e incluir no B.O. — isso aumenta muito as chances de recuperação.',
   },
   lost_car: {
-    text: 'Sinto muito 😔\nRegistra agora — é gratuito e a rede já começa a ajudar 👇\n\n' + APP_URL + '/perdi\n\nQuanto antes, mais rápido.',
+    text: 'Sinto muito 😔 Vamos tentar te ajudar agora.\n\nO veículo foi roubado/furtado ou você simplesmente não sabe onde está?',
+    buttons: [
+      { label: '🚨 Foi roubado / furtado', action: 'lost_car_stolen' },
+      { label: '🔍 Não sei onde está', action: 'lost_car_lost' },
+    ],
+  },
+  lost_car_stolen: {
+    text: 'Situação séria — age rápido 🚗\n\nFaça isso agora:\n• Registre B.O. eletrônico (delegacia.sp.gov.br)\n• Avise a seguradora se tiver\n• Registre aqui para ativar alertas na rede 👇\n\n' + APP_URL + '/roubado',
+    buttons: [
+      { label: '📋 Registrar alerta', action: 'nav_new' },
+      { label: '🚔 Mais orientações sobre B.O.', action: 'stolen_bo' },
+    ],
+  },
+  lost_car_lost: {
+    text: 'Vamos ativar a rede para te ajudar a localizar 🔍\n\nRegistra agora com placa, modelo e cor 👇\n\n' + APP_URL + '/perdi\n\nQuanto mais detalhes, maior a chance de alguém reconhecer.',
+    buttons: [
+      { label: '📋 Registrar meu veículo', action: 'nav_new' },
+      { label: '💡 Dicas de descrição', action: 'tips_description' },
+    ],
   },
   lost_docs: {
-    text: 'Sinto muito 😔\nDocumentos encontrados aparecem aqui com frequência. Registra gratuitamente 👇\n\n' + APP_URL + '/perdi\n\nLeva menos de 1 minuto.',
+    text: 'Sinto muito 😔 Documentos aparecem com frequência na rede.\n\nQual documento você perdeu?',
+    buttons: [
+      { label: '🪪 RG / CNH / CPF', action: 'lost_docs_id' },
+      { label: '💳 Cartão bancário', action: 'lost_docs_card' },
+      { label: '🛂 Passaporte', action: 'lost_docs_passport' },
+      { label: '📄 Outro documento', action: 'lost_docs_other' },
+    ],
+  },
+  lost_docs_id: {
+    text: 'Documentos de identidade são os mais encontrados e devolvidos 📄\n\nO que fazer agora:\n• Registre aqui para aparecer para quem achar 👇\n• Se precisar de 2ª via: gov.br/meugovbr\n\n' + APP_URL + '/perdi',
+    buttons: [
+      { label: '📋 Registrar documento perdido', action: 'nav_new' },
+    ],
+  },
+  lost_docs_card: {
+    text: 'Cartão bancário — aja rápido 💳\n\nFaça isso agora:\n• Bloqueie pelo app do banco ou ligue para a central\n• Registre aqui para aparecer para quem achar 👇\n\n' + APP_URL + '/perdi',
+    buttons: [
+      { label: '📋 Registrar cartão perdido', action: 'nav_new' },
+    ],
+  },
+  lost_docs_passport: {
+    text: 'Passaporte perdido — registre logo 🛂\n\nO que fazer:\n• Registre aqui para aparecer para quem achar 👇\n• Para 2ª via: agende na Polícia Federal (pf.gov.br)\n\n' + APP_URL + '/perdi',
+    buttons: [
+      { label: '📋 Registrar passaporte perdido', action: 'nav_new' },
+    ],
+  },
+  lost_docs_other: {
+    text: 'Documentos aparecem com frequência na rede 📄\n\nRegistra agora para aparecer para quem achar 👇\n\n' + APP_URL + '/perdi\n\nLeva menos de 1 minuto.',
+    buttons: [
+      { label: '📋 Registrar documento perdido', action: 'nav_new' },
+    ],
   },
   lost_other: {
-    text: 'Sinto muito 😔\nJá estamos ajudando casos assim. Registra agora — é gratuito 👇\n\n' + APP_URL + '/perdi\n\nLeva menos de 1 minuto.',
+    text: 'Sinto muito 😔 Vamos tentar te ajudar agora.\n\nVocê tem foto ou descrição detalhada do objeto?',
+    buttons: [
+      { label: '✅ Tenho foto e descrição', action: 'lost_other_details' },
+      { label: '📝 Só tenho a descrição', action: 'lost_other_desc_only' },
+      { label: '❌ Não tenho muitos detalhes', action: 'lost_other_no_details' },
+    ],
+  },
+  lost_other_details: {
+    text: 'Ótimo — foto + descrição aumenta muito as chances 📸\n\nRegistra agora 👇\n\n' + APP_URL + '/perdi\n\nItens com foto têm 3x mais matches na rede.',
+    buttons: [
+      { label: '📋 Registrar meu objeto', action: 'nav_new' },
+    ],
+  },
+  lost_other_desc_only: {
+    text: 'Descrição já ajuda bastante 📝\n\nRegistra agora com o máximo de detalhes 👇\n\n' + APP_URL + '/perdi\n\nSe achar uma foto depois, é só editar o cadastro.',
+    buttons: [
+      { label: '📋 Registrar meu objeto', action: 'nav_new' },
+      { label: '💡 Dicas de descrição', action: 'tips_description' },
+    ],
+  },
+  lost_other_no_details: {
+    text: 'Tudo bem — registra o que lembrar agora e edita depois 👇\n\n' + APP_URL + '/perdi\n\nAté uma descrição básica já ativa a busca na rede.',
+    buttons: [
+      { label: '📋 Registrar mesmo assim', action: 'nav_new' },
+      { label: '💡 Dicas de descrição', action: 'tips_description' },
+    ],
   },
 
   // ── Roubado ──
@@ -595,7 +715,22 @@ export default function AssistantWidget() {
       navigate: '🗺️ Navegar no site',
       how: '❓ Como funciona?',
       lost_pet: '🐾 Pet',
+      lost_pet_urgent: '⏰ Menos de 24h',
+      lost_pet_days: '📅 1 a 3 dias',
+      lost_pet_late: '🗓️ Mais de 3 dias',
       lost_phone: '📱 Celular',
+      lost_phone_details: '✅ Sim, sei os detalhes',
+      lost_phone_no_details: '❌ Não lembro tudo',
+      tips_phone_imei: '💡 O que é IMEI e como acho?',
+      lost_car_stolen: '🚨 Foi roubado / furtado',
+      lost_car_lost: '🔍 Não sei onde está',
+      lost_docs_id: '🪪 RG / CNH / CPF',
+      lost_docs_card: '💳 Cartão bancário',
+      lost_docs_passport: '🛂 Passaporte',
+      lost_docs_other: '📄 Outro documento',
+      lost_other_details: '✅ Tenho foto e descrição',
+      lost_other_desc_only: '📝 Só tenho a descrição',
+      lost_other_no_details: '❌ Não tenho muitos detalhes',
       lost_car: '🚗 Carro / Moto',
       lost_docs: '📄 Documentos',
       lost_other: '📦 Outro objeto',
