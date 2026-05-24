@@ -107,31 +107,28 @@ function QRCodeDisplay({ code, title, status }: { code: string; title: string; s
   };
 
   return (
-    <div className="glass rounded-2xl p-4 sm:p-6 flex flex-col items-center gap-4 w-full">
-      <div className="flex items-center gap-2 self-start">
-        <QrCode className="w-4 h-4 text-brand-400" />
-        <h3 className="font-display font-semibold text-white text-sm">QR Code</h3>
-      </div>
+    <div className="space-y-4">
+      {/* QR centralizado */}
+      <div className="flex flex-col items-center gap-3">
+        <div className="p-3 bg-surface rounded-xl border border-surface-border">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src={qrImageUrl} alt={`QR Code - ${title}`} width={180} height={180} className="rounded-lg w-[160px] h-[160px] sm:w-[180px] sm:h-[180px]" />
+        </div>
 
-      {/* QR centralizado com tamanho responsivo */}
-      <div className="p-3 bg-surface rounded-xl border border-surface-border">
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img src={qrImageUrl} alt={`QR Code - ${title}`} width={180} height={180} className="rounded-lg w-[160px] h-[160px] sm:w-[180px] sm:h-[180px]" />
-      </div>
+        {/* Código com botão copiar */}
+        <div className="w-full bg-surface rounded-xl px-4 py-2.5 flex items-center justify-between gap-2 border border-surface-border min-w-0">
+          <span className="font-mono text-brand-400 text-sm tracking-widest truncate">{code}</span>
+          <button onClick={copyLink} className="text-slate-500 hover:text-white transition-colors flex-shrink-0">
+            <Copy className="w-3.5 h-3.5" />
+          </button>
+        </div>
 
-      {/* Código com botão copiar — full width */}
-      <div className="w-full bg-surface rounded-xl px-4 py-2.5 flex items-center justify-between gap-2 border border-surface-border min-w-0">
-        <span className="font-mono text-brand-400 text-sm tracking-widest truncate">{code}</span>
-        <button onClick={copyLink} className="text-slate-500 hover:text-white transition-colors flex-shrink-0">
-          <Copy className="w-3.5 h-3.5" />
-        </button>
+        <p className="text-slate-500 text-xs text-center leading-relaxed">
+          {isLost
+            ? 'Compartilhe este link ou QR Code com pessoas que possam ter visto o objeto.'
+            : 'Cole este QR Code no objeto fisico. Quem escanear iniciara o processo de devolucao.'}
+        </p>
       </div>
-
-      <p className="text-slate-500 text-xs text-center leading-relaxed">
-        {isLost
-          ? 'Compartilhe este link ou QR Code com pessoas que possam ter visto o objeto.'
-          : 'Cole este QR Code no objeto fisico. Quem escanear iniciara o processo de devolucao.'}
-      </p>
 
       {/* Baixar + Copiar link */}
       <div className="flex gap-2 w-full">
@@ -145,7 +142,7 @@ function QRCodeDisplay({ code, title, status }: { code: string; title: string; s
         </button>
       </div>
 
-      {/* Compartilhar nas redes — 3 botões em grid 3 colunas para não transbordar */}
+      {/* Compartilhar nas redes */}
       <div className="w-full">
         <p className="text-slate-500 text-xs mb-2 text-center">Compartilhar nas redes</p>
         <div className="grid grid-cols-3 gap-2">
@@ -335,436 +332,490 @@ export default function ObjectDetailPage() {
   if (!obj) return null;
 
   const isPet = obj.category === 'pet';
+  const hasPhoto = obj.photos?.length > 0;
+  const mainPhoto = hasPhoto ? obj.photos[0] : null;
 
   return (
     <>
       {lightbox && <ImageLightbox images={lightbox.images} initialIndex={lightbox.index} onClose={closeLightbox} />}
 
-      {/* Container principal — padding responsivo, sem overflow */}
-      <div className="p-4 sm:p-6 lg:p-8 w-full max-w-5xl mx-auto overflow-x-hidden">
+      <div className="w-full max-w-5xl mx-auto overflow-x-hidden">
 
-        {/* ── Header ── */}
-        <div className="flex items-start justify-between mb-6 gap-3">
-          <div className="flex items-start gap-3 min-w-0">
-            <Link
-              href="/dashboard/objects"
-              className="w-9 h-9 glass rounded-lg flex items-center justify-center text-slate-400 hover:text-white transition-colors flex-shrink-0 mt-0.5"
-            >
-              <ChevronLeft className="w-4 h-4" />
-            </Link>
-            <div className="min-w-0">
-              <div className="flex items-center gap-2 mb-1 flex-wrap">
-                <span className="text-xl sm:text-2xl flex-shrink-0">{CATEGORY_EMOJI[obj.category] ?? '📦'}</span>
-                <h1 className="font-display text-lg sm:text-xl font-bold text-white leading-tight break-words">{obj.title}</h1>
+        {/* ── ZONA 1: HERO ─────────────────────────────────────────────────── */}
+        <div className="relative">
+
+          {/* Foto principal — full-width com aspect-ratio 16/9 */}
+          {mainPhoto ? (
+            <div className="relative w-full aspect-video overflow-hidden">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src={mainPhoto}
+                alt={obj.title}
+                className="w-full h-full object-cover"
+              />
+              {/* Gradiente inferior para legibilidade do título */}
+              <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
+
+              {/* Badge de status — canto superior esquerdo */}
+              <div className="absolute top-3 left-3">
+                <StatusBadge status={obj.status} />
               </div>
-              <StatusBadge status={obj.status} />
-            </div>
-          </div>
 
-          {/* Ações — sempre visíveis, sem overflow */}
-          <div className="flex items-center gap-1.5 flex-shrink-0">
-            <button
-              onClick={handleShare}
-              className="w-9 h-9 glass rounded-lg flex items-center justify-center text-slate-400 hover:text-white transition-colors"
-              title="Compartilhar"
-            >
-              <Share2 className="w-4 h-4" />
-            </button>
-            <Link
-              href={`/dashboard/objects/${id}/edit`}
-              className="w-9 h-9 glass rounded-lg flex items-center justify-center text-slate-400 hover:text-white transition-colors"
-              title="Editar"
-            >
-              <Edit2 className="w-4 h-4" />
-            </Link>
-            <button
-              onClick={handleDelete}
-              disabled={deleting}
-              className="w-9 h-9 glass rounded-lg flex items-center justify-center text-slate-400 hover:text-red-400 disabled:opacity-40 transition-colors"
-              title="Excluir"
-            >
-              <Trash2 className="w-4 h-4" />
-            </button>
-          </div>
+              {/* Ações — canto superior direito */}
+              <div className="absolute top-3 right-3 flex items-center gap-1.5">
+                <button
+                  onClick={handleShare}
+                  className="w-8 h-8 bg-black/40 backdrop-blur-sm rounded-lg flex items-center justify-center text-white/80 hover:text-white hover:bg-black/60 transition-all"
+                  title="Compartilhar"
+                >
+                  <Share2 className="w-3.5 h-3.5" />
+                </button>
+                <Link
+                  href={`/dashboard/objects/${id}/edit`}
+                  className="w-8 h-8 bg-black/40 backdrop-blur-sm rounded-lg flex items-center justify-center text-white/80 hover:text-white hover:bg-black/60 transition-all"
+                  title="Editar"
+                >
+                  <Edit2 className="w-3.5 h-3.5" />
+                </Link>
+                <button
+                  onClick={handleDelete}
+                  disabled={deleting}
+                  className="w-8 h-8 bg-black/40 backdrop-blur-sm rounded-lg flex items-center justify-center text-white/80 hover:text-red-400 disabled:opacity-40 hover:bg-black/60 transition-all"
+                  title="Excluir"
+                >
+                  <Trash2 className="w-3.5 h-3.5" />
+                </button>
+              </div>
+
+              {/* Título e categoria sobre a foto */}
+              <div className="absolute bottom-0 left-0 right-0 p-4">
+                <div className="flex items-center gap-2 mb-1">
+                  <Link
+                    href="/dashboard/objects"
+                    className="w-7 h-7 bg-black/40 backdrop-blur-sm rounded-lg flex items-center justify-center text-white/70 hover:text-white transition-colors flex-shrink-0"
+                  >
+                    <ChevronLeft className="w-4 h-4" />
+                  </Link>
+                  <span className="text-lg flex-shrink-0">{CATEGORY_EMOJI[obj.category] ?? '📦'}</span>
+                  <h1 className="font-display text-xl sm:text-2xl font-bold text-white leading-tight break-words drop-shadow-lg">
+                    {obj.title}
+                  </h1>
+                </div>
+                <p className="text-white/60 text-xs ml-9">{CATEGORY_LABEL[obj.category] ?? obj.category}</p>
+              </div>
+            </div>
+          ) : (
+            /* Sem foto: header compacto */
+            <div className="flex items-start justify-between px-4 pt-4 pb-3 gap-3">
+              <div className="flex items-start gap-3 min-w-0">
+                <Link
+                  href="/dashboard/objects"
+                  className="w-9 h-9 glass rounded-lg flex items-center justify-center text-slate-400 hover:text-white transition-colors flex-shrink-0 mt-0.5"
+                >
+                  <ChevronLeft className="w-4 h-4" />
+                </Link>
+                <div className="min-w-0">
+                  <div className="flex items-center gap-2 mb-1 flex-wrap">
+                    <span className="text-xl sm:text-2xl flex-shrink-0">{CATEGORY_EMOJI[obj.category] ?? '📦'}</span>
+                    <h1 className="font-display text-lg sm:text-xl font-bold text-white leading-tight break-words">{obj.title}</h1>
+                  </div>
+                  <StatusBadge status={obj.status} />
+                </div>
+              </div>
+              <div className="flex items-center gap-1.5 flex-shrink-0">
+                <button onClick={handleShare} className="w-9 h-9 glass rounded-lg flex items-center justify-center text-slate-400 hover:text-white transition-colors" title="Compartilhar">
+                  <Share2 className="w-4 h-4" />
+                </button>
+                <Link href={`/dashboard/objects/${id}/edit`} className="w-9 h-9 glass rounded-lg flex items-center justify-center text-slate-400 hover:text-white transition-colors" title="Editar">
+                  <Edit2 className="w-4 h-4" />
+                </Link>
+                <button onClick={handleDelete} disabled={deleting} className="w-9 h-9 glass rounded-lg flex items-center justify-center text-slate-400 hover:text-red-400 disabled:opacity-40 transition-colors" title="Excluir">
+                  <Trash2 className="w-4 h-4" />
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* Thumbnails de fotos adicionais */}
+          {obj.photos?.length > 1 && (
+            <div className="flex gap-2 overflow-x-auto px-4 py-3 scrollbar-hide bg-surface/50">
+              {obj.photos.map((url, i) => (
+                <button
+                  key={i}
+                  onClick={() => openLightbox(obj.photos, i)}
+                  className={`relative flex-shrink-0 w-16 h-16 rounded-lg overflow-hidden border-2 transition-all ${i === 0 ? 'border-brand-400' : 'border-transparent hover:border-brand-400/50'}`}
+                >
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img src={url} alt={`Foto ${i + 1}`} className="w-full h-full object-cover" />
+                </button>
+              ))}
+            </div>
+          )}
         </div>
 
-        {/* ── Body: coluna única no mobile, 3 colunas no desktop ── */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
+        {/* ── ZONA 2 + 3: CORPO ────────────────────────────────────────────── */}
+        <div className="p-4 sm:p-6 lg:p-8">
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
 
-          {/* ── Coluna esquerda — detalhes ── */}
-          <div className="lg:col-span-2 space-y-4">
+            {/* ── Coluna esquerda — conteúdo ── */}
+            <div className="lg:col-span-2 space-y-4">
 
-            {/* Fotos */}
-            {obj.photos?.length > 0 && (
+              {/* Descrição */}
               <div className="glass rounded-2xl p-4 sm:p-5">
-                <h2 className="font-display font-semibold text-white text-sm mb-4">Fotos</h2>
-                <div className="flex gap-3 overflow-x-auto pb-1 scrollbar-hide">
-                  {obj.photos.map((url, i) => (
-                    <button
-                      key={i}
-                      onClick={() => openLightbox(obj.photos, i)}
-                      className="relative flex-shrink-0 w-32 h-32 rounded-xl overflow-hidden border border-surface-border hover:border-brand-500 transition-colors group"
-                    >
-                      {/* eslint-disable-next-line @next/next/no-img-element */}
-                      <img
-                        src={url}
-                        alt={`${obj.title} — foto ${i + 1}`}
-                        className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
-                      />
-                    </button>
-                  ))}
-                </div>
-              </div>
-            )}
+                <h2 className="font-display font-semibold text-white text-sm mb-3">Descrição</h2>
+                <p className="text-slate-300 text-sm leading-relaxed break-words">{obj.description}</p>
 
-            {/* Descrição */}
-            <div className="glass rounded-2xl p-4 sm:p-5">
-              <h2 className="font-display font-semibold text-white text-sm mb-3">Descrição</h2>
-              <p className="text-slate-300 text-sm leading-relaxed break-words">{obj.description}</p>
-            </div>
-
-            {/* Pet details */}
-            {isPet && (obj.pet_species || obj.pet_breed || obj.pet_color || obj.pet_microchip) && (
-              <div className="glass rounded-2xl p-4 sm:p-5">
-                <h2 className="font-display font-semibold text-white text-sm mb-4 flex items-center gap-2">
-                  🐾 Informações do Pet
-                </h2>
-                <div className="grid grid-cols-2 gap-4">
-                  {obj.pet_species && (
-                    <div>
-                      <p className="text-slate-500 text-xs mb-0.5">Espécie</p>
-                      <p className="text-slate-200 text-sm capitalize">{obj.pet_species}</p>
-                    </div>
-                  )}
-                  {obj.pet_breed && (
-                    <div>
-                      <p className="text-slate-500 text-xs mb-0.5">Raça</p>
-                      <p className="text-slate-200 text-sm">{obj.pet_breed}</p>
-                    </div>
-                  )}
-                  {obj.pet_color && (
-                    <div>
-                      <p className="text-slate-500 text-xs mb-0.5">Cor</p>
-                      <p className="text-slate-200 text-sm">{obj.pet_color}</p>
-                    </div>
-                  )}
-                  {obj.pet_microchip && (
-                    <div>
-                      <p className="text-slate-500 text-xs mb-0.5">Microchip</p>
-                      <p className="text-slate-200 text-sm font-mono break-all">{obj.pet_microchip}</p>
-                    </div>
-                  )}
-                </div>
-              </div>
-            )}
-
-            {/* Recompensa */}
-            {obj.reward_amount && obj.reward_amount > 0 && (
-              <div className="glass rounded-2xl p-4 sm:p-5 border border-yellow-500/20 bg-yellow-500/5">
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-xl bg-yellow-500/10 border border-yellow-500/20 flex items-center justify-center flex-shrink-0">
-                    <Gift className="w-5 h-5 text-yellow-400" />
+                {/* Informações básicas — unificadas no mesmo card */}
+                <div className="mt-4 pt-4 border-t border-surface-border space-y-3">
+                  <div className="flex items-center gap-3 text-sm">
+                    <Tag className="w-4 h-4 text-slate-500 flex-shrink-0" />
+                    <span className="text-slate-400 flex-shrink-0">Categoria</span>
+                    <span className="text-slate-200 ml-auto text-right">{CATEGORY_LABEL[obj.category] ?? obj.category}</span>
                   </div>
-                  <div className="min-w-0">
-                    <p className="text-yellow-400 font-semibold text-sm">Recompensa oferecida</p>
-                    <p className="text-white font-bold text-xl">
-                      R$ {obj.reward_amount.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
-                    </p>
-                    {obj.reward_description && (
-                      <p className="text-slate-400 text-xs mt-1 break-words">{obj.reward_description}</p>
+                  <div className="flex items-center gap-3 text-sm">
+                    <Calendar className="w-4 h-4 text-slate-500 flex-shrink-0" />
+                    <span className="text-slate-400 flex-shrink-0">Registrado em</span>
+                    <span className="text-slate-200 ml-auto text-right">
+                      {format(new Date(obj.created_at), "dd/MM/yyyy", { locale: ptBR })}
+                    </span>
+                  </div>
+                  {obj.location?.address && (
+                    <div className="flex items-start gap-3 text-sm">
+                      <MapPin className="w-4 h-4 text-slate-500 flex-shrink-0 mt-0.5" />
+                      <span className="text-slate-400 flex-shrink-0">Local</span>
+                      <span className="text-slate-200 ml-auto text-right break-words max-w-[55%]">{obj.location.address}</span>
+                    </div>
+                  )}
+                  {/* Campos dinâmicos por categoria */}
+                  {obj.category_fields && Object.keys(obj.category_fields).length > 0 && (
+                    <div className="pt-3 mt-1 border-t border-surface-border space-y-3">
+                      {Object.entries(obj.category_fields).map(([key, value]) => {
+                        if (!value) return null;
+                        const label = key.split('_').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ');
+                        return (
+                          <div key={key} className="flex items-start gap-3 text-sm">
+                            <Info className="w-4 h-4 text-brand-400 flex-shrink-0 mt-0.5" />
+                            <span className="text-slate-400 flex-shrink-0">{label}</span>
+                            <span className="text-slate-200 ml-auto text-right font-medium break-words max-w-[55%]">{String(value)}</span>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Pet details */}
+              {isPet && (obj.pet_species || obj.pet_breed || obj.pet_color || obj.pet_microchip) && (
+                <div className="glass rounded-2xl p-4 sm:p-5">
+                  <h2 className="font-display font-semibold text-white text-sm mb-4 flex items-center gap-2">
+                    🐾 Informações do Pet
+                  </h2>
+                  <div className="grid grid-cols-2 gap-4">
+                    {obj.pet_species && (
+                      <div>
+                        <p className="text-slate-500 text-xs mb-0.5">Espécie</p>
+                        <p className="text-slate-200 text-sm capitalize">{obj.pet_species}</p>
+                      </div>
+                    )}
+                    {obj.pet_breed && (
+                      <div>
+                        <p className="text-slate-500 text-xs mb-0.5">Raça</p>
+                        <p className="text-slate-200 text-sm">{obj.pet_breed}</p>
+                      </div>
+                    )}
+                    {obj.pet_color && (
+                      <div>
+                        <p className="text-slate-500 text-xs mb-0.5">Cor</p>
+                        <p className="text-slate-200 text-sm">{obj.pet_color}</p>
+                      </div>
+                    )}
+                    {obj.pet_microchip && (
+                      <div>
+                        <p className="text-slate-500 text-xs mb-0.5">Microchip</p>
+                        <p className="text-slate-200 text-sm font-mono break-all">{obj.pet_microchip}</p>
+                      </div>
                     )}
                   </div>
                 </div>
-              </div>
-            )}
+              )}
 
-            {/* Informações */}
-            <div className="glass rounded-2xl p-4 sm:p-5">
-              <h2 className="font-display font-semibold text-white text-sm mb-4">Informações</h2>
-              <div className="space-y-3">
-                <div className="flex items-center gap-3 text-sm">
-                  <Tag className="w-4 h-4 text-slate-500 flex-shrink-0" />
-                  <span className="text-slate-400 flex-shrink-0">Categoria</span>
-                  <span className="text-slate-200 ml-auto text-right">{CATEGORY_LABEL[obj.category] ?? obj.category}</span>
-                </div>
-                <div className="flex items-center gap-3 text-sm">
-                  <Calendar className="w-4 h-4 text-slate-500 flex-shrink-0" />
-                  <span className="text-slate-400 flex-shrink-0">Registrado em</span>
-                  <span className="text-slate-200 ml-auto text-right">
-                    {format(new Date(obj.created_at), "dd/MM/yyyy", { locale: ptBR })}
-                  </span>
-                </div>
-                {obj.location?.address && (
-                  <div className="flex items-start gap-3 text-sm">
-                    <MapPin className="w-4 h-4 text-slate-500 flex-shrink-0 mt-0.5" />
-                    <span className="text-slate-400 flex-shrink-0">Local</span>
-                    <span className="text-slate-200 ml-auto text-right break-words max-w-[55%]">{obj.location.address}</span>
-                  </div>
-                )}
-
-                {/* Campos dinâmicos por categoria */}
-                {obj.category_fields && Object.keys(obj.category_fields).length > 0 && (
-                  <div className="pt-3 mt-3 border-t border-surface-border space-y-3">
-                    {Object.entries(obj.category_fields).map(([key, value]) => {
-                      if (!value) return null;
-                      const label = key.split('_').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ');
-                      return (
-                        <div key={key} className="flex items-start gap-3 text-sm">
-                          <Info className="w-4 h-4 text-brand-400 flex-shrink-0 mt-0.5" />
-                          <span className="text-slate-400 flex-shrink-0">{label}</span>
-                          <span className="text-slate-200 ml-auto text-right font-medium break-words max-w-[55%]">{String(value)}</span>
-                        </div>
-                      );
-                    })}
-                  </div>
-                )}
-              </div>
-            </div>
-
-            {/* Mapa */}
-            {obj.location?.lat && obj.location?.lng && (
-              <div className="glass rounded-2xl overflow-hidden">
-                <LocationMap
-                  lat={obj.location.lat}
-                  lng={obj.location.lng}
-                  title={obj.title}
-                  address={obj.location.address}
-                />
-              </div>
-            )}
-          </div>
-
-          {/* ── Coluna direita — Pôster + QR + ações ── */}
-          <div className="space-y-4">
-            {/* Baixar Pôster */}
-            <div className="glass rounded-2xl p-4 sm:p-5">
-              <div className="flex items-center gap-2 mb-3">
-                <Download className="w-4 h-4 text-blue-400" />
-                <h3 className="font-display font-semibold text-white text-sm">Baixar Pôster</h3>
-              </div>
-              <p className="text-slate-500 text-xs mb-4 leading-relaxed">
-                Imprima e compartilhe o pôster do seu objeto em locais públicos.
-              </p>
-              <div className="flex flex-col gap-2">
-
-                {/* Quadrado e Vertical: download direto */}
-                {(['square', 'vertical'] as const).map((fmt) => {
-                  const LABELS = {
-                    square:   'Quadrado (1080×1080)',
-                    vertical: 'Vertical (1080×1920)',
-                  };
-                  return (
-                    <button
-                      key={fmt}
-                      disabled={posterLoading !== null}
-                      onClick={async () => {
-                        setPosterLoading(fmt);
-                        try {
-                          const url = objectsApi.getPosterUrl(id, fmt);
-                          const res = await fetch(url);
-                          if (!res.ok) throw new Error();
-                          const blob = await res.blob();
-                          const blobUrl = URL.createObjectURL(blob);
-                          const link = document.createElement('a');
-                          link.href = blobUrl;
-                          link.download = `cartaz-${obj.unique_code}-${fmt}.png`;
-                          document.body.appendChild(link);
-                          link.click();
-                          document.body.removeChild(link);
-                          setTimeout(() => URL.revokeObjectURL(blobUrl), 1000);
-                          toast.success(`Pôster ${LABELS[fmt]} baixado!`);
-                        } catch {
-                          toast.error('Erro ao gerar pôster. Tente novamente.');
-                        } finally {
-                          setPosterLoading(null);
-                        }
-                      }}
-                      className="w-full flex items-center justify-center gap-2 bg-blue-500/10 hover:bg-blue-500/20 border border-blue-500/20 text-blue-400 hover:text-blue-300 text-xs font-medium py-2.5 rounded-lg transition-all disabled:opacity-60 disabled:cursor-not-allowed"
-                    >
-                      {posterLoading === fmt
-                        ? <><Loader2 className="w-3.5 h-3.5 animate-spin" /> Gerando pôster…</>
-                        : <><Download className="w-3.5 h-3.5" /> {LABELS[fmt]}</>}
-                    </button>
-                  );
-                })}
-
-                {/* A4 Retrato: divisória + 3 ações */}
-                <div className="pt-1">
-                  <p className="text-slate-500 text-[10px] font-semibold uppercase tracking-wider mb-2">A4 Retrato — Impressão</p>
-                  <div className="grid grid-cols-3 gap-2">
-
-                    {/* 1. Baixar PNG */}
-                    <button
-                      disabled={posterLoading !== null}
-                      onClick={async () => {
-                        setPosterLoading('a4');
-                        try {
-                          const url = objectsApi.getPosterUrl(id, 'a4');
-                          const res = await fetch(url);
-                          if (!res.ok) throw new Error();
-                          const blob = await res.blob();
-                          const blobUrl = URL.createObjectURL(blob);
-                          const link = document.createElement('a');
-                          link.href = blobUrl;
-                          link.download = `cartaz-${obj.unique_code}-a4.png`;
-                          document.body.appendChild(link);
-                          link.click();
-                          document.body.removeChild(link);
-                          setTimeout(() => URL.revokeObjectURL(blobUrl), 1000);
-                          toast.success('Pôster A4 baixado!');
-                        } catch {
-                          toast.error('Erro ao gerar pôster. Tente novamente.');
-                        } finally {
-                          setPosterLoading(null);
-                        }
-                      }}
-                      className="flex flex-col items-center justify-center gap-1.5 py-3 bg-blue-500/10 hover:bg-blue-500/20 border border-blue-500/20 text-blue-400 hover:text-blue-300 text-xs font-medium rounded-lg transition-all disabled:opacity-60 disabled:cursor-not-allowed"
-                    >
-                      {posterLoading === 'a4'
-                        ? <><Loader2 className="w-4 h-4 animate-spin" /><span className="text-[10px]">Gerando…</span></>
-                        : <><Download className="w-4 h-4" /><span className="text-[10px]">Baixar PNG</span></>}
-                    </button>
-
-                    {/* 2. Enviar pelo WhatsApp */}
-                    <button
-                      disabled={posterLoading !== null}
-                      onClick={() => {
-                        const posterUrl = objectsApi.getPosterUrl(id, 'a4');
-                        const msg = `Aqui está o cartaz A4 para imprimir:\n${posterUrl}\n\nEscaneie o QR Code para ver mais detalhes sobre o objeto.`;
-                        window.open(`https://wa.me/?text=${encodeURIComponent(msg)}`, '_blank');
-                      }}
-                      className="flex flex-col items-center justify-center gap-1.5 py-3 bg-[#25D366]/10 hover:bg-[#25D366]/20 border border-[#25D366]/20 text-[#25D366] hover:text-[#1aab52] text-xs font-medium rounded-lg transition-all disabled:opacity-60 disabled:cursor-not-allowed"
-                    >
-                      <svg viewBox="0 0 24 24" className="w-4 h-4 fill-current flex-shrink-0">
-                        <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/>
-                      </svg>
-                      <span className="text-[10px]">WhatsApp</span>
-                    </button>
-
-                    {/* 3. Abrir para imprimir (desktop) */}
-                    <button
-                      disabled={posterLoading !== null}
-                      onClick={() => {
-                        const posterUrl = objectsApi.getPosterUrl(id, 'a4');
-                        const win = window.open('', '_blank');
-                        if (!win) { toast.error('Permita popups para usar esta função.'); return; }
-                        win.document.write(`<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Imprimir Cartaz</title><style>*{margin:0;padding:0;box-sizing:border-box}body{background:#fff;display:flex;align-items:center;justify-content:center;min-height:100vh}img{max-width:100%;height:auto;display:block}@media print{body{margin:0}img{width:100%;height:auto}}</style></head><body><img src="${posterUrl}" onload="window.print()" /></body></html>`);
-                        win.document.close();
-                      }}
-                      className="flex flex-col items-center justify-center gap-1.5 py-3 bg-white/[0.04] hover:bg-white/[0.08] border border-white/[0.10] text-slate-400 hover:text-white text-xs font-medium rounded-lg transition-all disabled:opacity-60 disabled:cursor-not-allowed"
-                    >
-                      <ExternalLink className="w-4 h-4" />
-                      <span className="text-[10px]">Imprimir</span>
-                    </button>
-
-                  </div>
-                </div>
-
-              </div>
-            </div>
-
-            <QRCodeDisplay code={obj.unique_code} title={obj.title} status={obj.status} />
-
-            {/* Atualizar status */}
-            <div className="glass rounded-2xl p-4 sm:p-5">
-              <h3 className="font-display font-semibold text-white text-sm mb-3">Atualizar status</h3>
-              <div className="space-y-2">
-                {(['lost', 'found', 'returned'] as const).map((s) => {
-                  const cfg = STATUS_CONFIG[s];
-                  const active = obj.status === s;
-                  return (
-                    <button
-                      key={s}
-                      disabled={active}
-                      onClick={async () => {
-                        try {
-                          await objectsApi.update(id, { status: s });
-                          setObj((prev) => prev ? { ...prev, status: s } : prev);
-                          if (s === 'returned') {
-                            setShowRecoveredModal(true);
-                          } else {
-                            toast.success(`Status atualizado para ${cfg.label}`);
-                          }
-                        } catch (err) {
-                          toast.error(parseApiError(err));
-                        }
-                      }}
-                      className={`w-full flex items-center gap-2 px-3 py-2.5 rounded-lg text-sm transition-all ${
-                        active
-                          ? `${cfg.color} ${cfg.bg} border cursor-default font-medium`
-                          : 'text-slate-400 hover:text-white hover:bg-surface border border-transparent'
-                      }`}
-                    >
-                      {cfg.icon}
-                      {cfg.label}
-                      {active && <CheckCircle2 className="w-3.5 h-3.5 ml-auto" />}
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
-
-            {/* Boost — apenas para perdidos/roubados */}
-            {(obj.status === 'lost' || obj.status === 'stolen') && (
-              <div className="relative overflow-hidden glass rounded-2xl p-4 sm:p-5 border border-amber-500/20 bg-amber-500/5 group">
-                {/* Ícone decorativo de fundo */}
-                <div className="absolute top-0 right-0 p-3 opacity-10 group-hover:opacity-20 transition-opacity pointer-events-none">
-                  <Zap className="w-20 h-20 text-amber-500" />
-                </div>
-
-                <div className="relative">
-                  <div className="flex items-center gap-2 mb-1">
-                    <div className="p-1.5 bg-gradient-to-br from-amber-500 to-orange-600 rounded-lg flex-shrink-0">
-                      <Zap className="w-3.5 h-3.5 text-white" />
+              {/* Recompensa */}
+              {obj.reward_amount && obj.reward_amount > 0 && (
+                <div className="glass rounded-2xl p-4 sm:p-5 border border-yellow-500/20 bg-yellow-500/5">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-xl bg-yellow-500/10 border border-yellow-500/20 flex items-center justify-center flex-shrink-0">
+                      <Gift className="w-5 h-5 text-yellow-400" />
                     </div>
-                    <h3 className="font-display font-bold text-white text-sm">Impulsionar Visibilidade</h3>
-                  </div>
-                  <p className="text-slate-400 text-xs mb-4 leading-relaxed">
-                    Destaque seu objeto no mapa e no feed para que mais pessoas o vejam.
-                  </p>
-
-                  {activeBoost && (
-                    <div className="mb-4 px-3 py-2.5 bg-green-500/10 border border-green-500/20 rounded-xl flex items-center gap-3">
-                      <div className="relative flex h-2.5 w-2.5 flex-shrink-0">
-                        <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
-                        <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-green-500"></span>
-                      </div>
-                      <div>
-                        <p className="text-green-400 text-xs font-bold">Boost Ativo</p>
-                        <p className="text-slate-500 text-[10px]">
-                          Expira em {new Date(activeBoost.expires_at).toLocaleDateString('pt-BR')}
-                        </p>
-                      </div>
+                    <div className="min-w-0">
+                      <p className="text-yellow-400 font-semibold text-sm">Recompensa oferecida</p>
+                      <p className="text-white font-bold text-xl">
+                        R$ {obj.reward_amount.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                      </p>
+                      {obj.reward_description && (
+                        <p className="text-slate-400 text-xs mt-1 break-words">{obj.reward_description}</p>
+                      )}
                     </div>
-                  )}
+                  </div>
+                </div>
+              )}
 
-                  <div className="space-y-2">
-                    {([
-                      { type: '7d'    as const, label: '⚡ Boost 7 dias',   price: 'R$ 9,90',  desc: 'Destaque total por uma semana' },
-                      { type: '30d'   as const, label: '⭐ Boost 30 dias',  price: 'R$ 24,90', desc: 'Destaque mensal + notificações' },
-                      { type: 'alert' as const, label: '🔔 Alerta de Área', price: 'R$ 14,90', desc: 'Notificação para usuários próximos' },
-                    ]).map(b => (
+              {/* Mapa */}
+              {obj.location?.lat && obj.location?.lng && (
+                <div className="glass rounded-2xl overflow-hidden">
+                  <LocationMap
+                    lat={obj.location.lat}
+                    lng={obj.location.lng}
+                    title={obj.title}
+                    address={obj.location.address}
+                  />
+                </div>
+              )}
+            </div>
+
+            {/* ── Coluna direita — ações ── */}
+            <div className="space-y-4">
+
+              {/* ── ZONA 2: AÇÕES URGENTES ── */}
+
+              {/* Baixar Pôster */}
+              <div className="glass rounded-2xl p-4 sm:p-5">
+                <div className="flex items-center gap-2 mb-1">
+                  <Download className="w-4 h-4 text-blue-400" />
+                  <h3 className="font-display font-semibold text-white text-sm">Baixar Pôster</h3>
+                </div>
+                <p className="text-slate-500 text-xs mb-4 leading-relaxed">
+                  Imprima e compartilhe o pôster do seu objeto em locais públicos.
+                </p>
+                <div className="flex flex-col gap-2">
+
+                  {/* Quadrado e Vertical: download direto */}
+                  {(['square', 'vertical'] as const).map((fmt) => {
+                    const LABELS = {
+                      square:   'Quadrado (1080×1080)',
+                      vertical: 'Vertical (1080×1920)',
+                    };
+                    return (
                       <button
-                        key={b.type}
-                        onClick={() => handleBoost(b.type)}
-                        disabled={boostLoading === b.type || !!activeBoost}
-                        className="w-full flex items-center justify-between p-3 rounded-xl bg-gradient-to-r from-slate-800 to-slate-900 border border-slate-700 hover:border-amber-500/50 disabled:opacity-40 disabled:cursor-not-allowed transition-all"
+                        key={fmt}
+                        disabled={posterLoading !== null}
+                        onClick={async () => {
+                          setPosterLoading(fmt);
+                          try {
+                            const url = objectsApi.getPosterUrl(id, fmt);
+                            const res = await fetch(url);
+                            if (!res.ok) throw new Error();
+                            const blob = await res.blob();
+                            const blobUrl = URL.createObjectURL(blob);
+                            const link = document.createElement('a');
+                            link.href = blobUrl;
+                            link.download = `cartaz-${obj.unique_code}-${fmt}.png`;
+                            document.body.appendChild(link);
+                            link.click();
+                            document.body.removeChild(link);
+                            setTimeout(() => URL.revokeObjectURL(blobUrl), 1000);
+                            toast.success(`Pôster ${LABELS[fmt]} baixado!`);
+                          } catch {
+                            toast.error('Erro ao gerar pôster. Tente novamente.');
+                          } finally {
+                            setPosterLoading(null);
+                          }
+                        }}
+                        className="w-full flex items-center justify-center gap-2 bg-blue-500/10 hover:bg-blue-500/20 border border-blue-500/20 text-blue-400 hover:text-blue-300 text-xs font-medium py-2.5 rounded-lg transition-all disabled:opacity-60 disabled:cursor-not-allowed"
                       >
-                        <div className="text-left min-w-0">
-                          <p className="text-white font-semibold text-xs">{b.label}</p>
-                          <p className="text-slate-500 text-[10px] truncate">{b.desc}</p>
-                        </div>
-                        <span className="text-amber-400 font-bold text-xs flex-shrink-0 ml-2">
-                          {boostLoading === b.type ? (
-                            <div className="w-3.5 h-3.5 border border-amber-400/30 border-t-amber-400 rounded-full animate-spin" />
-                          ) : b.price}
-                        </span>
+                        {posterLoading === fmt
+                          ? <><Loader2 className="w-3.5 h-3.5 animate-spin" /> Gerando pôster…</>
+                          : <><Download className="w-3.5 h-3.5" /> {LABELS[fmt]}</>}
                       </button>
-                    ))}
+                    );
+                  })}
+
+                  {/* A4 Retrato: 3 ações */}
+                  <div className="pt-1">
+                    <p className="text-slate-500 text-[10px] font-semibold uppercase tracking-wider mb-2">A4 Retrato — Impressão</p>
+                    <div className="grid grid-cols-3 gap-2">
+
+                      {/* 1. Baixar PNG */}
+                      <button
+                        disabled={posterLoading !== null}
+                        onClick={async () => {
+                          setPosterLoading('a4');
+                          try {
+                            const url = objectsApi.getPosterUrl(id, 'a4');
+                            const res = await fetch(url);
+                            if (!res.ok) throw new Error();
+                            const blob = await res.blob();
+                            const blobUrl = URL.createObjectURL(blob);
+                            const link = document.createElement('a');
+                            link.href = blobUrl;
+                            link.download = `cartaz-${obj.unique_code}-a4.png`;
+                            document.body.appendChild(link);
+                            link.click();
+                            document.body.removeChild(link);
+                            setTimeout(() => URL.revokeObjectURL(blobUrl), 1000);
+                            toast.success('Pôster A4 baixado!');
+                          } catch {
+                            toast.error('Erro ao gerar pôster. Tente novamente.');
+                          } finally {
+                            setPosterLoading(null);
+                          }
+                        }}
+                        className="flex flex-col items-center justify-center gap-1.5 py-3 bg-blue-500/10 hover:bg-blue-500/20 border border-blue-500/20 text-blue-400 hover:text-blue-300 text-xs font-medium rounded-lg transition-all disabled:opacity-60 disabled:cursor-not-allowed"
+                      >
+                        {posterLoading === 'a4'
+                          ? <><Loader2 className="w-4 h-4 animate-spin" /><span className="text-[10px]">Gerando…</span></>
+                          : <><Download className="w-4 h-4" /><span className="text-[10px]">Baixar PNG</span></>}
+                      </button>
+
+                      {/* 2. Enviar pelo WhatsApp */}
+                      <button
+                        disabled={posterLoading !== null}
+                        onClick={() => {
+                          const posterUrl = objectsApi.getPosterUrl(id, 'a4');
+                          const msg = `Aqui está o cartaz A4 para imprimir:\n${posterUrl}\n\nEscaneie o QR Code para ver mais detalhes sobre o objeto.`;
+                          window.open(`https://wa.me/?text=${encodeURIComponent(msg)}`, '_blank');
+                        }}
+                        className="flex flex-col items-center justify-center gap-1.5 py-3 bg-[#25D366]/10 hover:bg-[#25D366]/20 border border-[#25D366]/20 text-[#25D366] hover:text-[#1aab52] text-xs font-medium rounded-lg transition-all disabled:opacity-60 disabled:cursor-not-allowed"
+                      >
+                        <svg viewBox="0 0 24 24" className="w-4 h-4 fill-current flex-shrink-0">
+                          <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/>
+                        </svg>
+                        <span className="text-[10px]">WhatsApp</span>
+                      </button>
+
+                      {/* 3. Abrir para imprimir (desktop) */}
+                      <button
+                        disabled={posterLoading !== null}
+                        onClick={() => {
+                          const posterUrl = objectsApi.getPosterUrl(id, 'a4');
+                          const win = window.open('', '_blank');
+                          if (!win) { toast.error('Permita popups para usar esta função.'); return; }
+                          win.document.write(`<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Imprimir Cartaz</title><style>*{margin:0;padding:0;box-sizing:border-box}body{background:#fff;display:flex;align-items:center;justify-content:center;min-height:100vh}img{max-width:100%;height:auto;display:block}@media print{body{margin:0}img{width:100%;height:auto}}</style></head><body><img src="${posterUrl}" onload="window.print()" /></body></html>`);
+                          win.document.close();
+                        }}
+                        className="flex flex-col items-center justify-center gap-1.5 py-3 bg-white/[0.04] hover:bg-white/[0.08] border border-white/[0.10] text-slate-400 hover:text-white text-xs font-medium rounded-lg transition-all disabled:opacity-60 disabled:cursor-not-allowed"
+                      >
+                        <ExternalLink className="w-4 h-4" />
+                        <span className="text-[10px]">Imprimir</span>
+                      </button>
+
+                    </div>
                   </div>
+
                 </div>
               </div>
-            )}
+
+              {/* QR Code */}
+              <div className="glass rounded-2xl p-4 sm:p-5">
+                <div className="flex items-center gap-2 mb-4">
+                  <QrCode className="w-4 h-4 text-brand-400" />
+                  <h3 className="font-display font-semibold text-white text-sm">QR Code</h3>
+                </div>
+                <QRCodeDisplay code={obj.unique_code} title={obj.title} status={obj.status} />
+              </div>
+
+              {/* ── ZONA 3: SECUNDÁRIOS ── */}
+
+              {/* Atualizar status — chips horizontais */}
+              <div className="glass rounded-2xl p-4 sm:p-5">
+                <h3 className="font-display font-semibold text-white text-sm mb-3">Atualizar status</h3>
+                <div className="flex flex-col gap-2">
+                  {(['lost', 'found', 'returned'] as const).map((s) => {
+                    const cfg = STATUS_CONFIG[s];
+                    const active = obj.status === s;
+                    return (
+                      <button
+                        key={s}
+                        disabled={active}
+                        onClick={async () => {
+                          try {
+                            await objectsApi.update(id, { status: s });
+                            setObj((prev) => prev ? { ...prev, status: s } : prev);
+                            if (s === 'returned') {
+                              setShowRecoveredModal(true);
+                            } else {
+                              toast.success(`Status atualizado para ${cfg.label}`);
+                            }
+                          } catch (err) {
+                            toast.error(parseApiError(err));
+                          }
+                        }}
+                        className={`w-full flex items-center gap-2 px-3 py-2.5 rounded-lg text-sm transition-all ${
+                          active
+                            ? `${cfg.color} ${cfg.bg} border cursor-default font-medium`
+                            : 'text-slate-400 hover:text-white hover:bg-surface border border-transparent'
+                        }`}
+                      >
+                        {cfg.icon}
+                        {cfg.label}
+                        {active && <CheckCircle2 className="w-3.5 h-3.5 ml-auto" />}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* Boost — apenas para perdidos/roubados */}
+              {(obj.status === 'lost' || obj.status === 'stolen') && (
+                <div className="relative overflow-hidden glass rounded-2xl p-4 sm:p-5 border border-amber-500/20 bg-amber-500/5 group">
+                  <div className="absolute top-0 right-0 p-3 opacity-10 group-hover:opacity-20 transition-opacity pointer-events-none">
+                    <Zap className="w-20 h-20 text-amber-500" />
+                  </div>
+
+                  <div className="relative">
+                    <div className="flex items-center gap-2 mb-1">
+                      <div className="p-1.5 bg-gradient-to-br from-amber-500 to-orange-600 rounded-lg flex-shrink-0">
+                        <Zap className="w-3.5 h-3.5 text-white" />
+                      </div>
+                      <h3 className="font-display font-bold text-white text-sm">Impulsionar Visibilidade</h3>
+                    </div>
+                    <p className="text-slate-400 text-xs mb-4 leading-relaxed">
+                      Destaque seu objeto no mapa e no feed para que mais pessoas o vejam.
+                    </p>
+
+                    {activeBoost && (
+                      <div className="mb-4 px-3 py-2.5 bg-green-500/10 border border-green-500/20 rounded-xl flex items-center gap-3">
+                        <div className="relative flex h-2.5 w-2.5 flex-shrink-0">
+                          <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
+                          <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-green-500"></span>
+                        </div>
+                        <div>
+                          <p className="text-green-400 text-xs font-bold">Boost Ativo</p>
+                          <p className="text-slate-500 text-[10px]">
+                            Expira em {new Date(activeBoost.expires_at).toLocaleDateString('pt-BR')}
+                          </p>
+                        </div>
+                      </div>
+                    )}
+
+                    <div className="space-y-2">
+                      {([
+                        { type: '7d'    as const, label: '⚡ Boost 7 dias',   price: 'R$ 9,90',  desc: 'Destaque total por uma semana' },
+                        { type: '30d'   as const, label: '⭐ Boost 30 dias',  price: 'R$ 24,90', desc: 'Destaque mensal + notificações' },
+                        { type: 'alert' as const, label: '🔔 Alerta de Área', price: 'R$ 14,90', desc: 'Notificação para usuários próximos' },
+                      ]).map(b => (
+                        <button
+                          key={b.type}
+                          onClick={() => handleBoost(b.type)}
+                          disabled={boostLoading === b.type || !!activeBoost}
+                          className="w-full flex items-center justify-between p-3 rounded-xl bg-gradient-to-r from-slate-800 to-slate-900 border border-slate-700 hover:border-amber-500/50 disabled:opacity-40 disabled:cursor-not-allowed transition-all"
+                        >
+                          <div className="text-left min-w-0">
+                            <p className="text-white font-semibold text-xs">{b.label}</p>
+                            <p className="text-slate-500 text-[10px] truncate">{b.desc}</p>
+                          </div>
+                          <span className="text-amber-400 font-bold text-xs flex-shrink-0 ml-2">
+                            {boostLoading === b.type ? (
+                              <div className="w-3.5 h-3.5 border border-amber-400/30 border-t-amber-400 rounded-full animate-spin" />
+                            ) : b.price}
+                          </span>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
           </div>
         </div>
 
