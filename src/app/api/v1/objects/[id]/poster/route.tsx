@@ -132,188 +132,169 @@ export async function GET(
     // TEMPLATE A4 — CARTAZ IMPRESSO — 2480×3508
     // Regra: fundo branco total, sem faixas chapadas, bordas finas,
     // conteúdo ocupa 95–98% da altura útil, sem área morta.
+    // IMPORTANTE: next/og não suporta marginTop em filhos de container com padding.
+    // Usar gap no container pai ou paddingTop no próprio elemento.
     // ─────────────────────────────────────────────────────────────────────────
     if (format === 'a4') {
-      // Paleta de impressão: apenas teal e vermelho como cor de acento
-      const tealA4    = BRAND.teal;
-      const accentA4  = pd.statusColor;
-      const inkBorder = inkSaver ? '6px solid #0B0F14' : `6px solid ${tealA4}`;
+      const tealA4   = BRAND.teal;
+      const accentA4 = pd.statusColor;
+      const bdr      = inkSaver ? '5px solid #0B0F14' : `5px solid ${tealA4}`;
 
-      // ── Alturas calculadas explicitamente (px) — total = 3508 ──
-      // margem externa: 80px topo + 80px base = 160
-      // header logo+badge: 140
-      // gap: 40
-      // headline eyebrow: 100
-      // headline principal: 200
-      // subtítulo: 100
-      // divisória: 4
-      // gap: 40
-      // foto: 1200
-      // gap: 60
-      // divisória "RECONHECIMENTO": 4
-      // label reconhecimento: 70
-      // bullets (5 linhas × 90px + gaps): 520
-      // gap: 60
-      // divisória QR: 4
-      // bloco QR: 480
-      // gap: 40
-      // divisória rodapé: 4
-      // rodapé texto: 90
-      // margem base: 80
-      // TOTAL: 80+140+40+100+200+100+4+40+1200+60+4+70+520+60+4+480+40+4+90+80 = 3516 → ajuste fino abaixo
-      // Usamos padding externo de 80px e calculamos internamente.
-
-      const pad4      = 120; // padding horizontal
-      const marginV   = 80;  // margem vertical topo/base
-
+      // Container principal usa gap para espaçar seções — sem marginTop em filhos
       const imageResponse = new ImageResponse(
         (
           <div style={{
             width, height, background: '#FFFFFF',
             display: 'flex', flexDirection: 'column',
             fontFamily: 'Arial, sans-serif', overflow: 'hidden',
-            padding: `${marginV}px ${pad4}px`,
+            padding: '80px 120px',
+            gap: 0,
           }}>
 
-            {/* ── 1. Logo + Badge de status ── */}
+            {/* ── 1. Logo + Badge ── */}
             <div style={{
               display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-              height: 140, flexShrink: 0,
+              height: 130, flexShrink: 0,
             }}>
-              {/* Logo */}
-              <div style={{ display: 'flex', alignItems: 'center', gap: 24 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 22 }}>
                 <div style={{
-                  width: 80, height: 80, borderRadius: 20,
+                  width: 76, height: 76, borderRadius: 18,
                   border: `5px solid ${tealA4}`,
                   display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  fontSize: 44, color: tealA4,
+                  fontSize: 42, color: tealA4,
                 }}>⌖</div>
-                <span style={{ fontSize: 52, fontWeight: 900, color: '#111827', letterSpacing: -1 }}>backfindr</span>
+                <span style={{ fontSize: 50, fontWeight: 900, color: '#111827', letterSpacing: -1, display: 'flex' }}>backfindr</span>
               </div>
-              {/* Badge */}
               <div style={{
                 border: `5px solid ${accentA4}`, color: accentA4,
-                borderRadius: 999, padding: '18px 60px',
-                fontSize: 52, fontWeight: 900, letterSpacing: 4, display: 'flex',
+                borderRadius: 999, padding: '16px 56px',
+                fontSize: 50, fontWeight: 900, letterSpacing: 4, display: 'flex',
               }}>{pd.statusLabel}</div>
             </div>
 
-            {/* ── 2. Divisória fina teal ── */}
-            <div style={{ height: 4, background: tealA4, flexShrink: 0, marginTop: 36 }} />
+            {/* ── 2. Divisória teal (paddingTop para espaçar) ── */}
+            <div style={{ height: 4, background: tealA4, flexShrink: 0, paddingTop: 0 }} />
 
-            {/* ── 3. Headline controlada ── */}
-            <div style={{ display: 'flex', flexDirection: 'column', marginTop: 36, flexShrink: 0 }}>
+            {/* ── 3. Headline + Subtítulo (paddingTop no container) ── */}
+            <div style={{
+              display: 'flex', flexDirection: 'column',
+              paddingTop: 32, flexShrink: 0,
+            }}>
               <span style={{
-                color: accentA4, fontSize: 88, fontWeight: 900,
+                color: accentA4, fontSize: 84, fontWeight: 900,
                 lineHeight: 1.0, letterSpacing: -1, display: 'flex',
               }}>{pd.eyebrow}</span>
               <span style={{
                 color: '#111827',
-                fontSize: pd.headline.length > 18 ? 148 : 180,
+                fontSize: pd.headline.length > 18 ? 144 : 172,
                 fontWeight: 950, lineHeight: 0.9, letterSpacing: -6, display: 'flex',
               }}>{pd.headline}</span>
-              {/* Subtítulo: título do usuário truncado */}
               <span style={{
-                color: '#374151', fontSize: 80, fontWeight: 700,
-                lineHeight: 1.1, marginTop: 20, display: 'flex', flexWrap: 'wrap',
+                color: '#374151', fontSize: 76, fontWeight: 700,
+                lineHeight: 1.1, paddingTop: 16, display: 'flex', flexWrap: 'wrap',
               }}>{pd.subtitle}</span>
             </div>
 
-            {/* ── 4. Foto grande ── */}
+            {/* ── 4. Foto grande (paddingTop no container) ── */}
             <div style={{
-              height: 1240, flexShrink: 0, marginTop: 48,
-              border: inkBorder,
-              borderRadius: 32, overflow: 'hidden',
-              display: 'flex', alignItems: 'center', justifyContent: 'center',
-              background: '#F9FAFB',
+              height: 1220, flexShrink: 0, paddingTop: 40,
+              display: 'flex',
             }}>
-              {photo
-                ? <img src={photo} style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
-                : <span style={{ fontSize: '320px' }}>📦</span>
-              }
+              <div style={{
+                width: '100%', height: '100%',
+                border: bdr, borderRadius: 28, overflow: 'hidden',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                background: '#F9FAFB',
+              }}>
+                {photo
+                  ? <img src={photo} style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
+                  : <span style={{ fontSize: '300px' }}>📦</span>
+                }
+              </div>
             </div>
 
             {/* ── 5. Divisória + Label RECONHECIMENTO RÁPIDO ── */}
-            <div style={{ marginTop: 52, flexShrink: 0 }}>
+            <div style={{
+              paddingTop: 44, display: 'flex', flexDirection: 'column', flexShrink: 0,
+            }}>
               <div style={{ height: 3, background: '#E5E7EB' }} />
               <span style={{
-                color: tealA4, fontSize: 52, fontWeight: 900,
-                letterSpacing: 3, display: 'flex', marginTop: 28,
+                color: tealA4, fontSize: 50, fontWeight: 900,
+                letterSpacing: 3, paddingTop: 22, display: 'flex',
               }}>RECONHECIMENTO RÁPIDO</span>
             </div>
 
-            {/* ── 6. Bullets de identificação ── */}
+            {/* ── 6. Bullets ── */}
             <div style={{
-              display: 'flex', flexDirection: 'column', gap: 18,
-              marginTop: 24, flexShrink: 0,
+              display: 'flex', flexDirection: 'column', gap: 14,
+              paddingTop: 18, flexShrink: 0,
             }}>
-              <span style={{ color: '#111827', fontSize: 68, fontWeight: 800, lineHeight: 1.1, display: 'flex', flexWrap: 'wrap' }}>
+              <span style={{ color: '#111827', fontSize: 64, fontWeight: 800, lineHeight: 1.1, display: 'flex', flexWrap: 'wrap' }}>
                 • {pd.categoryLabel}: {pd.subtitle}
               </span>
               {pd.description && (
-                <span style={{ color: '#374151', fontSize: 60, fontWeight: 600, lineHeight: 1.2, display: 'flex', flexWrap: 'wrap' }}>
+                <span style={{ color: '#374151', fontSize: 58, fontWeight: 600, lineHeight: 1.2, display: 'flex', flexWrap: 'wrap' }}>
                   • {pd.description}
                 </span>
               )}
               {pd.locationShort && (
-                <span style={{ color: '#374151', fontSize: 60, fontWeight: 600, lineHeight: 1.2, display: 'flex', flexWrap: 'wrap' }}>
+                <span style={{ color: '#374151', fontSize: 58, fontWeight: 600, lineHeight: 1.2, display: 'flex', flexWrap: 'wrap' }}>
                   • Local: {pd.locationShort}
                 </span>
               )}
               {pd.date && (
-                <span style={{ color: '#374151', fontSize: 60, fontWeight: 600, lineHeight: 1.2, display: 'flex' }}>
+                <span style={{ color: '#374151', fontSize: 58, fontWeight: 600, lineHeight: 1.2, display: 'flex' }}>
                   • Data: {pd.date}
                 </span>
               )}
               {pd.reward && (
-                <span style={{ color: '#92400E', fontSize: 64, fontWeight: 800, lineHeight: 1.2, display: 'flex' }}>
+                <span style={{ color: '#92400E', fontSize: 62, fontWeight: 800, lineHeight: 1.2, display: 'flex' }}>
                   • Recompensa: {pd.reward}
                 </span>
               )}
             </div>
 
             {/* ── 7. Divisória fina ── */}
-            <div style={{ height: 3, background: '#E5E7EB', flexShrink: 0, marginTop: 48 }} />
+            <div style={{ height: 3, background: '#E5E7EB', flexShrink: 0, paddingTop: 40 }} />
 
             {/* ── 8. QR + CTA ── */}
             <div style={{
-              display: 'flex', alignItems: 'center', gap: 60,
-              marginTop: 44, flexShrink: 0,
+              display: 'flex', alignItems: 'center', gap: 56,
+              paddingTop: 40, flexShrink: 0,
             }}>
-              {/* QR em box branco com borda fina */}
               <div style={{
-                border: inkBorder, borderRadius: 24,
-                padding: 16, display: 'flex', flexShrink: 0, background: '#fff',
+                border: bdr, borderRadius: 22,
+                padding: 14, display: 'flex', flexShrink: 0, background: '#fff',
               }}>
                 {qr
                   ? <img src={qr} style={{ width: 520, height: 520 }} />
                   : <span style={{ width: 520, height: 520, display: 'flex' }} />
                 }
               </div>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 20, flex: 1 }}>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 18, flex: 1 }}>
                 <span style={{
-                  color: '#111827', fontSize: 88, fontWeight: 950,
+                  color: '#111827', fontSize: 84, fontWeight: 950,
                   lineHeight: 0.92, letterSpacing: -2, display: 'flex', flexWrap: 'wrap',
                 }}>ESCANEIE SE VOCÊ VIU</span>
-                <span style={{ color: '#374151', fontSize: 56, fontWeight: 600, lineHeight: 1.3, display: 'flex', flexWrap: 'wrap' }}>
+                <span style={{ color: '#374151', fontSize: 54, fontWeight: 600, lineHeight: 1.3, display: 'flex', flexWrap: 'wrap' }}>
                   O QR Code abre a página do objeto. Ajude compartilhando ou avisando onde viu.
                 </span>
-                <span style={{ color: tealA4, fontSize: 46, fontWeight: 700, display: 'flex' }}>
+                <span style={{ color: tealA4, fontSize: 44, fontWeight: 700, display: 'flex' }}>
                   {appUrl.replace('https://', '')}/scan/{obj.qr_code}
                 </span>
               </div>
             </div>
 
             {/* ── 9. Rodapé mínimo ── */}
-            <div style={{ height: 3, background: '#E5E7EB', flexShrink: 0, marginTop: 44 }} />
+            <div style={{ height: 3, background: '#E5E7EB', flexShrink: 0, paddingTop: 40 }} />
             <div style={{
               display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-              marginTop: 28, flexShrink: 0,
+              paddingTop: 24, flexShrink: 0,
             }}>
-              <span style={{ color: '#9CA3AF', fontSize: 44, fontWeight: 600 }}>
+              <span style={{ color: '#9CA3AF', fontSize: 42, fontWeight: 600, display: 'flex', flexWrap: 'wrap' }}>
                 Cada compartilhamento aumenta as chances de recuperação.
               </span>
-              <span style={{ color: tealA4, fontSize: 44, fontWeight: 800 }}>backfindr.com</span>
+              <span style={{ color: tealA4, fontSize: 42, fontWeight: 800, display: 'flex' }}>backfindr.com</span>
             </div>
 
           </div>
