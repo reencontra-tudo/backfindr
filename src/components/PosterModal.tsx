@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { X, Download, ImageIcon, Loader2, Instagram, MessageCircle } from 'lucide-react';
+import { X, Download, ImageIcon, Loader2, Instagram, MessageCircle, FileText } from 'lucide-react';
 import { toast } from 'sonner';
 
 interface PosterModalProps {
@@ -11,15 +11,16 @@ interface PosterModalProps {
   onClose: () => void;
 }
 
-type Format = 'square' | 'vertical';
+type Format = 'square' | 'vertical' | 'a4';
 
-const FORMATS: { id: Format; label: string; desc: string; icon: React.ReactNode; ratio: string }[] = [
+const FORMATS: { id: Format; label: string; desc: string; icon: React.ReactNode; ratio: string; size: string }[] = [
   {
     id: 'square',
     label: 'Quadrado',
     desc: 'Feed do Instagram e Facebook',
     icon: <Instagram className="w-4 h-4" />,
     ratio: '1:1',
+    size: '1080×1080',
   },
   {
     id: 'vertical',
@@ -27,36 +28,53 @@ const FORMATS: { id: Format; label: string; desc: string; icon: React.ReactNode;
     desc: 'Stories e grupos de WhatsApp',
     icon: <MessageCircle className="w-4 h-4" />,
     ratio: '9:16',
+    size: '1080×1920',
+  },
+  {
+    id: 'a4',
+    label: 'A4 Retrato',
+    desc: 'Imprimir e colar na rua',
+    icon: <FileText className="w-4 h-4" />,
+    ratio: 'A4',
+    size: '2480×3508',
   },
 ];
 
 export default function PosterModal({ objectId, objectCode, objectTitle, onClose }: PosterModalProps) {
   const [format, setFormat]         = useState<Format>('square');
-  const [loading, setLoading]       = useState(false);
-  const [previewing, setPreviewing] = useState(false);
-  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  // loadingFormat: qual botão de formato está gerando a prévia
+  const [loadingFormat, setLoadingFormat] = useState<Format | null>(null);
+  const [downloading, setDownloading]     = useState(false);
+  const [previewUrl, setPreviewUrl]       = useState<string | null>(null);
+  // imageLoading: true enquanto o <img> ainda não terminou de carregar
+  const [imageLoading, setImageLoading]   = useState(false);
 
   const posterUrl = (fmt: Format) =>
     `/api/v1/objects/${objectId}/poster?format=${fmt}`;
 
-  const handlePreview = async (fmt: Format) => {
-    setPreviewing(true);
+  const handleFormat = async (fmt: Format) => {
+    if (loadingFormat === fmt) return; // evita clique duplo
+    setFormat(fmt);
+    setLoadingFormat(fmt);
     setPreviewUrl(null);
+    setImageLoading(true);
+    // Pré-busca a URL para garantir que o servidor gerou a imagem antes de exibir
     try {
-      // Gerar preview via URL — o browser carrega a imagem diretamente
-      setPreviewUrl(posterUrl(fmt));
+      const res = await fetch(posterUrl(fmt));
+      if (!res.ok) throw new Error('Erro ao gerar prévia');
+      const blob = await res.blob();
+      const url  = URL.createObjectURL(blob);
+      setPreviewUrl(url);
+    } catch {
+      toast.error('Não foi possível gerar a prévia.');
+      setImageLoading(false);
     } finally {
-      setPreviewing(false);
+      setLoadingFormat(null);
     }
   };
 
-  const handleFormat = (fmt: Format) => {
-    setFormat(fmt);
-    handlePreview(fmt);
-  };
-
   const handleDownload = async () => {
-    setLoading(true);
+    setDownloading(true);
     try {
       const res = await fetch(posterUrl(format));
       if (!res.ok) throw new Error('Falha ao gerar cartaz');
@@ -72,12 +90,14 @@ export default function PosterModal({ objectId, objectCode, objectTitle, onClose
       URL.revokeObjectURL(url);
 
       toast.success('Cartaz baixado!');
-    } catch (err) {
+    } catch {
       toast.error('Não foi possível gerar o cartaz. Tente novamente.');
     } finally {
-      setLoading(false);
+      setDownloading(false);
     }
   };
+
+  const selectedFmt = FORMATS.find((f) => f.id === format)!;
 
   return (
     <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center">
@@ -116,35 +136,47 @@ export default function PosterModal({ objectId, objectCode, objectTitle, onClose
             <p className="text-white/50 text-xs font-semibold uppercase tracking-wider mb-3">
               Formato
             </p>
-            <div className="grid grid-cols-2 gap-2.5">
-              {FORMATS.map((f) => (
-                <button
-                  key={f.id}
-                  onClick={() => handleFormat(f.id)}
-                  className={`flex flex-col gap-2 p-4 rounded-xl border transition-all text-left ${
-                    format === f.id
-                      ? 'border-teal-500/50 bg-teal-500/10'
-                      : 'border-white/[0.08] bg-white/[0.02] hover:bg-white/[0.05]'
-                  }`}
-                >
-                  <div className="flex items-center justify-between">
-                    <div className={`${format === f.id ? 'text-teal-400' : 'text-white/40'}`}>
-                      {f.icon}
+            <div className="grid grid-cols-3 gap-2">
+              {FORMATS.map((f) => {
+                const isActive   = format === f.id;
+                const isGenerating = loadingFormat === f.id;
+                return (
+                  <button
+                    key={f.id}
+                    onClick={() => handleFormat(f.id)}
+                    disabled={!!loadingFormat}
+                    className={`flex flex-col gap-1.5 p-3 rounded-xl border transition-all text-left relative overflow-hidden ${
+                      isActive
+                        ? 'border-teal-500/50 bg-teal-500/10'
+                        : 'border-white/[0.08] bg-white/[0.02] hover:bg-white/[0.05]'
+                    } disabled:opacity-60`}
+                  >
+                    {/* Spinner de loading sobre o botão */}
+                    {isGenerating && (
+                      <div className="absolute inset-0 flex flex-col items-center justify-center bg-[#0f1318]/80 rounded-xl gap-1">
+                        <Loader2 className="w-4 h-4 animate-spin text-teal-400" />
+                        <span className="text-teal-300 text-[10px] font-semibold">gerando…</span>
+                      </div>
+                    )}
+                    <div className="flex items-center justify-between">
+                      <div className={`${isActive ? 'text-teal-400' : 'text-white/40'}`}>
+                        {f.icon}
+                      </div>
+                      <span className={`text-[10px] font-mono px-1.5 py-0.5 rounded-md ${
+                        isActive ? 'bg-teal-500/20 text-teal-300' : 'bg-white/[0.06] text-white/30'
+                      }`}>
+                        {f.ratio}
+                      </span>
                     </div>
-                    <span className={`text-xs font-mono px-2 py-0.5 rounded-md ${
-                      format === f.id ? 'bg-teal-500/20 text-teal-300' : 'bg-white/[0.06] text-white/30'
-                    }`}>
-                      {f.ratio}
-                    </span>
-                  </div>
-                  <div>
-                    <p className={`text-sm font-semibold ${format === f.id ? 'text-white' : 'text-white/60'}`}>
-                      {f.label}
-                    </p>
-                    <p className="text-white/35 text-xs mt-0.5">{f.desc}</p>
-                  </div>
-                </button>
-              ))}
+                    <div>
+                      <p className={`text-xs font-semibold ${isActive ? 'text-white' : 'text-white/60'}`}>
+                        {f.label}
+                      </p>
+                      <p className="text-white/30 text-[10px] mt-0.5 leading-tight">{f.desc}</p>
+                    </div>
+                  </button>
+                );
+              })}
             </div>
           </div>
 
@@ -155,25 +187,37 @@ export default function PosterModal({ objectId, objectCode, objectTitle, onClose
             </p>
             <div
               className={`relative bg-[#080b0f] rounded-xl overflow-hidden border border-white/[0.06] flex items-center justify-center ${
-                format === 'vertical' ? 'aspect-[9/16]' : 'aspect-square'
+                format === 'vertical' ? 'aspect-[9/16]'
+                : format === 'a4'     ? 'aspect-[210/297]'
+                : 'aspect-square'
               }`}
             >
-              {previewing ? (
+              {/* Loading enquanto o botão de formato está gerando ou a imagem ainda carrega */}
+              {(loadingFormat || imageLoading) && !previewUrl ? (
                 <div className="flex flex-col items-center gap-2 text-white/30">
                   <Loader2 className="w-6 h-6 animate-spin" />
-                  <span className="text-xs">Gerando prévia…</span>
+                  <span className="text-xs">Gerando cartaz…</span>
                 </div>
               ) : previewUrl ? (
-                /* eslint-disable-next-line @next/next/no-img-element */
-                <img
-                  src={previewUrl}
-                  alt="Prévia do cartaz"
-                  className="w-full h-full object-contain"
-                  onError={() => setPreviewUrl(null)}
-                />
+                <>
+                  {imageLoading && (
+                    <div className="absolute inset-0 flex flex-col items-center justify-center bg-[#080b0f] gap-2 text-white/30 z-10">
+                      <Loader2 className="w-6 h-6 animate-spin" />
+                      <span className="text-xs">Gerando cartaz…</span>
+                    </div>
+                  )}
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img
+                    src={previewUrl}
+                    alt="Prévia do cartaz"
+                    className="w-full h-full object-contain"
+                    onLoad={() => setImageLoading(false)}
+                    onError={() => { setPreviewUrl(null); setImageLoading(false); }}
+                  />
+                </>
               ) : (
                 <button
-                  onClick={() => handlePreview(format)}
+                  onClick={() => handleFormat(format)}
                   className="flex flex-col items-center gap-2 text-white/30 hover:text-white/50 transition-colors"
                 >
                   <ImageIcon className="w-8 h-8" />
@@ -194,10 +238,10 @@ export default function PosterModal({ objectId, objectCode, objectTitle, onClose
           {/* Botão de download */}
           <button
             onClick={handleDownload}
-            disabled={loading}
+            disabled={downloading || !!loadingFormat}
             className="w-full flex items-center justify-center gap-2.5 py-4 bg-teal-500 hover:bg-teal-400 disabled:bg-teal-500/50 text-white font-bold rounded-xl transition-all text-sm"
           >
-            {loading ? (
+            {downloading ? (
               <>
                 <Loader2 className="w-4 h-4 animate-spin" />
                 Gerando cartaz…
@@ -205,7 +249,7 @@ export default function PosterModal({ objectId, objectCode, objectTitle, onClose
             ) : (
               <>
                 <Download className="w-4 h-4" />
-                Baixar cartaz ({format === 'square' ? '1080×1080' : '1080×1920'})
+                Baixar cartaz ({selectedFmt.size})
               </>
             )}
           </button>
