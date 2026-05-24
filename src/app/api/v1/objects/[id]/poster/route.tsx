@@ -129,157 +129,193 @@ export async function GET(
     );
 
     // ─────────────────────────────────────────────────────────────────────────
-    // TEMPLATE A4 — MINIMAL CLEAN — 2480×3508
+    // TEMPLATE A4 — CARTAZ IMPRESSO — 2480×3508
+    // Regra: fundo branco total, sem faixas chapadas, bordas finas,
+    // conteúdo ocupa 95–98% da altura útil, sem área morta.
     // ─────────────────────────────────────────────────────────────────────────
     if (format === 'a4') {
-      const black   = inkSaver ? '#FFFFFF' : BRAND.black;
-      const topText = inkSaver ? BRAND.black : '#FFFFFF';
-      const border  = inkSaver ? '8px solid #0B0F14' : 'none';
+      // Paleta de impressão: apenas teal e vermelho como cor de acento
+      const tealA4    = BRAND.teal;
+      const accentA4  = pd.statusColor;
+      const inkBorder = inkSaver ? '6px solid #0B0F14' : `6px solid ${tealA4}`;
+
+      // ── Alturas calculadas explicitamente (px) — total = 3508 ──
+      // margem externa: 80px topo + 80px base = 160
+      // header logo+badge: 140
+      // gap: 40
+      // headline eyebrow: 100
+      // headline principal: 200
+      // subtítulo: 100
+      // divisória: 4
+      // gap: 40
+      // foto: 1200
+      // gap: 60
+      // divisória "RECONHECIMENTO": 4
+      // label reconhecimento: 70
+      // bullets (5 linhas × 90px + gaps): 520
+      // gap: 60
+      // divisória QR: 4
+      // bloco QR: 480
+      // gap: 40
+      // divisória rodapé: 4
+      // rodapé texto: 90
+      // margem base: 80
+      // TOTAL: 80+140+40+100+200+100+4+40+1200+60+4+70+520+60+4+480+40+4+90+80 = 3516 → ajuste fino abaixo
+      // Usamos padding externo de 80px e calculamos internamente.
+
+      const pad4      = 120; // padding horizontal
+      const marginV   = 80;  // margem vertical topo/base
 
       const imageResponse = new ImageResponse(
         (
           <div style={{
-            width, height, background: BRAND.paper,
+            width, height, background: '#FFFFFF',
             display: 'flex', flexDirection: 'column',
-            fontFamily: 'Arial, sans-serif', overflow: 'hidden', border,
+            fontFamily: 'Arial, sans-serif', overflow: 'hidden',
+            padding: `${marginV}px ${pad4}px`,
           }}>
-            {/* ── Header ── */}
-            <div style={{
-              height: 420, background: black, color: topText,
-              display: 'flex', flexDirection: 'column',
-              padding: '86px 120px 64px', flexShrink: 0,
-            }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 28 }}>
-                  <div style={{
-                    width: 84, height: 84, borderRadius: 22,
-                    background: BRAND.teal, display: 'flex', alignItems: 'center',
-                    justifyContent: 'center', fontSize: 48,
-                  }}>⌖</div>
-                  <span style={{ fontSize: 58, fontWeight: 900, letterSpacing: -2 }}>backfindr</span>
-                </div>
-                <div style={{
-                  background: pd.statusColor, color: '#fff',
-                  borderRadius: 999, padding: '24px 64px',
-                  fontSize: 52, fontWeight: 900, letterSpacing: 3,
-                  display: 'flex',
-                }}>{pd.statusLabel}</div>
-              </div>
-            </div>
 
-            {/* ── Headline controlada ── */}
-            <div style={{ padding: '58px 120px 0', display: 'flex', flexDirection: 'column', flexShrink: 0 }}>
-              <div style={{
-                color: pd.statusColor, fontSize: 96, fontWeight: 950,
-                lineHeight: 0.95, letterSpacing: -2, display: 'flex',
-              }}>{pd.eyebrow}</div>
-              <div style={{
-                color: BRAND.black,
-                fontSize: pd.headline.length > 20 ? 136 : 166,
-                fontWeight: 950, lineHeight: 0.92, letterSpacing: -5, display: 'flex',
-              }}>{pd.headline}</div>
-            </div>
-
-            {/* ── Foto + Bullets laterais ── */}
+            {/* ── 1. Logo + Badge de status ── */}
             <div style={{
-              display: 'flex', gap: 72, padding: '56px 120px 0',
-              height: 1040, flexShrink: 0,
+              display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+              height: 140, flexShrink: 0,
             }}>
-              {/* Foto */}
-              <div style={{
-                width: 980, height: 980,
-                border: `8px solid ${BRAND.teal}`,
-                borderRadius: 48, padding: 20,
-                display: 'flex', background: '#fff',
-              }}>
+              {/* Logo */}
+              <div style={{ display: 'flex', alignItems: 'center', gap: 24 }}>
                 <div style={{
-                  width: '100%', height: '100%',
-                  borderRadius: 32, overflow: 'hidden',
+                  width: 80, height: 80, borderRadius: 20,
+                  border: `5px solid ${tealA4}`,
                   display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  background: '#F8FAFC',
-                }}>
-                  {photo
-                    ? <img src={photo} style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
-                    : <span style={{ fontSize: '300px' }}>📦</span>
-                  }
-                </div>
+                  fontSize: 44, color: tealA4,
+                }}>⌖</div>
+                <span style={{ fontSize: 52, fontWeight: 900, color: '#111827', letterSpacing: -1 }}>backfindr</span>
               </div>
-
-              {/* Bullets de reconhecimento rápido */}
-              <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 30, justifyContent: 'center' }}>
-                <div style={{
-                  background: BRAND.black, color: '#fff',
-                  borderRadius: 34, padding: '42px 48px',
-                  display: 'flex', flexDirection: 'column', gap: 18,
-                }}>
-                  <div style={{ fontSize: 42, color: BRAND.teal, fontWeight: 900, letterSpacing: 2, display: 'flex' }}>
-                    RECONHECIMENTO RÁPIDO
-                  </div>
-                  <div style={{ fontSize: 52, lineHeight: 1.18, fontWeight: 850, display: 'flex' }}>
-                    • {pd.categoryLabel}
-                  </div>
-                  {/* Subtítulo: título truncado do usuário */}
-                  <div style={{ fontSize: 46, lineHeight: 1.15, fontWeight: 800, color: '#F3F4F6', display: 'flex', flexWrap: 'wrap' }}>
-                    • {pd.subtitle}
-                  </div>
-                  {pd.description && (
-                    <div style={{ fontSize: 42, lineHeight: 1.28, fontWeight: 700, color: '#E5E7EB', display: 'flex', flexWrap: 'wrap' }}>
-                      • {pd.description}
-                    </div>
-                  )}
-                  {pd.locationShort && (
-                    <div style={{ fontSize: 40, lineHeight: 1.25, fontWeight: 700, color: '#E5E7EB', display: 'flex', flexWrap: 'wrap' }}>
-                      • Local: {pd.locationShort}
-                    </div>
-                  )}
-                  {pd.date && (
-                    <div style={{ fontSize: 40, lineHeight: 1.2, fontWeight: 700, color: '#E5E7EB', display: 'flex' }}>
-                      • Data: {pd.date}
-                    </div>
-                  )}
-                </div>
-                {pd.reward && (
-                  <div style={{
-                    background: '#FEF3C7', border: '6px solid #F59E0B',
-                    borderRadius: 30, padding: '34px 44px',
-                    color: '#92400E', fontSize: 58, fontWeight: 950, display: 'flex',
-                  }}>RECOMPENSA: {pd.reward}</div>
-                )}
-              </div>
+              {/* Badge */}
+              <div style={{
+                border: `5px solid ${accentA4}`, color: accentA4,
+                borderRadius: 999, padding: '18px 60px',
+                fontSize: 52, fontWeight: 900, letterSpacing: 4, display: 'flex',
+              }}>{pd.statusLabel}</div>
             </div>
 
-            {/* ── QR + CTA ── */}
-            <div style={{
-              margin: '62px 120px 0', background: BRAND.teal,
-              borderRadius: 52, padding: '54px 62px',
-              display: 'flex', alignItems: 'center', gap: 60, flexShrink: 0,
-            }}>
-              {renderQr(520, 26)}
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 14, flex: 1 }}>
-                <div style={{ color: '#031B1A', fontSize: 92, fontWeight: 1000, lineHeight: 0.92, letterSpacing: -2, display: 'flex', flexWrap: 'wrap' }}>
-                  ESCANEIE SE VOCÊ VIU
-                </div>
-                <div style={{ color: '#053B38', fontSize: 44, fontWeight: 800, lineHeight: 1.22, display: 'flex', flexWrap: 'wrap' }}>
-                  O QR Code abre a página do objeto. Ajude compartilhando ou avisando onde viu.
-                </div>
-                <div style={{ color: '#053B38', fontSize: 34, fontWeight: 700, display: 'flex' }}>
-                  {appUrl.replace('https://', '')}/scan/{obj.qr_code}
-                </div>
-              </div>
+            {/* ── 2. Divisória fina teal ── */}
+            <div style={{ height: 4, background: tealA4, flexShrink: 0, marginTop: 36 }} />
+
+            {/* ── 3. Headline controlada ── */}
+            <div style={{ display: 'flex', flexDirection: 'column', marginTop: 36, flexShrink: 0 }}>
+              <span style={{
+                color: accentA4, fontSize: 88, fontWeight: 900,
+                lineHeight: 1.0, letterSpacing: -1, display: 'flex',
+              }}>{pd.eyebrow}</span>
+              <span style={{
+                color: '#111827',
+                fontSize: pd.headline.length > 18 ? 148 : 180,
+                fontWeight: 950, lineHeight: 0.9, letterSpacing: -6, display: 'flex',
+              }}>{pd.headline}</span>
+              {/* Subtítulo: título do usuário truncado */}
+              <span style={{
+                color: '#374151', fontSize: 80, fontWeight: 700,
+                lineHeight: 1.1, marginTop: 20, display: 'flex', flexWrap: 'wrap',
+              }}>{pd.subtitle}</span>
             </div>
 
-            {/* ── Rodapé ── */}
+            {/* ── 4. Foto grande ── */}
             <div style={{
-              height: 220, flexShrink: 0,
-              background: inkSaver ? '#fff' : BRAND.black,
-              color: inkSaver ? BRAND.black : '#fff',
-              borderTop: inkSaver ? '6px solid #0B0F14' : 'none',
+              height: 1240, flexShrink: 0, marginTop: 48,
+              border: inkBorder,
+              borderRadius: 32, overflow: 'hidden',
               display: 'flex', alignItems: 'center', justifyContent: 'center',
-              padding: '0 120px', fontSize: 46, fontWeight: 900,
-              textAlign: 'center',
+              background: '#F9FAFB',
             }}>
-              CADA COMPARTILHAMENTO AUMENTA AS CHANCES DE RECUPERAÇÃO
+              {photo
+                ? <img src={photo} style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
+                : <span style={{ fontSize: '320px' }}>📦</span>
+              }
             </div>
+
+            {/* ── 5. Divisória + Label RECONHECIMENTO RÁPIDO ── */}
+            <div style={{ marginTop: 52, flexShrink: 0 }}>
+              <div style={{ height: 3, background: '#E5E7EB' }} />
+              <span style={{
+                color: tealA4, fontSize: 52, fontWeight: 900,
+                letterSpacing: 3, display: 'flex', marginTop: 28,
+              }}>RECONHECIMENTO RÁPIDO</span>
+            </div>
+
+            {/* ── 6. Bullets de identificação ── */}
+            <div style={{
+              display: 'flex', flexDirection: 'column', gap: 18,
+              marginTop: 24, flexShrink: 0,
+            }}>
+              <span style={{ color: '#111827', fontSize: 68, fontWeight: 800, lineHeight: 1.1, display: 'flex', flexWrap: 'wrap' }}>
+                • {pd.categoryLabel}: {pd.subtitle}
+              </span>
+              {pd.description && (
+                <span style={{ color: '#374151', fontSize: 60, fontWeight: 600, lineHeight: 1.2, display: 'flex', flexWrap: 'wrap' }}>
+                  • {pd.description}
+                </span>
+              )}
+              {pd.locationShort && (
+                <span style={{ color: '#374151', fontSize: 60, fontWeight: 600, lineHeight: 1.2, display: 'flex', flexWrap: 'wrap' }}>
+                  • Local: {pd.locationShort}
+                </span>
+              )}
+              {pd.date && (
+                <span style={{ color: '#374151', fontSize: 60, fontWeight: 600, lineHeight: 1.2, display: 'flex' }}>
+                  • Data: {pd.date}
+                </span>
+              )}
+              {pd.reward && (
+                <span style={{ color: '#92400E', fontSize: 64, fontWeight: 800, lineHeight: 1.2, display: 'flex' }}>
+                  • Recompensa: {pd.reward}
+                </span>
+              )}
+            </div>
+
+            {/* ── 7. Divisória fina ── */}
+            <div style={{ height: 3, background: '#E5E7EB', flexShrink: 0, marginTop: 48 }} />
+
+            {/* ── 8. QR + CTA ── */}
+            <div style={{
+              display: 'flex', alignItems: 'center', gap: 60,
+              marginTop: 44, flexShrink: 0,
+            }}>
+              {/* QR em box branco com borda fina */}
+              <div style={{
+                border: inkBorder, borderRadius: 24,
+                padding: 16, display: 'flex', flexShrink: 0, background: '#fff',
+              }}>
+                {qr
+                  ? <img src={qr} style={{ width: 520, height: 520 }} />
+                  : <span style={{ width: 520, height: 520, display: 'flex' }} />
+                }
+              </div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 20, flex: 1 }}>
+                <span style={{
+                  color: '#111827', fontSize: 88, fontWeight: 950,
+                  lineHeight: 0.92, letterSpacing: -2, display: 'flex', flexWrap: 'wrap',
+                }}>ESCANEIE SE VOCÊ VIU</span>
+                <span style={{ color: '#374151', fontSize: 56, fontWeight: 600, lineHeight: 1.3, display: 'flex', flexWrap: 'wrap' }}>
+                  O QR Code abre a página do objeto. Ajude compartilhando ou avisando onde viu.
+                </span>
+                <span style={{ color: tealA4, fontSize: 46, fontWeight: 700, display: 'flex' }}>
+                  {appUrl.replace('https://', '')}/scan/{obj.qr_code}
+                </span>
+              </div>
+            </div>
+
+            {/* ── 9. Rodapé mínimo ── */}
+            <div style={{ height: 3, background: '#E5E7EB', flexShrink: 0, marginTop: 44 }} />
+            <div style={{
+              display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+              marginTop: 28, flexShrink: 0,
+            }}>
+              <span style={{ color: '#9CA3AF', fontSize: 44, fontWeight: 600 }}>
+                Cada compartilhamento aumenta as chances de recuperação.
+              </span>
+              <span style={{ color: tealA4, fontSize: 44, fontWeight: 800 }}>backfindr.com</span>
+            </div>
+
           </div>
         ),
         { width, height }
