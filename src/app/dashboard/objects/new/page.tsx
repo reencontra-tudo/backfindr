@@ -105,6 +105,23 @@ function NewObjectForm() {
     if (prefillLocation) {
       setValue('address', prefillLocation);
       setLocationVal(prev => ({ ...prev, address: prefillLocation }));
+      // Geocodificar automaticamente o endereço pré-preenchido
+      const mapboxToken = process.env.NEXT_PUBLIC_MAPBOX_TOKEN;
+      if (mapboxToken && prefillLocation.length >= 3) {
+        fetch(`https://api.mapbox.com/geocoding/v5/mapbox.places/${encodeURIComponent(prefillLocation)}.json?access_token=${mapboxToken}&language=pt&limit=1&country=br`)
+          .then(r => r.json())
+          .then(data => {
+            const coords = data.features?.[0]?.center;
+            const placeName = data.features?.[0]?.place_name ?? prefillLocation;
+            if (coords && coords.length === 2) {
+              setValue('lng', coords[0]);
+              setValue('lat', coords[1]);
+              setValue('address', placeName);
+              setLocationVal({ address: placeName, lat: coords[1], lng: coords[0] });
+            }
+          })
+          .catch(() => { /* silencioso */ });
+      }
     }
     if (prefillBreed)    setValue('pet_breed', prefillBreed);
     if (prefillColor)    setValue('pet_color', prefillColor);

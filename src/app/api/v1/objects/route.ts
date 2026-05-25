@@ -164,10 +164,31 @@ export async function POST(request: NextRequest) {
     // ──────────────────────────────────────────────────────────────────────
 
     const body = await request.json();
-    const { title, description, status, type, category, location, latitude, longitude, images, reward_amount, reward_description, ...categoryFields } = body;
+    const { title, description, status, type, category, location, images, reward_amount, reward_description, ...categoryFields } = body;
+    let { latitude, longitude } = body;
 
     if (!title || (!type && !category)) {
       return successResponse({ detail: 'Title and type/category are required' }, 400);
+    }
+
+    // Geocoding fallback: se não tem lat/lng mas tem endereço, geocodificar via Mapbox
+    if ((!latitude || !longitude) && location && typeof location === 'string' && location.trim().length > 2) {
+      const mapboxToken = process.env.NEXT_PUBLIC_MAPBOX_TOKEN;
+      if (mapboxToken) {
+        try {
+          const geoRes = await fetch(
+            `https://api.mapbox.com/geocoding/v5/mapbox.places/${encodeURIComponent(location)}.json?access_token=${mapboxToken}&language=pt&limit=1&country=br`
+          );
+          if (geoRes.ok) {
+            const geoData = await geoRes.json();
+            const coords = geoData.features?.[0]?.center; // [lng, lat]
+            if (coords && coords.length === 2) {
+              longitude = coords[0];
+              latitude = coords[1];
+            }
+          }
+        } catch { /* geocoding falhou - salvar sem coordenadas */ }
+      }
     }
 
     const cat = category || type;
