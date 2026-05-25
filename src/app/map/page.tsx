@@ -22,5 +22,23 @@ export const metadata: Metadata = {
 };
 
 export default function MapPage() {
-  return <MapClient />;
+  return (
+    <>
+      {/* Preload do Mapbox GL JS para iniciar o download antes do React montar */}
+      {/* eslint-disable-next-line @next/next/no-page-custom-font */}
+      <link
+        rel="preload"
+        href="https://api.mapbox.com/mapbox-gl-js/v3.5.2/mapbox-gl.js"
+        as="script"
+        crossOrigin="anonymous"
+      />
+      <link
+        rel="preload"
+        href="https://api.mapbox.com/mapbox-gl-js/v3.5.2/mapbox-gl.css"
+        as="style"
+        crossOrigin="anonymous"
+      />
+      <MapClient />
+    </>
+  );
 }
