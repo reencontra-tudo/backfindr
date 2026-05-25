@@ -173,7 +173,7 @@ export async function POST(request: NextRequest) {
 
     // Geocoding fallback: se não tem lat/lng mas tem endereço, geocodificar via Mapbox
     if ((!latitude || !longitude) && location && typeof location === 'string' && location.trim().length > 2) {
-      const mapboxToken = process.env.NEXT_PUBLIC_MAPBOX_TOKEN;
+      const mapboxToken = process.env.MAPBOX_SERVER_TOKEN || process.env.NEXT_PUBLIC_MAPBOX_TOKEN;
       if (mapboxToken) {
         try {
           const geoRes = await fetch(
