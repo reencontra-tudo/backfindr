@@ -9,12 +9,14 @@ export async function GET(
   { params }: { params: { code: string } }
 ) {
   try {
+    // Busca por qr_code OU por id (UUID) para suportar links do mapa
+    const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(params.code);
     const result = await query(
       `SELECT id, title, description, status, category, type, location, latitude, longitude,
               qr_code, images, color, brand, breed, user_id, is_legacy, source,
               reward_amount, reward_description, created_at, updated_at
        FROM objects
-       WHERE qr_code = $1`,
+       WHERE ${isUUID ? 'id::text = $1 OR qr_code = $1' : 'qr_code = $1'}`,
       [params.code]
     );
 

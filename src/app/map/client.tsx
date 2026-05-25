@@ -144,9 +144,10 @@ export default function MapPage() {
     setDetailLoading(true);
     setDetail(null);
     try {
-      const r = await fetch(`/api/v1/objects/${pin.id}`);
+      const r = await fetch(`/api/v1/objects/scan/${pin.id}`);
       if (!r.ok) throw new Error('not found');
-      const obj = await r.json() as ObjectDetail | null;
+      const json = await r.json() as { success?: boolean; data?: ObjectDetail };
+      const obj = json.data ?? json as unknown as ObjectDetail;
       if (obj && obj.id) {
         // Garantir que location está preenchido com o que já temos do pin
         const full: ObjectDetail = { ...pin, ...obj, location: obj.location ?? pin.location };
