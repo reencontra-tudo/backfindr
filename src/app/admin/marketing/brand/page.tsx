@@ -232,9 +232,30 @@ export default function BrandPage() {
                 <tr className="border-b border-gray-800"><td className="py-2">Claro (#FFFFFF)</td><td>Logo colorido (gradiente)</td><td>Texto escuro (#111827)</td></tr>
                 <tr className="border-b border-gray-800"><td className="py-2">Escuro (#111827)</td><td>Logo colorido (gradiente)</td><td>Texto branco (#FFFFFF)</td></tr>
                 <tr className="border-b border-gray-800"><td className="py-2">Teal (#14B8A6)</td><td>Logo colorido (gradiente)</td><td>Texto branco (#FFFFFF)</td></tr>
+                <tr className="border-b border-gray-800"><td className="py-2 font-semibold text-blue-400">Azul Royal (#1D4ED8) ★</td><td>Logo colorido (gradiente)</td><td>Texto branco (#FFFFFF)</td></tr>
                 <tr><td className="py-2">Sobre foto</td><td>Logo colorido (gradiente)</td><td>Texto branco com sombra sutil</td></tr>
               </tbody>
             </table>
+          </div>
+
+          {/* Preferencia azul royal */}
+          <div className="mt-6 bg-blue-900/20 rounded-xl p-6 border border-blue-700/40">
+            <h3 className="font-semibold text-blue-400 mb-3">★ Preferencia: Fundo Azul Royal</h3>
+            <p className="text-gray-300 text-sm mb-4">Para materiais institucionais, banners, redes sociais e marketing, o fundo <strong className="text-white">Azul Royal (#1D4ED8)</strong> e o preferencial. O gradiente do logo se destaca com maximo contraste e impacto visual sobre este fundo.</p>
+            <div className="bg-gray-900 rounded-xl p-4 border border-gray-800">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src="/brand/banner-institucional.png" alt="Banner Institucional - Fundo Azul Royal" className="w-full rounded-lg object-contain" />
+            </div>
+            <div className="mt-3 grid grid-cols-1 md:grid-cols-2 gap-3 text-sm">
+              <div className="bg-gray-800/50 rounded-lg p-3">
+                <p className="text-gray-400 text-xs mb-1">Usar em:</p>
+                <p className="text-gray-300">Banners, posts redes sociais, pitch decks, materiais impressos, apresentacoes, landing pages institucionais</p>
+              </div>
+              <div className="bg-gray-800/50 rounded-lg p-3">
+                <p className="text-gray-400 text-xs mb-1">Nao usar em:</p>
+                <p className="text-gray-300">Interface do produto (app/web) — na interface, usar fundo escuro (#0f172a) com teal (#14B8A6) como cor de destaque</p>
+              </div>
+            </div>
           </div>
         </section>
 
