@@ -158,8 +158,8 @@ export async function GET(
             }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 22 }}>
                 {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src={`${appUrl}/icons/logo-backfindr.png`} width={76} height={76} style={{ borderRadius: 18, display: 'flex' }} alt="Backfindr" />
-                <span style={{ fontSize: 50, fontWeight: 900, color: '#111827', letterSpacing: -1, display: 'flex' }}>backfindr</span>
+                <img src={`${appUrl}/icons/logo-backfindr-white.png`} width={76} height={76} style={{ borderRadius: 18, display: 'flex' }} alt="Backfindr" />
+                <span style={{ fontSize: 50, fontWeight: 900, color: '#111827', letterSpacing: -1, display: 'flex' }}>Backfindr</span>
               </div>
               <div style={{
                 border: `5px solid ${accentA4}`, color: accentA4,
@@ -290,7 +290,7 @@ export async function GET(
               <span style={{ color: '#9CA3AF', fontSize: 42, fontWeight: 600, display: 'flex', flexWrap: 'wrap' }}>
                 Cada compartilhamento aumenta as chances de recuperação.
               </span>
-              <span style={{ color: tealA4, fontSize: 42, fontWeight: 800, display: 'flex' }}>backfindr.com</span>
+              <span style={{ color: tealA4, fontSize: 42, fontWeight: 800, display: 'flex' }}>Backfindr.com</span>
             </div>
 
           </div>
@@ -335,8 +335,8 @@ export async function GET(
             }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
                 {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src={`${appUrl}/icons/logo-backfindr.png`} width={52} height={52} style={{ borderRadius: '50%', display: 'flex' }} alt="Backfindr" />
-                <span style={{ color: '#ffffff', fontSize: '36px', fontWeight: 800 }}>backfindr</span>
+                <img src={`${appUrl}/icons/logo-backfindr-white.png`} width={52} height={52} style={{ borderRadius: '50%', display: 'flex' }} alt="Backfindr" />
+                <span style={{ color: '#ffffff', fontSize: '36px', fontWeight: 800 }}>Backfindr</span>
               </div>
               <div style={{
                 background: pd.statusColor, borderRadius: '100px',
@@ -596,8 +596,8 @@ export async function GET(
               gap: '4px', flexShrink: 0,
             }}>
               {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src={`${appUrl}/icons/logo-backfindr.png`} width={44} height={44} style={{ borderRadius: '50%', display: 'flex' }} alt="Backfindr" />
-              <span style={{ color: 'rgba(255,255,255,0.8)', fontSize: '18px', fontWeight: 700 }}>backfindr</span>
+              <img src={`${appUrl}/icons/logo-backfindr-white.png`} width={44} height={44} style={{ borderRadius: '50%', display: 'flex' }} alt="Backfindr" />
+              <span style={{ color: 'rgba(255,255,255,0.8)', fontSize: '18px', fontWeight: 700 }}>Backfindr</span>
             </div>
           </div>
         </div>
