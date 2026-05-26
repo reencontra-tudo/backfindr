@@ -158,7 +158,7 @@ export async function GET(
             }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 22 }}>
                 {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src={`${appUrl}/icons/logo-backfindr-white.png`} width={76} height={76} style={{ borderRadius: 18, display: 'flex' }} alt="Backfindr" />
+                <img src={`${appUrl}/icons/logo-backfindr-white.png`} width={90} height={90} style={{ display: 'flex', objectFit: 'contain' }} alt="Backfindr" />
                 <span style={{ fontSize: 50, fontWeight: 900, color: '#111827', letterSpacing: -1, display: 'flex' }}>Backfindr</span>
               </div>
               <div style={{
@@ -335,7 +335,7 @@ export async function GET(
             }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
                 {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src={`${appUrl}/icons/logo-backfindr-white.png`} width={52} height={52} style={{ borderRadius: '50%', display: 'flex' }} alt="Backfindr" />
+                <img src={`${appUrl}/icons/logo-backfindr-white.png`} width={72} height={72} style={{ display: 'flex', objectFit: 'contain' }} alt="Backfindr" />
                 <span style={{ color: '#ffffff', fontSize: '36px', fontWeight: 800 }}>Backfindr</span>
               </div>
               <div style={{
@@ -596,7 +596,7 @@ export async function GET(
               gap: '4px', flexShrink: 0,
             }}>
               {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src={`${appUrl}/icons/logo-backfindr-white.png`} width={44} height={44} style={{ borderRadius: '50%', display: 'flex' }} alt="Backfindr" />
+              <img src={`${appUrl}/icons/logo-backfindr-white.png`} width={72} height={72} style={{ display: 'flex', objectFit: 'contain' }} alt="Backfindr" />
               <span style={{ color: 'rgba(255,255,255,0.8)', fontSize: '18px', fontWeight: 700 }}>Backfindr</span>
             </div>
           </div>
