@@ -86,6 +86,37 @@ export default function BrandPage() {
           <h2 className="text-xl font-bold text-teal-400 mb-4 border-b border-gray-800 pb-2">2. Lockups (Logo + Texto)</h2>
           <p className="text-gray-400 text-sm mb-6">Combinacoes padronizadas do simbolo com o nome da marca.</p>
 
+          {/* Formatos de uso */}
+          <div className="mb-8 bg-gray-900 rounded-xl p-6 border border-gray-800">
+            <h3 className="font-semibold text-gray-200 mb-4">3 Formatos Permitidos</h3>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className="bg-gray-800/50 rounded-lg p-4 border border-gray-700">
+                <p className="text-teal-400 font-semibold text-sm mb-2">A. Texto Sozinho</p>
+                <p className="text-2xl font-bold mb-2">Backfindr</p>
+                <p className="text-gray-400 text-xs">Corpo de texto, mencoes em artigos, redes sociais, URLs, assinaturas de e-mail, titulos editoriais</p>
+              </div>
+              <div className="bg-gray-800/50 rounded-lg p-4 border border-gray-700">
+                <p className="text-teal-400 font-semibold text-sm mb-2">B. Icon + Texto (Horizontal)</p>
+                <div className="flex items-center gap-2 mb-2">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img src="/icons/logo-backfindr-white.png" alt="icon" className="w-8 h-8" />
+                  <span className="text-xl font-bold">Backfindr</span>
+                </div>
+                <p className="text-gray-400 text-xs">Header do site, rodape de posters, materiais horizontais, banners, navegacao</p>
+              </div>
+              <div className="bg-gray-800/50 rounded-lg p-4 border border-gray-700">
+                <p className="text-teal-400 font-semibold text-sm mb-2">C. Icon + Texto (Vertical)</p>
+                <div className="flex flex-col items-center gap-1 mb-2">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img src="/icons/logo-backfindr-white.png" alt="icon" className="w-10 h-10" />
+                  <span className="text-lg font-bold">Backfindr</span>
+                </div>
+                <p className="text-gray-400 text-xs">App icon, avatar de redes sociais, espacos quadrados, splash screens</p>
+              </div>
+            </div>
+            <p className="text-gray-500 text-xs mt-4">Em todos os formatos: sempre &quot;Backfindr&quot; com B maiusculo, fonte Inter Bold 700, gap de 8px entre icon e texto.</p>
+          </div>
+
           {/* Lockup Horizontal */}
           <div className="mb-8">
             <h3 className="font-semibold text-gray-200 mb-3">Lockup Horizontal (Padrao Principal)</h3>
