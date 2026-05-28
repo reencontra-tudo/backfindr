@@ -12,10 +12,12 @@ export async function DELETE(req: NextRequest) {
     return NextResponse.json({ detail: 'Token inválido' }, { status: 401 });
   }
 
-  const result = await query(
-    `DELETE FROM marketing_leads WHERE data_post < NOW() - INTERVAL '30 days' RETURNING id`,
-    []
-  );
+  const { searchParams } = new URL(req.url);
+  const all = searchParams.get('all') === 'true';
+
+  const result = all
+    ? await query(`DELETE FROM marketing_leads RETURNING id`, [])
+    : await query(`DELETE FROM marketing_leads WHERE data_post < NOW() - INTERVAL '30 days' RETURNING id`, []);
 
   return NextResponse.json({ deletados: result.rows.length });
 }
