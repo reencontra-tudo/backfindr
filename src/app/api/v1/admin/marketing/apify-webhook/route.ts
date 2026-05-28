@@ -66,10 +66,10 @@ export async function POST(req: NextRequest) {
 
     for (const item of items) {
       try {
-        const texto = item.text || item.message || item.postText || '';
+        const texto = item.message || item.text || item.postText || '';
         const link = item.url || item.postUrl || item.link || '';
-        const usuario = item.authorName || item.userName || item.user?.name || '';
-        const comentarios = item.commentsCount || item.comments || 0;
+        const usuario = item.author?.name || item.authorName || item.userName || '';
+        const comentarios = item.comments_count || item.commentsCount || item.comments || 0;
         const dataPost = item.time || item.createdAt || item.timestamp || new Date().toISOString();
 
         if (!texto || !link) continue;
