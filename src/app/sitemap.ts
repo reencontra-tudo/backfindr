@@ -1,77 +1,65 @@
-import { MetadataRoute } from 'next';
+// src/app/sitemap.ts
+// Sitemap dinâmico — gerado a partir do banco em cada build/revalidação
+// Cobre: páginas estáticas + objetos públicos + posts da comunidade
 
-const BASE_URL = process.env.NEXT_PUBLIC_APP_URL ?? 'https://backfindr.com';
+import type { MetadataRoute } from 'next';
+
+const BASE = 'https://backfindr.com';
+
+// Páginas estáticas com prioridade configurada
+const STATIC_PAGES: MetadataRoute.Sitemap = [
+  { url: BASE,                  lastModified: new Date(), changeFrequency: 'daily',   priority: 1.0 },
+  { url: `${BASE}/map`,         lastModified: new Date(), changeFrequency: 'hourly',  priority: 0.9 },
+  { url: `${BASE}/comunidade`,  lastModified: new Date(), changeFrequency: 'daily',   priority: 0.9 },
+  { url: `${BASE}/buscar`,      lastModified: new Date(), changeFrequency: 'hourly',  priority: 0.8 },
+  { url: `${BASE}/pet`,         lastModified: new Date(), changeFrequency: 'weekly',  priority: 0.8 },
+  { url: `${BASE}/pricing`,     lastModified: new Date(), changeFrequency: 'weekly',  priority: 0.7 },
+  { url: `${BASE}/perdi`,       lastModified: new Date(), changeFrequency: 'weekly',  priority: 0.7 },
+  { url: `${BASE}/achei`,       lastModified: new Date(), changeFrequency: 'weekly',  priority: 0.7 },
+  { url: `${BASE}/b2b/cadastro`,lastModified: new Date(), changeFrequency: 'monthly', priority: 0.6 },
+  { url: `${BASE}/faq`,         lastModified: new Date(), changeFrequency: 'monthly', priority: 0.5 },
+  { url: `${BASE}/privacy`,     lastModified: new Date(), changeFrequency: 'yearly',  priority: 0.3 },
+  { url: `${BASE}/terms`,       lastModified: new Date(), changeFrequency: 'yearly',  priority: 0.3 },
+];
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
-  const staticRoutes: MetadataRoute.Sitemap = [
-    // ── Core ──────────────────────────────────────────────────────────────────
-    { url: BASE_URL,                         lastModified: new Date(), changeFrequency: 'weekly',  priority: 1.0 },
-    { url: `${BASE_URL}/map`,                lastModified: new Date(), changeFrequency: 'daily',   priority: 0.9 },
-    { url: `${BASE_URL}/buscar`,             lastModified: new Date(), changeFrequency: 'daily',   priority: 0.95 },
-    { url: `${BASE_URL}/achei`,              lastModified: new Date(), changeFrequency: 'daily',   priority: 0.95 },
-    { url: `${BASE_URL}/perdi`,              lastModified: new Date(), changeFrequency: 'weekly',  priority: 0.9 },
-    { url: `${BASE_URL}/encontrei`,          lastModified: new Date(), changeFrequency: 'weekly',  priority: 0.9 },
-    { url: `${BASE_URL}/roubado`,            lastModified: new Date(), changeFrequency: 'weekly',  priority: 0.85 },
-    { url: `${BASE_URL}/proteger`,           lastModified: new Date(), changeFrequency: 'weekly',  priority: 0.85 },
-    { url: `${BASE_URL}/pet`,                lastModified: new Date(), changeFrequency: 'weekly',  priority: 0.9 },
-
-    // ── Fluxos guiados ────────────────────────────────────────────────────────
-    { url: `${BASE_URL}/flow/lost`,          lastModified: new Date(), changeFrequency: 'monthly', priority: 0.8 },
-    { url: `${BASE_URL}/flow/found`,         lastModified: new Date(), changeFrequency: 'monthly', priority: 0.8 },
-    { url: `${BASE_URL}/flow/pet`,           lastModified: new Date(), changeFrequency: 'monthly', priority: 0.8 },
-    { url: `${BASE_URL}/flow/protect`,       lastModified: new Date(), changeFrequency: 'monthly', priority: 0.75 },
-    { url: `${BASE_URL}/flow/stolen`,        lastModified: new Date(), changeFrequency: 'monthly', priority: 0.75 },
-
-    // ── Institucional ─────────────────────────────────────────────────────────
-    { url: `${BASE_URL}/pricing`,            lastModified: new Date(), changeFrequency: 'monthly', priority: 0.85 },
-    { url: `${BASE_URL}/blog`,               lastModified: new Date(), changeFrequency: 'weekly',  priority: 0.75 },
-    { url: `${BASE_URL}/faq`,                lastModified: new Date(), changeFrequency: 'monthly', priority: 0.7 },
-    { url: `${BASE_URL}/parceiro`,           lastModified: new Date(), changeFrequency: 'monthly', priority: 0.65 },
-    { url: `${BASE_URL}/terms`,              lastModified: new Date(), changeFrequency: 'yearly',  priority: 0.3 },
-    { url: `${BASE_URL}/privacy`,            lastModified: new Date(), changeFrequency: 'yearly',  priority: 0.3 },
-
-    // ── Auth ──────────────────────────────────────────────────────────────────
-    { url: `${BASE_URL}/auth/login`,         lastModified: new Date(), changeFrequency: 'monthly', priority: 0.6 },
-    { url: `${BASE_URL}/auth/register`,      lastModified: new Date(), changeFrequency: 'monthly', priority: 0.7 },
-  ];
-
-  // ── Objetos públicos dinâmicos ────────────────────────────────────────────
-  let objectRoutes: MetadataRoute.Sitemap = [];
+  // Posts da comunidade — alta prioridade para SEO de conteúdo
+  let communityUrls: MetadataRoute.Sitemap = [];
   try {
-    const res = await fetch(`${BASE_URL}/api/v1/objects/public?size=1000`, {
-      next: { revalidate: 3600 },
+    const res = await fetch(`${BASE}/api/v1/comunidade/posts?limit=200`, {
+      next: { revalidate: 3600 }, // revalida a cada 1h
     });
     if (res.ok) {
-      const data = await res.json();
-      objectRoutes = (data.items ?? []).map(
-        (obj: { unique_code: string; updated_at: string; status: string }) => ({
-          url: `${BASE_URL}/objeto/${obj.unique_code}`,
-          lastModified: new Date(obj.updated_at),
-          changeFrequency: obj.status === 'returned' ? ('yearly' as const) : ('daily' as const),
-          priority: obj.status === 'returned' ? 0.5 : 0.8,
-        })
-      );
+      const data = await res.json() as { posts: Array<{ slug: string; published_at: string; category: string }> };
+      communityUrls = data.posts.map(post => ({
+        url: `${BASE}/comunidade/${post.slug}`,
+        lastModified: new Date(post.published_at),
+        changeFrequency: 'weekly' as const,
+        priority: post.category === 'guia' ? 0.9 : 0.8, // guias têm prioridade máxima
+      }));
     }
-  } catch { /* ignore */ }
+  } catch {
+    // falha silenciosa — sitemap ainda retorna páginas estáticas
+  }
 
-  // ── Posts do blog dinâmicos ───────────────────────────────────────────────
-  let blogRoutes: MetadataRoute.Sitemap = [];
+  // Objetos públicos — SEO de cauda longa por tipo/localização
+  let objectUrls: MetadataRoute.Sitemap = [];
   try {
-    const res = await fetch(`${BASE_URL}/api/v1/blog/posts?size=200`, {
-      next: { revalidate: 3600 },
+    const res = await fetch(`${BASE}/api/v1/objects/public?limit=500`, {
+      next: { revalidate: 1800 }, // revalida a cada 30min
     });
     if (res.ok) {
-      const data = await res.json();
-      blogRoutes = (data.items ?? data ?? []).map(
-        (post: { slug: string; updated_at?: string; published_at?: string }) => ({
-          url: `${BASE_URL}/blog/${post.slug}`,
-          lastModified: new Date(post.updated_at ?? post.published_at ?? Date.now()),
-          changeFrequency: 'monthly' as const,
-          priority: 0.7,
-        })
-      );
+      const data = await res.json() as { items: Array<{ qr_code: string; updated_at?: string; created_at: string }> };
+      objectUrls = (data.items || []).map(obj => ({
+        url: `${BASE}/objeto/${obj.qr_code}`,
+        lastModified: new Date(obj.updated_at || obj.created_at),
+        changeFrequency: 'daily' as const,
+        priority: 0.6,
+      }));
     }
-  } catch { /* ignore */ }
+  } catch {
+    // falha silenciosa
+  }
 
-  return [...staticRoutes, ...objectRoutes, ...blogRoutes];
+  return [...STATIC_PAGES, ...communityUrls, ...objectUrls];
 }
