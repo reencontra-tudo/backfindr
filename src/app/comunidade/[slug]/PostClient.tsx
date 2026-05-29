@@ -2,6 +2,8 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
+import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
 import {
   MapPin, Clock, Eye, Heart, Share2, ArrowLeft, Tag,
   MessageSquare, Send, Copy, Check, Twitter, Facebook,
@@ -72,6 +74,97 @@ function timeAgo(iso: string) {
   if (d < 7) return `${d} dias atrás`;
   return formatDate(iso);
 }
+
+// ─── Componentes de renderização Markdown ────────────────────────────────────
+// Mapeados para classes Tailwind compatíveis com o tema dark do Backfindr.
+const markdownComponents = {
+  h1: ({ children }: React.PropsWithChildren) => (
+    <h1 className="text-3xl font-black text-white mt-8 mb-4 leading-tight">{children}</h1>
+  ),
+  h2: ({ children }: React.PropsWithChildren) => (
+    <h2 className="text-2xl font-bold text-white mt-8 mb-3 leading-tight">{children}</h2>
+  ),
+  h3: ({ children }: React.PropsWithChildren) => (
+    <h3 className="text-xl font-bold text-white mt-6 mb-2">{children}</h3>
+  ),
+  h4: ({ children }: React.PropsWithChildren) => (
+    <h4 className="text-lg font-semibold text-white mt-4 mb-2">{children}</h4>
+  ),
+  p: ({ children }: React.PropsWithChildren) => (
+    <p className="text-gray-300 leading-relaxed mb-4">{children}</p>
+  ),
+  a: ({ href, children }: React.PropsWithChildren<{ href?: string }>) => (
+    <a
+      href={href}
+      target={href?.startsWith('http') ? '_blank' : undefined}
+      rel={href?.startsWith('http') ? 'noopener noreferrer' : undefined}
+      className="text-teal-400 hover:underline"
+    >
+      {children}
+    </a>
+  ),
+  strong: ({ children }: React.PropsWithChildren) => (
+    <strong className="font-bold text-white">{children}</strong>
+  ),
+  em: ({ children }: React.PropsWithChildren) => (
+    <em className="italic text-gray-200">{children}</em>
+  ),
+  ul: ({ children }: React.PropsWithChildren) => (
+    <ul className="list-disc list-inside space-y-1 text-gray-300 mb-4 pl-4">{children}</ul>
+  ),
+  ol: ({ children }: React.PropsWithChildren) => (
+    <ol className="list-decimal list-inside space-y-1 text-gray-300 mb-4 pl-4">{children}</ol>
+  ),
+  li: ({ children }: React.PropsWithChildren) => (
+    <li className="text-gray-300 leading-relaxed marker:text-teal-400">{children}</li>
+  ),
+  blockquote: ({ children }: React.PropsWithChildren) => (
+    <blockquote className="border-l-4 border-teal-500 pl-4 my-4 text-gray-400 italic">
+      {children}
+    </blockquote>
+  ),
+  code: ({ inline, children }: React.PropsWithChildren<{ inline?: boolean }>) =>
+    inline ? (
+      <code className="bg-gray-800 text-teal-300 px-1.5 py-0.5 rounded text-sm font-mono">
+        {children}
+      </code>
+    ) : (
+      <pre className="bg-gray-900 border border-gray-700 rounded-xl p-4 overflow-x-auto my-4">
+        <code className="text-teal-300 text-sm font-mono">{children}</code>
+      </pre>
+    ),
+  hr: () => <hr className="border-gray-800 my-8" />,
+  img: ({ src, alt }: React.ImgHTMLAttributes<HTMLImageElement>) => (
+    // eslint-disable-next-line @next/next/no-img-element
+    <img
+      src={src}
+      alt={alt ?? ''}
+      className="rounded-xl w-full my-6 object-cover"
+    />
+  ),
+  table: ({ children }: React.PropsWithChildren) => (
+    <div className="overflow-x-auto my-6">
+      <table className="w-full text-sm text-gray-300 border border-gray-700 rounded-xl overflow-hidden">
+        {children}
+      </table>
+    </div>
+  ),
+  thead: ({ children }: React.PropsWithChildren) => (
+    <thead className="bg-gray-800 text-white">{children}</thead>
+  ),
+  tbody: ({ children }: React.PropsWithChildren) => (
+    <tbody className="divide-y divide-gray-800">{children}</tbody>
+  ),
+  tr: ({ children }: React.PropsWithChildren) => (
+    <tr className="hover:bg-gray-800/50 transition-colors">{children}</tr>
+  ),
+  th: ({ children }: React.PropsWithChildren) => (
+    <th className="px-4 py-2 text-left font-semibold">{children}</th>
+  ),
+  td: ({ children }: React.PropsWithChildren) => (
+    <td className="px-4 py-2">{children}</td>
+  ),
+};
 
 // ─── Componente Principal ─────────────────────────────────────────────────────
 export default function PostClient({
@@ -214,20 +307,15 @@ export default function PostClient({
           </div>
         )}
 
-        {/* ── Conteúdo ── */}
-        <div
-          className="prose prose-invert prose-lg max-w-none
-            prose-headings:font-bold prose-headings:text-white
-            prose-p:text-gray-300 prose-p:leading-relaxed
-            prose-a:text-teal-400 prose-a:no-underline hover:prose-a:underline
-            prose-strong:text-white
-            prose-ul:text-gray-300 prose-ol:text-gray-300
-            prose-li:marker:text-teal-400
-            prose-blockquote:border-teal-500 prose-blockquote:text-gray-400
-            prose-code:text-teal-300 prose-code:bg-gray-800 prose-code:px-1 prose-code:rounded
-            prose-hr:border-gray-800"
-          dangerouslySetInnerHTML={{ __html: post.body.replace(/\n/g, '<br/>') }}
-        />
+        {/* ── Conteúdo — Markdown renderizado ── */}
+        <div className="min-w-0">
+          <ReactMarkdown
+            remarkPlugins={[remarkGfm]}
+            components={markdownComponents}
+          >
+            {post.body}
+          </ReactMarkdown>
+        </div>
 
         {/* ── Tags ── */}
         {post.tags?.length > 0 && (
@@ -301,7 +389,6 @@ export default function PostClient({
             Comentários ({localComments.length})
           </h2>
 
-          {/* Lista de comentários */}
           {localComments.length > 0 ? (
             <div className="space-y-4 mb-8">
               {localComments.map(c => (
@@ -323,7 +410,6 @@ export default function PostClient({
             <p className="text-gray-500 text-sm mb-8">Seja o primeiro a comentar.</p>
           )}
 
-          {/* Formulário de comentário */}
           {commentSent ? (
             <div className="bg-teal-500/10 border border-teal-500/30 rounded-xl p-4 text-teal-300 text-sm">
               ✅ Comentário enviado! Ele aparecerá após moderação.
