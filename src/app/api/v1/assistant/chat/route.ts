@@ -363,9 +363,32 @@ function buildSystemPrompt(
   userObjects: UserObject[] | null,
   notifications: UserNotification[] | null,
   matches: UserMatch[] | null,
-  userName?: string
+  userName?: string,
+  currentPage?: string
 ): string {
   let prompt = BASE_SYSTEM_PROMPT;
+
+  // Adiciona contexto de página atual para o bot poder personalizar a resposta
+  if (currentPage && currentPage !== '/') {
+    const pageLabels: Record<string, string> = {
+      '/dashboard': 'Dashboard principal',
+      '/dashboard/objects': 'Lista de objetos',
+      '/dashboard/objects/new': 'Cadastro de novo objeto',
+      '/dashboard/matches': 'Matches',
+      '/dashboard/notifications': 'Notificações',
+      '/dashboard/settings': 'Configurações',
+      '/dashboard/billing': 'Faturamento/Plano',
+      '/map': 'Mapa ao vivo',
+      '/pricing': 'Planos e preços',
+      '/perdi': 'Fluxo — perdeu algo',
+      '/encontrei': 'Fluxo — encontrou algo',
+      '/pet': 'Fluxo — pet desaparecido',
+      '/roubado': 'Fluxo — objeto roubado',
+      '/proteger': 'Fluxo — prevenir/QR Code',
+    };
+    const pageLabel = pageLabels[currentPage] ?? currentPage;
+    prompt += `\n\n[Contexto: o usuário está na página "${pageLabel}" (${currentPage}). Considere isso ao responder.]`;
+  }
 
   if (!userObjects && !notifications && !matches) {
     return prompt;
@@ -473,41 +496,41 @@ function getGuidedResponse(messages: Message[]): string {
   // Perdeu — categorias específicas
   if (/perdi|sumiu|desapareceu/.test(lastMsg)) {
     if (/pet|cachorro|gato|animal/.test(lastMsg)) {
-      return `Cada minuto conta 🐾\n\nPublica o alerta agora 👇\n\n${APP_URL}/flow/pet\n\nA rede começa a procurar imediatamente.`;
+      return `Cada minuto conta 🐾\n\nPublica o alerta agora 👇\n\n${APP_URL}/pet\n\nA rede começa a procurar imediatamente.`;
     }
     if (/celular|telefone|iphone|android/.test(lastMsg)) {
-      return `Registra agora 👇\n\n${APP_URL}/flow/lost\n\nInforme modelo, cor e onde perdeu — aumenta muito a chance de match.`;
+      return `Registra agora 👇\n\n${APP_URL}/perdi\n\nInforme modelo, cor e onde perdeu — aumenta muito a chance de match.`;
     }
     if (/document|rg|cpf|passaporte|carteira de habilitação|cnh/.test(lastMsg)) {
-      return `Documentos aparecem com frequência na rede 📄\n\nRegistra agora 👇\n\n${APP_URL}/flow/lost`;
+      return `Documentos aparecem com frequência na rede 📄\n\nRegistra agora 👇\n\n${APP_URL}/perdi`;
     }
     if (/carro|moto|bicicleta|veículo|veiculo|caminhonete|caminhão|caminhao|bike/.test(lastMsg)) {
-      return `Roubo e furto de veículo é sério 🚗\n\nRegistra o alerta agora 👇\n\n${APP_URL}/flow/stolen\n\nInforme placa, modelo, cor e local — ativa a rede imediatamente.`;
+      return `Roubo e furto de veículo é sério 🚗\n\nRegistra o alerta agora 👇\n\n${APP_URL}/roubado\n\nInforme placa, modelo, cor e local — ativa a rede imediatamente.`;
     }
     if (/roubado|roubaram|assalt/.test(lastMsg)) {
-      return `Para roubo, temos um fluxo específico 👇\n\n${APP_URL}/flow/stolen\n\nVocê vai receber orientações sobre B.O. e como ativar alertas na rede.`;
+      return `Para roubo, temos um fluxo específico 👇\n\n${APP_URL}/roubado\n\nVocê vai receber orientações sobre B.O. e como ativar alertas na rede.`;
     }
-    return `Registra agora 👇\n\n${APP_URL}/flow/lost\n\nLeva menos de 1 minuto e já ativa a busca na rede.`;
+    return `Registra agora 👇\n\n${APP_URL}/perdi\n\nLeva menos de 1 minuto e já ativa a busca na rede.`;
   }
 
   // Roubado
   if (/roubado|roubaram|furtaram|assalt/.test(lastMsg)) {
-    return `Para roubo, temos um fluxo específico 👇\n\n${APP_URL}/flow/stolen\n\nOrientações sobre B.O. e como ativar alertas na rede.`;
+    return `Para roubo, temos um fluxo específico 👇\n\n${APP_URL}/roubado\n\nOrientações sobre B.O. e como ativar alertas na rede.`;
   }
 
   // Encontrou
   if (/achei|encontrei/.test(lastMsg)) {
-    return `Boa atitude 🙏\n\nRegistra aqui 👇\n\n${APP_URL}/flow/found\n\nO sistema cruza com objetos perdidos e notifica o dono automaticamente.`;
+    return `Boa atitude 🙏\n\nRegistra aqui 👇\n\n${APP_URL}/encontrei\n\nO sistema cruza com objetos perdidos e notifica o dono automaticamente.`;
   }
 
   // Prevenir / QR Code
   if (/prevenir|proteger|qr|qrcode|qr code|adesivo|etiqueta/.test(lastMsg)) {
-    return `O QR Code funciona assim:\n\nVocê cadastra → sistema gera QR único → você cola no item.\n\nSe alguém encontrar e escanear, você recebe aviso imediato — sem expor seu número.\n\nGera o seu grátis 👇\n\n${APP_URL}/flow/protect`;
+    return `O QR Code funciona assim:\n\nVocê cadastra → sistema gera QR único → você cola no item.\n\nSe alguém encontrar e escanear, você recebe aviso imediato — sem expor seu número.\n\nGera o seu grátis 👇\n\n${APP_URL}/proteger`;
   }
 
   // Pet
   if (/pet|cachorro|gato|animal/.test(lastMsg) && /sumiu|perdeu|desapareceu/.test(lastMsg)) {
-    return `Publica o alerta agora 👇\n\n${APP_URL}/flow/pet\n\nA rede começa a procurar imediatamente 🐾`;
+    return `Publica o alerta agora 👇\n\n${APP_URL}/pet\n\nA rede começa a procurar imediatamente 🐾`;
   }
 
   // Como funciona / o que é / apresentação do sistema
@@ -542,7 +565,7 @@ function getGuidedResponse(messages: Message[]): string {
 
   // Emocional
   if (/desespera|angustia|triste|chorando|preciso muito|muito importante|sentimental/.test(lastMsg)) {
-    return `Imagino como deve estar sendo 😔\n\nVamos tentar aumentar as chances agora 👇\n\n${APP_URL}/flow/lost\n\nPublica o alerta e compartilha com amigos do bairro — são as coisas que mais ajudam.\n\nEstou torcendo pra dar certo 🙏`;
+    return `Imagino como deve estar sendo 😔\n\nVamos tentar aumentar as chances agora 👇\n\n${APP_URL}/perdi\n\nPublica o alerta e compartilha com amigos do bairro — são as coisas que mais ajudam.\n\nEstou torcendo pra dar certo 🙏`;
   }
 
   return `Me diz uma coisa 👇\n\nVocê perdeu ou encontrou algo?`;
@@ -594,10 +617,10 @@ async function getOpenAIResponse(messages: Message[], systemPrompt: string): Pro
     method: 'POST',
     headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${apiKey}` },
     body: JSON.stringify({
-      model: 'gpt-4o-mini',
-      messages: [{ role: 'system', content: systemPrompt }, ...messages],
-      max_tokens: 600,
-      temperature: 0.65,
+      model: 'gpt-4.1-mini',
+      messages: [{ role: 'system', content: systemPrompt }, ...messages.slice(-10)],
+      max_tokens: 500,
+      temperature: 0.40,
     }),
   });
   if (!response.ok) {
@@ -647,7 +670,7 @@ async function fetchUserData(userId: string) {
 export async function POST(req: NextRequest) {
   try {
     const body: ChatRequest = await req.json();
-    const { messages } = body;
+    const { messages, context } = body;
     if (!messages || !Array.isArray(messages) || messages.length === 0) {
       return NextResponse.json({ error: 'Mensagens inválidas' }, { status: 400 });
     }
@@ -677,30 +700,30 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    const systemPrompt = buildSystemPrompt(objects, notifications, matches, userName);
+    const systemPrompt = buildSystemPrompt(objects, notifications, matches, userName, context?.page);
 
-    // ── Lógica híbrida: fluxo guiado tem PRIORIDADE ──
-    // O fluxo guiado é determinístico, rápido e nunca gera links errados.
-    // A OpenAI só é acionada quando a intenção não é reconhecida pelo regex
-    // (retorno do fallback genérico) OU quando o usuário está logado e
-    // precisa de contexto pessoal (objetos, matches, notificações).
+    // ── Lógica híbrida ──────────────────────────────────────────────────────
+    // Prioridade 1: usuário logado com contexto pessoal → OpenAI (resposta personalizada)
+    // Prioridade 2: intenção reconhecida pelo guided flow → resposta determinística (sem custo)
+    // Prioridade 3: intenção ambígua (fallback) → OpenAI se disponível, guided se não
     const guidedReply = getGuidedResponse(messages);
     const isFallback = guidedReply === GUIDED_FALLBACK;
     const hasPersonalContext = !!(objects?.length || matches?.length || notifications?.length);
 
     let reply: string;
-    if (!isFallback) {
-      // Intenção reconhecida → usa fluxo guiado (sem custo, sem risco de URL errada)
-      reply = guidedReply;
-    } else if (process.env.OPENAI_API_KEY && (isFallback || hasPersonalContext)) {
-      // Intenção não reconhecida OU usuário logado com contexto → usa OpenAI
+    if (process.env.OPENAI_API_KEY && (hasPersonalContext || isFallback)) {
+      // Usa OpenAI quando há contexto pessoal OU quando a intenção não foi reconhecida
       try {
         reply = await getOpenAIResponse(messages, systemPrompt);
       } catch (err) {
         console.error('OpenAI falhou, usando fluxo guiado:', err);
         reply = guidedReply;
       }
+    } else if (!isFallback) {
+      // Intenção reconhecida, sem contexto pessoal → guided flow (sem custo)
+      reply = guidedReply;
     } else {
+      // Fallback sem OpenAI
       reply = guidedReply;
     }
 

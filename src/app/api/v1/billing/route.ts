@@ -41,7 +41,7 @@ export async function GET(request: NextRequest) {
     try {
       const subResult = await query(
         `SELECT provider, plan_id, status, current_period_start, current_period_end, created_at
-         FROM subscriptions
+         FROM subscriptions_p1
          WHERE user_id = $1
          ORDER BY created_at DESC
          LIMIT 10`,
@@ -172,7 +172,7 @@ export async function POST(request: NextRequest) {
         // Para MP: marcar como cancelada na tabela subscriptions
         // O acesso continua até plan_expires_at
         await query(
-          `UPDATE subscriptions SET status = 'cancelled', updated_at = NOW()
+          `UPDATE subscriptions_p1 SET status = 'cancelled', updated_at = NOW()
            WHERE user_id = $1 AND status = 'active'`,
           [payload.sub]
         );

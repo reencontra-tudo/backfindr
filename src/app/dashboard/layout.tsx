@@ -1,36 +1,64 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import {
-  MapPin, LayoutDashboard, Package, Search,
-  QrCode, Bell, Settings, LogOut, Plus, Menu, X, CreditCard, Building2
+  LayoutDashboard, Package, Search,
+  QrCode, Bell, Settings, LogOut, Plus, Menu, X, CreditCard, Building2, Truck
 } from 'lucide-react';
 import Cookies from 'js-cookie';
 import { useAuthStore } from '@/hooks/useAuth';
 import ImpersonationBanner from '@/components/ui/ImpersonationBanner';
 
 const NAV = [
-  { href: '/dashboard',                  icon: LayoutDashboard, label: 'Visão Geral' },
-  { href: '/dashboard/objects',          icon: Package,         label: 'Meus Objetos' },
-  { href: '/dashboard/search',           icon: Search,          label: 'Buscar Achados' },
-  { href: '/dashboard/matches',          icon: QrCode,          label: 'Matches' },
-  { href: '/dashboard/notifications',    icon: Bell,            label: 'Notificações' },
-  { href: '/dashboard/billing',          icon: CreditCard,      label: 'Plano' },
-  { href: '/dashboard/settings',         icon: Settings,        label: 'Configurações' },
+  { href: '/dashboard',                  icon: LayoutDashboard, label: 'Visão Geral',     superOnly: false },
+  { href: '/dashboard/objects',          icon: Package,         label: 'Meus Objetos',   superOnly: false },
+  { href: '/dashboard/search',           icon: Search,          label: 'Buscar Achados', superOnly: false },
+  { href: '/dashboard/matches',          icon: QrCode,          label: 'Matches',        superOnly: false },
+  { href: '/dashboard/notifications',    icon: Bell,            label: 'Notificações',   superOnly: false },
+  { href: '/dashboard/encomendas',       icon: Package,         label: 'Encomendas',     superOnly: true  }, // em implantação
+  { href: '/dashboard/delivery',         icon: Truck,           label: 'Delivery',       superOnly: true  }, // em implantação
+  { href: '/dashboard/billing',          icon: CreditCard,      label: 'Plano',          superOnly: false },
+  { href: '/dashboard/settings',         icon: Settings,        label: 'Configurações',  superOnly: false },
 ];
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const router = useRouter();
-  const { user, isAuthenticated, logout } = useAuthStore();
+  const { user, isAuthenticated, logout, fetchMe } = useAuthStore();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [pendingMatches, setPendingMatches] = useState(0);
+  const [hydrated, setHydrated] = useState(false);
+  const initDone = useRef(false);
 
+  // Aguarda a reidratação do Zustand persist antes de redirecionar
   useEffect(() => {
-    if (!isAuthenticated) router.replace('/auth/login');
-  }, [isAuthenticated, router]);
+    const unsub = useAuthStore.persist.onFinishHydration(() => setHydrated(true));
+    // Se já hidratou (chamada síncrona no SSR/cliente rápido)
+    if (useAuthStore.persist.hasHydrated()) setHydrated(true);
+    return () => unsub();
+  }, []);
+
+  // Após hidratação: se não autenticado mas tem cookie, tenta renovar silenciosamente
+  useEffect(() => {
+    if (!hydrated || initDone.current) return;
+    initDone.current = true;
+    if (!isAuthenticated) {
+      const token = Cookies.get('access_token') || Cookies.get('refresh_token');
+      if (token) {
+        // Cookie existe — tenta restaurar sessão via fetchMe (o interceptor renova o JWT se necessário)
+        fetchMe().catch(() => router.replace('/auth/login'));
+      } else {
+        router.replace('/auth/login');
+      }
+    }
+  }, [hydrated, isAuthenticated, fetchMe, router]);
+
+  // Redireciona se perder autenticação após já estar hidratado
+  useEffect(() => {
+    if (hydrated && !isAuthenticated && initDone.current) router.replace('/auth/login');
+  }, [hydrated, isAuthenticated, router]);
 
   // Buscar contagem real de matches pendentes
   useEffect(() => {
@@ -53,6 +81,8 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   // Close sidebar on route change
   useEffect(() => { setSidebarOpen(false); }, [pathname]);
 
+  // Enquanto aguarda hidratação, não renderiza nada (evita flash de redirect)
+  if (!hydrated) return null;
   if (!isAuthenticated) return null;
 
   const initials = user?.name
@@ -63,9 +93,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       {/* Brand */}
       <div className="px-5 py-4 border-b border-white/[0.06] flex items-center justify-between">
         <Link href="/" className="flex items-center gap-2.5">
-          <div className="w-7 h-7 rounded-lg bg-teal-500 flex items-center justify-center flex-shrink-0">
-            <MapPin className="w-3.5 h-3.5 text-white" strokeWidth={2.5} />
-          </div>
+          <img src="/icons/logo-backfindr.png" alt="Backfindr" width={28} height={28} style={{ borderRadius: 8, flexShrink: 0 }} />
           <span className="font-semibold text-white text-[15px]">Backfindr</span>
         </Link>
         {/* Close button — mobile only */}
@@ -89,7 +117,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
       {/* Nav */}
       <nav className="flex-1 px-3 py-2 space-y-0.5 overflow-y-auto" data-tour-id="sidebar-nav">
-        {NAV.map(({ href, icon: Icon, label }) => {
+        {NAV.filter(item => !item.superOnly || user?.role === 'superadmin').map(({ href, icon: Icon, label }) => {
           const active = pathname === href || (href !== '/dashboard' && pathname.startsWith(href));
           const isMatches = href === '/dashboard/matches';
           const badge = isMatches && pendingMatches > 0 ? pendingMatches : null;
@@ -198,9 +226,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             <Menu className="w-5 h-5" />
           </button>
           <Link href="/" className="flex items-center gap-2">
-            <div className="w-6 h-6 rounded-md bg-teal-500 flex items-center justify-center">
-              <MapPin className="w-3 h-3 text-white" strokeWidth={2.5} />
-            </div>
+            <img src="/icons/logo-backfindr.png" alt="Backfindr" width={24} height={24} style={{ borderRadius: 6, flexShrink: 0 }} />
             <span className="text-white font-semibold text-sm">Backfindr</span>
           </Link>
           <Link

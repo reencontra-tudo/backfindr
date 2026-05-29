@@ -1,10 +1,8 @@
 'use client';
 import { useEffect, useState, useRef, useCallback, useMemo } from 'react';
 import Link from 'next/link';
-import { MapPin, Search, X, ChevronRight, SlidersHorizontal, LocateFixed, Gift, Newspaper, ExternalLink, Navigation } from 'lucide-react';
+import { MapPin, Search, X, ChevronRight, SlidersHorizontal, LocateFixed, Gift, Newspaper, ExternalLink, Navigation, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
-import { objectsApi, parseApiError } from '@/lib/api';
-import { RegisteredObject } from '@/types';
 
 const EMOJI: Record<string, string> = {
   phone: '📱', wallet: '👛', keys: '🔑', bag: '🎒', pet: '🐾',
@@ -26,6 +24,45 @@ const STATUS_COLOR: Record<string, string> = {
   stolen: 'text-orange-400 bg-orange-500/10 border-orange-500/20',
 };
 
+// ─── Tipos ────────────────────────────────────────────────────────────────────
+// Pin: dados mínimos para plotar no mapa (carregados em bulk)
+interface MapPin {
+  id: string | number;
+  title: string;
+  status: string;
+  category: string;
+  location: { lat: number; lng: number };
+}
+
+// Detail: dados completos para o bottom sheet (carregados sob demanda)
+interface ObjectDetail extends MapPin {
+  description?: string;
+  photos?: string[];
+  unique_code?: string;
+  reward_amount?: number | null;
+  reward_description?: string | null;
+  created_at?: string;
+  is_legacy?: boolean;
+  source?: string;
+  location: { lat: number; lng: number; address?: string };
+}
+
+interface NewsItem {
+  title: string;
+  link: string;
+  source: string;
+  pubDate: string;
+  description: string;
+}
+
+interface Filters {
+  search: string;
+  status: string;
+  category: string;
+  radiusKm: number;
+  daysAgo: number;
+}
+
 // Haversine distance in km
 function haversine(lat1: number, lng1: number, lat2: number, lng2: number): number {
   const R = 6371;
@@ -39,7 +76,7 @@ function haversine(lat1: number, lng1: number, lat2: number, lng2: number): numb
   return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
 }
 
-// Debounce hook — evita recalcular filtros a cada keystroke
+// Debounce hook
 function useDebounce<T>(value: T, delay: number): T {
   const [debounced, setDebounced] = useState(value);
   useEffect(() => {
@@ -49,38 +86,29 @@ function useDebounce<T>(value: T, delay: number): T {
   return debounced;
 }
 
-interface Filters {
-  search: string;
-  status: string;
-  category: string;
-  radiusKm: number;
-  daysAgo: number;
-}
-
-// Número máximo de itens visíveis na lista lateral (virtualização simples)
 const LIST_PAGE_SIZE = 40;
 
-interface NewsItem {
-  title: string;
-  link: string;
-  source: string;
-  pubDate: string;
-  description: string;
-}
-
 export default function MapPage() {
-  const [objects, setObjects] = useState<RegisteredObject[]>([]);
-  // Ref sincronizado com objects para acesso direto dentro de closures do Mapbox
-  // (evita usar setObjects como efeito colateral, que causa crash em mobile)
-  const objectsRef = useRef<RegisteredObject[]>([]);
-  useEffect(() => { objectsRef.current = objects; }, [objects]);
+  // ─── Estado principal ──────────────────────────────────────────────────────
+  // pins: dados mínimos para o mapa (carregados rápido via /objects/map)
+  const [pins, setPins] = useState<MapPin[]>([]);
+  const pinsRef = useRef<MapPin[]>([]);
+  useEffect(() => { pinsRef.current = pins; }, [pins]);
+
+  // selected: pin selecionado (dados mínimos)
+  const [selectedPin, setSelectedPin] = useState<MapPin | null>(null);
+  // detail: dados completos do pin selecionado (carregados sob demanda)
+  const [detail, setDetail] = useState<ObjectDetail | null>(null);
+  const [detailLoading, setDetailLoading] = useState(false);
+  // Cache de detalhes já carregados (evita re-fetch)
+  const detailCacheRef = useRef<Map<string | number, ObjectDetail>>(new Map());
+
   const [loading, setLoading] = useState(true);
   const [filters, setFilters] = useState<Filters>({
     search: '', status: '', category: '', radiusKm: 0, daysAgo: 0,
   });
   const [showFilters, setShowFilters] = useState(false);
   const [showList, setShowList] = useState(false);
-  const [selected, setSelected] = useState<RegisteredObject | null>(null);
   const [mapLoaded, setMapLoaded] = useState(false);
   const [userLocation, setUserLocation] = useState<{ lat: number; lng: number } | null>(null);
   const [showNearby, setShowNearby] = useState(false);
@@ -91,8 +119,58 @@ export default function MapPage() {
   const [newsLoading, setNewsLoading] = useState(false);
   const [newsLoaded, setNewsLoaded] = useState(false);
 
+  const mapContainer = useRef<HTMLDivElement>(null);
+  const mapRef = useRef<unknown>(null);
 
-  // ─── Carregar notícias ao abrir o painel ─────────────────────────────────
+  const debouncedSearch = useDebounce(filters.search, 300);
+
+  // ─── Carregar pins (endpoint slim, cache 2min no CDN) ─────────────────────
+  useEffect(() => {
+    fetch('/api/v1/objects/map')
+      .then(r => r.json())
+      .then((d: { items?: MapPin[] }) => setPins(d.items ?? []))
+      .catch(() => toast.error('Erro ao carregar o mapa'))
+      .finally(() => setLoading(false));
+  }, []);
+
+  // ─── Carregar detalhes sob demanda ao clicar num pin ──────────────────────
+  const loadDetail = useCallback(async (pin: MapPin) => {
+    // Se já está em cache, usar direto
+    const cached = detailCacheRef.current.get(pin.id);
+    if (cached) {
+      setDetail(cached);
+      return;
+    }
+    setDetailLoading(true);
+    setDetail(null);
+    try {
+      const r = await fetch(`/api/v1/objects/scan/${pin.id}`);
+      if (!r.ok) throw new Error('not found');
+      const json = await r.json() as { success?: boolean; data?: ObjectDetail };
+      const obj = json.data ?? json as unknown as ObjectDetail;
+      if (obj && obj.id) {
+        // Garantir que location está preenchido com o que já temos do pin
+        const full: ObjectDetail = { ...pin, ...obj, location: obj.location ?? pin.location };
+        detailCacheRef.current.set(pin.id, full);
+        setDetail(full);
+      } else {
+        // Fallback: mostrar apenas os dados do pin
+        setDetail(pin as ObjectDetail);
+      }
+    } catch {
+      setDetail(pin as ObjectDetail);
+    } finally {
+      setDetailLoading(false);
+    }
+  }, []);
+
+  // ─── Quando selectedPin muda, carregar detalhes ───────────────────────────
+  useEffect(() => {
+    if (!selectedPin) { setDetail(null); return; }
+    loadDetail(selectedPin);
+  }, [selectedPin, loadDetail]);
+
+  // ─── Carregar notícias ao abrir o painel ──────────────────────────────────
   const loadNews = useCallback(async () => {
     if (newsLoaded || newsLoading) return;
     setNewsLoading(true);
@@ -100,27 +178,9 @@ export default function MapPage() {
       const res = await fetch('/api/v1/news');
       const data = await res.json();
       if (data.success) setNews(data.news ?? []);
-    } catch {
-      // silencioso
-    } finally {
-      setNewsLoading(false);
-      setNewsLoaded(true);
-    }
+    } catch { /* silencioso */ }
+    finally { setNewsLoading(false); setNewsLoaded(true); }
   }, [newsLoaded, newsLoading]);
-
-  const mapContainer = useRef<HTMLDivElement>(null);
-  const mapRef = useRef<unknown>(null);
-
-  // ─── Debounce da busca textual (300ms) ────────────────────────────────────
-  const debouncedSearch = useDebounce(filters.search, 300);
-
-  // ─── Carregar objetos (uma única vez) ─────────────────────────────────────
-  useEffect(() => {
-    objectsApi.listPublic({ size: 500 })
-      .then(({ data }) => setObjects(data?.items ?? []))
-      .catch(e => toast.error(parseApiError(e)))
-      .finally(() => setLoading(false));
-  }, []);
 
   // ─── Inicializar mapa (lazy import) ───────────────────────────────────────
   useEffect(() => {
@@ -134,7 +194,6 @@ export default function MapPage() {
         style: 'mapbox://styles/mapbox/dark-v11',
         center: [-46.6333, -23.5505],
         zoom: 11,
-        // Otimizações de performance
         antialias: false,
         fadeDuration: 0,
         trackResize: true,
@@ -147,7 +206,6 @@ export default function MapPage() {
           cluster: true,
           clusterMaxZoom: 14,
           clusterRadius: 50,
-          // Buffer reduzido para menos cálculos fora do viewport
           buffer: 64,
           tolerance: 0.5,
         });
@@ -188,7 +246,6 @@ export default function MapPage() {
           },
         });
 
-        // Expandir cluster ao clicar
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         map.on('click', 'clusters', (e: any) => {
           const features = map.queryRenderedFeatures(e.point, { layers: ['clusters'] });
@@ -201,18 +258,15 @@ export default function MapPage() {
           });
         });
 
-        // Ao clicar num pin individual: atualiza o estado React (selected)
-        // O painel de detalhes é renderizado pelo React sobre o mapa — zero dependência de Popup Mapbox
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         map.on('click', 'unclustered-point', (e: any) => {
           const id = String(e.features?.[0]?.properties?.id ?? '');
           if (!id) return;
-          const obj = objectsRef.current.find(o => String(o.id) === id);
-          if (!obj) return;
-          // Toggle: clicar no mesmo pin fecha o painel
-          setSelected(prev => (prev?.id === obj.id ? null : obj));
-          // Pan suave para centralizar o pin
+          const pin = pinsRef.current.find(o => String(o.id) === id);
+          if (!pin) return;
+          setSelectedPin(prev => (prev?.id === pin.id ? null : pin));
           const coords = e.features[0].geometry.coordinates.slice() as [number, number];
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
           (map as any).easeTo({ center: coords, offset: [0, 80], duration: 250 });
         });
 
@@ -229,26 +283,20 @@ export default function MapPage() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // ─── Filtrar objetos com useMemo + debounce na busca ──────────────────────
+  // ─── Filtrar pins com useMemo + debounce na busca ─────────────────────────
   const filtered = useMemo(() => {
     const searchLower = debouncedSearch.toLowerCase();
-    return objects.filter(o => {
-      if (searchLower &&
-        !o.title.toLowerCase().includes(searchLower) &&
-        !o.description?.toLowerCase().includes(searchLower)) return false;
+    return pins.filter(o => {
+      if (searchLower && !o.title.toLowerCase().includes(searchLower)) return false;
       if (filters.status && o.status !== filters.status) return false;
       if (filters.category && o.category !== filters.category) return false;
-      if (filters.daysAgo > 0 && o.created_at) {
-        const cutoff = Date.now() - filters.daysAgo * 24 * 60 * 60 * 1000;
-        if (new Date(o.created_at).getTime() < cutoff) return false;
-      }
       if (filters.radiusKm > 0 && userLocation && o.location?.lat && o.location?.lng) {
         const dist = haversine(userLocation.lat, userLocation.lng, o.location.lat, o.location.lng);
         if (dist > filters.radiusKm) return false;
       }
       return true;
     });
-  }, [objects, debouncedSearch, filters.status, filters.category, filters.daysAgo, filters.radiusKm, userLocation]);
+  }, [pins, debouncedSearch, filters.status, filters.category, filters.radiusKm, userLocation]);
 
   // ─── Atualizar pontos no mapa (throttled via requestAnimationFrame) ────────
   const rafRef = useRef<number | null>(null);
@@ -257,21 +305,20 @@ export default function MapPage() {
     if (rafRef.current) cancelAnimationFrame(rafRef.current);
     rafRef.current = requestAnimationFrame(() => {
       const map = mapRef.current as { getSource?: (id: string) => { setData?: (d: unknown) => void } | undefined } | null;
-      if (!map?.getSource) return;
-      const source = map.getSource('objects');
+      const source = map?.getSource?.('objects');
       if (!source?.setData) return;
       const features = filtered
         .filter(o => o.location?.lat && o.location?.lng)
         .map(o => ({
           type: 'Feature' as const,
-          geometry: { type: 'Point' as const, coordinates: [o.location!.lng, o.location!.lat] },
+          geometry: { type: 'Point' as const, coordinates: [o.location.lng, o.location.lat] },
           properties: { id: o.id, title: o.title, status: o.status },
         }));
       source.setData({ type: 'FeatureCollection', features });
     });
   }, [filtered, mapLoaded]);
 
-  //   // ─── Geolocalização ─────────────────────────────────────────────
+  // ─── Geolocalização ───────────────────────────────────────────────────────
   const locateUser = useCallback(() => {
     if (!navigator.geolocation) {
       toast.error('Geolocalização não suportada neste browser');
@@ -283,20 +330,14 @@ export default function MapPage() {
         setUserLocation(loc);
         setShowNearby(true);
 
-        // Criar/atualizar marcador 'você está aqui' com círculo pulsante
-        const map = mapRef.current as {
-          flyTo?: (opts: unknown) => void;
-          getCanvas?: () => HTMLElement;
-        } | null;
+        const map = mapRef.current as { flyTo?: (opts: unknown) => void } | null;
 
-        // Remover marcador anterior se existir
         if (userMarkerRef.current) {
           (userMarkerRef.current as { remove: () => void }).remove();
           userMarkerRef.current = null;
         }
 
         if (map) {
-          // Criar elemento HTML do marcador pulsante
           const el = document.createElement('div');
           el.style.cssText = `
             width: 20px; height: 20px; border-radius: 50%;
@@ -305,7 +346,6 @@ export default function MapPage() {
             animation: pulse-user 2s infinite;
             position: relative; cursor: default;
           `;
-          // Adicionar animação CSS se ainda não existir
           if (!document.getElementById('user-marker-style')) {
             const style = document.createElement('style');
             style.id = 'user-marker-style';
@@ -319,7 +359,6 @@ export default function MapPage() {
             document.head.appendChild(style);
           }
 
-          // Importar Marker do mapbox-gl e criar o marcador
           import('mapbox-gl').then(mapboxgl => {
             const marker = new mapboxgl.default.Marker({ element: el, anchor: 'center' })
               .setLngLat([loc.lng, loc.lat])
@@ -342,32 +381,29 @@ export default function MapPage() {
   const hasActiveFilters = filters.status || filters.category || filters.radiusKm > 0 || filters.daysAgo > 0;
   const clearFilters = () => setFilters({ search: '', status: '', category: '', radiusKm: 0, daysAgo: 0 });
 
-  // Lista paginada (virtualização simples)
   const listItems = useMemo(() => filtered.slice(0, listPage * LIST_PAGE_SIZE), [filtered, listPage]);
 
-   // ─── CTA contextual: objetos perdidos num raio de 5km ─────────────────
   const nearbyLostCount = useMemo(() => {
     if (!userLocation) return 0;
-    return objects.filter(o =>
+    return pins.filter(o =>
       o.status === 'lost' &&
       o.location?.lat && o.location?.lng &&
       haversine(userLocation.lat, userLocation.lng, o.location.lat, o.location.lng) <= 5
     ).length;
-  }, [objects, userLocation]);
+  }, [pins, userLocation]);
 
-  // ─── Objetos próximos ordenados por distância (painel de proximidade) ─────────
   const nearbyObjects = useMemo(() => {
     if (!userLocation) return [];
-    return objects
+    return pins
       .filter(o => o.location?.lat && o.location?.lng)
       .map(o => ({
         ...o,
-        distKm: haversine(userLocation.lat, userLocation.lng, o.location!.lat, o.location!.lng),
+        distKm: haversine(userLocation.lat, userLocation.lng, o.location.lat, o.location.lng),
       }))
       .filter(o => o.distKm <= 10)
       .sort((a, b) => a.distKm - b.distKm)
       .slice(0, 20);
-  }, [objects, userLocation]);
+  }, [pins, userLocation]);
 
   return (
     <div className="flex flex-col bg-[#080b0f]" style={{ height: '100dvh' }}>
@@ -449,7 +485,7 @@ export default function MapPage() {
             className={`relative flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-medium transition-all flex-shrink-0 ${
               showNearby
                 ? 'bg-teal-500/10 text-teal-400 border border-teal-500/20'
-                : 'bg-white/[0.04] text-white/50 border border-white/[0.08] hover:text-teal-400 hover:border-teal-500/20'
+                : 'bg-white/[0.04] text-white/50 border-white/[0.08] hover:text-teal-400 hover:border-teal-500/20'
             }`}
             title="Ocorrências próximas"
           >
@@ -473,7 +509,7 @@ export default function MapPage() {
           className={`relative p-2 rounded-lg text-sm font-medium transition-all flex-shrink-0 ${
             showNews
               ? 'bg-amber-500/10 text-amber-400 border border-amber-500/20'
-              : 'bg-white/[0.04] text-white/50 border border-white/[0.08] hover:text-amber-400 hover:border-amber-500/20'
+              : 'bg-white/[0.04] text-white/50 border-white/[0.08] hover:text-amber-400 hover:border-amber-500/20'
           }`}
           title="Notícias relacionadas"
         >
@@ -527,22 +563,6 @@ export default function MapPage() {
                 {Object.entries(CATEGORY_LABEL).map(([val, label]) => (
                   <option key={val} value={val}>{EMOJI[val]} {label}</option>
                 ))}
-              </select>
-            </div>
-
-            {/* Período */}
-            <div className="flex flex-col gap-1">
-              <label className="text-white/40 text-[11px] font-medium uppercase tracking-wide">Período</label>
-              <select
-                value={filters.daysAgo}
-                onChange={e => setFilters(f => ({ ...f, daysAgo: Number(e.target.value) }))}
-                className="bg-white/[0.04] border border-white/[0.08] rounded-lg px-3 py-1.5 text-white text-xs outline-none focus:border-teal-500/50 transition-colors"
-              >
-                <option value={0}>Qualquer data</option>
-                <option value={7}>Últimos 7 dias</option>
-                <option value={30}>Últimos 30 dias</option>
-                <option value={90}>Últimos 3 meses</option>
-                <option value={365}>Último ano</option>
               </select>
             </div>
 
@@ -625,8 +645,8 @@ export default function MapPage() {
         </div>
       )}
 
-      {/* CTA para ativar localização — aparece quando não há localização ativa */}
-      {!userLocation && !loading && objects.length > 0 && (
+      {/* CTA para ativar localização */}
+      {!userLocation && !loading && pins.length > 0 && (
         <div className="flex-shrink-0 border-b border-white/[0.06] bg-[#0a0d12] px-4 py-2.5 flex items-center gap-3">
           <div className="flex-1 min-w-0">
             <p className="text-white/50 text-xs">
@@ -642,7 +662,7 @@ export default function MapPage() {
         </div>
       )}
 
-      {/* Painel de notícias — colapsável */}
+      {/* Painel de notícias */}
       {showNews && (
         <div className="flex-shrink-0 border-b border-white/[0.06] bg-[#0a0d12] overflow-hidden" style={{ maxHeight: '40vh' }}>
           <div className="flex items-center justify-between px-4 py-2.5 border-b border-white/[0.06]">
@@ -696,7 +716,7 @@ export default function MapPage() {
         </div>
       )}
 
-      {/* Painel de proximidade — objetos ordenados por distância */}
+      {/* Painel de proximidade */}
       {showNearby && userLocation && (
         <div className="flex-shrink-0 border-b border-white/[0.06] bg-[#0a0d12] overflow-hidden" style={{ maxHeight: '45vh' }}>
           <div className="flex items-center justify-between px-4 py-2.5 border-b border-white/[0.06]">
@@ -718,7 +738,7 @@ export default function MapPage() {
                   <button
                     key={obj.id}
                     onClick={() => {
-                      setSelected(selected?.id === obj.id ? null : obj);
+                      setSelectedPin(selectedPin?.id === obj.id ? null : obj);
                       setShowNearby(false);
                       const map = mapRef.current as { easeTo?: (opts: unknown) => void } | null;
                       if (obj.location?.lat && obj.location?.lng) {
@@ -775,8 +795,6 @@ export default function MapPage() {
               </p>
             </div>
           )}
-
-          {/* Placeholder — o bottom sheet está fora deste container (ver abaixo) */}
         </div>
 
         {/* List — virtualização simples com load-more */}
@@ -801,9 +819,9 @@ export default function MapPage() {
                   {listItems.map(obj => (
                     <button
                       key={obj.id}
-                      onClick={() => setSelected(selected?.id === obj.id ? null : obj)}
+                      onClick={() => setSelectedPin(selectedPin?.id === obj.id ? null : obj)}
                       className={`w-full flex items-center gap-3 p-3 rounded-xl text-left transition-all ${
-                        selected?.id === obj.id
+                        selectedPin?.id === obj.id
                           ? 'bg-teal-500/10 border border-teal-500/20'
                           : 'hover:bg-white/[0.04] border border-transparent'
                       }`}
@@ -817,15 +835,11 @@ export default function MapPage() {
                           <p className={`text-xs ${STATUS_COLOR[obj.status].split(' ')[0]}`}>{STATUS_LABEL[obj.status]}</p>
                           <span className="text-white/20 text-xs">·</span>
                           <p className="text-white/30 text-xs truncate">{CATEGORY_LABEL[obj.category] ?? 'Outro'}</p>
-                          {obj.reward_amount && obj.reward_amount > 0 && (
-                            <Gift className="w-3 h-3 text-yellow-400 flex-shrink-0" />
-                          )}
                         </div>
                       </div>
                       <ChevronRight className="w-3.5 h-3.5 text-white/20 flex-shrink-0" />
                     </button>
                   ))}
-                  {/* Load more */}
                   {listItems.length < filtered.length && (
                     <button
                       onClick={() => setListPage(p => p + 1)}
@@ -841,12 +855,10 @@ export default function MapPage() {
         )}
       </div>
 
-      {/* Bottom sheet de detalhes — fixed para não ser cortado pelo overflow-hidden do container */}
-      {selected && (
+      {/* Bottom sheet de detalhes */}
+      {selectedPin && (
         <>
-          {/* Overlay clicável para fechar */}
-          <div className="fixed inset-0 z-40" onClick={() => setSelected(null)} />
-          {/* Card */}
+          <div className="fixed inset-0 z-40" onClick={() => setSelectedPin(null)} />
           <div
             className="fixed left-0 right-0 z-50 px-3 pointer-events-auto"
             style={{ bottom: 'calc(env(safe-area-inset-bottom, 0px) + 16px)' }}
@@ -857,80 +869,89 @@ export default function MapPage() {
                 <div className="w-10 h-1 rounded-full bg-white/20" />
               </div>
               <div className="px-4 pb-4">
-                {/* Header */}
-                <div className="flex items-start gap-3">
-                  {selected.photos?.[0] ? (
-                    <img src={selected.photos[0]} alt="" className="w-14 h-14 rounded-xl object-cover flex-shrink-0 border border-white/10" />
-                  ) : (
-                    <div className="w-14 h-14 rounded-xl bg-white/[0.06] flex items-center justify-center text-3xl flex-shrink-0">
-                      {EMOJI[selected.category] ?? '📦'}
+                {detailLoading ? (
+                  /* Skeleton enquanto carrega os detalhes */
+                  <div className="flex items-start gap-3 animate-pulse">
+                    <div className="w-14 h-14 rounded-xl bg-white/[0.06] flex-shrink-0" />
+                    <div className="flex-1 space-y-2 pt-1">
+                      <div className="h-4 bg-white/[0.06] rounded w-3/4" />
+                      <div className="h-3 bg-white/[0.04] rounded w-1/2" />
+                      <div className="h-3 bg-white/[0.04] rounded w-2/3" />
                     </div>
-                  )}
-                  <div className="flex-1 min-w-0">
-                    <p className="text-white font-bold text-base leading-snug">{selected.title}</p>
-                    <div className="flex items-center gap-2 mt-1.5 flex-wrap">
-                      <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full border ${STATUS_COLOR[selected.status]}`}>
-                        {STATUS_LABEL[selected.status]}
-                      </span>
-                      <span className="text-white/30 text-[10px]">{CATEGORY_LABEL[selected.category] ?? 'Outro'}</span>
+                    <Loader2 className="w-4 h-4 text-teal-400 animate-spin flex-shrink-0 mt-1" />
+                  </div>
+                ) : detail ? (
+                  <>
+                    {/* Header */}
+                    <div className="flex items-start gap-3">
+                      {detail.photos?.[0] ? (
+                        <img src={detail.photos[0]} alt="" className="w-14 h-14 rounded-xl object-cover flex-shrink-0 border border-white/10" />
+                      ) : (
+                        <div className="w-14 h-14 rounded-xl bg-white/[0.06] flex items-center justify-center text-3xl flex-shrink-0">
+                          {EMOJI[detail.category] ?? '📦'}
+                        </div>
+                      )}
+                      <div className="flex-1 min-w-0">
+                        <p className="text-white font-bold text-base leading-snug">{detail.title}</p>
+                        <div className="flex items-center gap-2 mt-1.5 flex-wrap">
+                          <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full border ${STATUS_COLOR[detail.status]}`}>
+                            {STATUS_LABEL[detail.status]}
+                          </span>
+                          <span className="text-white/30 text-[10px]">{CATEGORY_LABEL[detail.category] ?? 'Outro'}</span>
+                        </div>
+                      </div>
+                      <button
+                        onClick={() => setSelectedPin(null)}
+                        className="text-white/30 hover:text-white transition-colors flex-shrink-0 p-1.5 -mt-1 -mr-1 rounded-lg hover:bg-white/[0.06]"
+                      >
+                        <X className="w-4 h-4" />
+                      </button>
                     </div>
-                  </div>
-                  <button
-                    onClick={() => setSelected(null)}
-                    className="text-white/30 hover:text-white transition-colors flex-shrink-0 p-1.5 -mt-1 -mr-1 rounded-lg hover:bg-white/[0.06]"
-                  >
-                    <X className="w-4 h-4" />
-                  </button>
-                </div>
 
-                {/* Descrição */}
-                {selected.description && (
-                  <p className="text-white/50 text-xs mt-3 leading-relaxed line-clamp-3">{selected.description}</p>
-                )}
+                    {detail.description && (
+                      <p className="text-white/50 text-xs mt-3 leading-relaxed line-clamp-3">{detail.description}</p>
+                    )}
 
-                {/* Localização */}
-                {selected.location?.address && (
-                  <div className="flex items-center gap-1.5 mt-2.5">
-                    <MapPin className="w-3 h-3 text-white/30 flex-shrink-0" />
-                    <span className="text-white/40 text-xs truncate">{selected.location.address}</span>
-                  </div>
-                )}
+                    {detail.location?.address && (
+                      <div className="flex items-center gap-1.5 mt-2.5">
+                        <MapPin className="w-3 h-3 text-white/30 flex-shrink-0" />
+                        <span className="text-white/40 text-xs truncate">{detail.location.address}</span>
+                      </div>
+                    )}
 
-                {/* Data */}
-                {selected.created_at && (
-                  <p className="text-white/25 text-[10px] mt-1.5">
-                    Registrado em {new Date(selected.created_at).toLocaleDateString('pt-BR', { day: '2-digit', month: 'short', year: 'numeric' })}
-                  </p>
-                )}
+                    {detail.created_at && (
+                      <p className="text-white/25 text-[10px] mt-1.5">
+                        Registrado em {new Date(detail.created_at).toLocaleDateString('pt-BR', { day: '2-digit', month: 'short', year: 'numeric' })}
+                      </p>
+                    )}
 
-                {/* Badge Webjetos */}
-                {(selected.source === 'webjetos' || selected.is_legacy) && (
-                  <div className="mt-2.5">
-                    <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-yellow-500/10 border border-yellow-500/20 text-yellow-400">
-                      Compartilhado via Webjetos
-                    </span>
-                  </div>
-                )}
+                    {(detail.source === 'webjetos' || detail.is_legacy) && (
+                      <div className="mt-2.5">
+                        <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-yellow-500/10 border border-yellow-500/20 text-yellow-400">
+                          Compartilhado via Webjetos
+                        </span>
+                      </div>
+                    )}
 
-                {/* Recompensa */}
-                {selected.reward_amount && selected.reward_amount > 0 && (
-                  <div className="mt-3 px-3 py-2 rounded-xl bg-amber-500/10 border border-amber-500/20 flex items-center gap-2">
-                    <Gift className="w-3.5 h-3.5 text-amber-400 flex-shrink-0" />
-                    <span className="text-amber-300 text-xs font-semibold">
-                      Recompensa: R$ {selected.reward_amount.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
-                    </span>
-                  </div>
-                )}
+                    {detail.reward_amount && detail.reward_amount > 0 && (
+                      <div className="mt-3 px-3 py-2 rounded-xl bg-amber-500/10 border border-amber-500/20 flex items-center gap-2">
+                        <Gift className="w-3.5 h-3.5 text-amber-400 flex-shrink-0" />
+                        <span className="text-amber-300 text-xs font-semibold">
+                          Recompensa: R$ {detail.reward_amount.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                        </span>
+                      </div>
+                    )}
 
-                {/* CTA */}
-                <Link
-                  href={`/objeto/${selected.unique_code}`}
-                  className="mt-3 flex items-center justify-center gap-2 w-full py-3 bg-teal-500 hover:bg-teal-400 active:bg-teal-600 rounded-xl text-white text-sm font-bold transition-colors"
-                  style={{ boxShadow: '0 0 0 1px rgba(20,184,166,0.4), 0 4px 16px rgba(20,184,166,0.2)' }}
-                >
-                  Ver detalhes completos / Contactar dono
-                  <ChevronRight className="w-4 h-4" />
-                </Link>
+                    <Link
+                      href={detail.unique_code ? `/objeto/${detail.unique_code}` : `/objeto/${detail.id}`}
+                      className="mt-3 flex items-center justify-center gap-2 w-full py-3 bg-teal-500 hover:bg-teal-400 active:bg-teal-600 rounded-xl text-white text-sm font-bold transition-colors"
+                      style={{ boxShadow: '0 0 0 1px rgba(20,184,166,0.4), 0 4px 16px rgba(20,184,166,0.2)' }}
+                    >
+                      Ver detalhes completos / Contactar dono
+                      <ChevronRight className="w-4 h-4" />
+                    </Link>
+                  </>
+                ) : null}
               </div>
             </div>
           </div>

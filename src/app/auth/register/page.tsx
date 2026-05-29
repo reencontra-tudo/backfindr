@@ -7,7 +7,7 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { toast } from 'sonner';
-import { MapPin, Eye, EyeOff, ArrowRight, Loader2, Check, Zap, Building2 } from 'lucide-react';
+import { Eye, EyeOff, ArrowRight, Loader2, Check, Zap, Building2 } from 'lucide-react';
 import { useAuthStore } from '@/hooks/useAuth';
 import Cookies from 'js-cookie';
 
@@ -137,9 +137,7 @@ function RegisterForm() {
         <div className="absolute inset-0 pointer-events-none" style={{ background: 'radial-gradient(ellipse 100% 60% at 0% 100%, rgba(20,184,166,0.08) 0%, transparent 70%)' }} />
 
         <Link href="/" className="flex items-center gap-2.5 relative z-10">
-          <div className="w-7 h-7 rounded-lg bg-teal-500 flex items-center justify-center">
-            <MapPin className="w-3.5 h-3.5 text-white" strokeWidth={2.5} />
-          </div>
+          <img src="/icons/logo-backfindr.png" alt="Backfindr" width={28} height={28} style={{ borderRadius: 8 }} />
           <span className="text-white font-semibold text-[15px]">Backfindr</span>
         </Link>
 
@@ -172,9 +170,7 @@ function RegisterForm() {
 
           {/* Mobile logo */}
           <Link href="/" className="flex items-center gap-2 mb-8 lg:hidden">
-            <div className="w-7 h-7 rounded-lg bg-teal-500 flex items-center justify-center">
-              <MapPin className="w-3.5 h-3.5 text-white" strokeWidth={2.5} />
-            </div>
+            <img src="/icons/logo-backfindr.png" alt="Backfindr" width={28} height={28} style={{ borderRadius: 8 }} />
             <span className="text-white font-semibold text-[15px]">Backfindr</span>
           </Link>
 

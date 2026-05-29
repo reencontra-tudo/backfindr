@@ -336,6 +336,17 @@ function BillingContent() {
         )}
       </div>
 
+      {/* Aviso sobre Pix */}
+      <div className="bg-blue-500/10 border border-blue-500/20 rounded-2xl p-4 mb-5 flex items-start gap-3">
+        <Clock className="w-5 h-5 text-blue-400 flex-shrink-0 mt-0.5" />
+        <div>
+          <p className="text-blue-300 text-sm font-medium">Pagamento via Pix</p>
+          <p className="text-blue-300/60 text-xs">
+            A confirmação do Pix costuma levar de 1 a 5 minutos. Se você já pagou e o plano ainda não mudou, não se preocupe, o sistema atualizará automaticamente em breve.
+          </p>
+        </div>
+      </div>
+
       {/* Upgrade (apenas para free ou cancelado) */}
       {(!isPaid || billing?.is_cancelled) && (
         <div className="border border-teal-500/20 bg-teal-500/[0.03] rounded-2xl p-6 mb-5">

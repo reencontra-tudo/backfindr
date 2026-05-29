@@ -15,6 +15,7 @@ import { objectsApi, parseApiError } from '@/lib/api';
 import { compressImages } from '@/lib/compressImage';
 import { ObjectCategory, ObjectStatus } from '@/types';
 import { LocationPicker } from '@/components/ui/LocationPicker';
+import { DynamicCategoryFields } from '@/components/ui/DynamicCategoryFields';
 
 // ─── Schema ──────────────────────────────────────────────────────────────────
 const schema = z.object({
@@ -104,6 +105,23 @@ function NewObjectForm() {
     if (prefillLocation) {
       setValue('address', prefillLocation);
       setLocationVal(prev => ({ ...prev, address: prefillLocation }));
+      // Geocodificar automaticamente o endereço pré-preenchido
+      const mapboxToken = process.env.NEXT_PUBLIC_MAPBOX_TOKEN;
+      if (mapboxToken && prefillLocation.length >= 3) {
+        fetch(`https://api.mapbox.com/geocoding/v5/mapbox.places/${encodeURIComponent(prefillLocation)}.json?access_token=${mapboxToken}&language=pt&limit=1&country=br`)
+          .then(r => r.json())
+          .then(data => {
+            const coords = data.features?.[0]?.center;
+            const placeName = data.features?.[0]?.place_name ?? prefillLocation;
+            if (coords && coords.length === 2) {
+              setValue('lng', coords[0]);
+              setValue('lat', coords[1]);
+              setValue('address', placeName);
+              setLocationVal({ address: placeName, lat: coords[1], lng: coords[0] });
+            }
+          })
+          .catch(() => { /* silencioso */ });
+      }
     }
     if (prefillBreed)    setValue('pet_breed', prefillBreed);
     if (prefillColor)    setValue('pet_color', prefillColor);
@@ -258,9 +276,12 @@ function NewObjectForm() {
               }`}
             />
             <span
-              className={`text-xs ${i === step ? 'text-brand-400' : i < step ? 'text-slate-400' : 'text-slate-600'}`}
+              className={`text-xs flex items-center gap-1 ${
+                i === step ? 'text-brand-400 font-semibold' : i < step ? 'text-slate-400' : 'text-slate-600'
+              }`}
             >
               {s}
+              {i === 3 && i === step && <span className="text-brand-400 animate-pulse">📍</span>}
             </span>
           </div>
         ))}
@@ -378,7 +399,19 @@ function NewObjectForm() {
               )}
             </div>
 
-            {/* Pet fields */}
+            {/* Dynamic Category Fields */}
+            {category && !['other', 'bag'].includes(category) && (
+              <div className="pt-2 border-t border-surface-border">
+                <DynamicCategoryFields
+                  category={category}
+                  values={watch()}
+                  onChange={(fieldName, value) => setValue(fieldName as any, value)}
+                  errors={errors as any}
+                />
+              </div>
+            )}
+
+            {/* Legacy Pet fields (kept for backward compatibility) */}
             {isPet && (
               <div className="space-y-4 pt-2 border-t border-surface-border">
                 <p className="text-brand-400 text-sm font-medium flex items-center gap-2">
@@ -555,13 +588,19 @@ function NewObjectForm() {
         {/* Step 3 — Location */}
         {step === 3 && (
           <div className="space-y-5">
-            <h2 className="font-display font-semibold text-white text-lg flex items-center gap-2">
-              <MapPin className="w-5 h-5 text-brand-400" />
-              Onde ocorreu?
-            </h2>
-            <p className="text-slate-400 text-sm">
-              Busque o endereço ou clique no mapa para marcar o local — isso ajuda o algoritmo de matching a encontrar objetos na mesma região.
-            </p>
+            <div className="bg-brand-500/10 border border-brand-500/30 rounded-xl p-4 mb-2">
+              <h2 className="font-display font-semibold text-white text-lg flex items-center gap-2 mb-2">
+                <MapPin className="w-5 h-5 text-brand-400" />
+                📍 Onde ocorreu?
+              </h2>
+              <p className="text-slate-300 text-sm leading-relaxed">
+                Defina a localização do objeto para que nosso algoritmo de matching encontre pessoas na mesma região que possam ajudar. Quanto mais preciso, melhor!
+              </p>
+            </div>
+            <div className="bg-blue-500/5 border border-blue-500/20 rounded-xl p-3 flex gap-2 text-xs text-blue-300">
+              <span className="flex-shrink-0">💡</span>
+              <span>Dica: Use a busca por bairro, rua ou referência (ex: "Metrô Paulista"). Você também pode clicar no mapa para marcar o ponto exato.</span>
+            </div>
             <LocationPicker
               value={locationVal}
               onChange={(val) => {

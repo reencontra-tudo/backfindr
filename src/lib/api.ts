@@ -58,7 +58,7 @@ api.interceptors.response.use(
 );
 
 export const setTokens = (t: AuthTokens) => {
-  Cookies.set('access_token', t.access_token, { expires: 1, secure: process.env.NODE_ENV === 'production', sameSite: 'lax' });
+  Cookies.set('access_token', t.access_token, { expires: 30, secure: process.env.NODE_ENV === 'production', sameSite: 'lax' });
   Cookies.set('refresh_token', t.refresh_token, { expires: 30, secure: process.env.NODE_ENV === 'production', sameSite: 'lax' });
 };
 export const clearTokens = () => { Cookies.remove('access_token'); Cookies.remove('refresh_token'); };
@@ -98,6 +98,7 @@ export const objectsApi = {
   scan: (code: string) => api.get(`/objects/scan/${code}`),
   notify: (code: string) => api.post(`/objects/scan/${code}/notify`),
   listPublic: (params?: object) => api.get('/objects/public', { params }),
+  getPosterUrl: (id: string, format: 'square' | 'vertical' | 'a4' = 'vertical') => `${api.defaults.baseURL}/objects/${id}/poster?format=${format}`,
 };
 
 export const matchesApi = {

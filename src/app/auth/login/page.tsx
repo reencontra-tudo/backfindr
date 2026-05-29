@@ -7,7 +7,7 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { toast } from 'sonner';
-import { MapPin, Eye, EyeOff, ArrowRight, Loader2, Mail } from 'lucide-react';
+import { Eye, EyeOff, ArrowRight, Loader2, Mail } from 'lucide-react';
 import { useAuthStore } from '@/hooks/useAuth';
 import Cookies from 'js-cookie';
 import { getPostLoginRedirect } from '@/lib/redirectByRole';
@@ -114,9 +114,7 @@ function LoginForm() {
 
       <div className="w-full max-w-sm relative z-10">
         <Link href="/" className="flex items-center gap-2 mb-10">
-          <div className="w-7 h-7 rounded-lg bg-teal-500 flex items-center justify-center">
-            <MapPin className="w-3.5 h-3.5 text-white" strokeWidth={2.5} />
-          </div>
+          <img src="/icons/logo-backfindr.png" alt="Backfindr" width={28} height={28} style={{ borderRadius: 8 }} />
           <span className="text-white font-semibold text-[15px]">Backfindr</span>
         </Link>
 

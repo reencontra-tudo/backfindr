@@ -52,20 +52,174 @@ const FLOWS: Record<string, { text: string; buttons?: { label: string; action: s
       { label: '📦 Outro objeto', action: 'lost_other' },
     ],
   },
+
+  // ── Pet ──────────────────────────────────────────────────────────────────
   lost_pet: {
-    text: 'Sinto muito 😔\nJá estamos ajudando casos assim. Registra agora — é gratuito 👇\n\n' + APP_URL + '/pet\n\nQuanto antes publicar, maiores as chances 🙏',
+    text: 'Sinto muito 😔 Vamos tentar te ajudar agora.\n\nSeu pet sumiu há quanto tempo?',
+    buttons: [
+      { label: '⏰ Menos de 24h', action: 'lost_pet_urgent' },
+      { label: '📅 1 a 3 dias', action: 'lost_pet_days' },
+      { label: '🗓️ Mais de 3 dias', action: 'lost_pet_late' },
+    ],
   },
+  lost_pet_urgent: {
+    text: 'Nas primeiras horas as chances são muito maiores 🙏\n\nFaça agora:\n• Avise vizinhos, porteiros e síndico\n• Poste nos grupos de WhatsApp do bairro\n• Registre aqui para aparecer para quem achar 👇',
+    buttons: [
+      { label: '📋 Registrar meu pet', action: 'cta_pet' },
+      { label: '💡 Ver mais dicas de busca', action: 'tips_pet' },
+    ],
+  },
+  lost_pet_days: {
+    text: 'Ainda dá tempo — pets voltam mesmo depois de vários dias 💪\n\nFaça agora:\n• Expanda a busca para ruas e bairros vizinhos\n• Ligue para clínicas vet e CCZs da região\n• Registre aqui para aumentar sua visibilidade 👇',
+    buttons: [
+      { label: '📋 Registrar meu pet', action: 'cta_pet' },
+      { label: '💡 Ver mais dicas de busca', action: 'tips_pet' },
+    ],
+  },
+  lost_pet_late: {
+    text: 'Não desista — há casos de reencontro semanas depois 🤍\n\nFaça agora:\n• Mantenha o anúncio atualizado com nova foto\n• Avise pet shops e adotantes locais\n• Registre aqui para continuar aparecendo nos resultados 👇',
+    buttons: [
+      { label: '📋 Registrar meu pet', action: 'cta_pet' },
+      { label: '💡 Ver mais dicas de busca', action: 'tips_pet' },
+    ],
+  },
+  tips_pet: {
+    text: 'Dicas extras para encontrar seu pet:\n\n• Volte ao local do sumiço ao entardecer — pets tendem a se mover menos com barulho\n• Deixe uma roupa sua ou a cama dele perto de casa, o cheiro atrai\n• Contate abrigos e ONGs de resgate da cidade\n• Registre no Backfindr para ser alertado se alguém achar 🔔',
+    buttons: [
+      { label: '📋 Registrar meu pet', action: 'cta_pet' },
+    ],
+  },
+
+  // ── Celular ───────────────────────────────────────────────────────────────
   lost_phone: {
-    text: 'Sinto muito 😔\nJá estamos conectando casos assim. Registra gratuitamente aqui 👇\n\n' + APP_URL + '/perdi\n\nLeva 30s e aumenta as chances.',
+    text: 'Que situação difícil 😔 Vamos ver como posso ajudar.\n\nO que aconteceu com o celular?',
+    buttons: [
+      { label: '📍 Perdi em algum lugar', action: 'lost_phone_lost' },
+      { label: '🚨 Fui roubado / furtado', action: 'lost_phone_stolen' },
+    ],
   },
+  lost_phone_lost: {
+    text: 'Pode ainda estar por perto 🤞\n\nFaça agora:\n• Use Encontrar iPhone (Apple) ou Encontrar Meu Dispositivo (Google)\n• Ligue para o local onde esteve por último\n• Registre aqui para ser avisado se alguém entregar 👇',
+    buttons: [
+      { label: '📋 Registrar meu celular', action: 'cta_phone' },
+      { label: '💡 Ver mais dicas', action: 'tips_phone' },
+    ],
+  },
+  lost_phone_stolen: {
+    text: 'Lamento muito. Siga esses passos agora 🔒\n\n• Bloqueie o aparelho remotamente (Apple/Google)\n• Ligue para sua operadora e suspenda a linha\n• Registre um Boletim de Ocorrência online\n• Registre aqui para monitorar se o aparelho aparecer 👇',
+    buttons: [
+      { label: '📋 Registrar meu celular', action: 'cta_phone' },
+      { label: '💡 Ver mais dicas', action: 'tips_phone' },
+    ],
+  },
+  tips_phone: {
+    text: 'Dicas extras para celular perdido ou roubado:\n\n• Anote o IMEI (caixa do aparelho ou nota fiscal) — essencial para o BO\n• Troque senhas de e-mail e banco pelo computador\n• Avise seus contatos para ignorar mensagens suspeitas vindas do seu número\n• Registre no Backfindr para monitoramento contínuo 🔔',
+    buttons: [
+      { label: '📋 Registrar meu celular', action: 'cta_phone' },
+    ],
+  },
+
+  // ── Carro / Moto ──────────────────────────────────────────────────────────
   lost_car: {
-    text: 'Sinto muito 😔\nRegistra agora — é gratuito e a rede já começa a ajudar 👇\n\n' + APP_URL + '/perdi\n\nQuanto antes, mais rápido.',
+    text: 'Que situação estressante 😔 Vamos entender o que aconteceu.\n\nQual é a situação?',
+    buttons: [
+      { label: '🅿️ Estacionei e sumiu', action: 'lost_car_missing' },
+      { label: '🚨 Fui roubado / furtado', action: 'lost_car_stolen' },
+    ],
   },
+  lost_car_missing: {
+    text: 'Antes de qualquer coisa, verifique se foi rebocado 🔍\n\nFaça agora:\n• Ligue para a CET / DETRAN da sua cidade (reboque)\n• Confira se há placa de “Zona Azul” ou restrição no local\n• Registre aqui caso não tenha sido reboque 👇',
+    buttons: [
+      { label: '📋 Registrar meu veículo', action: 'cta_car' },
+      { label: '💡 Ver mais dicas', action: 'tips_car' },
+    ],
+  },
+  lost_car_stolen: {
+    text: 'Lamento muito. Aja rápido 🚨\n\n• Registre o BO imediatamente (delegacia ou online)\n• Avise a seguradora — a maioria exige BO em até 24h\n• Bloqueie o rastreador do veículo, se tiver\n• Registre aqui para monitoramento adicional 👇',
+    buttons: [
+      { label: '📋 Registrar meu veículo', action: 'cta_car' },
+      { label: '💡 Ver mais dicas', action: 'tips_car' },
+    ],
+  },
+  tips_car: {
+    text: 'Dicas extras para veículo sumido ou roubado:\n\n• Salve o número da placa e do chassis (documento do carro)\n• Verifique câmeras do local com o estabelecimento mais próximo\n• O BO pode ser feito em delegacia.sp.gov.br ou equivalente do seu estado\n• Registre no Backfindr para ser alertado se o veículo for localizado 🔔',
+    buttons: [
+      { label: '📋 Registrar meu veículo', action: 'cta_car' },
+    ],
+  },
+
+  // ── Documentos ────────────────────────────────────────────────────────────
   lost_docs: {
-    text: 'Sinto muito 😔\nDocumentos encontrados aparecem aqui com frequência. Registra gratuitamente 👇\n\n' + APP_URL + '/perdi\n\nLeva menos de 1 minuto.',
+    text: 'Entendo, é uma situação chata 😔 Qual documento você perdeu?',
+    buttons: [
+      { label: '🪪 RG ou CPF', action: 'lost_docs_id' },
+      { label: '🚗 CNH', action: 'lost_docs_license' },
+      { label: '✈️ Passaporte', action: 'lost_docs_passport' },
+      { label: '📄 Outro documento', action: 'lost_docs_other' },
+    ],
   },
+  lost_docs_id: {
+    text: 'A prioridade é bloquear o documento antes de alguém usá-lo 🔒\n\nFaça agora:\n• Registre BO online para proteger seu nome\n• Solicite 2ª via do RG no Poupatempo (ou equivalente do seu estado)\n• O CPF é reemitido gratuitamente na Receita Federal\n• Registre aqui caso alguém encontre e queira devolver 👇',
+    buttons: [
+      { label: '📋 Registrar meu documento', action: 'cta_docs' },
+      { label: '💡 Ver mais dicas', action: 'tips_docs' },
+    ],
+  },
+  lost_docs_license: {
+    text: 'CNH perdida exige atenção para evitar multas indevidas 🚗\n\nFaça agora:\n• Registre BO para proteger seu histórico de habilitação\n• Solicite 2ª via no DETRAN do seu estado (prazo médio: 5–10 dias)\n• Enquanto isso, evite dirigir sem o documento físico\n• Registre aqui caso alguém encontre 👇',
+    buttons: [
+      { label: '📋 Registrar meu documento', action: 'cta_docs' },
+      { label: '💡 Ver mais dicas', action: 'tips_docs' },
+    ],
+  },
+  lost_docs_passport: {
+    text: 'Passaporte perdido requer ação rápida, especialmente se tiver viagem próxima ✈️\n\nFaça agora:\n• Registre BO imediatamente\n• Comunique a Polícia Federal (obrigatório para passaporte)\n• Solicite novo passaporte em passaporte.sesp.gov.br\n• Se tiver viagem em menos de 15 dias, peça serviço de urgência\n• Registre aqui caso alguém encontre 👇',
+    buttons: [
+      { label: '📋 Registrar meu documento', action: 'cta_docs' },
+      { label: '💡 Ver mais dicas', action: 'tips_docs' },
+    ],
+  },
+  lost_docs_other: {
+    text: 'Vamos garantir que você está protegido 🔒\n\nFaça agora:\n• Registre BO para prevenir uso indevido\n• Contate o órgão emissor para solicitar 2ª via\n• Registre aqui caso alguém encontre e queira devolver 👇',
+    buttons: [
+      { label: '📋 Registrar meu documento', action: 'cta_docs' },
+      { label: '💡 Ver mais dicas', action: 'tips_docs' },
+    ],
+  },
+  tips_docs: {
+    text: 'Dicas gerais para documento perdido:\n\n• Faça o BO mesmo que pareça desnecessário — protege de fraudes no seu nome\n• Verifique seu CPF no Serasa ou Boa Vista periodicamente após a perda\n• Cartões de banco devem ser bloqueados imediatamente pelo app ou 0800\n• Registre no Backfindr para ser avisado se alguém entregar 🔔',
+    buttons: [
+      { label: '📋 Registrar meu documento', action: 'cta_docs' },
+    ],
+  },
+
+  // ── Outro objeto ──────────────────────────────────────────────────────────
   lost_other: {
-    text: 'Sinto muito 😔\nJá estamos ajudando casos assim. Registra agora — é gratuito 👇\n\n' + APP_URL + '/perdi\n\nLeva menos de 1 minuto.',
+    text: 'Que chato, sinto muito 😔 Me conta um pouco mais.\n\nQue tipo de objeto é?',
+    buttons: [
+      { label: '💎 Objeto de valor', action: 'lost_other_valuable' },
+      { label: '🎒 Uso cotidiano', action: 'lost_other_daily' },
+    ],
+  },
+  lost_other_valuable: {
+    text: 'Para objetos de valor, agir rápido faz diferença 🔍\n\nFaça agora:\n• Registre BO — especialmente se foi roubado ou há suspeita\n• Avise o local onde esteve por último com a descrição detalhada\n• Verifique OLX e Enjoei — objetos roubados costumam aparecer rápido\n• Registre aqui para ser avisado se alguém encontrar 👇',
+    buttons: [
+      { label: '📋 Registrar meu objeto', action: 'cta_other' },
+      { label: '💡 Ver mais dicas', action: 'tips_other' },
+    ],
+  },
+  lost_other_daily: {
+    text: 'Mesmo sem grande valor financeiro, vale tentar recuperar 🤞\n\nFaça agora:\n• Volte ao último local onde lembra ter o objeto\n• Avise o estabelecimento ou transporte público (Metrô/SPTrans têm achados e perdidos)\n• Registre aqui — quem acha quer devolver mas não sabe como 👇',
+    buttons: [
+      { label: '📋 Registrar meu objeto', action: 'cta_other' },
+      { label: '💡 Ver mais dicas', action: 'tips_other' },
+    ],
+  },
+  tips_other: {
+    text: 'Dicas para recuperar seu objeto:\n\n• Descreva o objeto com o máximo de detalhes: cor, marca, defeitos, conteúdo\n• Metrô e ônibus de SP têm achados e perdidos — ligue ou vá pessoalmente\n• Shoppings e estabelecimentos guardam objetos por até 30 dias\n• Registre no Backfindr para monitoramento contínuo 🔔',
+    buttons: [
+      { label: '📋 Registrar meu objeto', action: 'cta_other' },
+    ],
   },
 
   // ── Roubado ──
@@ -117,9 +271,9 @@ const FLOWS: Record<string, { text: string; buttons?: { label: string; action: s
   nav_home: { text: 'Indo para o início 👇\n\n' + APP_URL },
   nav_map: { text: 'Mapa ao vivo 👇\n\n' + APP_URL + '/map' },
   nav_dashboard: { text: 'Seus objetos 👇\n\n' + APP_URL + '/dashboard' },
-  nav_new: { text: 'Registrar objeto 👇\n\n' + APP_URL + '/dashboard/new' },
+  nav_new: { text: 'Registrar objeto 👇\n\n' + APP_URL + '/dashboard/objects/new' },
   nav_pets: { text: 'Área de pets 👇\n\n' + APP_URL + '/pet' },
-  nav_notifications: { text: 'Suas notificações 👇\n\n' + APP_URL + '/dashboard?tab=notifications' },
+  nav_notifications: { text: 'Suas notificações 👇\n\n' + APP_URL + '/dashboard/notifications' },
 
   // ── Buscar achados ──
   browse_found: {
@@ -159,6 +313,73 @@ const FLOWS: Record<string, { text: string; buttons?: { label: string; action: s
     ],
   },
 
+  // ── Tips de cadastro ──
+  tips_description: {
+    text: 'Para aumentar muito a chance de match, inclua:\n\n• Cor exata (ex: "azul marinho", não só "azul")\n• Marca e modelo se souber\n• Características únicas (arranhado, adesivo, gravação)\n• Quando e onde perdeu\n• Foto, se tiver\n\nItems com boa descrição têm **3x mais matches** 📈',
+  },
+  tips_location: {
+    text: 'Se não souber o local exato, use o ponto mais próximo que você passou — bairro, rua principal ou estação de metrô.\n\nO sistema usa um raio de busca, então um local aproximado já ajuda bastante 📍',
+  },
+  tips_photo: {
+    text: 'Foto não é obrigatória, mas ajuda muito 📸\n\nSe tiver uma foto do item (mesmo que antiga), vale incluir. O sistema usa a imagem como referência adicional no matching.',
+  },
+  tips_pet_describe: {
+    text: 'Para pets, quanto mais detalhes melhor 🐾\n\nInclua:\n• Espécie e raça\n• Cor e marcações específicas (mancha, orelha diferente)\n• Nome que responde\n• Coleira ou microchip\n• Foto mais recente\n• Bairro onde sumiu',
+  },
+
+  // ── Help de funcionalidades ──
+  qr_help: {
+    text: 'O QR Code funciona assim:\n\n1. Você cadastra o objeto\n2. O sistema gera um QR único e permanente\n3. Você imprime ou usa um adesivo e cola no item\n4. Se alguém encontrar e escanear com qualquer câmera, **você recebe notificação imediata**\n\nSeu número nunca é exposto — contato via chat protegido 🔒\n\nPara gerar o seu: Dashboard → objeto → "Imprimir QR"',
+  },
+  match_help: {
+    text: 'Para confirmar um match:\n\n1. Clique no match pendente\n2. Veja as informações do objeto do outro lado\n3. Se parecer o seu, clique em "Confirmar"\n4. O outro usuário também precisa confirmar\n5. Depois da confirmação dos dois lados, o contato direto é liberado 🤝\n\nDúvida? 👇',
+    buttons: [
+      { label: '🔍 Ver meus matches', action: 'nav_matches' },
+    ],
+  },
+  match_why: {
+    text: 'O sistema compara automaticamente:\n\n• Categoria do objeto\n• Palavras-chave na descrição (com sinônimos em PT-BR)\n• Cor e marca\n• Distância geográfica\n• Data aproximada\n\nQuando a compatibilidade é alta, os dois lados são notificados. Você confirma se faz sentido antes de qualquer contato ser liberado.',
+  },
+  notif_help: {
+    text: 'Tipos de notificação:\n\n🔴 **QR escaneado** — alguém escaneou o QR do seu objeto\n🟡 **Novo match** — IA encontrou um possível par\n🟢 **Match confirmado** — os dois lados confirmaram\n📧 **Reativação** — objeto sem match por 24h, com dicas\n\nTodas ficam em: Dashboard → Notificações',
+  },
+  privacy_help: {
+    text: 'Seu contato fica 100% protegido 🔒\n\nO número de telefone nunca é exibido publicamente. A página pública do objeto mostra apenas informações básicas do item.\n\nContato só acontece via chat interno após confirmação dos dois lados — ou via WhatsApp com número protegido.',
+  },
+  map_help: {
+    text: 'No mapa ao vivo você vê:\n\n🔴 Pin vermelho = objeto perdido\n🟢 Pin verde = objeto achado\n🟡 Pin amarelo = objeto roubado\n\nClique em qualquer pin para ver os detalhes. Ative sua localização para ver ocorrências próximas de você.\n\nFunciona sem login 👍',
+  },
+  cancel_help: {
+    text: 'Sim, pode cancelar a qualquer momento pelo painel em:\n\nhttps://backfindr.com/dashboard/billing\n\nSem fidelidade, sem multa. O plano continua ativo até o fim do período pago.',
+  },
+  contact_help: {
+    text: 'Para contatar o dono:\n\n1. Clique em "Avisar dono" na página do objeto\n2. Deixe uma mensagem — o dono recebe uma notificação imediata\n3. Ele pode responder via chat interno\n\nSeu número não é exposto em nenhum momento 🔒',
+  },
+
+  // ── Planos ──
+  plan_free: {
+    text: 'O plano Grátis resolve pra maioria das pessoas:\n\n✅ Até 3 objetos cadastrados\n✅ QR Code permanente para cada objeto\n✅ Busca na rede\n✅ Notificações de match\n\nSe precisar de mais de 3 objetos ou quiser matching automático com IA rodando 24h, aí vale ver o Pro.\n\nVer planos 👇\n\nhttps://backfindr.com/pricing',
+  },
+  plan_pro: {
+    text: 'O Pro adiciona:\n\n🚀 Até 50 objetos cadastrados\n🤖 Matching automático com IA (24h por dia)\n🔔 Notificações push + e-mail em tempo real\n🎨 QR Code personalizado\n📧 Suporte por e-mail\n\nR$ 29/mês — sem fidelidade.\n\nhttps://backfindr.com/pricing',
+  },
+  plan_business: {
+    text: 'Para empresas (hotéis, escolas, condomínios):\n\n🏢 Até 500 objetos\n⚡ Matching prioritário\n📲 Push + e-mail + SMS\n👥 Até 5 usuários\n🔗 API de integração\n\nR$ 149/mês. Para falar com a equipe:\nbusiness@backfindr.com',
+  },
+
+  // ── Roubado ──
+  stolen_bo: {
+    text: 'Além de registrar no Backfindr, recomendo:\n\n1. **B.O. eletrônico** — delegacia.sp.gov.br (gratuito e rápido)\n2. Se for celular: bloqueie pelo operadora e registre o IMEI no B.O.\n3. Avise amigos e grupos do bairro com foto e descrição\n4. Monitore marketplaces (OLX, Facebook Marketplace) — itens roubados aparecem\n\nRegistra no Backfindr também — a rede pode identificar o item 👇\n\nhttps://backfindr.com/roubado',
+  },
+
+  // ── Matches ──
+  nav_matches: {
+    text: 'Seus matches 👇\n\nhttps://backfindr.com/dashboard/matches',
+  },
+  improve_listing: {
+    text: 'Para melhorar um cadastro já existente:\n\n1. Acesse o objeto no Dashboard\n2. Clique em "Editar"\n3. Adicione: cor exata, marca, características únicas, foto e localização precisa\n\nCada detalhe extra aumenta a chance de match. Itens com foto têm **3x mais** resultado 📈',
+  },
+
   followup: {
     text: 'Posso te ajudar com mais alguma coisa? 😊',
     buttons: [
@@ -175,6 +396,163 @@ function getGreeting(): string {
   if (hour >= 5 && hour < 12) return 'Bom dia! 🌅';
   if (hour >= 12 && hour < 18) return 'Boa tarde! ☀️';
   return 'Boa noite! 🌙';
+}
+
+// ─── Abertura contextual por página ──────────────────────────────────────────
+// Em vez de sempre abrir com "Você perdeu ou encontrou algo?",
+// o bot abre com mensagem relevante para o que o usuário está fazendo.
+
+interface ContextualOpening {
+  text: string;
+  buttons?: { label: string; action: string }[];
+}
+
+function getContextualOpening(pathname: string): ContextualOpening {
+  if (pathname === '/dashboard') {
+    return {
+      text: 'Oi 👋 Posso te ajudar com alguma coisa no dashboard?',
+      buttons: [
+        { label: '➕ Registrar objeto', action: 'nav_new' },
+        { label: '🔍 Ver matches', action: 'nav_matches' },
+        { label: '🔔 Notificações', action: 'nav_notifications' },
+        { label: '❓ Como funciona?', action: 'how' },
+      ],
+    };
+  }
+  if (pathname === '/dashboard/objects') {
+    return {
+      text: 'Quer registrar um novo objeto ou tem dúvida sobre algum cadastrado?',
+      buttons: [
+        { label: '➕ Registrar novo', action: 'nav_new' },
+        { label: '❓ Como funciona o QR?', action: 'qr_help' },
+        { label: '💡 Como melhorar meu cadastro?', action: 'improve_listing' },
+      ],
+    };
+  }
+  if (pathname === '/dashboard/objects/new' || (pathname.startsWith('/dashboard/objects/') && pathname.endsWith('/edit'))) {
+    return {
+      text: 'Quer ajuda para preencher o cadastro? Quanto mais detalhes, maior a chance de match 💡',
+      buttons: [
+        { label: '📝 Dicas de descrição', action: 'tips_description' },
+        { label: '📍 Não sei a localização exata', action: 'tips_location' },
+        { label: '📸 Precisa de foto?', action: 'tips_photo' },
+      ],
+    };
+  }
+  if (pathname === '/dashboard/matches') {
+    return {
+      text: 'Aqui ficam os objetos que o sistema identificou como possível match com o seu 🎯\n\nTem dúvida sobre como confirmar?',
+      buttons: [
+        { label: '❓ Como confirmar um match?', action: 'match_help' },
+        { label: '🤔 Por que esse objeto apareceu?', action: 'match_why' },
+      ],
+    };
+  }
+  if (pathname === '/dashboard/notifications') {
+    return {
+      text: 'Aqui aparecem todos os alertas — QR escaneado, novos matches e atualizações 🔔\n\nPosso te ajudar com alguma notificação?',
+      buttons: [
+        { label: '❓ O que significa cada tipo?', action: 'notif_help' },
+        { label: '😔 Quero registrar algo perdido', action: 'lost' },
+      ],
+    };
+  }
+  if (pathname === '/dashboard/settings' || pathname === '/dashboard/billing') {
+    return {
+      text: 'Posso te ajudar com configurações ou dúvidas sobre planos 👇',
+      buttons: [
+        { label: '💳 Quais são os planos?', action: 'pricing' },
+        { label: '❓ Posso cancelar a qualquer hora?', action: 'cancel_help' },
+      ],
+    };
+  }
+  if (pathname === '/pricing') {
+    return {
+      text: 'Comparando os planos? Me conta o que você precisa que te ajudo a escolher 👇',
+      buttons: [
+        { label: '🆓 O grátis resolve pra mim?', action: 'plan_free' },
+        { label: '🚀 Qual a diferença do Pro?', action: 'plan_pro' },
+        { label: '🏢 Tenho uma empresa', action: 'plan_business' },
+      ],
+    };
+  }
+  if (pathname === '/map') {
+    return {
+      text: 'Vendo o mapa ao vivo 🗺️\n\nViu algum objeto que pode ser o seu ou que você encontrou?',
+      buttons: [
+        { label: '😔 Pode ser o meu', action: 'lost' },
+        { label: '🙌 Encontrei algo aqui', action: 'found' },
+        { label: '❓ Como usar o mapa?', action: 'map_help' },
+      ],
+    };
+  }
+  if (pathname === '/perdi' || pathname === '/flow/lost') {
+    return {
+      text: 'Sinto muito 😔 Estou aqui pra te ajudar no cadastro.\n\nSe travar em alguma etapa, é só me chamar.',
+      buttons: [
+        { label: '📝 Dicas de descrição', action: 'tips_description' },
+        { label: '📍 Não sei o local exato', action: 'tips_location' },
+      ],
+    };
+  }
+  if (pathname === '/encontrei' || pathname === '/flow/found') {
+    return {
+      text: 'Que atitude incrível tentar devolver 🙏\n\nPosso ajudar com alguma dúvida no cadastro?',
+      buttons: [
+        { label: '🔒 Meu contato fica exposto?', action: 'privacy_help' },
+        { label: '📝 O que devo preencher?', action: 'tips_description' },
+      ],
+    };
+  }
+  if (pathname === '/pet' || pathname === '/flow/pet') {
+    return {
+      text: 'Cada minuto conta quando um pet some 🐾\n\nEstou aqui — precisando de ajuda no cadastro?',
+      buttons: [
+        { label: '📝 O que descrever de um pet?', action: 'tips_pet' },
+        { label: '📍 Não sei o local exato', action: 'tips_location' },
+      ],
+    };
+  }
+  if (pathname === '/roubado' || pathname === '/flow/stolen') {
+    return {
+      text: 'Situação difícil 😔 Além do Backfindr, tem algumas medidas que ajudam bastante.\n\nQuer que eu explique o que fazer primeiro?',
+      buttons: [
+        { label: '🚔 Orientações sobre B.O.', action: 'stolen_bo' },
+        { label: '📱 Roubaram meu celular', action: 'lost_phone' },
+      ],
+    };
+  }
+  if (pathname.startsWith('/objeto/') || pathname.startsWith('/scan/')) {
+    return {
+      text: 'Você escaneou um QR Code do Backfindr 👋\n\nPosso te ajudar a contatar o dono com segurança.',
+      buttons: [
+        { label: '📞 Como contato o dono?', action: 'contact_help' },
+        { label: '🔒 Meu número fica protegido?', action: 'privacy_help' },
+      ],
+    };
+  }
+  if (pathname === '/faq') {
+    return {
+      text: 'Tem alguma dúvida específica? Me pergunta que respondo na hora 👇',
+      buttons: [
+        { label: '❓ Como funciona o QR?', action: 'qr_help' },
+        { label: '🤖 Como funciona o matching?', action: 'match_why' },
+        { label: '🆓 É mesmo gratuito?', action: 'pricing' },
+      ],
+    };
+  }
+  // Fallback — home e demais páginas
+  return {
+    text: 'Oi 👋\nVocê perdeu ou encontrou algo?',
+    buttons: [
+      { label: '😔 Perdi algo', action: 'lost' },
+      { label: '🚨 Foi roubado', action: 'stolen' },
+      { label: '🙌 Encontrei algo', action: 'found' },
+      { label: '🛡️ Quero me prevenir', action: 'prevent' },
+      { label: '🗺️ Navegar no site', action: 'navigate' },
+      { label: '❓ Como funciona?', action: 'how' },
+    ],
+  };
 }
 
 // ─── Detectar intenção por texto livre ───────────────────────────────────────
@@ -268,8 +646,8 @@ function shouldEscalateToGPT(text: string, history: Message[]): boolean {
   const matchedIntents = intentKeywords.filter(re => re.test(t)).length;
   if (matchedIntents >= 2) return true;
 
-  // 2. Mensagem muito longa (mais de 80 caracteres sem intenção clara)
-  if (text.length > 80) return true;
+  // 2. Mensagem muito longa (mais de 140 caracteres sem intenção clara)
+  if (text.length > 140) return true;
 
   // 3. Linguagem emocional intensa (desespero, urgência extrema)
   if (/\b(desesperado|desesperada|chorando|imploro|por favor me ajuda|urgente|preciso urgente|tô desesperado|to desesperado|não sei o que fazer|nao sei o que fazer)\b/.test(t)) return true;
@@ -333,10 +711,11 @@ export default function AssistantWidget() {
     }
   }, [open, messages, scrollToBottom]);
 
-  // Mensagem inicial ao abrir pela primeira vez
+  // Mensagem inicial ao abrir pela primeira vez — contextual por página
   useEffect(() => {
     if (open && messages.length === 0) {
-      addBotMessage(FLOWS.initial);
+      const contextual = getContextualOpening(pathname);
+      addBotMessage(contextual);
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open]);
@@ -370,7 +749,29 @@ export default function AssistantWidget() {
       navigate: '🗺️ Navegar no site',
       how: '❓ Como funciona?',
       lost_pet: '🐾 Pet',
+      lost_pet_urgent: '⏰ Menos de 24h',
+      lost_pet_days: '📅 1 a 3 dias',
+      lost_pet_late: '🗓️ Mais de 3 dias',
       lost_phone: '📱 Celular',
+      lost_phone_lost: '📍 Perdi em algum lugar',
+      lost_phone_stolen: '🚨 Fui roubado / furtado',
+      tips_phone: '💡 Ver mais dicas',
+      lost_car_missing: '🅿️ Estacionei e sumiu',
+      lost_car_stolen: '🚨 Fui roubado / furtado',
+      tips_car: '💡 Ver mais dicas',
+      lost_docs_id: '🪪 RG ou CPF',
+      lost_docs_license: '🚗 CNH',
+      lost_docs_passport: '✈️ Passaporte',
+      lost_docs_other: '📄 Outro documento',
+      tips_docs: '💡 Ver mais dicas',
+      lost_other_valuable: '💎 Objeto de valor',
+      lost_other_daily: '🎒 Uso cotidiano',
+      tips_other: '💡 Ver mais dicas',
+      cta_pet: '📋 Registrar meu pet',
+      cta_phone: '📋 Registrar meu celular',
+      cta_car: '📋 Registrar meu veículo',
+      cta_docs: '📋 Registrar meu documento',
+      cta_other: '📋 Registrar meu objeto',
       lost_car: '🚗 Carro / Moto',
       lost_docs: '📄 Documentos',
       lost_other: '📦 Outro objeto',
@@ -380,6 +781,25 @@ export default function AssistantWidget() {
       nav_new: '➕ Registrar objeto',
       nav_pets: '🐾 Pets',
       nav_notifications: '🔔 Notificações',
+      nav_matches: '🔍 Ver matches',
+      tips_description: '📝 Dicas de descrição',
+      tips_location: '📍 Não sei a localização',
+      tips_photo: '📸 Precisa de foto?',
+      tips_pet: '📝 O que descrever de um pet?',
+      qr_help: '❓ Como funciona o QR?',
+      match_help: '❓ Como confirmar um match?',
+      match_why: '🤔 Por que esse objeto apareceu?',
+      notif_help: '❓ O que significa cada tipo?',
+      privacy_help: '🔒 Meu contato fica exposto?',
+      map_help: '❓ Como usar o mapa?',
+      cancel_help: '❓ Posso cancelar a qualquer hora?',
+      contact_help: '📞 Como contato o dono?',
+      plan_free: '🆓 O grátis resolve pra mim?',
+      plan_pro: '🚀 Diferença do Pro?',
+      plan_business: '🏢 Tenho uma empresa',
+      stolen_bo: '🚔 Orientações sobre B.O.',
+      improve_listing: '💡 Como melhorar meu cadastro?',
+      pricing: '💳 Quais são os planos?',
     };
 
     const userMsg: Message = {
@@ -389,6 +809,13 @@ export default function AssistantWidget() {
       timestamp: new Date(),
     };
     setMessages(prev => [...prev, userMsg]);
+
+    // CTAs que abrem URL diretamente
+    if (action === 'cta_pet') { window.open(`${APP_URL}/pet`, '_blank'); return; }
+    if (action === 'cta_phone') { window.open(`${APP_URL}/registrar?tipo=celular`, '_blank'); return; }
+    if (action === 'cta_car') { window.open(`${APP_URL}/registrar?tipo=veiculo`, '_blank'); return; }
+    if (action === 'cta_docs') { window.open(`${APP_URL}/registrar?tipo=documentos`, '_blank'); return; }
+    if (action === 'cta_other') { window.open(`${APP_URL}/registrar`, '_blank'); return; }
 
     // Responder com o fluxo correspondente
     setTimeout(() => {

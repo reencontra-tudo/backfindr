@@ -109,9 +109,9 @@ const STEPS: Step[] = [
   },
   {
     id: 'enable_push',
-    label: 'Ative as notificações',
-    desc: 'Seja avisado imediatamente quando seu objeto for encontrado.',
-    cta: 'Como ativar',
+    label: 'Instale o App e Ative Alertas',
+    desc: 'Adicione à tela inicial para receber notificações em tempo real.',
+    cta: 'Instalar agora',
     check: ({ hasPush }) => hasPush,
   },
   {
@@ -139,8 +139,13 @@ export default function OnboardingChecklist({ objectsCount, objectStatuses = [],
   const [showPWAModal, setShowPWAModal] = useState(false);
 
   useEffect(() => {
-    if (typeof window !== 'undefined' && 'Notification' in window) {
-      setHasPush(Notification.permission === 'granted');
+    if (typeof window !== 'undefined') {
+      if ('Notification' in window) {
+        setHasPush(Notification.permission === 'granted');
+      }
+      // Verificar se já está rodando como PWA (instalado)
+      const isPWA = window.matchMedia('(display-mode: standalone)').matches || (window.navigator as any).standalone === true;
+      if (isPWA) setHasPush(true); // Se está instalado, consideramos como "meio caminho andado" ou concluído para o checklist
     }
     const d = localStorage.getItem('onboarding_dismissed');
     if (d) setDismissed(true);

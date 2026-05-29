@@ -10,6 +10,10 @@
   },
   "crons": [
     {
+      "path": "/api/v1/cron/lifecycle",
+      "schedule": "0 2 * * *"
+    },
+    {
       "path": "/api/v1/cron/reactivation",
       "schedule": "0 10 * * *"
     },

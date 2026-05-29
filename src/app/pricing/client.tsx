@@ -317,7 +317,7 @@ export default function PricingPage() {
         <div className="grid md:grid-cols-3 gap-6 text-center mb-14">
           {[
             { icon: <Shield className="w-5 h-5 text-teal-400" />, title: 'Cancele quando quiser', desc: 'Sem fidelidade. Cancele a qualquer momento pelo painel.' },
-            { icon: <Zap className="w-5 h-5 text-teal-400" />, title: 'Ativação imediata', desc: 'Upgrade ativo em segundos após o pagamento.' },
+            { icon: <Zap className="w-5 h-5 text-teal-400" />, title: 'Ativação rápida', desc: 'Upgrade ativo em segundos após a confirmação do pagamento.' },
             { icon: <Globe className="w-5 h-5 text-teal-400" />, title: 'Pagamento seguro', desc: 'Processado pelo Stripe ou Mercado Pago. Cartão e Pix.' },
           ].map(f => (
             <div key={f.title} className="flex flex-col items-center gap-2">
@@ -339,7 +339,7 @@ export default function PricingPage() {
               { q: 'Posso cancelar a qualquer momento?', a: 'Sim. Sem multa, sem burocracia. Ao cancelar, você continua com acesso até o fim do período pago.' },
               { q: 'O que acontece se eu atingir o limite de objetos?', a: 'Você não consegue cadastrar novos objetos até fazer upgrade ou remover objetos existentes.' },
               { q: 'O Boost é uma assinatura?', a: 'Não. O Boost é um pagamento único por período. Você escolhe quando ativar e por quanto tempo.' },
-              { q: 'Posso pagar com Pix?', a: 'Sim. Aceitamos Pix via Mercado Pago para usuários brasileiros, além de cartão de crédito/débito via Stripe.' },
+              { q: 'Posso pagar com Pix?', a: 'Sim. Aceitamos Pix via Mercado Pago. A ativação costuma levar de 1 a 5 minutos após o pagamento, dependendo do processamento bancário.' },
               { q: 'O plano Business aceita CNPJ?', a: 'Sim. O plano Business aceita tanto CPF quanto CNPJ e inclui nota fiscal mediante solicitação.' },
             ].map((item, i) => (
               <div key={i} className="border border-white/[0.08] rounded-xl p-4 bg-white/[0.02]">

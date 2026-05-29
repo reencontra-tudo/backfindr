@@ -50,6 +50,7 @@ function normalizeObject(row: Record<string, unknown>) {
     source: row.source,
     reward_amount: row.reward_amount ? parseFloat(String(row.reward_amount)) : null,
     reward_description: row.reward_description || null,
+    category_fields: row.category_fields || {},
     created_at: row.created_at,
     updated_at: row.updated_at,
   };
@@ -84,7 +85,7 @@ export async function GET(request: NextRequest) {
     const result = await query(
       `SELECT id, title, description, status, category, type, location, latitude, longitude,
               qr_code, images, color, brand, breed, is_legacy, source, user_id,
-              reward_amount, reward_description, created_at, updated_at
+              reward_amount, reward_description, category_fields, created_at, updated_at
        FROM objects
        ${whereClause}
        ORDER BY created_at DESC
@@ -163,20 +164,41 @@ export async function POST(request: NextRequest) {
     // ──────────────────────────────────────────────────────────────────────
 
     const body = await request.json();
-    const { title, description, status, type, category, location, latitude, longitude, images, reward_amount, reward_description } = body;
+    const { title, description, status, type, category, location, images, reward_amount, reward_description, ...categoryFields } = body;
+    let { latitude, longitude } = body;
 
     if (!title || (!type && !category)) {
       return successResponse({ detail: 'Title and type/category are required' }, 400);
+    }
+
+    // Geocoding fallback: se não tem lat/lng mas tem endereço, geocodificar via Mapbox
+    if ((!latitude || !longitude) && location && typeof location === 'string' && location.trim().length > 2) {
+      const mapboxToken = process.env.MAPBOX_SERVER_TOKEN || process.env.NEXT_PUBLIC_MAPBOX_TOKEN;
+      if (mapboxToken) {
+        try {
+          const geoRes = await fetch(
+            `https://api.mapbox.com/geocoding/v5/mapbox.places/${encodeURIComponent(location)}.json?access_token=${mapboxToken}&language=pt&limit=1&country=br`
+          );
+          if (geoRes.ok) {
+            const geoData = await geoRes.json();
+            const coords = geoData.features?.[0]?.center; // [lng, lat]
+            if (coords && coords.length === 2) {
+              longitude = coords[0];
+              latitude = coords[1];
+            }
+          }
+        } catch { /* geocoding falhou - salvar sem coordenadas */ }
+      }
     }
 
     const cat = category || type;
     const qrCode = `${Math.random().toString(36).substring(2, 10).toUpperCase()}`;
 
     const result = await query(
-      `INSERT INTO objects (user_id, title, description, status, category, type, location, latitude, longitude, qr_code, images, is_public, reward_amount, reward_description, created_at, updated_at)
-       VALUES ($1, $2, $3, $4, $5, $5, $6, $7, $8, $9, $10, true, $11, $12, NOW(), NOW())
-       RETURNING id, title, description, status, category, type, location, latitude, longitude, qr_code, images, reward_amount, reward_description, created_at, updated_at`,
-      [payload.sub, title, description || null, status || 'lost', cat, location || null, latitude || null, longitude || null, qrCode, JSON.stringify(images || []), reward_amount || null, reward_description || null]
+      `INSERT INTO objects (user_id, title, description, status, category, type, location, latitude, longitude, qr_code, images, is_public, reward_amount, reward_description, category_fields, created_at, updated_at)
+       VALUES ($1, $2, $3, $4, $5, $5, $6, $7, $8, $9, $10, true, $11, $12, $13, NOW(), NOW())
+       RETURNING id, title, description, status, category, type, location, latitude, longitude, qr_code, images, reward_amount, reward_description, category_fields, created_at, updated_at`,
+      [payload.sub, title, description || null, status || 'lost', cat, location || null, latitude || null, longitude || null, qrCode, JSON.stringify(images || []), reward_amount || null, reward_description || null, JSON.stringify(categoryFields)]
     );
 
     const newObject = normalizeObject(result.rows[0] as Record<string, unknown>);

@@ -228,6 +228,63 @@ export async function POST(req: NextRequest) {
       name: 'enable_payments',
       sql: `UPDATE payment_settings SET value = 'true', updated_at = NOW() WHERE key = 'payments_enabled'`,
     },
+    // ── Comunidade: tabela de posts ───────────────────────────────────────────
+    {
+      name: 'create_community_posts_table',
+      sql: `
+        CREATE TABLE IF NOT EXISTS community_posts (
+          id           UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+          slug         VARCHAR(300) NOT NULL UNIQUE,
+          title        VARCHAR(300) NOT NULL,
+          subtitle     VARCHAR(500) DEFAULT NULL,
+          body         TEXT NOT NULL,
+          category     VARCHAR(50) NOT NULL DEFAULT 'dica',
+          cover_url    TEXT DEFAULT NULL,
+          author_name  VARCHAR(100) NOT NULL DEFAULT 'Equipe Backfindr',
+          author_avatar TEXT DEFAULT NULL,
+          tags         TEXT[] DEFAULT '{}',
+          status       VARCHAR(20) NOT NULL DEFAULT 'draft',
+          featured     BOOLEAN NOT NULL DEFAULT false,
+          views        INTEGER NOT NULL DEFAULT 0,
+          likes        INTEGER NOT NULL DEFAULT 0,
+          seo_title    VARCHAR(300) DEFAULT NULL,
+          seo_desc     VARCHAR(500) DEFAULT NULL,
+          published_at TIMESTAMPTZ DEFAULT NULL,
+          created_at   TIMESTAMPTZ DEFAULT NOW(),
+          updated_at   TIMESTAMPTZ DEFAULT NOW()
+        )
+      `,
+    },
+    {
+      name: 'create_community_posts_slug_index',
+      sql: `CREATE INDEX IF NOT EXISTS idx_community_posts_slug ON community_posts(slug)`,
+    },
+    {
+      name: 'create_community_posts_status_index',
+      sql: `CREATE INDEX IF NOT EXISTS idx_community_posts_status ON community_posts(status, published_at DESC)`,
+    },
+    {
+      name: 'create_community_posts_category_index',
+      sql: `CREATE INDEX IF NOT EXISTS idx_community_posts_category ON community_posts(category)`,
+    },
+    // ── Comunidade: tabela de comentários ─────────────────────────────────────
+    {
+      name: 'create_community_comments_table',
+      sql: `
+        CREATE TABLE IF NOT EXISTS community_comments (
+          id         UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+          post_id    UUID NOT NULL REFERENCES community_posts(id) ON DELETE CASCADE,
+          name       VARCHAR(100) NOT NULL,
+          body       TEXT NOT NULL,
+          status     VARCHAR(20) NOT NULL DEFAULT 'pending',
+          created_at TIMESTAMPTZ DEFAULT NOW()
+        )
+      `,
+    },
+    {
+      name: 'create_community_comments_post_index',
+      sql: `CREATE INDEX IF NOT EXISTS idx_community_comments_post_id ON community_comments(post_id)`,
+    },
   ];
 
   const results: { name: string; status: string; error?: string }[] = [];
