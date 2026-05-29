@@ -8,7 +8,7 @@ import {
   Building2, Box, QrCode, Truck, Store, MapPin,
   CreditCard, TrendingUp, Mail, Send, Megaphone,
   FileBarChart, Server, Users2, LogOut, Menu, X,
-  ChevronRight, Bell, Activity, LayoutGrid, Palette,
+  ChevronRight, Bell, Activity, LayoutGrid, Palette, MessageSquare,
 } from 'lucide-react';
 import { useAuthStore } from '@/hooks/useAuth';
 
@@ -79,7 +79,8 @@ const NAV = [
       { href: '/admin/marketing/reativacao', icon: Mail,   label: 'Reativação',  badge: null, superOnly: false },
       { href: '/admin/social-posts',         icon: Send,   label: 'Social Auto', badge: null, superOnly: false },
       { href: '/admin/emails',               icon: Mail,   label: 'E-mails',     badge: null, superOnly: false },
-      { href: '/admin/marketing/brand',       icon: Palette, label: 'Brand Book',  badge: null, superOnly: true },
+      { href: '/admin/marketing/brand',       icon: Palette,        label: 'Brand Book',  badge: null, superOnly: true  },
+      { href: '/admin/comunidade',              icon: MessageSquare,  label: 'Comunidade',  badge: null, superOnly: true  },
     ],
   },
   {
