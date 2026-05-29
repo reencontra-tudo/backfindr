@@ -12,15 +12,15 @@ import { useAuthStore } from '@/hooks/useAuth';
 import ImpersonationBanner from '@/components/ui/ImpersonationBanner';
 
 const NAV = [
-  { href: '/dashboard',                  icon: LayoutDashboard, label: 'Visão Geral' },
-  { href: '/dashboard/objects',          icon: Package,         label: 'Meus Objetos' },
-  { href: '/dashboard/search',           icon: Search,          label: 'Buscar Achados' },
-  { href: '/dashboard/matches',          icon: QrCode,          label: 'Matches' },
-  { href: '/dashboard/notifications',    icon: Bell,            label: 'Notificações' },
-  { href: '/dashboard/encomendas',       icon: Package,         label: 'Encomendas' },
-  { href: '/dashboard/delivery',         icon: Truck,           label: 'Delivery' },
-  { href: '/dashboard/billing',          icon: CreditCard,      label: 'Plano' },
-  { href: '/dashboard/settings',         icon: Settings,        label: 'Configurações' },
+  { href: '/dashboard',                  icon: LayoutDashboard, label: 'Visão Geral',     superOnly: false },
+  { href: '/dashboard/objects',          icon: Package,         label: 'Meus Objetos',   superOnly: false },
+  { href: '/dashboard/search',           icon: Search,          label: 'Buscar Achados', superOnly: false },
+  { href: '/dashboard/matches',          icon: QrCode,          label: 'Matches',        superOnly: false },
+  { href: '/dashboard/notifications',    icon: Bell,            label: 'Notificações',   superOnly: false },
+  { href: '/dashboard/encomendas',       icon: Package,         label: 'Encomendas',     superOnly: true  }, // em implantação
+  { href: '/dashboard/delivery',         icon: Truck,           label: 'Delivery',       superOnly: true  }, // em implantação
+  { href: '/dashboard/billing',          icon: CreditCard,      label: 'Plano',          superOnly: false },
+  { href: '/dashboard/settings',         icon: Settings,        label: 'Configurações',  superOnly: false },
 ];
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
@@ -117,7 +117,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
       {/* Nav */}
       <nav className="flex-1 px-3 py-2 space-y-0.5 overflow-y-auto" data-tour-id="sidebar-nav">
-        {NAV.map(({ href, icon: Icon, label }) => {
+        {NAV.filter(item => !item.superOnly || user?.role === 'superadmin').map(({ href, icon: Icon, label }) => {
           const active = pathname === href || (href !== '/dashboard' && pathname.startsWith(href));
           const isMatches = href === '/dashboard/matches';
           const badge = isMatches && pendingMatches > 0 ? pendingMatches : null;
