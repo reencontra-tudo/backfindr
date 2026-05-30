@@ -66,8 +66,10 @@ function readingTime(text: string): number {
   return Math.max(1, Math.round(words / 200));
 }
 
-function formatDate(iso: string) {
-  return new Date(iso).toLocaleDateString('pt-BR', {
+function formatDate(iso: string | null | undefined) {
+  if (!iso) return '-';
+  const _d = new Date(iso); if (isNaN(_d.getTime())) return '-';
+  return _d.toLocaleDateString('pt-BR', {
     day: '2-digit', month: 'long', year: 'numeric',
   });
 }
