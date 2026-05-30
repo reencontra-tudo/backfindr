@@ -65,6 +65,8 @@ function readingTime(text: string): number {
   const words = text.replace(/<[^>]+>/g, '').trim().split(/\s+/).length;
   return Math.max(1, Math.round(words / 200));
 }
+
+function formatDate(iso: string) {
   return new Date(iso).toLocaleDateString('pt-BR', {
     day: '2-digit', month: 'long', year: 'numeric',
   });
