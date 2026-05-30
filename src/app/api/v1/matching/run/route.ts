@@ -8,9 +8,9 @@ import { sendPushToUser, matchPayload } from '@/lib/pushNotification';
 
 const MAX_RADIUS_KM = 50;
 
-// ─── Thresholds de score ───────────────────────────────────────────────────
+// ─── Threshold de score ────────────────────────────────────────────────────
 // >= 40  → match direto (sem IA)
-// 20–39  → validação semântica via OpenAI
+// 20–39  → envia para validação semântica via Claude
 // < 20   → descarta
 const SCORE_DIRECT_MATCH = 40;
 const SCORE_SEMANTIC_MIN = 20;
@@ -42,13 +42,14 @@ const SINONIMOS: Record<string, string[]> = {
   headphone: ['fone', 'fones', 'earphone', 'airpod', 'auricular'],
 };
 
-// ─── Normalização de texto ─────────────────────────────────────────────────
+// ─── Normalização de texto ──────────────────────────────────────────────────
 function removerAcentos(str: string): string {
   return str.normalize('NFD').replace(/[\u0300-\u036f]/g, '');
 }
 
 function normalizarPalavra(word: string): string {
   word = removerAcentos(word).toLowerCase().trim();
+  // Remove plural simples: 's' final em palavras com mais de 4 letras
   if (word.length > 4 && word.endsWith('s')) word = word.slice(0, -1);
   return word;
 }
@@ -71,7 +72,7 @@ function expandirTokens(tokens: string[]): Set<string> {
   return expanded;
 }
 
-// ─── Distância Haversine ───────────────────────────────────────────────────
+// ─── Cálculo de distância (Haversine) ──────────────────────────────────────
 function haversineKm(lat1: number, lon1: number, lat2: number, lon2: number): number {
   const R = 6371;
   const dLat = ((lat2 - lat1) * Math.PI) / 180;
@@ -85,7 +86,7 @@ function haversineKm(lat1: number, lon1: number, lat2: number, lon2: number): nu
   return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
 }
 
-// ─── Score heurístico (Camada 1) ───────────────────────────────────────────
+// ─── Score heurístico (Fix 2: sinônimos + normalização) ────────────────────
 function calculateMatchScore(
   obj: Record<string, unknown>,
   candidate: Record<string, unknown>
@@ -109,10 +110,10 @@ function calculateMatchScore(
     else if (distKm <= 25) score += 15;
     else if (distKm <= 50) score += 5;
   } else {
-    score += 15;
+    score += 15; // sem localização, benefício da dúvida
   }
 
-  // Título com sinônimos (+7 por palavra, até 20 pts)
+  // Título — com sinônimos (+7 por palavra em comum, até 20 pts)
   if (obj.title && candidate.title) {
     const w1 = expandirTokens(tokenizar(obj.title as string));
     const w2 = expandirTokens(tokenizar(candidate.title as string));
@@ -120,7 +121,7 @@ function calculateMatchScore(
     if (common > 0) score += Math.min(20, common * 7);
   }
 
-  // Descrição com sinônimos (até 10 pts)
+  // Descrição — com sinônimos (até 10 pts)
   if (obj.description && candidate.description) {
     const w1 = tokenizar(obj.description as string);
     const w2 = expandirTokens(tokenizar(candidate.description as string));
@@ -129,7 +130,7 @@ function calculateMatchScore(
     score += Math.min(10, (common / Math.max(w1.length, 1)) * 10);
   }
 
-  // Cor (+10)
+  // Cor (+10 se coincidir)
   if (obj.color && candidate.color) {
     const c1 = normalizarPalavra(obj.color as string);
     const c2 = normalizarPalavra(candidate.color as string);
@@ -139,7 +140,7 @@ function calculateMatchScore(
   return Math.min(100, Math.round(score));
 }
 
-// ─── Validação semântica via OpenAI gpt-4o-mini (Camada 2) ────────────────
+// ─── Validação semântica via Claude (camada 2) ────────────────────────────
 async function semanticMatchScore(
   obj: Record<string, unknown>,
   candidate: Record<string, unknown>
@@ -166,14 +167,11 @@ Responda APENAS com um JSON no formato:
 Onde score representa a probabilidade de serem o mesmo objeto:
 0-20: improvável | 21-50: possível | 51-80: provável | 81-100: quase certeza`;
 
-    const response = await fetch('https://api.openai.com/v1/chat/completions', {
+    const response = await fetch('https://api.anthropic.com/v1/messages', {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${process.env.OPENAI_API_KEY}`,
-      },
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        model: 'gpt-4o-mini',
+        model: 'claude-haiku-4-5-20251001', // modelo mais rápido e barato
         max_tokens: 150,
         messages: [{ role: 'user', content: prompt }],
       }),
@@ -182,13 +180,13 @@ Onde score representa a probabilidade de serem o mesmo objeto:
     if (!response.ok) return 0;
 
     const data = await response.json();
-    const text = data.choices?.[0]?.message?.content || '';
+    const text = data.content?.[0]?.text || '';
     const clean = text.replace(/```json|```/g, '').trim();
     const parsed = JSON.parse(clean);
     return typeof parsed.score === 'number' ? parsed.score : 0;
   } catch {
-    console.error('[matching] Erro na validação semântica OpenAI');
-    return 0;
+    console.error('[matching] Erro na validação semântica');
+    return 0; // falha silenciosa — não bloqueia o fluxo
   }
 }
 
@@ -206,6 +204,7 @@ export async function POST(request: NextRequest) {
     const { objectId } = body;
     if (!objectId) return successResponse({ detail: 'objectId is required' }, 400);
 
+    // Busca o objeto base
     const objectResult = await query(
       'SELECT * FROM objects WHERE id = $1 AND user_id = $2',
       [objectId, payload.sub]
@@ -274,22 +273,24 @@ export async function POST(request: NextRequest) {
       const score = calculateMatchScore(object, candidate);
 
       if (score >= SCORE_DIRECT_MATCH) {
-        // Camada 1: match direto por heurística + sinônimos
+        // Camada 1: match direto por heurística
         await processMatch(object, candidate, score, objectId, payload.sub, matches);
       } else if (score >= SCORE_SEMANTIC_MIN) {
-        // Camada 2: validação semântica via OpenAI (em paralelo)
+        // Camada 2: validação semântica via Claude (assíncrona em paralelo)
         const checkPromise = (async () => {
           const aiScore = await semanticMatchScore(object, candidate);
           if (aiScore >= 60) {
+            // Claude confirmou — usa a média dos dois scores
             const finalScore = Math.round((score + aiScore) / 2);
             await processMatch(object, candidate, finalScore, objectId, payload.sub, matches);
           }
         })();
         semanticChecks.push(checkPromise);
       }
-      // score < 20 → descarta silenciosamente
+      // score < SCORE_SEMANTIC_MIN → descarta silenciosamente
     }
 
+    // Aguarda todas as validações semânticas
     await Promise.allSettled(semanticChecks);
 
     return successResponse({
@@ -313,6 +314,7 @@ async function processMatch(
   userId: unknown,
   matches: Record<string, unknown>[]
 ) {
+  // Evita duplicata
   const existingMatch = await query(
     `SELECT id FROM matches
      WHERE (lost_object_id = $1 AND found_object_id = $2)
@@ -334,12 +336,13 @@ async function processMatch(
   const newMatch = matchResult.rows[0];
   matches.push(newMatch);
 
+  // Notificações (fire-and-forget)
   try {
     const lostObj = object.status === 'lost' ? object : candidate;
     const foundObj = object.status === 'found' ? object : candidate;
 
     const ownerResult = await query(
-      `SELECT u.name, u.email, u.id FROM users u
+      `SELECT u.name, u.email FROM users u
        JOIN objects o ON o.user_id = u.id
        WHERE o.id = $1`,
       [lostObj.id]

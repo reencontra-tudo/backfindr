@@ -1,12 +1,10 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
-import ReactMarkdown from 'react-markdown';
-import remarkGfm from 'remark-gfm';
 import {
   Plus, Edit2, Trash2, Eye, Heart, MessageSquare, Globe, FileText,
   Star, RefreshCw, Check, X, ChevronDown, ExternalLink, AlertCircle,
-  Tag, Clock, Columns, Code, SplitSquareHorizontal,
+  Tag, Clock, Sparkles, Loader2,
 } from 'lucide-react';
 
 // ─── Tipos ────────────────────────────────────────────────────────────────────
@@ -83,191 +81,154 @@ function generateSlug(title: string) {
     .replace(/-+/g, '-');
 }
 
-// ─── Atalhos Markdown (barra de ferramentas) ──────────────────────────────────
-const MD_SHORTCUTS = [
-  { label: 'H2',    prefix: '## ',        suffix: '',   title: 'Título' },
-  { label: 'H3',    prefix: '### ',       suffix: '',   title: 'Subtítulo' },
-  { label: 'B',     prefix: '**',         suffix: '**', title: 'Negrito', bold: true },
-  { label: 'I',     prefix: '_',          suffix: '_',  title: 'Itálico', italic: true },
-  { label: '—',     prefix: '> ',         suffix: '',   title: 'Citação' },
-  { label: '• ',    prefix: '- ',         suffix: '',   title: 'Lista' },
-  { label: '1.',    prefix: '1. ',        suffix: '',   title: 'Lista numerada' },
-  { label: '``,   prefix: '`',           suffix: '`',  title: 'Código inline' },
-  { label: '---',   prefix: '\n---\n',    suffix: '',   title: 'Separador' },
-];
-
-function insertMarkdown(
-  textarea: HTMLTextAreaElement,
-  prefix: string,
-  suffix: string,
-  onChange: (v: string) => void,
-) {
-  const start = textarea.selectionStart;
-  const end = textarea.selectionEnd;
-  const value = textarea.value;
-  const selected = value.substring(start, end);
-  const newValue = value.substring(0, start) + prefix + selected + suffix + value.substring(end);
-  onChange(newValue);
-  setTimeout(() => {
-    textarea.focus();
-    const newPos = start + prefix.length + selected.length + suffix.length;
-    textarea.setSelectionRange(newPos, newPos);
-  }, 0);
-}
-
-// ─── Preview Markdown (mesmo componente do PostClient) ────────────────────────
-const markdownComponents = {
-  h1: ({ children }: React.PropsWithChildren) => (
-    <h1 className="text-2xl font-black text-white mt-6 mb-3">{children}</h1>
-  ),
-  h2: ({ children }: React.PropsWithChildren) => (
-    <h2 className="text-xl font-bold text-white mt-6 mb-2 pb-1 border-b border-gray-700">{children}</h2>
-  ),
-  h3: ({ children }: React.PropsWithChildren) => (
-    <h3 className="text-lg font-bold text-white mt-4 mb-2">{children}</h3>
-  ),
-  p: ({ children }: React.PropsWithChildren) => (
-    <p className="text-gray-300 leading-relaxed mb-3 text-sm">{children}</p>
-  ),
-  a: ({ href, children }: React.PropsWithChildren<{ href?: string }>) => (
-    <a href={href} className="text-teal-400 hover:underline">{children}</a>
-  ),
-  strong: ({ children }: React.PropsWithChildren) => (
-    <strong className="font-bold text-white">{children}</strong>
-  ),
-  em: ({ children }: React.PropsWithChildren) => (
-    <em className="italic text-gray-200">{children}</em>
-  ),
-  ul: ({ children }: React.PropsWithChildren) => (
-    <ul className="list-disc list-inside space-y-1 text-gray-300 mb-3 pl-3 text-sm">{children}</ul>
-  ),
-  ol: ({ children }: React.PropsWithChildren) => (
-    <ol className="list-decimal list-inside space-y-1 text-gray-300 mb-3 pl-3 text-sm">{children}</ol>
-  ),
-  li: ({ children }: React.PropsWithChildren) => (
-    <li className="text-gray-300 marker:text-teal-400">{children}</li>
-  ),
-  blockquote: ({ children }: React.PropsWithChildren) => (
-    <blockquote className="border-l-4 border-teal-500 pl-3 my-3 text-gray-400 italic text-sm">{children}</blockquote>
-  ),
-  code: ({ inline, children }: React.PropsWithChildren<{ inline?: boolean }>) =>
-    inline ? (
-      <code className="bg-gray-800 text-teal-300 px-1 py-0.5 rounded text-xs font-mono">{children}</code>
-    ) : (
-      <pre className="bg-gray-900 border border-gray-700 rounded-lg p-3 overflow-x-auto my-3">
-        <code className="text-teal-300 text-xs font-mono">{children}</code>
-      </pre>
-    ),
-  hr: () => <hr className="border-gray-700 my-5" />,
-};
-
-// ─── Editor Markdown com Preview ─────────────────────────────────────────────
-function MarkdownEditor({
-  value,
-  onChange,
+// ─── Modal de Geração com IA ──────────────────────────────────────────────────
+function GenerateModal({
+  onGenerated,
+  onClose,
 }: {
-  value: string;
-  onChange: (v: string) => void;
+  onGenerated: (draft: PostForm) => void;
+  onClose: () => void;
 }) {
-  const [mode, setMode] = useState<'write' | 'preview' | 'split'>('write');
-  const textareaRef = { current: null as HTMLTextAreaElement | null };
+  const [category, setCategory] = useState<string>('dica');
+  const [topic, setTopic] = useState('');
+  const [useRealCases, setUseRealCases] = useState(true);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
 
-  const handleShortcut = (prefix: string, suffix: string) => {
-    if (!textareaRef.current) return;
-    insertMarkdown(textareaRef.current, prefix, suffix, onChange);
+  const handleGenerate = async () => {
+    setLoading(true);
+    setError('');
+    try {
+      const r = await fetch('/api/v1/admin/comunidade/generate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ category, topic: topic.trim() || undefined, use_real_cases: useRealCases }),
+      });
+      const data = await r.json() as { draft?: PostForm & { tags: string[] }; detail?: string };
+      if (!r.ok) {
+        setError(data.detail || 'Erro ao gerar conteúdo');
+        return;
+      }
+      if (!data.draft) {
+        setError('Resposta inválida da API');
+        return;
+      }
+      // Converter tags array para string para o formulário
+      const draft: PostForm = {
+        ...data.draft,
+        tags: Array.isArray(data.draft.tags) ? data.draft.tags.join(', ') : '',
+      };
+      onGenerated(draft);
+    } catch {
+      setError('Erro de conexão. Tente novamente.');
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
-    <div className="border border-gray-700 rounded-xl overflow-hidden bg-gray-900">
-      {/* Toolbar */}
-      <div className="flex items-center justify-between px-3 py-2 bg-gray-800/60 border-b border-gray-700">
-        {/* Atalhos de formatação */}
-        <div className="flex items-center gap-0.5 flex-wrap">
-          {MD_SHORTCUTS.map(s => (
-            <button
-              key={s.label}
-              type="button"
-              onClick={() => handleShortcut(s.prefix, s.suffix)}
-              title={s.title}
-              className={`px-2 py-1 text-xs rounded hover:bg-gray-700 text-gray-400 hover:text-white transition-colors font-mono ${
-                s.bold ? 'font-bold' : s.italic ? 'italic' : ''
-              }`}
-            >
-              {s.label}
-            </button>
-          ))}
-        </div>
-        {/* Modo de visualização */}
-        <div className="flex items-center gap-1 ml-2 shrink-0">
-          <button
-            type="button"
-            onClick={() => setMode('write')}
-            title="Só editor"
-            className={`p-1.5 rounded transition-colors ${mode === 'write' ? 'bg-teal-500/20 text-teal-400' : 'text-gray-500 hover:text-white'}`}
-          >
-            <Code size={13} />
-          </button>
-          <button
-            type="button"
-            onClick={() => setMode('split')}
-            title="Editor + preview"
-            className={`p-1.5 rounded transition-colors ${mode === 'split' ? 'bg-teal-500/20 text-teal-400' : 'text-gray-500 hover:text-white'}`}
-          >
-            <SplitSquareHorizontal size={13} />
-          </button>
-          <button
-            type="button"
-            onClick={() => setMode('preview')}
-            title="Só preview"
-            className={`p-1.5 rounded transition-colors ${mode === 'preview' ? 'bg-teal-500/20 text-teal-400' : 'text-gray-500 hover:text-white'}`}
-          >
-            <Eye size={13} />
-          </button>
-        </div>
-      </div>
-
-      {/* Corpo do editor */}
-      <div className={`flex ${mode === 'split' ? 'divide-x divide-gray-700' : ''}`} style={{ minHeight: 360 }}>
-        {/* Textarea */}
-        {(mode === 'write' || mode === 'split') && (
-          <textarea
-            ref={el => { textareaRef.current = el; }}
-            value={value}
-            onChange={e => onChange(e.target.value)}
-            placeholder={`Escreva em Markdown:\n\n## Introdução\n\nTexto do parágrafo...\n\n## Dica importante\n\n- Item da lista\n- Outro item\n\n> Citação ou destaque importante`}
-            className={`bg-transparent text-white placeholder-gray-600 text-sm font-mono px-4 py-3 resize-none focus:outline-none leading-relaxed ${
-              mode === 'split' ? 'w-1/2' : 'w-full'
-            }`}
-            style={{ minHeight: 360 }}
-            spellCheck={false}
-          />
-        )}
-
-        {/* Preview */}
-        {(mode === 'preview' || mode === 'split') && (
-          <div className={`overflow-y-auto px-5 py-4 ${mode === 'split' ? 'w-1/2' : 'w-full'}`} style={{ minHeight: 360 }}>
-            {value.trim() ? (
-              <ReactMarkdown remarkPlugins={[remarkGfm]} components={markdownComponents}>
-                {value}
-              </ReactMarkdown>
-            ) : (
-              <p className="text-gray-600 text-sm italic">O preview aparece aqui enquanto você escreve.</p>
-            )}
+    <div className="fixed inset-0 bg-black/70 z-50 flex items-center justify-center p-4">
+      <div className="bg-gray-900 rounded-2xl border border-gray-800 w-full max-w-lg">
+        <div className="flex items-center justify-between p-5 border-b border-gray-800">
+          <div className="flex items-center gap-2">
+            <Sparkles size={18} className="text-teal-400" />
+            <h3 className="font-bold text-white">Gerar post com IA</h3>
           </div>
-        )}
-      </div>
+          <button onClick={onClose} className="text-gray-500 hover:text-white transition-colors">
+            <X size={18} />
+          </button>
+        </div>
 
-      {/* Rodapé com contagem e dica */}
-      <div className="flex items-center justify-between px-3 py-1.5 bg-gray-800/40 border-t border-gray-700">
-        <span className="text-xs text-gray-600">Markdown suportado — negrito, listas, títulos, citações, código</span>
-        <span className="text-xs text-gray-600">{value.length} chars</span>
+        <div className="p-5 space-y-4">
+          <div className="bg-teal-500/10 border border-teal-500/20 rounded-lg p-3 text-sm text-teal-300">
+            O <strong>gpt-4.1-mini</strong> vai gerar um rascunho completo com título, subtítulo, corpo em Markdown e SEO.
+            Você revisa antes de publicar.
+          </div>
+
+          <div>
+            <label className="block text-xs font-semibold text-gray-400 mb-1.5 uppercase tracking-wide">Categoria *</label>
+            <div className="relative">
+              <select
+                value={category}
+                onChange={e => setCategory(e.target.value)}
+                className="w-full bg-gray-800 border border-gray-700 rounded-lg px-4 py-2.5 text-white focus:outline-none focus:border-teal-500 appearance-none"
+              >
+                {CATEGORIES.map(c => (
+                  <option key={c.key} value={c.key}>{c.label}</option>
+                ))}
+              </select>
+              <ChevronDown size={14} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 pointer-events-none" />
+            </div>
+          </div>
+
+          <div>
+            <label className="block text-xs font-semibold text-gray-400 mb-1.5 uppercase tracking-wide">
+              Tema <span className="text-gray-600 normal-case font-normal">(opcional — deixe em branco para IA escolher)</span>
+            </label>
+            <input
+              value={topic}
+              onChange={e => setTopic(e.target.value)}
+              placeholder={
+                category === 'dica' ? 'ex: carteira perdida no metrô de SP' :
+                category === 'caso' ? 'ex: celular devolvido após QR Code escaneado' :
+                category === 'guia' ? 'ex: como recuperar documentos perdidos' :
+                category === 'debate' ? 'ex: você devolveria um objeto com dinheiro dentro?' :
+                category === 'novidade' ? 'ex: novo recurso de matching por imagem' :
+                'ex: como proteger seus objetos antes de viajar'
+              }
+              className="w-full bg-gray-800 border border-gray-700 rounded-lg px-4 py-2.5 text-white placeholder-gray-500 focus:outline-none focus:border-teal-500"
+            />
+          </div>
+
+          <label className="flex items-center gap-3 cursor-pointer">
+            <div
+              onClick={() => setUseRealCases(v => !v)}
+              className={`w-10 h-6 rounded-full transition-colors flex items-center px-1 ${useRealCases ? 'bg-teal-500' : 'bg-gray-700'}`}
+            >
+              <div className={`w-4 h-4 rounded-full bg-white transition-transform ${useRealCases ? 'translate-x-4' : ''}`} />
+            </div>
+            <div>
+              <p className="text-sm font-semibold text-white">Usar casos reais da plataforma</p>
+              <p className="text-xs text-gray-500">Enriquece o conteúdo com objetos reais cadastrados</p>
+            </div>
+          </label>
+
+          {error && (
+            <div className="bg-red-500/10 border border-red-500/30 rounded-lg p-3 text-red-400 text-sm flex items-center gap-2">
+              <AlertCircle size={14} /> {error}
+            </div>
+          )}
+        </div>
+
+        <div className="flex items-center justify-between px-5 py-4 border-t border-gray-800">
+          <button onClick={onClose} className="text-sm text-gray-500 hover:text-white transition-colors">
+            Cancelar
+          </button>
+          <button
+            onClick={handleGenerate}
+            disabled={loading}
+            className="flex items-center gap-2 bg-teal-500 hover:bg-teal-400 text-white text-sm font-semibold px-5 py-2.5 rounded-lg transition-colors disabled:opacity-50"
+          >
+            {loading ? (
+              <>
+                <Loader2 size={14} className="animate-spin" />
+                Gerando...
+              </>
+            ) : (
+              <>
+                <Sparkles size={14} />
+                Gerar rascunho
+              </>
+            )}
+          </button>
+        </div>
       </div>
     </div>
   );
 }
 
 // ─── Formulário de Post ───────────────────────────────────────────────────────
-function PostFormComponent({
+function PostForm({
   initial,
   onSave,
   onCancel,
@@ -286,7 +247,7 @@ function PostFormComponent({
 
   const handleTitleChange = (v: string) => {
     set('title', v);
-    if (!(initial as PostForm & { id?: string }).id) set('slug', generateSlug(v));
+    if (!initial.id) set('slug', generateSlug(v));
   };
 
   return (
@@ -329,10 +290,16 @@ function PostFormComponent({
             </div>
             <div>
               <label className="block text-xs font-semibold text-gray-400 mb-1.5 uppercase tracking-wide">
-                Conteúdo *
-                <span className="text-gray-600 normal-case font-normal ml-1">— use Markdown para formatar</span>
+                Conteúdo * <span className="text-gray-600 normal-case font-normal">(HTML ou texto simples)</span>
               </label>
-              <MarkdownEditor value={form.body} onChange={v => set('body', v)} />
+              <textarea
+                value={form.body}
+                onChange={e => set('body', e.target.value)}
+                placeholder="Escreva o conteúdo completo do post aqui...&#10;&#10;Você pode usar HTML básico: <h2>, <p>, <strong>, <ul>, <li>, <blockquote>, <a href='...'>"
+                rows={16}
+                className="w-full bg-gray-800 border border-gray-700 rounded-lg px-4 py-3 text-white placeholder-gray-500 focus:outline-none focus:border-teal-500 font-mono text-sm resize-y"
+              />
+              <p className="text-xs text-gray-600 mt-1">{form.body.length} caracteres</p>
             </div>
             <div>
               <label className="block text-xs font-semibold text-gray-400 mb-1.5 uppercase tracking-wide">URL da Imagem de Capa</label>
@@ -590,6 +557,7 @@ export default function AdminComunidadePage() {
   const [statusFilter, setStatusFilter] = useState('');
   const [moderatingPostId, setModeratingPostId] = useState<string | null>(null);
   const [error, setError] = useState('');
+  const [showGenerateModal, setShowGenerateModal] = useState(false);
 
   const fetchPosts = useCallback(async () => {
     setLoading(true);
@@ -613,6 +581,14 @@ export default function AdminComunidadePage() {
   const handleCreate = () => {
     setEditingPost(null);
     setEditForm(EMPTY_FORM);
+    setError('');
+    setView('create');
+  };
+
+  const handleGenerateAccept = (draft: PostForm) => {
+    setShowGenerateModal(false);
+    setEditingPost(null);
+    setEditForm(draft);
     setError('');
     setView('create');
   };
@@ -705,7 +681,7 @@ export default function AdminComunidadePage() {
   if (view === 'create' || view === 'edit') {
     return (
       <div className="min-h-screen bg-gray-950 text-white p-4 md:p-8">
-        <div className="max-w-4xl mx-auto">
+        <div className="max-w-3xl mx-auto">
           <div className="flex items-center gap-3 mb-6">
             <button onClick={() => setView('list')} className="text-gray-500 hover:text-white transition-colors text-sm">
               ← Voltar
@@ -719,7 +695,7 @@ export default function AdminComunidadePage() {
               <AlertCircle size={14} /> {error}
             </div>
           )}
-          <PostFormComponent
+          <PostForm
             initial={editForm}
             onSave={handleSave}
             onCancel={() => setView('list')}
@@ -741,6 +717,13 @@ export default function AdminComunidadePage() {
         <CommentsPanel postId={moderatingPostId} onClose={() => { setModeratingPostId(null); fetchPosts(); }} />
       )}
 
+      {showGenerateModal && (
+        <GenerateModal
+          onGenerated={handleGenerateAccept}
+          onClose={() => setShowGenerateModal(false)}
+        />
+      )}
+
       <div className="max-w-6xl mx-auto">
         {/* Header */}
         <div className="flex items-start justify-between mb-8 flex-wrap gap-4">
@@ -755,6 +738,12 @@ export default function AdminComunidadePage() {
             <a href="/comunidade" target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 text-sm text-gray-400 hover:text-white border border-gray-700 px-4 py-2.5 rounded-lg transition-colors">
               <ExternalLink size={14} /> Ver página
             </a>
+            <button
+              onClick={() => setShowGenerateModal(true)}
+              className="flex items-center gap-2 bg-purple-600 hover:bg-purple-500 text-white text-sm font-semibold px-4 py-2.5 rounded-lg transition-colors"
+            >
+              <Sparkles size={16} /> Gerar com IA
+            </button>
             <button onClick={handleCreate} className="flex items-center gap-2 bg-teal-500 hover:bg-teal-400 text-white text-sm font-semibold px-4 py-2.5 rounded-lg transition-colors">
               <Plus size={16} /> Novo Post
             </button>

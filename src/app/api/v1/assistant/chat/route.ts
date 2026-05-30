@@ -613,23 +613,32 @@ function sanitizeUrls(text: string): string {
 async function getOpenAIResponse(messages: Message[], systemPrompt: string): Promise<string> {
   const apiKey = process.env.OPENAI_API_KEY;
   if (!apiKey) throw new Error('OPENAI_API_KEY não configurada');
-  const response = await fetch('https://api.openai.com/v1/chat/completions', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${apiKey}` },
-    body: JSON.stringify({
-      model: 'gpt-4.1-mini',
-      messages: [{ role: 'system', content: systemPrompt }, ...messages.slice(-10)],
-      max_tokens: 500,
-      temperature: 0.40,
-    }),
-  });
-  if (!response.ok) {
-    const err = await response.text();
-    throw new Error(`OpenAI error: ${err}`);
+
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 8000); // 8s timeout
+
+  try {
+    const response = await fetch('https://api.openai.com/v1/chat/completions', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${apiKey}` },
+      body: JSON.stringify({
+        model: 'gpt-4.1-mini',
+        messages: [{ role: 'system', content: systemPrompt }, ...messages.slice(-10)],
+        max_tokens: 500,
+        temperature: 0.40,
+      }),
+      signal: controller.signal,
+    });
+    if (!response.ok) {
+      const err = await response.text();
+      throw new Error(`OpenAI error: ${err}`);
+    }
+    const data = await response.json();
+    const raw = data.choices[0]?.message?.content ?? 'Desculpe, não consegui processar sua mensagem.';
+    return sanitizeUrls(raw);
+  } finally {
+    clearTimeout(timeout);
   }
-  const data = await response.json();
-  const raw = data.choices[0]?.message?.content ?? 'Desculpe, não consegui processar sua mensagem.';
-  return sanitizeUrls(raw);
 }
 
 // ─── Buscar dados do usuário no banco ────────────────────────────────────────
@@ -703,27 +712,33 @@ export async function POST(req: NextRequest) {
     const systemPrompt = buildSystemPrompt(objects, notifications, matches, userName, context?.page);
 
     // ── Lógica híbrida ──────────────────────────────────────────────────────
-    // Prioridade 1: usuário logado com contexto pessoal → OpenAI (resposta personalizada)
-    // Prioridade 2: intenção reconhecida pelo guided flow → resposta determinística (sem custo)
+    // Prioridade 1: intenção clara pelo guided flow + sem contexto pessoal → guided (sem custo)
+    // Prioridade 2: usuário logado com objetos/matches → OpenAI (resposta personalizada)
     // Prioridade 3: intenção ambígua (fallback) → OpenAI se disponível, guided se não
+    //
+    // REGRA: guided flow tem prioridade quando reconhece a intenção E não há dados
+    // pessoais relevantes para personalizar. Isso evita chamar OpenAI desnecessariamente.
     const guidedReply = getGuidedResponse(messages);
     const isFallback = guidedReply === GUIDED_FALLBACK;
     const hasPersonalContext = !!(objects?.length || matches?.length || notifications?.length);
+    const hasOpenAI = !!process.env.OPENAI_API_KEY;
 
     let reply: string;
-    if (process.env.OPENAI_API_KEY && (hasPersonalContext || isFallback)) {
-      // Usa OpenAI quando há contexto pessoal OU quando a intenção não foi reconhecida
+
+    if (!isFallback && !hasPersonalContext) {
+      // Intenção reconhecida e sem contexto pessoal → guided flow direto (sem custo de API)
+      reply = guidedReply;
+    } else if (hasOpenAI && (hasPersonalContext || isFallback)) {
+      // Contexto pessoal para personalizar OU intenção ambígua → OpenAI
       try {
         reply = await getOpenAIResponse(messages, systemPrompt);
       } catch (err) {
         console.error('OpenAI falhou, usando fluxo guiado:', err);
-        reply = guidedReply;
+        // Fallback gracioso: usa guided se reconheceu, fallback genérico se não
+        reply = isFallback ? GUIDED_FALLBACK : guidedReply;
       }
-    } else if (!isFallback) {
-      // Intenção reconhecida, sem contexto pessoal → guided flow (sem custo)
-      reply = guidedReply;
     } else {
-      // Fallback sem OpenAI
+      // Sem OpenAI configurada → guided flow sempre
       reply = guidedReply;
     }
 
