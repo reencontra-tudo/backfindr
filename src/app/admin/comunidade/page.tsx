@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback } from 'react';
 import {
   Plus, Edit2, Trash2, Eye, Heart, MessageSquare, Globe, FileText,
   Star, RefreshCw, Check, X, ChevronDown, ExternalLink, AlertCircle,
-  Tag, Clock, Sparkles, Loader2,
+  Tag, Clock, Sparkles, Loader2, Search, ImageIcon,
 } from 'lucide-react';
 
 // ─── Tipos ────────────────────────────────────────────────────────────────────
@@ -38,6 +38,7 @@ interface PostForm {
   body: string;
   category: string;
   cover_url: string;
+  video_url: string;
   author_name: string;
   tags: string;
   status: string;
@@ -48,7 +49,7 @@ interface PostForm {
 
 const EMPTY_FORM: PostForm = {
   slug: '', title: '', subtitle: '', body: '',
-  category: 'dica', cover_url: '', author_name: 'Equipe Backfindr',
+  category: 'dica', cover_url: '', video_url: '', author_name: 'Equipe Backfindr',
   tags: '', status: 'draft', featured: false, seo_title: '', seo_desc: '',
 };
 
@@ -79,6 +80,141 @@ function generateSlug(title: string) {
     .trim()
     .replace(/\s+/g, '-')
     .replace(/-+/g, '-');
+}
+
+// ─── Unsplash Image Picker ────────────────────────────────────────────────────
+interface UnsplashPhoto {
+  id: string;
+  urls: { small: string; regular: string };
+  alt_description: string | null;
+  user: { name: string };
+}
+
+function UnsplashPicker({
+  query,
+  onSelect,
+  onClose,
+}: {
+  query: string;
+  onSelect: (url: string) => void;
+  onClose: () => void;
+}) {
+  const [search, setSearch] = useState(query);
+  const [photos, setPhotos] = useState<UnsplashPhoto[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
+  const [searched, setSearched] = useState(false);
+
+  const handleSearch = async (q?: string) => {
+    const term = (q ?? search).trim();
+    if (!term) return;
+    setLoading(true);
+    setError('');
+    try {
+      const r = await fetch(`/api/v1/admin/unsplash?q=${encodeURIComponent(term)}`);
+      const data = await r.json() as { photos?: UnsplashPhoto[]; detail?: string };
+      if (!r.ok) {
+        setError(data.detail || 'Erro ao buscar imagens');
+        return;
+      }
+      setPhotos(data.photos ?? []);
+      setSearched(true);
+    } catch {
+      setError('Erro de conexão');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Busca automática com o query inicial
+  useEffect(() => {
+    if (query) handleSearch(query);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  return (
+    <div className="fixed inset-0 bg-black/80 z-[60] flex items-center justify-center p-4">
+      <div className="bg-gray-900 rounded-2xl border border-gray-800 w-full max-w-2xl max-h-[85vh] flex flex-col">
+        {/* Header */}
+        <div className="flex items-center justify-between p-4 border-b border-gray-800 shrink-0">
+          <div className="flex items-center gap-2">
+            <ImageIcon size={16} className="text-teal-400" />
+            <h3 className="font-bold text-white text-sm">Buscar imagem — Unsplash</h3>
+          </div>
+          <button onClick={onClose} className="text-gray-500 hover:text-white transition-colors">
+            <X size={18} />
+          </button>
+        </div>
+
+        {/* Busca */}
+        <div className="p-4 border-b border-gray-800 shrink-0">
+          <div className="flex gap-2">
+            <input
+              value={search}
+              onChange={e => setSearch(e.target.value)}
+              onKeyDown={e => e.key === 'Enter' && handleSearch()}
+              placeholder="ex: lost wallet, missing dog, keys..."
+              className="flex-1 bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-white placeholder-gray-500 text-sm focus:outline-none focus:border-teal-500"
+            />
+            <button
+              onClick={() => handleSearch()}
+              disabled={loading || !search.trim()}
+              className="flex items-center gap-1.5 bg-teal-500 hover:bg-teal-400 text-white text-sm font-semibold px-4 py-2 rounded-lg transition-colors disabled:opacity-50"
+            >
+              {loading ? <Loader2 size={14} className="animate-spin" /> : <Search size={14} />}
+              Buscar
+            </button>
+          </div>
+          <p className="text-xs text-gray-600 mt-1.5">Fotos gratuitas via Unsplash. Crédito ao fotógrafo é exibido automaticamente.</p>
+        </div>
+
+        {/* Resultados */}
+        <div className="overflow-y-auto flex-1 p-4">
+          {error && (
+            <div className="bg-red-500/10 border border-red-500/30 rounded-lg p-3 text-red-400 text-sm mb-4">
+              {error}
+            </div>
+          )}
+
+          {loading && (
+            <div className="flex items-center justify-center py-12">
+              <Loader2 size={24} className="animate-spin text-teal-400" />
+            </div>
+          )}
+
+          {!loading && searched && photos.length === 0 && (
+            <p className="text-gray-500 text-sm text-center py-8">Nenhuma foto encontrada. Tente outro termo.</p>
+          )}
+
+          {!loading && photos.length > 0 && (
+            <div className="grid grid-cols-3 gap-2">
+              {photos.map(photo => (
+                <button
+                  key={photo.id}
+                  onClick={() => { onSelect(photo.urls.regular); onClose(); }}
+                  className="group relative rounded-lg overflow-hidden aspect-video bg-gray-800 hover:ring-2 hover:ring-teal-500 transition-all"
+                  title={`Foto por ${photo.user.name}`}
+                >
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img
+                    src={photo.urls.small}
+                    alt={photo.alt_description || 'foto'}
+                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-200"
+                  />
+                  <div className="absolute inset-0 bg-black/0 group-hover:bg-black/30 transition-colors flex items-center justify-center">
+                    <Check size={20} className="text-white opacity-0 group-hover:opacity-100 transition-opacity" />
+                  </div>
+                  <p className="absolute bottom-0 left-0 right-0 bg-black/60 text-white text-[10px] px-1.5 py-0.5 truncate opacity-0 group-hover:opacity-100 transition-opacity">
+                    {photo.user.name}
+                  </p>
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
 }
 
 // ─── Modal de Geração com IA ──────────────────────────────────────────────────
@@ -241,6 +377,7 @@ function PostForm({
 }) {
   const [form, setForm] = useState<PostForm>(initial);
   const [tab, setTab] = useState<'content' | 'seo' | 'settings'>('content');
+  const [showUnsplash, setShowUnsplash] = useState(false);
 
   const set = (k: keyof PostForm, v: string | boolean) =>
     setForm(f => ({ ...f, [k]: v }));
@@ -303,17 +440,49 @@ function PostForm({
             </div>
             <div>
               <label className="block text-xs font-semibold text-gray-400 mb-1.5 uppercase tracking-wide">URL da Imagem de Capa</label>
-              <input
-                value={form.cover_url}
-                onChange={e => set('cover_url', e.target.value)}
-                placeholder="https://..."
-                className="w-full bg-gray-800 border border-gray-700 rounded-lg px-4 py-2.5 text-white placeholder-gray-500 focus:outline-none focus:border-teal-500"
-              />
+              <div className="flex gap-2">
+                <input
+                  value={form.cover_url}
+                  onChange={e => set('cover_url', e.target.value)}
+                  placeholder="https://... ou busque no Unsplash →"
+                  className="flex-1 bg-gray-800 border border-gray-700 rounded-lg px-4 py-2.5 text-white placeholder-gray-500 focus:outline-none focus:border-teal-500"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowUnsplash(true)}
+                  className="flex items-center gap-1.5 bg-gray-800 hover:bg-gray-700 border border-gray-700 hover:border-teal-500/40 text-gray-400 hover:text-teal-400 text-sm px-3 py-2.5 rounded-lg transition-colors shrink-0"
+                  title="Buscar foto no Unsplash"
+                >
+                  <ImageIcon size={15} />
+                  Unsplash
+                </button>
+              </div>
               {form.cover_url && (
                 <div className="mt-2 rounded-lg overflow-hidden h-32">
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img src={form.cover_url} alt="preview" className="w-full h-full object-cover" />
                 </div>
+              )}
+              {showUnsplash && (
+                <UnsplashPicker
+                  query={form.title || ''}
+                  onSelect={url => set('cover_url', url)}
+                  onClose={() => setShowUnsplash(false)}
+                />
+              )}
+            </div>
+            <div>
+              <label className="block text-xs font-semibold text-gray-400 mb-1.5 uppercase tracking-wide">
+                URL de Vídeo <span className="text-gray-600 normal-case font-normal">(YouTube ou Vimeo — opcional)</span>
+              </label>
+              <input
+                value={form.video_url}
+                onChange={e => set('video_url', e.target.value)}
+                placeholder="https://www.youtube.com/watch?v=... ou https://vimeo.com/..."
+                className="w-full bg-gray-800 border border-gray-700 rounded-lg px-4 py-2.5 text-white placeholder-gray-500 focus:outline-none focus:border-teal-500"
+              />
+              {form.video_url && (
+                <p className="text-xs text-teal-400 mt-1">✓ Vídeo será exibido após a imagem de capa no post</p>
               )}
             </div>
           </>
@@ -607,6 +776,7 @@ export default function AdminComunidadePage() {
         body: String(p.body || ''),
         category: String(p.category || 'dica'),
         cover_url: String(p.cover_url || ''),
+        video_url: String(p.video_url || ''),
         author_name: String(p.author_name || 'Equipe Backfindr'),
         tags: Array.isArray(p.tags) ? (p.tags as string[]).join(', ') : '',
         status: String(p.status || 'draft'),
