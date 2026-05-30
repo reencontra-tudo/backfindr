@@ -611,7 +611,7 @@ function PostForm({
           Cancelar
         </button>
         <div className="flex gap-3">
-          {form.status === 'published' && form.slug && (
+          {form.slug && (
             <a
               href={`/comunidade/${form.slug}`}
               target="_blank"
