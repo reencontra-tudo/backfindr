@@ -18,6 +18,7 @@ interface Post {
   body: string;
   category: string;
   cover_url?: string;
+  video_url?: string;
   author_name: string;
   author_avatar?: string;
   tags: string[];
@@ -166,6 +167,35 @@ const markdownComponents = {
   ),
 };
 
+// ─── Extrai embed URL de YouTube ou Vimeo ────────────────────────────────────
+function getVideoEmbed(url: string): string | null {
+  if (!url) return null;
+  const ytMatch = url.match(
+    /(?:youtube\.com\/(?:watch\?v=|embed\/|shorts\/)|youtu\.be\/)([a-zA-Z0-9_-]{11})/
+  );
+  if (ytMatch) return `https://www.youtube.com/embed/${ytMatch[1]}?rel=0`;
+  const vimeoMatch = url.match(/vimeo\.com\/(\d+)/);
+  if (vimeoMatch) return `https://player.vimeo.com/video/${vimeoMatch[1]}`;
+  return null;
+}
+
+function VideoEmbed({ url }: { url: string }) {
+  const embedUrl = getVideoEmbed(url);
+  if (!embedUrl) return null;
+  return (
+    <div className="rounded-2xl overflow-hidden mb-10 bg-black" style={{ aspectRatio: '16/9' }}>
+      <iframe
+        src={embedUrl}
+        title="Vídeo do post"
+        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+        allowFullScreen
+        className="w-full h-full"
+        style={{ border: 'none' }}
+      />
+    </div>
+  );
+}
+
 // ─── Componente Principal ─────────────────────────────────────────────────────
 export default function PostClient({
   initialPost,
@@ -306,6 +336,9 @@ export default function PostClient({
             <img src={post.cover_url} alt={post.title} className="w-full max-h-96 object-cover" />
           </div>
         )}
+
+        {/* ── Vídeo embed (YouTube ou Vimeo) ── */}
+        {post.video_url && <VideoEmbed url={post.video_url} />}
 
         {/* ── Conteúdo — Markdown renderizado ── */}
         <div className="min-w-0">

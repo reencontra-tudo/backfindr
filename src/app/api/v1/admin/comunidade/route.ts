@@ -65,6 +65,7 @@ export async function POST(req: NextRequest) {
       body?: string;
       category?: string;
       cover_url?: string;
+      video_url?: string;
       author_name?: string;
       author_avatar?: string;
       tags?: string[];
@@ -93,9 +94,9 @@ export async function POST(req: NextRequest) {
 
     const res = await query(
       `INSERT INTO community_posts
-         (slug, title, subtitle, body, category, cover_url, author_name, author_avatar,
+         (slug, title, subtitle, body, category, cover_url, video_url, author_name, author_avatar,
           tags, status, featured, seo_title, seo_desc, published_at)
-       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15)
        RETURNING *`,
       [
         normalizedSlug,
@@ -104,6 +105,7 @@ export async function POST(req: NextRequest) {
         postBody,
         category,
         body.cover_url || null,
+        body.video_url || null,
         body.author_name || 'Equipe Backfindr',
         body.author_avatar || null,
         body.tags || [],

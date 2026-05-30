@@ -46,7 +46,7 @@ export async function PATCH(
     const body = await req.json() as Record<string, unknown>;
 
     const allowed = [
-      'slug', 'title', 'subtitle', 'body', 'category', 'cover_url',
+      'slug', 'title', 'subtitle', 'body', 'category', 'cover_url', 'video_url',
       'author_name', 'author_avatar', 'tags', 'status', 'featured',
       'seo_title', 'seo_desc',
     ];
