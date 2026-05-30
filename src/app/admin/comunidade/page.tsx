@@ -1052,13 +1052,13 @@ export default function AdminComunidadePage() {
                     >
                       <MessageSquare size={14} />
                     </button>
-                    {post.status === 'published' && (
+                    {post.slug && (
                       <a
                         href={`/comunidade/${post.slug}`}
                         target="_blank"
                         rel="noopener noreferrer"
                         className="p-2 rounded-lg bg-gray-800 text-gray-500 border border-gray-700 hover:text-white transition-colors"
-                        title="Ver post"
+                        title={post.status === 'published' ? 'Ver post' : 'Pré-visualizar rascunho'}
                       >
                         <Eye size={14} />
                       </a>
