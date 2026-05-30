@@ -52,13 +52,19 @@ export async function generateMetadata(
   }
 }
 
+import { cookies } from 'next/headers';
+
 // ─── Página (Server Component) ────────────────────────────────────────────────
 export default async function ComunidadePostPage(
   { params }: { params: { slug: string } }
 ) {
   try {
+    const cookieStore = cookies();
+    const accessToken = cookieStore.get('access_token')?.value;
+
     const res = await fetch(`${BASE_URL}/api/v1/comunidade/posts/${params.slug}`, {
-      next: { revalidate: 30 },
+      next: { revalidate: 0 }, // sem cache para rascunhos
+      headers: accessToken ? { Cookie: `access_token=${accessToken}` } : {},
     });
     if (!res.ok) notFound();
 
