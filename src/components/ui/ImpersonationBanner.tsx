@@ -1,7 +1,6 @@
 'use client';
-import { useRouter } from 'next/navigation';
 import { useAuthStore } from '@/hooks/useAuth';
-import { Eye, X, ArrowLeft } from 'lucide-react';
+import { Eye, ArrowLeft } from 'lucide-react';
 
 /**
  * Banner fixo no topo da tela quando o super_admin está navegando
@@ -10,13 +9,14 @@ import { Eye, X, ArrowLeft } from 'lucide-react';
  */
 export default function ImpersonationBanner() {
   const { impersonating, impersonatedUser, impersonatedByEmail, stopImpersonation } = useAuthStore();
-  const router = useRouter();
 
   if (!impersonating || !impersonatedUser) return null;
 
   function handleStop() {
     stopImpersonation();
-    router.replace('/admin/users');
+    // Reload completo para garantir que o estado do superadmin
+    // seja restaurado corretamente antes de entrar no /admin/users
+    window.location.href = '/admin/users';
   }
 
   return (

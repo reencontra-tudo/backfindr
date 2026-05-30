@@ -156,6 +156,12 @@ export const useAuthStore = create<AuthState>()(
           user: originalUser,
           isAuthenticated: !!originalUser,
         });
+
+        // Revalidar sessão do superadmin após restaurar tokens
+        // Garante que o estado reflete o usuário real mesmo após o Zustand persist
+        if (originalToken) {
+          get().fetchMe().catch(() => { /* silencioso — tokens já restaurados */ });
+        }
       },
     }),
     {

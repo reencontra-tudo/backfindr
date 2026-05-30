@@ -218,6 +218,19 @@ export async function POST(request: NextRequest) {
       reward_description: newObject.reward_description as string | null,
     }).catch(() => { /* silencioso — não bloquear o cadastro */ });
 
+    // ── Disparar matching automático (fire-and-forget) ────────────────────
+    // Executa em background sem bloquear a resposta ao usuário.
+    // Usa a URL interna do próprio Next.js para chamar o endpoint de matching.
+    const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://backfindr.com';
+    fetch(`${baseUrl}/api/v1/matching/run`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`,
+      },
+      body: JSON.stringify({ object_id: newObject.id }),
+    }).catch(() => { /* silencioso — matching será executado pelo cron */ });
+
     return successResponse(newObject, 201);
   } catch (error) {
     return internalErrorResponse(error);
