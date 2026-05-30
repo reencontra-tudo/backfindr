@@ -18,7 +18,6 @@ interface Post {
   body: string;
   category: string;
   cover_url?: string;
-  video_url?: string;
   author_name: string;
   author_avatar?: string;
   tags: string[];
@@ -61,7 +60,11 @@ const CATEGORY_LABELS: Record<string, string> = {
   debate: '💬 Debate', novidade: '🚀 Novidade', seguranca: '🔒 Segurança',
 };
 
-function formatDate(iso: string) {
+// Calcula tempo de leitura estimado (200 palavras/min)
+function readingTime(text: string): number {
+  const words = text.replace(/<[^>]+>/g, '').trim().split(/\s+/).length;
+  return Math.max(1, Math.round(words / 200));
+}
   return new Date(iso).toLocaleDateString('pt-BR', {
     day: '2-digit', month: 'long', year: 'numeric',
   });
@@ -166,35 +169,6 @@ const markdownComponents = {
     <td className="px-4 py-2">{children}</td>
   ),
 };
-
-// ─── Extrai embed URL de YouTube ou Vimeo ────────────────────────────────────
-function getVideoEmbed(url: string): string | null {
-  if (!url) return null;
-  const ytMatch = url.match(
-    /(?:youtube\.com\/(?:watch\?v=|embed\/|shorts\/)|youtu\.be\/)([a-zA-Z0-9_-]{11})/
-  );
-  if (ytMatch) return `https://www.youtube.com/embed/${ytMatch[1]}?rel=0`;
-  const vimeoMatch = url.match(/vimeo\.com\/(\d+)/);
-  if (vimeoMatch) return `https://player.vimeo.com/video/${vimeoMatch[1]}`;
-  return null;
-}
-
-function VideoEmbed({ url }: { url: string }) {
-  const embedUrl = getVideoEmbed(url);
-  if (!embedUrl) return null;
-  return (
-    <div className="rounded-2xl overflow-hidden mb-10 bg-black" style={{ aspectRatio: '16/9' }}>
-      <iframe
-        src={embedUrl}
-        title="Vídeo do post"
-        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-        allowFullScreen
-        className="w-full h-full"
-        style={{ border: 'none' }}
-      />
-    </div>
-  );
-}
 
 // ─── Componente Principal ─────────────────────────────────────────────────────
 export default function PostClient({
@@ -308,8 +282,13 @@ export default function PostClient({
             <Clock size={13} /> {formatDate(post.published_at)}
           </span>
           <span className="text-gray-500 text-sm flex items-center gap-1">
-            <Eye size={13} /> {post.views + 1} visualizações
+            <Clock size={13} /> {readingTime(post.body)} min de leitura
           </span>
+          {(post.views + 1) > 50 && (
+            <span className="text-gray-500 text-sm flex items-center gap-1">
+              <Eye size={13} /> {post.views + 1} visualizações
+            </span>
+          )}
         </div>
 
         {/* ── Título ── */}
@@ -336,9 +315,6 @@ export default function PostClient({
             <img src={post.cover_url} alt={post.title} className="w-full max-h-96 object-cover" />
           </div>
         )}
-
-        {/* ── Vídeo embed (YouTube ou Vimeo) ── */}
-        {post.video_url && <VideoEmbed url={post.video_url} />}
 
         {/* ── Conteúdo — Markdown renderizado ── */}
         <div className="min-w-0">
@@ -377,7 +353,7 @@ export default function PostClient({
             }`}
           >
             <Heart size={16} className={liked ? 'fill-current' : ''} />
-            {likes} {likes === 1 ? 'curtida' : 'curtidas'}
+            {likes > 3 ? `${likes} ${likes === 1 ? 'curtida' : 'curtidas'}` : 'Curtir'}
           </button>
 
           <div className="flex items-center gap-2">
@@ -502,7 +478,7 @@ export default function PostClient({
                   )}
                   <p className="text-sm font-semibold text-white group-hover:text-teal-400 transition-colors line-clamp-2">{r.title}</p>
                   <p className="text-xs text-gray-500 mt-1 flex items-center gap-2">
-                    <Eye size={11} />{r.views} · <Clock size={11} />{timeAgo(r.published_at)}
+                    {r.views > 0 && <><Eye size={11} />{r.views} · </>}<Clock size={11} />{timeAgo(r.published_at)}
                   </p>
                 </Link>
               ))}

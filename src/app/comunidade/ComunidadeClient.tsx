@@ -20,6 +20,7 @@ interface Post {
   views: number;
   likes: number;
   published_at: string;
+  reading_time?: number;
 }
 
 const CATEGORIES = [
@@ -89,10 +90,19 @@ function PostCard({ post, featured = false }: { post: Post; featured?: boolean }
         )}
         <div className="flex items-center justify-between text-xs text-gray-500 mt-auto">
           <div className="flex items-center gap-3">
-            <span className="flex items-center gap-1"><Eye size={12} />{post.views}</span>
-            <span className="flex items-center gap-1"><Heart size={12} />{post.likes}</span>
+            {post.reading_time && (
+              <span className="flex items-center gap-1">
+                <Clock size={12} />{post.reading_time} min
+              </span>
+            )}
+            {post.views > 50 && (
+              <span className="flex items-center gap-1"><Eye size={12} />{post.views}</span>
+            )}
+            {post.likes > 3 && (
+              <span className="flex items-center gap-1"><Heart size={12} />{post.likes}</span>
+            )}
           </div>
-          <span className="flex items-center gap-1"><Clock size={12} />{timeAgo(post.published_at)}</span>
+          <span>{timeAgo(post.published_at)}</span>
         </div>
       </div>
     </Link>
