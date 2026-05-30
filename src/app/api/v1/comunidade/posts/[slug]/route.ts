@@ -1,22 +1,31 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { query } from '@/lib/db';
+import { verifyToken } from '@/lib/jwt';
 
 export const dynamic = 'force-dynamic';
 
 // GET /api/v1/comunidade/posts/[slug] — post individual + comentários aprovados
 export async function GET(
-  _req: NextRequest,
+  req: NextRequest,
   { params }: { params: { slug: string } }
 ) {
   const { slug } = params;
 
+  // Verifica se é admin (para permitir preview de rascunhos)
+  const cookieToken = req.cookies.get('access_token')?.value;
+  const payload = cookieToken ? verifyToken(cookieToken) : null;
+  const isAdmin = payload?.role === 'super_admin' || payload?.role === 'admin';
+
+  // Admins podem ver rascunhos; usuários comuns só veem publicados
+  const statusFilter = isAdmin ? '' : `AND status = 'published'`;
+
   try {
     const postRes = await query(
-      `SELECT id, slug, title, subtitle, body, category, cover_url,
-              author_name, author_avatar, tags, featured, views, likes,
+      `SELECT id, slug, title, subtitle, body, category, cover_url, video_url,
+              author_name, author_avatar, tags, featured, views, likes, status,
               seo_title, seo_desc, published_at, created_at
        FROM community_posts
-       WHERE slug = $1 AND status = 'published'`,
+       WHERE slug = $1 ${statusFilter}`,
       [slug]
     );
 
