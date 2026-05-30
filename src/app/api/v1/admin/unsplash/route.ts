@@ -1,6 +1,6 @@
 export const dynamic = 'force-dynamic';
 import { NextRequest, NextResponse } from 'next/server';
-import { requireAdmin } from '@/lib/adminGuard';
+
 
 /**
  * GET /api/v1/admin/unsplash?q=termo
@@ -10,8 +10,6 @@ import { requireAdmin } from '@/lib/adminGuard';
  * Somente admins podem chamar este endpoint.
  */
 export async function GET(req: NextRequest) {
-  const auth = await requireAdmin(req);
-  if (auth instanceof NextResponse) return auth;
 
   const { searchParams } = new URL(req.url);
   const q = searchParams.get('q')?.trim();
