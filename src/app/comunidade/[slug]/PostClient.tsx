@@ -399,7 +399,7 @@ export default function PostClient({
         <section className="mt-12">
           <h2 className="text-xl font-bold mb-6 flex items-center gap-2">
             <MessageSquare size={20} className="text-teal-400" />
-            Comentários ({localComments.length})
+            {post.category === 'debate' ? 'Participe da Discussão' : `Comentários (${localComments.length})`}
           </h2>
 
           {localComments.length > 0 ? (
