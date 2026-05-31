@@ -27,7 +27,7 @@ async function getPost(slug: string, isAdmin: boolean) {
   const postRes = await query(
     `SELECT id, slug, title, subtitle, body, category, cover_url, video_url,
             author_name, author_avatar, tags, featured, views, likes, status,
-            seo_title, seo_desc, published_at, created_at
+            seo_title, seo_desc, published_at, created_at, debate_question
      FROM community_posts
      WHERE slug = $1 ${statusFilter}`,
     [slug]
@@ -41,7 +41,7 @@ async function getPost(slug: string, isAdmin: boolean) {
   }
 
   const commentsRes = await query(
-    `SELECT id, name, body, created_at FROM community_comments
+    `SELECT id, name, body, created_at, featured FROM community_comments
      WHERE post_id = $1 AND status = 'approved' ORDER BY created_at ASC`,
     [post.id]
   );

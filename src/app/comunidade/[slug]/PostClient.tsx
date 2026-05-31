@@ -18,6 +18,7 @@ interface Post {
   body: string;
   category: string;
   cover_url?: string;
+  video_url?: string;
   author_name: string;
   author_avatar?: string;
   tags: string[];
@@ -25,12 +26,14 @@ interface Post {
   views: number;
   likes: number;
   published_at: string;
+  status?: string;
 }
 
 interface Comment {
   id: string;
   name: string;
   body: string;
+  featured: boolean;
   created_at: string;
 }
 
@@ -67,24 +70,38 @@ function readingTime(text: string): number {
 }
 
 function formatDate(iso: string | null | undefined) {
-  if (!iso) return '-';
-  const _d = new Date(iso); if (isNaN(_d.getTime())) return '-';
-  return _d.toLocaleDateString('pt-BR', {
+  if (!iso) return '—';
+  const d = new Date(iso);
+  if (isNaN(d.getTime())) return '—';
+  return d.toLocaleDateString('pt-BR', {
     day: '2-digit', month: 'long', year: 'numeric',
   });
 }
 
-function timeAgo(iso: string) {
-  const diff = Date.now() - new Date(iso).getTime();
-  const d = Math.floor(diff / 86400000);
-  if (d === 0) return 'hoje';
-  if (d === 1) return 'ontem';
-  if (d < 7) return `${d} dias atrás`;
+function timeAgo(iso: string | null | undefined) {
+  if (!iso) return '—';
+  const d = new Date(iso);
+  if (isNaN(d.getTime())) return '—';
+  const diff = Date.now() - d.getTime();
+  const days = Math.floor(diff / 86400000);
+  if (days === 0) return 'hoje';
+  if (days === 1) return 'ontem';
+  if (days < 7) return `${days} dias atrás`;
   return formatDate(iso);
 }
 
+// Valida se uma URL é válida e segura para embed
+function isValidVideoUrl(url: string | null | undefined): boolean {
+  if (!url || !url.trim()) return false;
+  try {
+    const parsed = new URL(url);
+    return parsed.protocol === 'https:' || parsed.protocol === 'http:';
+  } catch {
+    return false;
+  }
+}
+
 // ─── Componentes de renderização Markdown ────────────────────────────────────
-// Mapeados para classes Tailwind compatíveis com o tema dark do Backfindr.
 const markdownComponents = {
   h1: ({ children }: React.PropsWithChildren) => (
     <h1 className="text-3xl font-black text-white mt-8 mb-4 leading-tight">{children}</h1>
@@ -144,11 +161,7 @@ const markdownComponents = {
   hr: () => <hr className="border-gray-800 my-8" />,
   img: ({ src, alt }: React.ImgHTMLAttributes<HTMLImageElement>) => (
     // eslint-disable-next-line @next/next/no-img-element
-    <img
-      src={src}
-      alt={alt ?? ''}
-      className="rounded-xl w-full my-6 object-cover"
-    />
+    <img src={src} alt={alt ?? ''} className="rounded-xl w-full my-6 object-cover" />
   ),
   table: ({ children }: React.PropsWithChildren) => (
     <div className="overflow-x-auto my-6">
@@ -202,6 +215,7 @@ export default function PostClient({
   const pageUrl = `https://backfindr.com/comunidade/${slug}`;
   const catColor = CATEGORY_COLORS[post.category] || 'bg-gray-500/20 text-gray-300 border-gray-500/30';
   const catLabel = CATEGORY_LABELS[post.category] || post.category;
+  const isDraft = post.status === 'draft';
 
   const handleLike = async () => {
     if (liked) return;
@@ -277,18 +291,27 @@ export default function PostClient({
       </header>
 
       <article className="max-w-4xl mx-auto px-4 py-10">
+        {/* ── Banner de rascunho ── */}
+        {isDraft && (
+          <div className="mb-6 px-4 py-3 rounded-xl bg-amber-500/10 border border-amber-500/30 text-amber-300 text-sm font-medium">
+            ⚠️ Este post é um rascunho e não está visível para o público.
+          </div>
+        )}
+
         {/* ── Meta ── */}
         <div className="flex items-center gap-3 mb-6 flex-wrap">
           <span className={`text-xs font-semibold px-2.5 py-1 rounded-full border ${catColor}`}>
             {catLabel}
           </span>
-          <span className="text-gray-500 text-sm flex items-center gap-1">
-            <Clock size={13} /> {formatDate(post.published_at)}
-          </span>
+          {!isDraft && (
+            <span className="text-gray-500 text-sm flex items-center gap-1">
+              <Clock size={13} /> {formatDate(post.published_at)}
+            </span>
+          )}
           <span className="text-gray-500 text-sm flex items-center gap-1">
             <Clock size={13} /> {readingTime(post.body)} min de leitura
           </span>
-          {(post.views + 1) > 50 && (
+          {!isDraft && (post.views + 1) > 50 && (
             <span className="text-gray-500 text-sm flex items-center gap-1">
               <Eye size={13} /> {post.views + 1} visualizações
             </span>
@@ -308,7 +331,9 @@ export default function PostClient({
           </div>
           <div>
             <p className="text-sm font-semibold text-white">{post.author_name}</p>
-            <p className="text-xs text-gray-500">Equipe Backfindr · {timeAgo(post.published_at)}</p>
+            <p className="text-xs text-gray-500">
+              Equipe Backfindr{!isDraft && ` · ${timeAgo(post.published_at)}`}
+            </p>
           </div>
         </div>
 
@@ -320,12 +345,21 @@ export default function PostClient({
           </div>
         )}
 
+        {/* ── Vídeo (somente se URL válida) ── */}
+        {isValidVideoUrl(post.video_url) && (
+          <div className="rounded-2xl overflow-hidden mb-10 aspect-video">
+            <iframe
+              src={post.video_url}
+              className="w-full h-full"
+              allowFullScreen
+              title={post.title}
+            />
+          </div>
+        )}
+
         {/* ── Conteúdo — Markdown renderizado ── */}
         <div className="min-w-0">
-          <ReactMarkdown
-            remarkPlugins={[remarkGfm]}
-            components={markdownComponents}
-          >
+          <ReactMarkdown remarkPlugins={[remarkGfm]} components={markdownComponents}>
             {post.body}
           </ReactMarkdown>
         </div>
@@ -399,8 +433,33 @@ export default function PostClient({
         <section className="mt-12">
           <h2 className="text-xl font-bold mb-6 flex items-center gap-2">
             <MessageSquare size={20} className="text-teal-400" />
-            {post.category === 'debate' ? (localComments.length > 3 ? `💬 Discussão da Comunidade · ${localComments.length} opiniões compartilhadas` : 'Participe da Discussão') : `Comentários (${localComments.length})`}
+            Comentários ({localComments.length})
           </h2>
+
+          {/* ── Pergunta do debate ── */}
+          {post.category === 'debate' && post.debate_question && (
+            <div className="mb-6 p-4 rounded-xl bg-amber-500/10 border border-amber-500/20">
+              <p className="text-xs font-semibold text-amber-400 uppercase tracking-wide mb-1.5">💭 Pergunta da semana</p>
+              <p className="text-gray-200 text-sm leading-relaxed">{post.debate_question}</p>
+            </div>
+          )}
+
+          {/* ── Comentário em destaque ── */}
+          {(() => {
+            const featured = localComments.find(c => c.featured && c.body);
+            return featured ? (
+              <div className="mb-6 p-4 rounded-xl bg-yellow-500/10 border border-yellow-500/20">
+                <p className="text-xs font-semibold text-yellow-400 uppercase tracking-wide mb-2">⭐ Destaque da Comunidade</p>
+                <div className="flex items-center gap-2 mb-2">
+                  <div className="w-7 h-7 rounded-full bg-yellow-500/20 flex items-center justify-center text-yellow-400 text-xs font-bold">
+                    {featured.name.charAt(0).toUpperCase()}
+                  </div>
+                  <span className="text-sm font-semibold text-white">{featured.name}</span>
+                </div>
+                <p className="text-gray-300 text-sm leading-relaxed">{featured.body}</p>
+              </div>
+            ) : null;
+          })()}
 
           {localComments.length > 0 ? (
             <div className="space-y-4 mb-8">

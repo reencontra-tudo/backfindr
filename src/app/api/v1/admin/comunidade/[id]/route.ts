@@ -48,7 +48,7 @@ export async function PATCH(
     const allowed = [
       'slug', 'title', 'subtitle', 'body', 'category', 'cover_url', 'video_url',
       'author_name', 'author_avatar', 'tags', 'status', 'featured',
-      'seo_title', 'seo_desc',
+      'seo_title', 'seo_desc', 'debate_question',
     ];
 
     const sets: string[] = [];

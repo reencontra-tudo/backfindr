@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import {
   Plus, Edit2, Trash2, Eye, Heart, MessageSquare, Globe, FileText,
-  Star, RefreshCw, Check, X, ChevronDown, ExternalLink, AlertCircle,
+  Star, RefreshCw, Check, X, ChevronDown, ExternalLink, AlertCircle, StarIcon,
   Tag, Clock, Sparkles, Loader2, Search, ImageIcon,
 } from 'lucide-react';
 
@@ -28,6 +28,7 @@ interface Comment {
   name: string;
   body: string;
   status: string;
+  featured: boolean;
   created_at: string;
 }
 
@@ -45,12 +46,13 @@ interface PostForm {
   featured: boolean;
   seo_title: string;
   seo_desc: string;
+  debate_question: string;
 }
 
 const EMPTY_FORM: PostForm = {
   slug: '', title: '', subtitle: '', body: '',
   category: 'dica', cover_url: '', video_url: '', author_name: 'Equipe Backfindr',
-  tags: '', status: 'draft', featured: false, seo_title: '', seo_desc: '',
+  tags: '', status: 'draft', featured: false, seo_title: '', seo_desc: '', debate_question: '',
 };
 
 const CATEGORIES = [
@@ -485,6 +487,21 @@ function PostForm({
                 <p className="text-xs text-teal-400 mt-1">✓ Vídeo será exibido após a imagem de capa no post</p>
               )}
             </div>
+
+            {form.category === 'debate' && (
+              <div>
+                <label className="block text-xs font-semibold text-gray-400 mb-1.5 uppercase tracking-wide">
+                  💭 Pergunta do Debate <span className="text-gray-600 normal-case font-normal">(opcional — aparece em destaque antes dos comentários)</span>
+                </label>
+                <textarea
+                  value={form.debate_question}
+                  onChange={e => set('debate_question', e.target.value)}
+                  placeholder="Ex: Na sua visão, qual é a principal causa para tantos objetos encontrados nunca voltarem para seus donos?"
+                  rows={2}
+                  className="w-full bg-gray-800 border border-gray-700 rounded-lg px-4 py-2.5 text-white placeholder-gray-500 focus:outline-none focus:border-teal-500 resize-none"
+                />
+              </div>
+            )}
           </>
         )}
 
@@ -699,6 +716,13 @@ function CommentsPanel({ postId, onClose }: { postId: string; onClose: () => voi
                         <X size={13} />
                       </button>
                     )}
+                    <button
+                      onClick={() => moderate(c.id, c.featured ? 'unfeature' : 'feature')}
+                      className={`p-1.5 rounded-lg border transition-colors ${c.featured ? 'bg-yellow-500/20 text-yellow-400 border-yellow-500/30' : 'bg-gray-700 text-gray-500 hover:text-yellow-400 border-gray-600'}`}
+                      title={c.featured ? 'Remover destaque' : 'Destacar comentário'}
+                    >
+                      <Star size={13} />
+                    </button>
                     <button onClick={() => moderate(c.id, 'delete')} className="p-1.5 rounded-lg bg-red-500/10 text-red-400 hover:bg-red-500/20 border border-red-500/20 transition-colors" title="Excluir">
                       <Trash2 size={13} />
                     </button>
@@ -782,6 +806,7 @@ export default function AdminComunidadePage() {
         status: String(p.status || 'draft'),
         featured: Boolean(p.featured),
         seo_title: String(p.seo_title || ''),
+        debate_question: String(p.debate_question || ''),
         seo_desc: String(p.seo_desc || ''),
       });
     }

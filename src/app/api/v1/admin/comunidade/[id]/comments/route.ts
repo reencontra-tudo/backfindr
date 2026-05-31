@@ -4,8 +4,8 @@ import { requireAdmin } from '@/lib/adminGuard';
 
 export const dynamic = 'force-dynamic';
 
-// PATCH /api/v1/admin/comunidade/[id]/comments — aprovar/rejeitar comentário
-// Body: { comment_id: string, action: 'approve' | 'reject' | 'delete' }
+// PATCH /api/v1/admin/comunidade/[id]/comments — aprovar/rejeitar/destacar comentário
+// Body: { comment_id: string, action: 'approve' | 'reject' | 'delete' | 'feature' | 'unfeature' }
 export async function PATCH(
   req: NextRequest,
   { params }: { params: { id: string } }
@@ -27,6 +27,21 @@ export async function PATCH(
         [comment_id, params.id]
       );
       return NextResponse.json({ success: true });
+    }
+
+    if (action === 'feature' || action === 'unfeature') {
+      // Só um comentário pode ser destaque por post
+      if (action === 'feature') {
+        await query(
+          `UPDATE community_comments SET featured = FALSE WHERE post_id = $1`,
+          [params.id]
+        );
+      }
+      const res = await query(
+        `UPDATE community_comments SET featured = $1 WHERE id = $2 AND post_id = $3 RETURNING *`,
+        [action === 'feature', comment_id, params.id]
+      );
+      return NextResponse.json(res.rows[0]);
     }
 
     const status = action === 'approve' ? 'approved' : 'rejected';
