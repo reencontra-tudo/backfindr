@@ -1019,14 +1019,19 @@ export default function MarketingLeadsPage() {
   const fetchLeads = useCallback(async () => {
     setLoading(true);
     try {
-      const r = await fetch('/api/v1/admin/marketing/leads?limit=200');
+      const [r, rResolvidos] = await Promise.all([
+        fetch('/api/v1/admin/marketing/leads?limit=200'),
+        fetch('/api/v1/admin/marketing/leads?limit=200&mostrarResolvidos=true'),
+      ]);
+      const totalResolvidos = rResolvidos.ok ? ((await rResolvidos.json() as { leads?: {resolvido:boolean}[] }).leads ?? []).filter((l) => l.resolvido).length : 0;
+      const r2 = r;
       if (r.ok) {
-        const d = await r.json() as { leads: Lead[]; total: number };
+        const d = await r2.json() as { leads: Lead[]; total: number };
         const ls = d.leads ?? [];
         setLeads(ls);
         setTotal(d.total ?? 0);
         const quentes = ls.filter((l) => l.score >= 6 && l.status !== 'descartado').length;
-        const resolvidos = ls.filter((l) => l.resolvido).length;
+        const resolvidos = totalResolvidos;
         const descartados = ls.filter((l) => l.status === 'descartado').length;
         const abordados = ls.filter((l) => ['abordado', 'respondeu', 'convertido'].includes(l.status)).length;
         const convertidos = ls.filter((l) => l.status === 'convertido').length;
