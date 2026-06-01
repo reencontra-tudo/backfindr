@@ -162,7 +162,7 @@ export default function RadarPanel() {
             onChange={e => setNovaKeyword(e.target.value)}
             onKeyDown={e => e.key === 'Enter' && adicionarKeyword()}
             placeholder="ex: perdi meu celular SP"
-            className="flex-1 text-sm border border-gray-200 rounded px-3 py-1.5 focus:outline-none focus:ring-1 focus:ring-blue-400" style={{color:'#111', backgroundColor:'#fff'}}
+            className="flex-1 text-sm border border-gray-200 rounded px-3 py-1.5 focus:outline-none focus:ring-1 focus:ring-blue-400" style={{color:'#ffffff', backgroundColor:'rgba(255,255,255,0.08)', caretColor:'#ffffff'}}
           />
           <button
             onClick={adicionarKeyword}
