@@ -1014,7 +1014,7 @@ export default function MarketingLeadsPage() {
   const [total, setTotal] = useState(0);
   const [loading, setLoading] = useState(true);
   const [tab, setTab] = useState<'fila' | 'stats' | 'webhook' | 'automacao'>('fila');
-  const [bar, setBar] = useState({ total: 0, quentes: 0, descartados: 0, abordados: 0, convertidos: 0, taxa: 0 });
+  const [bar, setBar] = useState({ total: 0, quentes: 0, descartados: 0, abordados: 0, convertidos: 0, taxa: 0, resolvidos: 0 });
 
   const fetchLeads = useCallback(async () => {
     setLoading(true);
@@ -1026,11 +1026,12 @@ export default function MarketingLeadsPage() {
         setLeads(ls);
         setTotal(d.total ?? 0);
         const quentes = ls.filter((l) => l.score >= 6 && l.status !== 'descartado').length;
+        const resolvidos = ls.filter((l) => l.resolvido).length;
         const descartados = ls.filter((l) => l.status === 'descartado').length;
         const abordados = ls.filter((l) => ['abordado', 'respondeu', 'convertido'].includes(l.status)).length;
         const convertidos = ls.filter((l) => l.status === 'convertido').length;
         const taxa = ls.length > 0 ? Math.round((convertidos / ls.length) * 100) : 0;
-        setBar({ total: d.total ?? 0, quentes, descartados, abordados, convertidos, taxa });
+        setBar({ total: d.total ?? 0, quentes, descartados, abordados, convertidos, taxa, resolvidos });
       }
     } finally { setLoading(false); }
   }, []);
@@ -1079,6 +1080,7 @@ export default function MarketingLeadsPage() {
           { v: bar.abordados,   label: 'ABORDADOS',   color: '#60A5FA' },
           { v: bar.convertidos, label: 'CONVERTIDOS', color: '#34D399' },
           { v: `${bar.taxa}%`,  label: 'TAXA',        color: '#C084FC' },
+          { v: bar.resolvidos,   label: 'RESOLVIDOS',  color: '#34D399' },
         ].map((s) => (
           <div key={s.label} className="flex items-baseline gap-1.5 shrink-0">
             <span className="text-xl font-bold" style={{ color: s.color }}>{s.v}</span>
