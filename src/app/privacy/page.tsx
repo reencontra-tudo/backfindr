@@ -19,11 +19,11 @@ export default function PrivacyPage() {
   const sections = [
     {
       title: '1. Dados que Coletamos',
-      content: 'Coletamos apenas os dados necessários: nome completo, endereço de e-mail, telefone (opcional), descrição e fotos dos objetos registrados, localização aproximada do objeto (com sua permissão), e dados de uso anônimos para melhoria do serviço.',
+      content: 'Coletamos apenas os dados necessários: nome completo, endereço de e-mail, telefone (opcional), descrição e fotos dos objetos registrados, localização aproximada do objeto (com sua permissão), e dados de uso anônimos para melhoria do serviço. Quando você utiliza o login via Google, recebemos apenas seu nome, endereço de e-mail e foto de perfil associados à sua conta Google.',
     },
     {
       title: '2. Como Usamos seus Dados',
-      content: 'Seus dados são usados exclusivamente para: autenticar sua conta, operar o sistema de QR Codes e matching, enviar notificações sobre seus objetos, e mediar comunicações com outros usuários. Nunca vendemos seus dados a terceiros.',
+      content: 'Seus dados são usados exclusivamente para: autenticar sua conta, operar o sistema de QR Codes e matching, enviar notificações sobre seus objetos, e mediar comunicações com outros usuários. Nunca vendemos seus dados a terceiros. Os dados obtidos via Google OAuth são usados estritamente para facilitar seu acesso à plataforma e criar seu perfil de usuário.',
     },
     {
       title: '3. Privacidade nas Comunicações',
@@ -42,11 +42,15 @@ export default function PrivacyPage() {
       content: 'De acordo com a Lei Geral de Proteção de Dados (LGPD), você tem direito a: acessar seus dados, corrigir informações incorretas, exportar seus dados, e solicitar a exclusão da sua conta e dados. Exerça seus direitos pelo e-mail: privacidade@backfindr.com',
     },
     {
-      title: '7. Cookies',
+      title: '7. Uso de Dados do Google (Google API Services User Data Policy)',
+      content: 'O uso e a transferência de informações recebidas das APIs do Google para qualquer outro aplicativo pelo Backfindr obedecerão à Política de Dados do Usuário dos Serviços de API do Google (Google API Services User Data Policy), incluindo os requisitos de Uso Limitado (Limited Use). Não utilizamos os dados do Google para veicular anúncios.',
+    },
+    {
+      title: '8. Cookies',
       content: 'Utilizamos apenas cookies essenciais para autenticação e preferências de sessão. Não utilizamos cookies de rastreamento ou publicidade.',
     },
     {
-      title: '8. Contato DPO',
+      title: '9. Contato DPO',
       content: 'Encarregado de Proteção de Dados: privacidade@backfindr.com. Responderemos em até 15 dias úteis.',
     },
   ];
@@ -66,7 +70,7 @@ export default function PrivacyPage() {
         <div className="mb-10">
           <p className="text-teal-500 text-xs uppercase tracking-widest mb-3">Legal</p>
           <h1 className="text-3xl font-bold text-white tracking-tight mb-2">Política de Privacidade</h1>
-          <p className="text-white/30 text-sm">Última atualização: Abril de 2026</p>
+          <p className="text-white/30 text-sm">Última atualização: Junho de 2026</p>
         </div>
 
         <div className="space-y-8">

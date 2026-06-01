@@ -30,23 +30,27 @@ export default function TermsPage() {
       content: 'Você concorda em usar o Backfindr apenas para fins legítimos de registro e recuperação de objetos. É proibido registrar objetos que não sejam de sua propriedade sem autorização, usar a plataforma para fraudes, spam ou qualquer atividade ilegal.',
     },
     {
-      title: '4. Privacidade e Dados',
+      title: '4. Autenticação via Terceiros (Google)',
+      content: 'O Backfindr oferece a opção de login via Google para facilitar o acesso. Ao utilizar este método, você autoriza o Backfindr a acessar informações básicas do seu perfil (nome, e-mail e foto) estritamente para fins de autenticação e criação de conta, conforme detalhado em nossa Política de Privacidade.',
+    },
+    {
+      title: '5. Privacidade e Dados',
       content: 'Coletamos apenas os dados necessários para o funcionamento da plataforma: nome, e-mail, descrição dos objetos e localização aproximada. Seus dados de contato nunca são expostos publicamente. A comunicação entre usuários é mediada pelo Backfindr para proteger sua privacidade.',
     },
     {
-      title: '5. QR Codes e Objetos',
+      title: '6. QR Codes e Objetos',
       content: 'Cada QR Code gerado é único e permanente, vinculado ao objeto registrado. Você é responsável pelas informações fornecidas sobre seus objetos. O Backfindr não se responsabiliza pela recuperação garantida de objetos perdidos.',
     },
     {
-      title: '6. Plano Gratuito e Pro',
+      title: '7. Plano Gratuito e Pro',
       content: 'O plano gratuito permite o registro de objetos com funcionalidades básicas. O plano Pro oferece recursos adicionais mediante assinatura mensal. Os preços podem ser alterados com aviso prévio de 30 dias.',
     },
     {
-      title: '7. Limitação de Responsabilidade',
+      title: '8. Limitação de Responsabilidade',
       content: 'O Backfindr é uma plataforma de intermediação. Não somos responsáveis pela recuperação efetiva dos objetos, pela conduta dos usuários ou por danos decorrentes do uso da plataforma. Nossa responsabilidade é limitada ao valor pago pelo serviço nos últimos 12 meses.',
     },
     {
-      title: '8. Contato',
+      title: '9. Contato',
       content: 'Para dúvidas sobre estes termos, entre em contato pelo e-mail: legal@backfindr.com',
     },
   ];
@@ -66,7 +70,7 @@ export default function TermsPage() {
         <div className="mb-10">
           <p className="text-teal-500 text-xs uppercase tracking-widest mb-3">Legal</p>
           <h1 className="text-3xl font-bold text-white tracking-tight mb-2">Termos de Uso</h1>
-          <p className="text-white/30 text-sm">Última atualização: Abril de 2026</p>
+          <p className="text-white/30 text-sm">Última atualização: Junho de 2026</p>
         </div>
 
         <div className="space-y-8">
