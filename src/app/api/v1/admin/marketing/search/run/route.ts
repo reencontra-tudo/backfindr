@@ -23,7 +23,7 @@ export async function POST(req: NextRequest) {
       const ex = await query('SELECT id FROM marketing_leads WHERE link=$1 LIMIT 1',[link])
       if (ex.rows.length){duplicados++;continue}
       const tipo=detectarTipoItem(texto), score=calcularScore(texto)
-      await query(`INSERT INTO marketing_leads (rede,keyword,texto,link,usuario,data_post,comentarios,cidade,tipo_item,score,prioridade,status,novo,origem,source_url,resolvido,created_at,updated_at) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,NOW(),NOW())`,['facebook',keyword,texto,link,'',new Date().toISOString(),0,'',tipo,score,score>=7?'alta':score>=5?'media':'baixa','novo',true,'serpapi',link,false])
+      await query(`INSERT INTO marketing_leads (rede,keyword,texto,link,usuario,data_post,comentarios,cidade,tipo_item,score,prioridade,status,origem,source_url,resolvido,created_at,updated_at) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,NOW(),NOW())`,['facebook',keyword,texto,link,'',new Date().toISOString(),0,'',tipo,score,score>=7?'alta':score>=5?'media':'baixa','novo','serpapi',link,false])
       salvos++
     }
     return NextResponse.json({success:true,salvos,duplicados,irrelevantes,total:items.length,keyword})
