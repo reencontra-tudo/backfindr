@@ -501,6 +501,9 @@ function LeadQueue({ leads, loading, onRefresh, total }: { leads: Lead[]; loadin
     });
     setResolvendo(null);
     setSelected(null);
+    if (!mostrarResolvidos) {
+      setDescartadosLocais((prev) => new Set([...prev, id]));
+    }
     onRefresh();
   };
 
