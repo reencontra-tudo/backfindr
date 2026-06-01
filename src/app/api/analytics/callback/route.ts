@@ -87,7 +87,7 @@ export async function GET(req: NextRequest) {
         expires_at = EXCLUDED.expires_at,
         scope = EXCLUDED.scope,
         updated_at = NOW()
-    ], [
+    `, [
       userId,
       tokenData.access_token,
       tokenData.refresh_token ?? null,
