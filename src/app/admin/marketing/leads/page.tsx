@@ -8,6 +8,8 @@ import {
   Play, AlertCircle, Loader2, Plus, ChevronDown,
 } from 'lucide-react';
 
+import RadarPanel from '@/components/admin/marketing/RadarPanel';
+
 // ─── Tipos ────────────────────────────────────────────────────────────────────
 type Status = 'novo' | 'quente' | 'abordado' | 'respondeu' | 'convertido' | 'descartado';
 type Rede = 'facebook' | 'instagram' | 'twitter' | 'reddit' | 'tiktok';
@@ -899,6 +901,8 @@ function AutomacaoPanel({ onLeadReceived }: { onLeadReceived: () => void }) {
 
   return (
     <div className="p-4 max-w-3xl mx-auto">
+      <RadarPanel />
+      <div className="h-5" />
       {/* Como funciona */}
       <div className="rounded-xl p-4 mb-5" style={{ background: 'oklch(0.1 0.015 240)', border: '1px solid oklch(0.18 0.015 240)' }}>
         <div className="flex items-center gap-2 mb-1"><Zap size={16} style={{ color: '#60A5FA' }} /><h3 className="text-sm font-bold" style={{ color: 'oklch(0.88 0.015 240)' }}>Buscas Automáticas no Facebook</h3></div>
