@@ -2,25 +2,45 @@ export const dynamic = 'force-dynamic';
 import { NextRequest, NextResponse } from 'next/server';
 import { query } from '@/lib/db';
 import { verifyToken } from '@/lib/jwt';
+import jwt from 'jsonwebtoken';
 
 export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url);
   const code = searchParams.get('code');
   const error = searchParams.get('error');
-  const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://backfindr.com';
+  const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://www.backfindr.com';
 
   if (error || !code) {
     return NextResponse.redirect(`${appUrl}/admin/sistema?analytics_error=oauth_denied`);
   }
 
-  // Verificar que o usuário está autenticado como super_admin via cookie
-  const cookieToken = req.cookies.get('access_token')?.value;
-  if (!cookieToken) {
-    return NextResponse.redirect(`${appUrl}/admin/sistema?analytics_error=not_authenticated`);
+  // Verificar o state token assinado (contém o user_id do admin que iniciou o fluxo)
+  // Usamos o state em vez do cookie porque o callback vem de um redirect externo (Google)
+  // e cookies SameSite podem não ser enviados dependendo do domínio
+  const stateToken = searchParams.get('state');
+  if (!stateToken) {
+    return NextResponse.redirect(`${appUrl}/admin/sistema?analytics_error=invalid_state`);
   }
-  const payload = verifyToken(cookieToken);
-  if (!payload) {
-    return NextResponse.redirect(`${appUrl}/admin/sistema?analytics_error=invalid_token`);
+
+  let userId: string;
+  try {
+    const secretKey = process.env.SECRET_KEY!;
+    const statePayload = jwt.verify(stateToken, secretKey, { algorithms: ['HS256'] }) as { sub: string; purpose: string };
+    if (statePayload.purpose !== 'analytics_connect') {
+      return NextResponse.redirect(`${appUrl}/admin/sistema?analytics_error=invalid_state`);
+    }
+    userId = statePayload.sub;
+  } catch {
+    // Fallback: tentar verificar via cookie (compatibilidade)
+    const cookieToken = req.cookies.get('access_token')?.value;
+    if (!cookieToken) {
+      return NextResponse.redirect(`${appUrl}/admin/sistema?analytics_error=not_authenticated`);
+    }
+    const payload = verifyToken(cookieToken);
+    if (!payload) {
+      return NextResponse.redirect(`${appUrl}/admin/sistema?analytics_error=invalid_token`);
+    }
+    userId = payload.sub;
   }
 
   try {
@@ -67,8 +87,8 @@ export async function GET(req: NextRequest) {
         expires_at = EXCLUDED.expires_at,
         scope = EXCLUDED.scope,
         updated_at = NOW()
-    `, [
-      payload.sub,
+    ], [
+      userId,
       tokenData.access_token,
       tokenData.refresh_token ?? null,
       tokenData.token_type ?? 'Bearer',
