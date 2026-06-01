@@ -224,7 +224,7 @@ function LeadDetail({ lead, onClose, onStatusChange, onRefresh }: {
   const handleGenerate = async () => {
     setGenBusy(true);
     const r = await fetch('/api/v1/admin/marketing/leads/generate-reply', {
-      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      method: 'POST', credentials: 'include', headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ rede: lead.rede, texto: lead.texto, tipoItem: lead.tipo_item, cidade: lead.cidade }),
     });
     const d = await r.json() as { reply?: string };
@@ -263,7 +263,7 @@ function LeadDetail({ lead, onClose, onStatusChange, onRefresh }: {
     await patch({ resposta: respostaInput, status: 'respondeu' });
     // Gerar réplica via IA
     const r = await fetch('/api/v1/admin/marketing/leads/generate-reply', {
-      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      method: 'POST', credentials: 'include', headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         rede: lead.rede,
         texto: `Contexto original: ${lead.texto}\n\nResposta recebida: ${respostaInput}`,
