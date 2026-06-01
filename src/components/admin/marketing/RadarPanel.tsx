@@ -212,6 +212,36 @@ export default function RadarPanel() {
         </div>
       )}
 
+
+      {/* Sugestões rápidas */}
+      <div>
+        <p className="text-xs font-medium text-gray-500 mb-2 uppercase tracking-widest">Sugestões rápidas</p>
+        <div className="flex flex-wrap gap-1.5">
+          {[
+            'celular roubado São Paulo',
+            'perdi meu celular Guarulhos',
+            'cachorro perdido Guarulhos',
+            'gato perdido São Paulo',
+            'documento encontrado São Paulo',
+            'bicicleta roubada Zona Leste',
+            'perdi minha carteira SP',
+            'mochila roubada metrô SP',
+            'site:facebook.com cachorro perdido Guarulhos',
+            'site:instagram.com celular roubado São Paulo',
+            'site:olx.com.br documento encontrado',
+          ].map(s => (
+            <button
+              key={s}
+              onClick={() => setNovaKeyword(s)}
+              className="text-xs px-2.5 py-1 rounded-full transition-all"
+              style={{background:'rgba(99,102,241,0.15)',border:'1px solid rgba(99,102,241,0.3)',color:'oklch(0.75 0.12 255)'}}
+            >
+              + {s}
+            </button>
+          ))}
+        </div>
+      </div>
+
       <button onClick={disparar} disabled={disparando || config.keywords.length === 0}
         className="w-full py-3 rounded-lg font-medium text-white bg-blue-600 hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors">
         {disparando ? '🔍 Buscando...' : '⚡ Disparar agora'}
