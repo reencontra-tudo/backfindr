@@ -99,16 +99,16 @@ export default function RadarPanel() {
   }
 
   return (
-    <div className="bg-white rounded-xl border border-gray-200 p-6 space-y-6">
+    <div className="rounded-xl p-6 space-y-6" style={{background:"oklch(0.1 0.015 240)",border:"1px solid oklch(0.18 0.015 240)"}}>
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-lg font-semibold text-gray-900">Radar — Google CSE</h2>
-          <p className="text-sm text-gray-500">Captura leads do Facebook via Google Custom Search</p>
+          <h2 className="text-lg font-semibold text-white">Radar — Google CSE</h2>
+          <p className="text-sm text-gray-400">Captura leads do Facebook via Google Custom Search</p>
         </div>
 
         {/* Toggle Modo Automático */}
         <div className="flex items-center gap-3">
-          <span className="text-sm text-gray-600">Modo automático</span>
+          <span className="text-sm text-gray-400">Modo automático</span>
           <button
             onClick={toggleAutomatico}
             disabled={salvandoConfig}
@@ -176,7 +176,7 @@ export default function RadarPanel() {
       {/* Intervalo (quando automático ativo) */}
       {config.automatico && (
         <div className="flex items-center gap-3">
-          <span className="text-sm text-gray-600">Intervalo:</span>
+          <span className="text-sm text-gray-400">Intervalo:</span>
           {[3, 6, 12, 24].map(h => (
             <button
               key={h}
