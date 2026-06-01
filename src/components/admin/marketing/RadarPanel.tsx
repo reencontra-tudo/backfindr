@@ -139,11 +139,11 @@ export default function RadarPanel() {
 
       {/* Keywords */}
       <div>
-        <p className="text-sm font-medium text-gray-700 mb-2">Keywords de busca</p>
+        <p className="text-sm font-medium text-gray-300 mb-2">Keywords de busca</p>
         <div className="space-y-2">
           {config.keywords.map((kw, i) => (
             <div key={i} className="flex items-center gap-2">
-              <span className="flex-1 text-sm bg-gray-50 border border-gray-200 rounded px-3 py-1.5">
+              <span className="flex-1 text-sm rounded px-3 py-1.5" style={{background:"rgba(255,255,255,0.08)",color:"#fff",border:"1px solid rgba(255,255,255,0.15)"}}>
                 {kw}
               </span>
               <button
