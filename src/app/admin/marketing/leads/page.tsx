@@ -3,7 +3,7 @@ export const dynamic = 'force-dynamic';
 
 import { useState, useEffect, useCallback, useRef } from 'react';
 import {
-  X, ExternalLink, Copy, Check, RefreshCw, Zap, CheckCircle2, XCircle,
+  X, ExternalLink, Copy, Check, RefreshCw, RotateCcw, Zap, CheckCircle2, XCircle,
   MessageSquare, MapPin, Eye, EyeOff, Trash2, BarChart2, Webhook, Layers,
   Play, AlertCircle, Loader2, Plus, ChevronDown,
 } from 'lucide-react';
@@ -1072,7 +1072,23 @@ export default function MarketingLeadsPage() {
             </button>
           ))}
         </nav>
-        <button onClick={fetchLeads} className="p-2 rounded-lg" style={{ background: 'oklch(0.13 0.015 240)', color: 'oklch(0.55 0.015 240)' }}><RefreshCw size={14} /></button>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={async () => {
+              if (!confirm('Arquivar todos os leads ativos e iniciar novo ciclo?')) return;
+              const r = await fetch('/api/v1/admin/marketing/leads/novo-ciclo', { method: 'POST' });
+              const d = await r.json();
+              if (r.ok) { alert(d.mensagem); fetchLeads(); }
+              else alert('Erro ao iniciar novo ciclo');
+            }}
+            title="Arquivar leads atuais e iniciar novo ciclo"
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all hover:opacity-80"
+            style={{ background: 'oklch(0.18 0.08 280 / 0.4)', border: '1px solid oklch(0.3 0.1 280 / 0.3)', color: 'oklch(0.82 0.12 280)' }}
+          >
+            <RotateCcw size={13} /> Novo Ciclo
+          </button>
+          <button onClick={fetchLeads} className="p-2 rounded-lg" style={{ background: 'oklch(0.13 0.015 240)', color: 'oklch(0.55 0.015 240)' }}><RefreshCw size={14} /></button>
+        </div>
       </header>
 
       {/* Stats bar */}
