@@ -18,3 +18,4 @@ BUGS_CHECKUP.md
 *.sqlite
 *.db
 tsconfig.tsbuildinfo
+.env*

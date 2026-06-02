@@ -1,9 +1,10 @@
 'use client';
 import { useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import { ArrowLeft, Save, User, Package, Shield, CheckCircle, XCircle, Crown } from 'lucide-react';
+import { ArrowLeft, Save, User, Package, Shield, CheckCircle, XCircle, Crown, LogIn } from 'lucide-react';
 import { api, parseApiError } from '@/lib/api';
 import { toast } from 'sonner';
+import Cookies from 'js-cookie';
 
 const PLAN_OPTIONS = [
   { value: 'free',     label: 'Free',     color: 'text-white/60' },
@@ -37,6 +38,7 @@ export default function AdminUserDetailPage() {
   const [user, setUser] = useState<UserDetail | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [impersonating, setImpersonating] = useState(false);
   const [form, setForm] = useState({ plan: '', is_active: true });
 
   useEffect(() => {
@@ -57,6 +59,30 @@ export default function AdminUserDetailPage() {
       router.push('/admin/users');
     } catch (e) { toast.error(parseApiError(e)); }
     finally { setSaving(false); }
+  };
+
+  const handleImpersonate = async () => {
+    setImpersonating(true);
+    try {
+      const res = await api.post('/admin/impersonate', { user_id: id });
+      const { access_token } = res.data;
+
+      // Salvar tokens do admin para restaurar depois
+      const currentToken = Cookies.get('access_token');
+      const currentRefresh = Cookies.get('refresh_token');
+      if (currentToken) Cookies.set('admin_token', currentToken, { expires: 1, sameSite: 'lax' });
+      if (currentRefresh) Cookies.set('admin_refresh_token', currentRefresh, { expires: 1, sameSite: 'lax' });
+
+      // Substituir pelo token do usuário impersonado
+      Cookies.set('access_token', access_token, { expires: 1, sameSite: 'lax' });
+      Cookies.remove('refresh_token');
+
+      toast.success(`Entrando como ${user?.name || user?.email}...`);
+      setTimeout(() => { window.location.href = '/dashboard'; }, 800);
+    } catch (e) {
+      toast.error(parseApiError(e));
+      setImpersonating(false);
+    }
   };
 
   if (loading) return (
@@ -199,7 +225,12 @@ export default function AdminUserDetailPage() {
       </div>
 
       {/* Ações */}
-      <div className="pb-6">
+      <div className="pb-6 space-y-3">
+        <button onClick={handleImpersonate} disabled={impersonating}
+          className="w-full flex items-center justify-center gap-2 bg-orange-500/10 hover:bg-orange-500/20 border border-orange-500/30 disabled:opacity-50 text-orange-400 font-semibold py-3 rounded-2xl transition-all text-sm">
+          <LogIn className="w-4 h-4" />
+          {impersonating ? 'Entrando...' : `Acessar como ${user.name || user.email}`}
+        </button>
         <button onClick={handleSave} disabled={saving}
           className="w-full flex items-center justify-center gap-2 bg-teal-500 hover:bg-teal-400 disabled:opacity-50 text-black font-semibold py-3 rounded-2xl transition-all text-sm">
           <Save className="w-4 h-4" />
