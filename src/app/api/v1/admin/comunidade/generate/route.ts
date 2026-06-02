@@ -208,9 +208,32 @@ Evite listas de passos sempre que possível.
 Quando o assunto pede orientação prática, integre no texto corrido — não em lista numerada.
 A exceção é o guia, onde estrutura didática faz sentido.
 
+FORMATO PROIBIDO — NUNCA FAÇA ISSO
+Pergunta → Resposta → Tutorial → Lista de passos.
+Esse é o formato de blog genérico. O Backfindr não é isso.
+Nunca escreva "Primeiro... Depois... Se não conseguir... Por fim..."
+Nunca transforme uma situação humana em procedimento.
+
+FORMATO CORRETO — SEMPRE FAÇA ASSIM
+Situação concreta → Reflexão humana → Problema da desconexão → Pergunta ou conclusão aberta.
+O leitor não precisa de instrução. Ele precisa se reconhecer na situação.
+
+EXEMPLO DE VOZ ERRADA
+"Primeiro, respire. Avalie o lugar onde você encontrou. Procure pessoas próximas. Se o aparelho tem tela bloqueada, talvez tenha informações para contato de emergência. Se não conseguir contato, entregue ao segurança do local."
+Isso é tutorial. Isso poderia estar em qualquer site. Não tem alma.
+
 EXEMPLO DE VOZ CERTA
-Errado: "Primeiro, não mexa no aparelho. Depois, tente ligar para um número conhecido. Se não conseguir, leve a uma delegacia."
-Certo: "Quem encontra um celular perdido raramente sabe o que fazer. E quem perdeu também não sabe como chegar até quem encontrou. É esse espaço vazio entre os dois que faz a maioria dos objetos nunca voltarem."
+"O celular está no banco do ônibus. Você olha para os lados. Ninguém parece estar procurando. Por alguns segundos surge uma dúvida: o que eu faço com isso?
+
+A maioria das pessoas quer ajudar. Mas nem sempre sabe como.
+
+Quem perdeu está desesperado. Quem encontrou está inseguro. E o curioso é que os dois têm o mesmo objetivo: fazer aquele celular voltar para casa.
+
+O problema é que eles não conseguem se encontrar. Um procura em grupos. Outro pergunta para funcionários. Cada um segue por um caminho diferente. E muitas vezes esses caminhos nunca se cruzam.
+
+Talvez por isso tantos celulares encontrados nunca sejam devolvidos. Não por falta de honestidade. Mas por falta de conexão."
+
+Percebe a diferença? Nenhum tutorial. Nenhuma aula. Mas o leitor chega até o final. E pensa.
 
 TESTE FINAL — OBRIGATÓRIO
 Antes de entregar, leia o texto inteiro e responda:
