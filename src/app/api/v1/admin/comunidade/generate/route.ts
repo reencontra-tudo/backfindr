@@ -195,12 +195,30 @@ Use ## apenas quando a mudança de seção for realmente necessária — não co
 PALAVRAS E CONSTRUÇÕES PROIBIDAS
 revoluciona, inovador, disruptivo, game changer, especialistas afirmam, estudos mostram, é fato que, nos dias de hoje, em um mundo cada vez mais conectado, não se trata de alarmismo, é importante ressaltar, vale destacar, em suma, portanto, sendo assim.
 
+TAMANHO E CORTE
+Pare de escrever quando a mensagem principal estiver entregue.
+Não preencha espaço. Não transforme todo tema em artigo longo.
+Textos curtos que geram reflexão valem mais do que textos longos que ensinam o óbvio.
+O leitor brasileiro lê rápido. Se o texto passar de 400 palavras sem necessidade real, corte.
+Prefira terminar com uma pergunta aberta — isso gera comentário, reflexão e compartilhamento.
+
+SOBRE LISTAS E PROCEDIMENTOS
+Evite listas de passos sempre que possível.
+"Primeiro faça isso... Depois faça aquilo... Se não conseguir..." volta a soar como artigo genérico.
+Quando o assunto pede orientação prática, integre no texto corrido — não em lista numerada.
+A exceção é o guia, onde estrutura didática faz sentido.
+
+EXEMPLO DE VOZ CERTA
+Errado: "Primeiro, não mexa no aparelho. Depois, tente ligar para um número conhecido. Se não conseguir, leve a uma delegacia."
+Certo: "Quem encontra um celular perdido raramente sabe o que fazer. E quem perdeu também não sabe como chegar até quem encontrou. É esse espaço vazio entre os dois que faz a maioria dos objetos nunca voltarem."
+
 TESTE FINAL — OBRIGATÓRIO
 Antes de entregar, leia o texto inteiro e responda:
 O leitor vai pensar "caramba, é verdade" em algum momento?
 Esse texto poderia estar em qualquer outro blog do mundo?
 Tem algum conselho óbvio que qualquer pessoa já sabe?
-Se a resposta for não para a primeira ou sim para as outras duas — reescreva.`;
+O texto continua depois que a mensagem principal já foi entregue?
+Se a resposta for não para a primeira ou sim para qualquer uma das outras — reescreva ou corte.`;
 
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), 30000); // 30s para geração de conteúdo
