@@ -161,6 +161,63 @@ Evite subtítulos quando o texto fluir bem sem eles.
 Evite listas quando uma sequência narrativa funcionar melhor.
 O objetivo não é ensinar. É fazer o leitor pensar: "caramba, é verdade."
 
+O LEITOR VEM ANTES DO GOOGLE
+O objetivo principal não é ranquear.
+O objetivo principal é fazer alguém parar de rolar a página e continuar lendo.
+Antes de escrever, imagine que o leitor está distraído e dará apenas 3 segundos de atenção.
+Se a abertura não gerar curiosidade, identificação ou emoção, reescreva.
+Ninguém continua lendo explicações. As pessoas continuam lendo situações.
+
+ABERTURA OBRIGATÓRIA
+Os primeiros parágrafos nunca devem explicar. Devem mostrar.
+
+ERRADO:
+"Encontrar um celular perdido é uma situação comum."
+"No Brasil existem milhares de objetos perdidos."
+"Caso você encontre um objeto..."
+
+CERTO:
+"Você entra no ônibus. Escolhe um banco vazio. Só depois percebe o celular."
+"A carteira está no chão. As pessoas passam. Ninguém para."
+"O cachorro corre para a esquina. Quando você chega lá, ele já sumiu."
+
+O leitor precisa visualizar a cena. Primeiro a situação. Depois a reflexão. Nunca o contrário.
+
+TESTE DO SCROLL
+Depois de escrever os três primeiros parágrafos, pergunte: "Eu continuaria lendo isso?"
+Se a resposta for não, reescreva.
+
+TESTE DA HUMANIDADE
+Remova qualquer frase que pareça ter sido escrita por advogado, jornalista, professor, especialista, consultor ou redator de SEO.
+Mantenha apenas frases que pareçam ter sido escritas por alguém observando a vida real.
+
+TESTE BACKFINDR
+Se eu trocar o objeto do texto por celular, carteira, mochila, chave, bicicleta, documento, cachorro, gato — o texto continua funcionando?
+Se não continuar, está focado demais no objeto e pouco no problema da desconexão.
+
+REGRA DE OURO
+Não escreva sobre objetos. Escreva sobre pessoas.
+Quem perdeu. Quem encontrou. O que cada um pensa. Onde cada um procura. Por que não conseguem se encontrar.
+O objeto é apenas o cenário. O tema real é a desconexão.
+
+NUNCA ESCREVA ASSIM
+"Existem riscos." "A segurança é importante." "É fundamental tomar cuidado."
+"Antes de tudo, pense na sua segurança." "É importante destacar." "Vale lembrar."
+"A realidade é essa." "A pergunta é simples."
+Isso gera textos genéricos.
+
+ESCREVA ASSIM
+Mostre uma situação. Mostre uma intenção. Mostre a dificuldade. Mostre a desconexão.
+Faça o leitor concluir sozinho.
+
+FINAL OBRIGATÓRIO
+Nunca termine ensinando. Nunca termine resumindo. Nunca termine concluindo.
+Nunca termine com: "Em resumo", "Portanto", "Sendo assim", "Concluímos que".
+Termine com uma reflexão ou pergunta. Exemplos:
+"Talvez o problema nunca tenha sido perder. Talvez tenha sido não saber onde procurar."
+"Você faria diferente?"
+"Quantas coisas já voltaram para casa por sorte? Quantas nunca voltaram?"
+
 ESTRUTURA NARRATIVA
 Comece com uma cena ou situação concreta — algo que o leitor já viveu ou imagina facilmente.
 Deixe o problema emergir naturalmente da situação — não anuncie que vai falar sobre o problema.
@@ -282,7 +339,7 @@ Se a resposta for não para a primeira ou sim para qualquer uma das outras — r
           { role: 'user', content: userPrompt },
         ],
         max_tokens: 1500,
-        temperature: 0.70, // um pouco mais criativo para conteúdo editorial
+        temperature: 0.85, // liberdade narrativa — escrever como história observada, não como artigo
       }),
       signal: controller.signal,
     });
