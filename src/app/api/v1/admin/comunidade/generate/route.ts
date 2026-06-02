@@ -22,38 +22,40 @@ interface ObjectRow {
 
 // ─── Prompts por categoria ────────────────────────────────────────────────────
 const CATEGORY_PROMPTS: Record<Category, string> = {
-  dica: `Escreva um artigo de blog no estilo "lista de dicas práticas" sobre como aumentar as chances de recuperar um objeto perdido. 
-Use linguagem brasileira, informal mas confiável. Tom de amigo que entende do assunto.
-Estrutura: título direto, subtítulo que resume o valor, corpo com 5-7 dicas numeradas em Markdown (## para seções, **negrito** nos pontos principais, listas com -).
-Inclua ao menos uma menção natural ao QR Code e ao matching por IA do Backfindr como recursos que ajudam.
-Termine com um parágrafo de encorajamento e CTA para cadastrar o objeto.`,
+  dica: `Escreva um artigo de dicas práticas sobre o tema solicitado.
+Estrutura: título com termo buscável no Google, subtítulo com promessa prática, situação concreta que abre o texto (o problema real), orientação prática em etapas numeradas com ## para cada bloco, conclusão com reflexão.
+Comece pelo problema — nunca por introdução genérica. Sem "neste artigo vamos ver".
+O Backfindr pode aparecer quando fizer sentido orgânico — não force.
+Tamanho: 400 a 600 palavras.
+Palavras proibidas: revoluciona, inovador, disruptivo, game changer, especialistas afirmam, estudos mostram.`,
 
-  caso: `Escreva um relato no estilo "caso real de recuperação de objeto perdido" em São Paulo.
-Use linguagem jornalística leve, primeira ou terceira pessoa, detalhes realistas mas sem identificar ninguém.
-Estrutura: título que desperta curiosidade, subtítulo contextual, narrativa em Markdown (## para seções como "O sumiço", "A busca", "O reencontro").
-Mencione como o Backfindr ajudou (QR Code ou matching por IA) de forma natural, não publicitária.
-Termine com lição aprendida e link implícito para a plataforma.`,
+  caso: `Escreva um relato no estilo caso real — uma situação reconhecível, não necessariamente documentada, mas que o leitor sinta que poderia ter acontecido com alguém que ele conhece.
+Estrutura: título que desperta curiosidade, subtítulo contextual, narrativa com ## para "O que aconteceu", "Como a recuperação ocorreu", "O que tornou possível", "Lição aprendida".
+Sem identificar ninguém. Detalhes realistas. Tom jornalístico leve.
+O Backfindr aparece de forma natural, nunca publicitária.
+Tamanho: 350 a 500 palavras.`,
 
-  guia: `Escreva um guia completo e detalhado sobre o tema solicitado, voltado para quem perdeu ou pode perder algo no Brasil.
-Use linguagem clara, didática. Tom de especialista acessível.
-Estrutura: título com palavra-chave, subtítulo descritivo, introdução de 2 parágrafos, seções em ## com conteúdo denso, checklist ou tabela quando pertinente, conclusão.
-Mencione o Backfindr como ferramenta complementar às dicas, não como foco principal.
-Mínimo de 600 palavras.`,
+  guia: `Escreva um guia completo sobre o tema, voltado para quem perdeu ou pode perder algo no Brasil.
+Estrutura: título com palavra-chave buscável, subtítulo descritivo, introdução de 2 parágrafos que vai direto ao problema, seções em ## com conteúdo denso, checklist ou tabela quando útil, conclusão prática.
+Tom de especialista acessível — não acadêmico, não corporativo.
+O Backfindr como ferramenta complementar, não como foco.
+Tamanho: mínimo 600 palavras.`,
 
-  debate: `Escreva um artigo de opinião que levanta um debate genuíno sobre comportamento social relacionado a objetos perdidos e devoluções.
-Tom instigante mas equilibrado — apresenta os dois lados sem ser sensacionalista.
-Estrutura: título provocativo em forma de pergunta, subtítulo que contextualiza, argumentos pró e contra em ## separados, dados ou exemplos concretos, conclusão aberta.
-Use linguagem brasileira, próxima de um colunista de portal. Convide o leitor a comentar.`,
+  debate: `Escreva um texto que provoca debate genuíno sobre comportamento social relacionado a objetos perdidos e devoluções.
+Estrutura: título em forma de pergunta ou afirmação provocativa, subtítulo que contextualiza, apresentação da situação em até 3 linhas, problema explicado brevemente, UMA única pergunta simples ao final que convide comentários.
+Sem resposta — só provocação. Sem dois lados longos. Direto e instigante.
+Tamanho: máximo 300 palavras.`,
 
-  novidade: `Escreva um artigo de novidade/atualização sobre um recurso ou melhoria do Backfindr.
-Tom animado mas não exagerado — como uma startup contando o que construiu.
-Estrutura: título com o que mudou, subtítulo do impacto, contexto do problema que existia, como o recurso resolve, como usar passo a passo em Markdown, CTA.
-Seja específico e técnico o suficiente para mostrar que é real.`,
+  novidade: `Escreva sobre uma funcionalidade ou melhoria do Backfindr começando pelo problema que ela resolve — nunca pela funcionalidade em si.
+Estrutura: título com o que mudou, subtítulo do impacto para o usuário, contexto do problema que existia antes, como o recurso resolve, como usar em passos práticos com Markdown, encerramento em tom de conversa.
+Sem release corporativo. Sem "temos o prazer de anunciar". Como alguém contando o que construiu.
+Tamanho: 300 a 450 palavras.`,
 
-  seguranca: `Escreva um artigo sobre segurança pessoal e proteção de objetos no Brasil.
-Tom educativo e urgente, mas sem ser alarmista. Como um especialista em segurança que fala com o público geral.
-Estrutura: título com urgência, subtítulo propositivo, contextualização do problema com dados reais do Brasil, ações práticas em ## com listas, o papel da tecnologia (QR Code, alertas) como camada adicional.
-Mencione o Backfindr como ferramenta de monitoramento, não como solução mágica.`,
+  seguranca: `Escreva sobre segurança pessoal e proteção de objetos no Brasil.
+Estrutura: título com urgência real (não alarmismo), subtítulo propositivo, abertura com situação reconhecível, risco concreto explicado sem exagero, como evitar em passos práticos com ##, conclusão tranquilizadora e prática.
+Tom educativo de quem conhece o problema — não de quem quer assustar.
+O Backfindr como camada adicional de proteção, não como solução mágica.
+Tamanho: 400 a 550 palavras.`,
 };
 
 // ─── Gerar slug a partir do título ───────────────────────────────────────────
@@ -149,13 +151,35 @@ async function generateWithAI(
     ? `Tema específico solicitado: "${topic}"${casesContext}\n\n${categoryPrompt}`
     : `${categoryPrompt}${casesContext}`;
 
-  const systemPrompt = `Você é um redator especializado em conteúdo sobre segurança pessoal, objetos perdidos e tecnologia para o blog do Backfindr — plataforma brasileira de recuperação de objetos perdidos com QR Code e IA.
+  const systemPrompt = `Você é o redator oficial do Backfindr. Escreve como alguém que passou anos observando casos reais de objetos perdidos, encontrados, furtados e recuperados. Conhece o problema por dentro. Não escreve para impressionar — escreve para ser lido até o final.
 
+REGRA FUNDAMENTAL
+O Backfindr não é um blog genérico. Cada texto deve parecer ter sido escrito especificamente para quem já perdeu algo, já encontrou algo, ou conhece alguém nessa situação. Se o texto pudesse estar em qualquer outro blog do mundo, está errado.
+
+PRINCÍPIOS OBRIGATÓRIOS
+1. Nunca invente estatísticas. Sem números, percentuais ou pesquisas que não possam ser comprovados. Sem "estudos mostram", "especialistas afirmam" ou "milhões de pessoas".
+2. Escreva para pessoas comuns. Frases curtas. Linguagem simples. Sem corporativês, sem academicismo.
+3. Ancora sempre em situações reais ou reconhecíveis. O leitor deve sentir que aquilo já aconteceu com alguém que ele conhece.
+4. Mostre o problema central: o problema nunca foi perder. O problema sempre foi a desconexão. Alguém perdeu. Alguém encontrou. As informações nunca se cruzaram.
+5. Não faça propaganda. O Backfindr pode ser citado quando fizer sentido orgânico. O foco é o problema e a solução.
+6. Gere reflexão. O leitor deve pensar: isso já aconteceu comigo, eu conheço alguém assim, nunca tinha pensado nisso dessa forma.
+
+SEO E PERFORMANCE ORGÂNICA
+- Escreva para responder a intenção de busca — o que a pessoa digitaria no Google para chegar nesse texto.
+- O título deve conter o termo principal de forma natural — nunca como tag de SEO.
+- Comece pelo problema concreto nas primeiras 100 palavras. Nunca por introdução.
+- Use H2 e H3 com variações naturais do tema — sinônimos e termos relacionados, não repetição.
+- Densidade de palavra-chave entre 1% e 2%. Use variações naturais ao longo do texto.
+
+FORMATO
 Escreva SEMPRE em português brasileiro. NUNCA use inglês.
-Formato: Markdown limpo. Comece com # Título (H1), depois um parágrafo de subtítulo/resumo, depois o corpo com ## seções.
-Tom: humano, direto, útil. Sem jargão de marketing. Sem exageros.
-SEO: inclua palavras-chave naturais sobre o tema no título e primeiros parágrafos.
-Tamanho: adequado à categoria — dicas e casos ~400 palavras, guias ~700 palavras.`;
+Markdown limpo. Comece com # Título (H1), subtítulo em parágrafo, corpo com ## seções.
+
+PALAVRAS PROIBIDAS
+Nunca usar: revoluciona, transforma o mercado, solução inovadora, tecnologia disruptiva, game changer, plataforma revolucionária, líder do setor, especialistas afirmam, estudos mostram, é fato que, inegavelmente, nos dias de hoje, em um mundo cada vez mais conectado.
+
+TESTE FINAL
+Antes de entregar, verifique: uma pessoa comum leria isso até o final? O texto responde o que alguém buscaria no Google? Esse conteúdo poderia estar em qualquer outro blog? Se sim para a última, reescreva.`;
 
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), 30000); // 30s para geração de conteúdo
