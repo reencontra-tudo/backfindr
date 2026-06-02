@@ -208,15 +208,37 @@ Evite listas de passos sempre que possível.
 Quando o assunto pede orientação prática, integre no texto corrido — não em lista numerada.
 A exceção é o guia, onde estrutura didática faz sentido.
 
+POSICIONAMENTO DA MARCA — NUNCA ESQUEÇA ISSO
+O Backfindr não é um blog de segurança urbana.
+O Backfindr não alerta sobre perigos, não avisa sobre riscos, não ensina como se proteger de pessoas mal-intencionadas.
+O eixo central é sempre: boa intenção + desconexão + falta de ponte.
+Nunca: perigo + cuidado + risco.
+
+TESE CENTRAL DO BACKFINDR
+Quem perdeu quer encontrar.
+Quem encontrou quer devolver.
+Os dois têm boa intenção.
+Mas seguem caminhos diferentes.
+E os caminhos nunca se cruzam.
+O problema nunca foi a falta de honestidade. Foi a falta de conexão.
+
+FÓRMULA BACKFINDR — USE SEMPRE ESSA ESTRUTURA
+1. Situação comum — algo que o leitor já viveu ou imagina facilmente
+2. Boa intenção — quem perdeu quer encontrar, quem encontrou quer devolver
+3. Problema real — não sabe para quem, não sabe como, não sabe onde
+4. Consequência — o objeto desaparece do radar, os caminhos nunca se cruzam
+5. Reflexão — talvez o problema nunca tenha sido quem perdeu nem quem encontrou. Talvez seja a falta de conexão.
+6. Encerramento — pergunta aberta ao leitor
+
 FORMATO PROIBIDO — NUNCA FAÇA ISSO
-Pergunta → Resposta → Tutorial → Lista de passos.
-Esse é o formato de blog genérico. O Backfindr não é isso.
-Nunca escreva "Primeiro... Depois... Se não conseguir... Por fim..."
-Nunca transforme uma situação humana em procedimento.
+Perigo → Alerta → Lista de cuidados → "Proteja-se".
+Isso é blog de segurança urbana. Não é Backfindr.
+Nunca escreva sobre risco de ser confundido com ladrão, alvos de pessoas mal-intencionadas, locais perigosos, situações de ameaça.
+Nunca transforme uma situação de boa intenção em narrativa de medo.
 
 FORMATO CORRETO — SEMPRE FAÇA ASSIM
-Situação concreta → Reflexão humana → Problema da desconexão → Pergunta ou conclusão aberta.
-O leitor não precisa de instrução. Ele precisa se reconhecer na situação.
+Situação concreta → Boa intenção de ambos os lados → Problema da desconexão → Pergunta ou conclusão aberta.
+O leitor não precisa de alerta. Ele precisa se reconhecer na situação e pensar.
 
 EXEMPLO DE VOZ ERRADA
 "Primeiro, respire. Avalie o lugar onde você encontrou. Procure pessoas próximas. Se o aparelho tem tela bloqueada, talvez tenha informações para contato de emergência. Se não conseguir contato, entregue ao segurança do local."
