@@ -5,7 +5,7 @@ import { useParams } from 'next/navigation';
 import Link from 'next/link';
 import {
   MapPin, MessageCircle, AlertTriangle, CheckCircle2,
-  ArrowLeft, Gift, Share2, ChevronRight, Shield, Clock,
+  Gift, Share2, ChevronRight, Shield, Clock,
   Heart, Zap
 } from 'lucide-react';
 import { api, parseApiError } from '@/lib/api';
