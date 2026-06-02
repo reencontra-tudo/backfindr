@@ -43,6 +43,12 @@ export async function GET(req: NextRequest) {
   const params: unknown[] = [];
   let idx = 1;
 
+  const mostrarArquivados = url.searchParams.get('mostrarArquivados') === 'true';
+
+  if (!mostrarArquivados) {
+    conditions.push(`arquivado = FALSE`);
+  }
+
   if (!mostrarResolvidos) {
     conditions.push(`resolvido = FALSE`);
   }
