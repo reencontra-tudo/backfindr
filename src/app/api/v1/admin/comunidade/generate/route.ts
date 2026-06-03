@@ -388,7 +388,13 @@ export async function POST(req: NextRequest) {
       debate_question?: string;
     } = {};
     try {
-      const clean = rawContent.replace(/```json|```/g, '').trim();
+      // Tentar extrair JSON mesmo que venha com texto antes/depois
+      let clean = rawContent.replace(/```json|```/g, '').trim();
+      // Se não começar com {, tentar encontrar o JSON dentro do texto
+      if (!clean.startsWith('{')) {
+        const jsonMatch = clean.match(/\{[\s\S]*\}/);
+        if (jsonMatch) clean = jsonMatch[0];
+      }
       parsed = JSON.parse(clean);
     } catch {
       const extracted = extractTitleAndSubtitle(rawContent);

@@ -279,7 +279,7 @@ function GenerateModal({
 
         <div className="p-5 space-y-4">
           <div className="bg-teal-500/10 border border-teal-500/20 rounded-lg p-3 text-sm text-teal-300">
-            O <strong>gpt-4.1-mini</strong> vai gerar um rascunho completo com título, subtítulo, corpo em Markdown e SEO.
+            A IA vai gerar um rascunho completo com título, subtítulo, corpo e SEO. Você revisa antes de publicar.
             Você revisa antes de publicar.
           </div>
 
