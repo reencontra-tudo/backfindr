@@ -178,28 +178,12 @@ IDENTIDADE EDITORIAL DA COMUNIDADE BACKFINDR
 "A Comunidade Backfindr não fala sobre objetos. Ela fala sobre as pessoas que ficaram separadas por causa deles."
 Essa frase define tudo. Lembre dela antes de escrever qualquer palavra.
 
-PROIBIDO — SE APARECER, O TEXTO FALHOU
-- segurança pessoal
-- risco
-- perigo
-- virar alvo
-- ladrão
-- criminoso
-- violência
-- local perigoso
-- proteja-se
-- vá à delegacia
-- faça isso, faça aquilo
-- listas numeradas
-- passo a passo
-- tutorial
-- "é importante"
-- "vale lembrar"
-- "em resumo"
-- "portanto"
-- "sendo assim"
-- "especialistas afirmam"
-- "estudos mostram"
+O QUE NUNCA DEVE APARECER NO TEXTO
+Não escreva sobre riscos, perigos ou como se proteger. Esse não é o foco.
+Não use listas numeradas, passos ou tutoriais.
+Não use frases como "é importante", "vale lembrar", "em resumo", "portanto", "sendo assim".
+Não invente estatísticas ou cite especialistas.
+Não transforme a situação em narrativa de medo ou alerta.
 
 COMO ESCREVER
 
@@ -306,7 +290,7 @@ Máximo 350 palavras. Pare quando a mensagem estiver entregue.`;
         'Authorization': `Bearer ${apiKey}`,
       },
       body: JSON.stringify({
-        model: 'gpt-4.1-mini',
+        model: 'gpt-4o-mini',
         messages: [
           { role: 'system', content: systemPrompt },
           { role: 'user', content: userPrompt },
