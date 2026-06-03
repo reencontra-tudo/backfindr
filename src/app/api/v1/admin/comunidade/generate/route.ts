@@ -218,19 +218,6 @@ ESTRUTURA OBRIGATÓRIA
 - Menção natural ao Backfindr
 - Pergunta final
 
-EXEMPLO DE HISTÓRIA CORRETA:
-"O celular está sobre a mesa do café.
-A pessoa que estava sentada ali saiu há poucos minutos. O garçom percebe o aparelho, olha ao redor e pergunta para alguns clientes. Ninguém sabe de quem é.
-Enquanto isso, do outro lado da rua, alguém já voltou ao café pela segunda vez.
-Revira a bolsa. Confere os bolsos. Liga para o próprio número. Nada.
-Quem perdeu procura desesperadamente. Quem encontrou quer ajudar. Mas existe um problema simples: um não sabe onde o outro está.
-O garçom deixa o aparelho guardado no caixa. A pessoa que perdeu retorna alguns minutos depois e pergunta se alguém encontrou um celular.
-Desta vez deu certo. Mas nem sempre acontece assim.
-Todos os dias existem celulares, carteiras, mochilas, chaves e documentos esperando pelo mesmo desfecho: voltar para quem perdeu.
-O desafio quase nunca é falta de honestidade. O desafio é fazer com que quem perdeu e quem encontrou consigam se localizar.
-É justamente para isso que plataformas como o Backfindr existem.
-E você? Já encontrou algum objeto e não conseguiu localizar o dono?"
-
 COMO TERMINAR — OBRIGATÓRIO
 O penúltimo parágrafo deve ter no máximo 2 frases. Direto. Sem poesia.
 Exemplo certo: "O desafio quase nunca é falta de honestidade. O desafio é fazer com que quem perdeu e quem encontrou consigam se localizar."
@@ -279,7 +266,7 @@ Para outras categorias: deixe debate_question como string vazia.`;
           { role: 'system', content: systemPrompt },
           { role: 'user', content: userPrompt },
         ],
-        max_tokens: 1500,
+        max_tokens: 2500,
         temperature: 0.75,
       }),
       signal: controller.signal,
