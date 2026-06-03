@@ -250,7 +250,7 @@ async function generateSEO(title: string, body: string): Promise<{ seo_title: st
         'Authorization': `Bearer ${apiKey}`,
       },
       body: JSON.stringify({
-        model: 'gpt-4.1-mini',
+        model: 'gpt-4o-mini',
         messages: [
           {
             role: 'system',
@@ -321,36 +321,32 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ detail: 'IA não retornou conteúdo' }, { status: 500 });
     }
 
-    // Extrair título, subtítulo e corpo do Markdown gerado
-    const { title, subtitle, body: postBody } = extractTitleAndSubtitle(rawContent);
-
-    // Gerar slug único
-    const baseSlug = generateSlug(title);
-    const timestamp = Date.now().toString(36);
-    const slug = `${baseSlug}-${timestamp}`;
-
-    // Gerar SEO em paralelo
-    const { seo_title, seo_desc } = await generateSEO(title, postBody);
-
-    // Gerar tags automáticas baseadas na categoria e topic
-    const autoTags: string[] = [category];
-    if (topic) {
-      topic.split(/\s+/).filter(w => w.length > 4).slice(0, 3).forEach(w =>
-        autoTags.push(w.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, ''))
-      );
+    // Parsear JSON retornado diretamente pela IA
+    let parsed: {
+      title?: string; subtitle?: string; content?: string;
+      seo_title?: string; seo_desc?: string; tags?: string; slug?: string;
+    } = {};
+    try {
+      const clean = rawContent.replace(/```json|```/g, '').trim();
+      parsed = JSON.parse(clean);
+    } catch {
+      const extracted = extractTitleAndSubtitle(rawContent);
+      parsed = { title: extracted.title, subtitle: extracted.subtitle, content: extracted.body };
     }
-    const defaultTagsByCategory: Record<Category, string[]> = {
-      dica: ['dicas', 'objeto perdido', 'como recuperar'],
-      caso: ['caso real', 'recuperação', 'São Paulo'],
-      guia: ['guia', 'passo a passo', 'objeto perdido'],
-      debate: ['debate', 'opinião', 'comportamento'],
-      novidade: ['novidade', 'Backfindr', 'atualização'],
-      seguranca: ['segurança', 'proteção', 'objeto perdido'],
-    };
-    const tags = [...new Set([...autoTags, ...defaultTagsByCategory[category]])];
+
+    const title = parsed.title || 'Novo artigo';
+    const subtitle = parsed.subtitle || '';
+    const postBody = parsed.content || rawContent;
+    const seo_title = (parsed.seo_title || title).substring(0, 60);
+    const seo_desc = (parsed.seo_desc || '').substring(0, 160);
+    const tags = parsed.tags
+      ? parsed.tags.split(',').map((t: string) => t.trim()).filter(Boolean)
+      : [category, 'objeto perdido', 'Backfindr'];
+    const slug = parsed.slug
+      ? parsed.slug.substring(0, 80)
+      : `${generateSlug(title)}-${Date.now().toString(36)}`;
 
     return NextResponse.json({
-      // Dados prontos para salvar via POST /api/v1/admin/comunidade
       draft: {
         slug,
         title,
@@ -359,15 +355,14 @@ export async function POST(req: NextRequest) {
         category,
         author_name: 'Equipe Backfindr',
         tags,
-        status: 'draft', // sempre rascunho — admin revisa antes de publicar
+        status: 'draft',
         featured: false,
         seo_title,
         seo_desc,
         cover_url: '',
       },
-      // Metadados da geração
       meta: {
-        model: 'gpt-4.1-mini',
+        model: 'gpt-4o-mini',
         real_cases_used: realCases.length,
         topic_used: topic || null,
         generated_at: new Date().toISOString(),
