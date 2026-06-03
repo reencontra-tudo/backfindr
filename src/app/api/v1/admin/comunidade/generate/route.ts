@@ -255,8 +255,13 @@ RETORNE APENAS JSON VÁLIDO, SEM MARKDOWN:
   "seo_title": "",
   "seo_desc": "",
   "tags": "",
-  "slug": ""
-}`;
+  "slug": "",
+  "debate_question": ""
+}
+
+O campo debate_question deve ser preenchido APENAS quando a categoria for debate.
+Para debate: coloque aqui a pergunta principal que o leitor deve responder nos comentários.
+Para outras categorias: deixe debate_question como string vazia.`;
 
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), 30000); // 30s para geração de conteúdo
@@ -380,6 +385,7 @@ export async function POST(req: NextRequest) {
     let parsed: {
       title?: string; subtitle?: string; content?: string;
       seo_title?: string; seo_desc?: string; tags?: string; slug?: string;
+      debate_question?: string;
     } = {};
     try {
       const clean = rawContent.replace(/```json|```/g, '').trim();
@@ -415,6 +421,7 @@ export async function POST(req: NextRequest) {
         seo_title,
         seo_desc,
         cover_url: '',
+        debate_question: parsed.debate_question || '',
       },
       meta: {
         model: 'gpt-4o-mini',
