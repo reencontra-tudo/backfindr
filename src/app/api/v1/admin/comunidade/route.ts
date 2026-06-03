@@ -73,6 +73,7 @@ export async function POST(req: NextRequest) {
       featured?: boolean;
       seo_title?: string;
       seo_desc?: string;
+      debate_question?: string;
     };
 
     const { slug, title, body: postBody, category = 'dica' } = body;
@@ -95,8 +96,8 @@ export async function POST(req: NextRequest) {
     const res = await query(
       `INSERT INTO community_posts
          (slug, title, subtitle, body, category, cover_url, video_url, author_name, author_avatar,
-          tags, status, featured, seo_title, seo_desc, published_at)
-       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15)
+          tags, status, featured, seo_title, seo_desc, debate_question, published_at)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16)
        RETURNING *`,
       [
         normalizedSlug,
@@ -113,6 +114,7 @@ export async function POST(req: NextRequest) {
         body.featured || false,
         body.seo_title || null,
         body.seo_desc || null,
+        body.debate_question || null,
         publishedAt,
       ]
     );
