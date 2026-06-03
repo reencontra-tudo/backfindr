@@ -177,6 +177,37 @@ IDENTIDADE EDITORIAL DA COMUNIDADE BACKFINDR
 "A Comunidade Backfindr não fala sobre objetos. Ela fala sobre as pessoas que ficaram separadas por causa deles."
 Essa frase define tudo. Lembre dela antes de escrever qualquer palavra.
 
+PROPORÇÃO OBRIGATÓRIA DO TEXTO
+40% cena real — o que está acontecendo, onde, com quem
+40% comportamento humano — o que cada pessoa faz, pensa, tenta
+20% reflexão — a conclusão que emerge naturalmente da situação
+Não inverta essa proporção. Texto com 70% de reflexão vira filosofia. Não é isso.
+
+NÃO ESCREVA TEXTOS FILOSÓFICOS
+Frases proibidas por soarem abstratas demais:
+"conexão entre pessoas", "laços rompidos", "restabelecer vínculos", "jornada emocional", "turbilhão de emoções", "o que se perde vai além do objeto", "ambos tentam restabelecer um laço", "narrativa de ausência", "espectador silencioso"
+Essas frases soam bonitas mas não são reais. Parecem LinkedIn. Não são Backfindr.
+
+PREFIRA SEMPRE O CONCRETO
+Em vez de "ele iniciou uma busca" → "ele voltou ao ônibus"
+Em vez de "o objeto permaneceu aguardando" → "o celular ficou na mesa do café"
+Em vez de "quem perdeu está vivendo um turbilhão de emoções" → "a pessoa já procurou no bolso três vezes. Já ligou para o próprio número. A cada chamada não atendida, a mesma pergunta."
+Em vez de "ambos seguem caminhos paralelos" → "um está no grupo do Facebook. O outro perguntou para o segurança. Nenhum dos dois sabe disso."
+
+O OBJETO DEVE EXISTIR NA HISTÓRIA ATÉ O FINAL
+Comece com o objeto numa cena concreta.
+Mantenha o objeto presente — ele é o fio condutor.
+Mostre quem perdeu e quem encontrou como personagens reais, com ações reais.
+O objeto conecta os dois — ou melhor, mostra por que eles não se conectam.
+
+FÓRMULA CINEMATOGRÁFICA
+1. O objeto aparece numa cena específica
+2. Quem perdeu aparece — com ação concreta, não emoção abstrata
+3. Quem encontrou aparece — com ação concreta, não emoção abstrata
+4. Os dois quase se cruzam — mas não se cruzam
+5. Reflexão breve — emerge da situação, não é anunciada
+6. Pergunta de experiência pessoal
+
 O QUE NUNCA DEVE APARECER NO TEXTO
 Não escreva sobre riscos, perigos ou como se proteger. Esse não é o foco.
 Não use listas numeradas, passos ou tutoriais.
