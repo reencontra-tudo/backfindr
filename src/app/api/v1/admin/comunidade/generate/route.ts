@@ -174,6 +174,10 @@ Mas os caminhos nunca se cruzam.
 
 Todo texto deve girar em torno dessa ideia.
 
+IDENTIDADE EDITORIAL DA COMUNIDADE BACKFINDR
+"A Comunidade Backfindr não fala sobre objetos. Ela fala sobre as pessoas que ficaram separadas por causa deles."
+Essa frase define tudo. Lembre dela antes de escrever qualquer palavra.
+
 PROIBIDO — SE APARECER, O TEXTO FALHOU
 - segurança pessoal
 - risco
@@ -227,8 +231,19 @@ Talvez o problema nunca tenha sido perder.
 Talvez tenha sido não existir uma ponte.
 
 5. ENCERRAMENTO
-Uma pergunta simples que gere comentário.
-Nunca uma conclusão. Nunca um resumo.
+Uma pergunta simples que gere comentário — sempre baseada em experiência pessoal do leitor.
+Nunca uma conclusão. Nunca um resumo. Nunca uma pergunta filosófica abstrata.
+
+PERGUNTAS QUE FUNCIONAM (geram resposta porque pedem experiência real):
+"Você já encontrou algo e nunca conseguiu achar o dono?"
+"Qual foi a coisa mais valiosa que você já perdeu?"
+"Se encontrassem seu celular hoje, como entrariam em contato com você?"
+"Você já devolveu algo para um desconhecido? Como foi?"
+
+PERGUNTAS QUE NÃO FUNCIONAM (muito abstratas, não geram resposta):
+"Será que um dia essa ponte vai existir?"
+"Como seria um mundo mais conectado?"
+"O que você acha dessa situação?"
 
 O LEITOR DEVE PENSAR
 "Caramba."
@@ -331,11 +346,11 @@ async function generateSEO(title: string, body: string): Promise<{ seo_title: st
         messages: [
           {
             role: 'system',
-            content: 'Você é especialista em SEO. Responda APENAS com JSON válido no formato {"seo_title": "...", "seo_desc": "..."}. Sem texto antes ou depois.',
+            content: 'Você é especialista em SEO para o Backfindr — plataforma de recuperação de objetos perdidos. Responda APENAS com JSON válido no formato {"seo_title": "...", "seo_desc": "..."}. Sem texto antes ou depois. IMPORTANTE: o título SEO deve soar como frase humana, nunca como tag de blog. Exemplos de títulos ruins: "Celular Perdido: Como Encontrar Rápido", "Dicas para Recuperar Objetos Perdidos". Exemplos de títulos bons: "O celular estava no banco do ônibus. E agora?", "Quem perdeu procura. Quem encontrou também. Mas os caminhos não se cruzam.", "A coisa mais difícil não é perder. É não saber quem encontrou."',
           },
           {
             role: 'user',
-            content: `Gere um título SEO (máx 60 chars) e descrição meta (máx 160 chars) em português para este artigo:\n\nTítulo: ${title}\n\nPrimeiros 300 chars do corpo: ${body.substring(0, 300)}`,
+            content: `Gere um título SEO (máx 60 chars, estilo humano e reflexivo) e descrição meta (máx 160 chars, que desperte curiosidade) em português para este artigo:\n\nTítulo original: ${title}\n\nPrimeiros 300 chars do corpo: ${body.substring(0, 300)}`,
           },
         ],
         max_tokens: 200,
