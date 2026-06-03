@@ -188,6 +188,19 @@ O desafio quase nunca é falta de honestidade. O desafio é fazer com que quem p
 É justamente para isso que plataformas como o Backfindr existem.
 E você? Já encontrou algum objeto e não conseguiu localizar o dono?"
 
+COMO TERMINAR — OBRIGATÓRIO
+O penúltimo parágrafo deve ter no máximo 2 frases. Direto. Sem poesia.
+Exemplo certo: "O desafio quase nunca é falta de honestidade. O desafio é fazer com que quem perdeu e quem encontrou consigam se localizar."
+Exemplo errado: "Vidas se entrelaçam todos os dias em situações como essa."
+
+O Backfindr aparece em UMA frase, como fato — não como possibilidade.
+Certo: "É justamente para isso que o Backfindr existe."
+Errado: "O Backfindr poderia ser a solução que uniria essas histórias."
+
+A pergunta final deve ser sobre experiência pessoal — não abstrata.
+Certo: "Você já encontrou algo e não conseguiu localizar o dono?"
+Errado: "O que você acha dessa situação?"
+
 OBJETIVO
 Fazer o leitor pensar "isso poderia acontecer comigo" — e não "estou lendo um tutorial."
 
