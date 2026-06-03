@@ -22,38 +22,49 @@ interface ObjectRow {
 
 // ─── Prompts por categoria ────────────────────────────────────────────────────
 const CATEGORY_PROMPTS: Record<Category, string> = {
-  dica: `Escreva conteúdo útil e prático sobre o tema.
-Pode ensinar. Pode orientar. Pode conter lista curta.
-Comece com uma situação real. Termine com pergunta ao leitor.
-Entre 400 e 600 palavras.`,
+  dica: `Categoria: DICA
+Conteúdo curto e prático. Ensina uma ação simples e útil.
+Comece com uma situação comum. Explique o que fazer de forma direta.
+Pode ter lista curta se ajudar. Cite o Backfindr naturalmente.
+Termine com pergunta ao leitor. Entre 300 e 500 palavras.
+Tom: direto, útil, simples. Não é história emocional.`,
 
-  caso: `Conte uma história realista com começo, meio e fim.
-Dois personagens: quem perdeu e quem encontrou.
+  caso: `Categoria: CASO REAL
+Conte uma história realista com começo, meio e fim.
+Mostre: o que foi perdido, como foi encontrado, como voltou ao dono (ou não).
+Dois personagens: quem perdeu e quem encontrou. Ações concretas, não emoções abstratas.
 O objeto permanece presente do início ao fim.
-Termine com pergunta de experiência pessoal.
-Entre 400 e 600 palavras.`,
+Cite o Backfindr naturalmente. Termine com pergunta de experiência pessoal.
+Entre 400 e 600 palavras. Tom: jornalístico leve, realista.`,
 
-  guia: `Escreva um guia completo e didático.
-Passo a passo permitido. Subtítulos H2 permitidos.
-Comece com situação real. Termine com pergunta.
-Entre 600 e 900 palavras.`,
+  guia: `Categoria: GUIA
+Conteúdo completo e didático. Passo a passo permitido. Subtítulos H2 permitidos.
+Comece com situação real que apresenta o problema.
+Explique com detalhes, organize em seções claras.
+Cite o Backfindr como ferramenta útil. Termine com pergunta.
+Entre 600 e 900 palavras. Tom: didático, claro, organizado.`,
 
-  debate: `Apresente uma situação comum em 2-3 frases.
-Faça UMA pergunta forte ao leitor no final.
-Sem resposta. Sem dois lados. Direto ao ponto.
-Máximo 200 palavras.`,
+  debate: `Categoria: DEBATE
+Texto curtíssimo para gerar comentários.
+Apresente uma situação comum em 2-3 frases.
+Faça UMA pergunta forte e direta ao leitor.
+Sem resposta. Sem tutorial. Sem dois lados longos.
+Máximo 200 palavras. Tom: direto, provocativo, simples.`,
 
-  novidade: `Explique uma funcionalidade do Backfindr.
-Comece pelo problema que existia antes.
-Depois explique como o recurso resolve.
-Tom de conversa. Entre 300 e 450 palavras.`,
+  novidade: `Categoria: NOVIDADE
+Explique um recurso ou funcionalidade do Backfindr.
+Comece pelo problema que existia antes do recurso.
+Explique como funciona de forma simples e clara.
+Mostre o benefício prático para o usuário.
+Termine com pergunta. Entre 300 e 450 palavras.
+Tom: conversa, entusiasta mas sem exagero. Não é press release.`,
 
-  seguranca: `Escreva conteúdo de prevenção sobre o tema.
-Explique riscos reais sem alarmismo.
-Explique erros comuns e como evitá-los.
-Orientação prática em texto corrido, sem lista numerada.
-Cite o Backfindr naturalmente. Termine com pergunta.
-Entre 400 e 550 palavras.`,
+  seguranca: `Categoria: SEGURANÇA
+Conteúdo preventivo e objetivo. Útil e direto.
+Estrutura: situação comum → cuidados práticos → erros a evitar → como o Backfindr ajuda → pergunta final.
+Não é storytelling emocional. Não é alarmismo. É orientação útil.
+Pode ter lista curta se organizar melhor o conteúdo.
+Entre 350 e 500 palavras. Tom: útil, direto, sem medo exagerado.`,
 };
 
 // ─── Gerar slug a partir do título ───────────────────────────────────────────
@@ -149,13 +160,17 @@ async function generateWithAI(
     ? `Categoria: ${category}\nTema: ${topic}${casesContext}\n\n${categoryPrompt}`
     : `Categoria: ${category}${casesContext}\n\n${categoryPrompt}`;
 
-  const systemPrompt = `Você é redator especialista em conteúdo para a Comunidade Backfindr.
+  const systemPrompt = `Você é redator oficial da Comunidade Backfindr — plataforma brasileira de recuperação de objetos perdidos.
 
-Sua missão é criar conteúdo de alta qualidade. O formato depende da categoria — cada categoria tem objetivos diferentes.
+Sua missão é criar conteúdo de alta qualidade. O estilo e formato dependem da categoria indicada no prompt do usuário.
 
-Para histórias (caso, debate): foque em narrativa emocional com dois personagens.
-Para conteúdo prático (dica, guia, segurança): foque em orientação útil e direta.
-Para novidades: foque no problema que existia antes e como foi resolvido.
+Regras que valem para todas as categorias:
+- Escreva sempre em português brasileiro
+- Nunca invente estatísticas, dados ou pesquisas
+- Nunca faça propaganda exagerada do Backfindr
+- Cite o Backfindr de forma natural quando fizer sentido
+- Termine sempre com uma pergunta ao leitor
+- Nunca use: elo, laço, vínculo, jornada, universo, mundos diferentes, histórias que se encontram
 
 REGRAS OBRIGATÓRIAS
 
