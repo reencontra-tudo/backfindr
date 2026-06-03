@@ -22,72 +22,12 @@ interface ObjectRow {
 
 // ─── Prompts por categoria ────────────────────────────────────────────────────
 const CATEGORY_PROMPTS: Record<Category, string> = {
-  dica: `Escreva um artigo de utilidade pública com exatamente esta estrutura:
-
-Parágrafo 1: Descreva uma situação real e específica onde alguém encontra ou perde um objeto. Sem emoção. Apenas a cena.
-Parágrafo 2: Explique por que a situação é difícil — o que impede a devolução ou recuperação.
-Parágrafo 3: Diga o que fazer de forma prática. Sem lista. Texto corrido.
-Parágrafo 4: Explique os erros mais comuns que as pessoas cometem.
-Parágrafo 5: Cite o Backfindr em no máximo 2 frases, de forma natural.
-Parágrafo 6: Faça uma pergunta ao leitor baseada em experiência pessoal.
-
-Proibido: emoções, sentimentos, memórias, metáforas, linguagem filosófica, linguagem poética.
-Escreva como uma reportagem de utilidade pública. Entre 400 e 600 palavras.`,
-
-  caso: `Escreva um relato realista com exatamente esta estrutura:
-
-Parágrafo 1: Descreva a cena onde o objeto foi perdido ou encontrado. Hora, lugar, situação específica.
-Parágrafo 2: O que quem perdeu fez imediatamente. Ações concretas, não sentimentos.
-Parágrafo 3: O que quem encontrou fez. Ações concretas, não sentimentos.
-Parágrafo 4: Por que os dois não se encontraram — cada um procurou em um lugar diferente.
-Parágrafo 5: Como o objeto foi recuperado ou por que não foi.
-Parágrafo 6: O que poderia ter facilitado a devolução. Cite o Backfindr se fizer sentido.
-Parágrafo 7: Pergunta ao leitor baseada em experiência pessoal.
-
-Proibido: emoções excessivas, metáforas, linguagem filosófica, inventar estatísticas.
-Entre 400 e 600 palavras.`,
-
-  guia: `Escreva um guia prático com subtítulos H2 e exatamente esta estrutura:
-
-Abertura: Uma cena real que apresenta o problema.
-## Por que isso acontece: Explique de forma simples e direta.
-## O que fazer: Orientações práticas em texto corrido, sem lista numerada.
-## Erros comuns: O que as pessoas fazem errado e por quê.
-## Como o Backfindr ajuda: No máximo 3 frases, sem exagero.
-Encerramento: Pergunta ao leitor.
-
-Proibido: emoções, metáforas, linguagem filosófica, inventar dados.
-Entre 600 e 900 palavras.`,
-
-  debate: `Escreva um texto curto com exatamente esta estrutura:
-
-Parágrafo 1: Uma situação real e específica — 2 ou 3 frases.
-Parágrafo 2: Por que essa situação é comum e difícil — sem emoção, apenas fato.
-Parágrafo 3: Uma pergunta direta ao leitor baseada em experiência pessoal.
-
-Proibido: emoções, metáforas, linguagem filosófica, mais de 3 parágrafos.
-Máximo 200 palavras. Direto ao ponto.`,
-
-  novidade: `Escreva sobre o recurso do Backfindr com exatamente esta estrutura:
-
-Parágrafo 1: O problema que existia antes do recurso — situação real, sem emoção.
-Parágrafo 2: Como o recurso funciona — explicação simples e direta.
-Parágrafo 3: Quem se beneficia e como usar — prático, sem exagero.
-Parágrafo 4: Pergunta ao leitor.
-
-Proibido: linguagem de press release, exagero, metáforas, emoções.
-Entre 300 e 450 palavras.`,
-
-  seguranca: `Escreva um artigo de prevenção com exatamente esta estrutura:
-
-Parágrafo 1: Uma situação real onde alguém foi prejudicado por não tomar cuidado com objeto perdido.
-Parágrafo 2: Quais cuidados básicos evitariam o problema — prático, sem alarmismo.
-Parágrafo 3: Erros comuns que as pessoas cometem.
-Parágrafo 4: Como o Backfindr ajuda na prevenção — no máximo 2 frases.
-Parágrafo 5: Pergunta ao leitor.
-
-Proibido: alarmismo, emoções, metáforas, linguagem filosófica.
-Entre 350 e 500 palavras.`,
+  dica: 'Escreva um texto prático. Comece com uma cena real. Explique o problema. Dê orientação prática em texto corrido. Cite o Backfindr naturalmente. Termine com pergunta ao leitor.',
+  caso: 'Escreva uma situação realista com começo, meio e fim. Cena específica, ações concretas dos personagens, desfecho. Cite o Backfindr. Termine com pergunta ao leitor.',
+  guia: 'Escreva um guia prático com subtítulos H2. Cena inicial, seções com orientações claras, cite o Backfindr, pergunta final.',
+  debate: 'Escreva um texto curto com situação real e pergunta direta ao leitor. Máximo 200 palavras.',
+  novidade: 'Escreva sobre o recurso do Backfindr começando pelo problema que ele resolve. Prático, sem exagero. Termine com pergunta.',
+  seguranca: 'Escreva sobre cuidados com objetos pessoais. Situação real, orientações práticas, cite o Backfindr, termine com pergunta.',
 };
 
 // ─── Gerar slug a partir do título ───────────────────────────────────────────
@@ -253,7 +193,7 @@ RETORNE APENAS JSON VÁLIDO, SEM MARKDOWN:
           { role: 'user', content: userPrompt },
         ],
         max_tokens: 1500,
-        temperature: 0.7, // criativo mas controlado — estrutura por parágrafo
+        temperature: 0.4,
       }),
       signal: controller.signal,
     });
