@@ -272,9 +272,12 @@ O título deve conter o termo que alguém buscaria no Google — mas soar como f
 As primeiras linhas já respondem a intenção de busca — sem anunciar isso.
 O Google valoriza tempo de leitura e compartilhamento. Uma boa reflexão gera os dois.
 
-FORMATO
+FORMATO — OBRIGATÓRIO
 Escreva SEMPRE em português brasileiro.
-Markdown limpo. # Título, subtítulo em parágrafo simples, corpo com ritmo narrativo.
+A PRIMEIRA linha do texto DEVE ser o título no formato: # Título aqui
+Sem isso o sistema não consegue extrair o título — o post fica sem nome.
+Depois do título, uma linha de subtítulo em parágrafo simples.
+Depois o corpo com ritmo narrativo.
 Use ## apenas se realmente necessário — nunca como estrutura automática.
 Máximo 350 palavras. Pare quando a mensagem estiver entregue.`;
 
