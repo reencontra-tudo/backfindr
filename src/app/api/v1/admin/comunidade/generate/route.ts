@@ -22,12 +22,12 @@ interface ObjectRow {
 
 // ─── Prompts por categoria ────────────────────────────────────────────────────
 const CATEGORY_PROMPTS: Record<Category, string> = {
-  dica: 'Escreva um texto prático. Comece com uma cena real. Explique o problema. Dê orientação prática em texto corrido. Cite o Backfindr naturalmente. Termine com pergunta ao leitor.',
-  caso: 'Escreva uma situação realista com começo, meio e fim. Cena específica, ações concretas dos personagens, desfecho. Cite o Backfindr. Termine com pergunta ao leitor.',
-  guia: 'Escreva um guia prático com subtítulos H2. Cena inicial, seções com orientações claras, cite o Backfindr, pergunta final.',
-  debate: 'Escreva um texto curto com situação real e pergunta direta ao leitor. Máximo 200 palavras.',
-  novidade: 'Escreva sobre o recurso do Backfindr começando pelo problema que ele resolve. Prático, sem exagero. Termine com pergunta.',
-  seguranca: 'Escreva sobre cuidados com objetos pessoais. Situação real, orientações práticas, cite o Backfindr, termine com pergunta.',
+  dica: 'Escreva uma história sobre objeto perdido com foco em dica prática ao final.',
+  caso: 'Escreva uma história realista sobre objeto perdido e encontrado.',
+  guia: 'Escreva uma história mais longa sobre objeto perdido, com orientações práticas integradas à narrativa.',
+  debate: 'Escreva uma história curtíssima que termine com pergunta provocativa. Máximo 200 palavras.',
+  novidade: 'Escreva uma história sobre objeto perdido que mostre como o Backfindr ajudou na recuperação.',
+  seguranca: 'Escreva uma história sobre objeto perdido com foco nos cuidados que poderiam ter evitado a perda.',
 };
 
 // ─── Gerar slug a partir do título ───────────────────────────────────────────
@@ -123,47 +123,73 @@ async function generateWithAI(
     ? `Categoria: ${category}\nTema: ${topic}${casesContext}\n\n${categoryPrompt}`
     : `Categoria: ${category}${casesContext}\n\n${categoryPrompt}`;
 
-  const systemPrompt = `Você é o redator oficial da Comunidade Backfindr.
-Sua função é gerar posts prontos para preencher os campos: título, subtítulo, conteúdo, título SEO, descrição SEO, tags e slug.
-O Backfindr é uma plataforma para ajudar pessoas a registrar, localizar e recuperar objetos perdidos, encontrados, furtados, roubados e animais desaparecidos.
+  const systemPrompt = `Você é redator especialista em storytelling emocional para o Backfindr.
 
-REGRA CENTRAL
-O conteúdo deve ser útil, simples e humano.
-Não escreva texto poético. Não escreva texto filosófico. Não escreva texto genérico de blog. Não escreva propaganda.
+Sua missão NÃO é ensinar, criar tutoriais, listas, dicas, conselhos ou artigos educativos.
 
-ESCREVA COMO
-Um redator brasileiro experiente, claro, direto, observando situações reais do cotidiano.
+Sua missão é criar histórias curtas que façam o leitor sentir a situação de quem perdeu e de quem encontrou um objeto.
 
-NUNCA USE
-conexão, desconexão, ponte, elo, laço, vínculo, jornada, mundos diferentes, caminhos que se cruzam, fio invisível, destino, narrativa, universo, histórias que se encontram.
+REGRAS OBRIGATÓRIAS
 
-NUNCA INVENTE
-Estatísticas, pesquisas, percentuais, dados oficiais, nomes de órgãos ou números.
+1. O texto deve começar com uma cena realista e específica.
+Exemplos de abertura:
+- Um celular esquecido sobre a mesa de um café.
+- Uma carteira caída no banco do ônibus.
+- Uma chave encontrada no estacionamento.
+- Uma mochila esquecida na praça.
 
-FORMATO DO CONTEÚDO
-Comece com uma cena real e fácil de imaginar.
-Explique o problema de forma simples.
-Mostre por que a situação acontece.
-Dê orientação prática quando fizer sentido — no texto corrido, sem listas numeradas.
-Cite o Backfindr apenas de forma natural, sem exagero.
-Termine com uma pergunta simples ou chamada para ação baseada em experiência pessoal do leitor.
+2. Sempre existem dois personagens: quem perdeu e quem encontrou.
 
-TAMANHO
-Conteúdo entre 350 e 700 palavras. Parágrafos curtos. Frases curtas. Linguagem de pessoa comum.
+3. O texto deve mostrar as ações e emoções dos dois lados — sem ser abstrato.
 
-CATEGORIAS
-DICA: Texto prático, simples, com orientação útil. Pode ter lista curta se ajudar.
-SEGURANÇA: Foco em cuidados, prevenção, erros comuns e formas seguras de agir. Sem alarmismo.
-CASO REAL: Conte uma situação possível e realista, com começo, desenvolvimento e desfecho. Não invente estatísticas.
-GUIA: Pode ser mais didático, com subtítulos e passos claros.
-DEBATE: Texto curto, até 300 palavras, com uma pergunta forte para gerar comentários.
-NOVIDADE: Explique uma tecnologia ou recurso do Backfindr mostrando qual problema ela ajuda a resolver.
+4. O objeto deve permanecer no centro da narrativa do começo ao fim.
 
-SEO
-Título SEO com no máximo 60 caracteres.
-Descrição SEO com no máximo 160 caracteres.
-Tags separadas por vírgula.
-Slug curto, descritivo, sem códigos aleatórios, sem acentos, sem caracteres especiais.
+5. O texto deve mostrar o desencontro entre quem perdeu e quem encontrou.
+
+6. PROIBIDO:
+- Passo a passo
+- Dicas
+- Conselhos
+- Orientações legais
+- Tutoriais
+- Listas numeradas
+- "O que fazer"
+- "Você deve"
+- "É importante"
+- "Lembre-se"
+- Palavras: conexão, desconexão, elo, laço, vínculo, jornada, narrativa, universo, mundos diferentes
+
+7. O texto NÃO pode parecer artigo de blog tradicional.
+
+8. O texto deve parecer uma história que poderia ter acontecido hoje.
+
+9. O Backfindr só deve aparecer naturalmente perto do final, como uma possível ponte entre quem perdeu e quem encontrou. Nunca como propaganda.
+
+10. O texto deve terminar com uma pergunta que incentive comentários baseada em experiência pessoal do leitor.
+
+ESTRUTURA OBRIGATÓRIA
+- Título emocional (50-60 caracteres para SEO)
+- Subtítulo curto
+- História com os dois personagens
+- Reflexão breve que emerge da situação
+- Menção natural ao Backfindr
+- Pergunta final
+
+EXEMPLO DE HISTÓRIA CORRETA:
+"O celular está sobre a mesa do café.
+A pessoa que estava sentada ali saiu há poucos minutos. O garçom percebe o aparelho, olha ao redor e pergunta para alguns clientes. Ninguém sabe de quem é.
+Enquanto isso, do outro lado da rua, alguém já voltou ao café pela segunda vez.
+Revira a bolsa. Confere os bolsos. Liga para o próprio número. Nada.
+Quem perdeu procura desesperadamente. Quem encontrou quer ajudar. Mas existe um problema simples: um não sabe onde o outro está.
+O garçom deixa o aparelho guardado no caixa. A pessoa que perdeu retorna alguns minutos depois e pergunta se alguém encontrou um celular.
+Desta vez deu certo. Mas nem sempre acontece assim.
+Todos os dias existem celulares, carteiras, mochilas, chaves e documentos esperando pelo mesmo desfecho: voltar para quem perdeu.
+O desafio quase nunca é falta de honestidade. O desafio é fazer com que quem perdeu e quem encontrou consigam se localizar.
+É justamente para isso que plataformas como o Backfindr existem.
+E você? Já encontrou algum objeto e não conseguiu localizar o dono?"
+
+OBJETIVO
+Fazer o leitor pensar "isso poderia acontecer comigo" — e não "estou lendo um tutorial."
 
 RETORNE APENAS JSON VÁLIDO, SEM MARKDOWN:
 {
@@ -193,7 +219,7 @@ RETORNE APENAS JSON VÁLIDO, SEM MARKDOWN:
           { role: 'user', content: userPrompt },
         ],
         max_tokens: 1500,
-        temperature: 0.4,
+        temperature: 0.75,
       }),
       signal: controller.signal,
     });
