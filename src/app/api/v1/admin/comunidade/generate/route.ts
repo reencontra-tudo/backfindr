@@ -22,12 +22,38 @@ interface ObjectRow {
 
 // ─── Prompts por categoria ────────────────────────────────────────────────────
 const CATEGORY_PROMPTS: Record<Category, string> = {
-  dica: 'Escreva uma história sobre objeto perdido com foco em dica prática ao final.',
-  caso: 'Escreva uma história realista sobre objeto perdido e encontrado.',
-  guia: 'Escreva uma história mais longa sobre objeto perdido, com orientações práticas integradas à narrativa.',
-  debate: 'Escreva uma história curtíssima que termine com pergunta provocativa. Máximo 200 palavras.',
-  novidade: 'Escreva uma história sobre objeto perdido que mostre como o Backfindr ajudou na recuperação.',
-  seguranca: 'Escreva uma história sobre objeto perdido com foco nos cuidados que poderiam ter evitado a perda.',
+  dica: `Escreva conteúdo útil e prático sobre o tema.
+Pode ensinar. Pode orientar. Pode conter lista curta.
+Comece com uma situação real. Termine com pergunta ao leitor.
+Entre 400 e 600 palavras.`,
+
+  caso: `Conte uma história realista com começo, meio e fim.
+Dois personagens: quem perdeu e quem encontrou.
+O objeto permanece presente do início ao fim.
+Termine com pergunta de experiência pessoal.
+Entre 400 e 600 palavras.`,
+
+  guia: `Escreva um guia completo e didático.
+Passo a passo permitido. Subtítulos H2 permitidos.
+Comece com situação real. Termine com pergunta.
+Entre 600 e 900 palavras.`,
+
+  debate: `Apresente uma situação comum em 2-3 frases.
+Faça UMA pergunta forte ao leitor no final.
+Sem resposta. Sem dois lados. Direto ao ponto.
+Máximo 200 palavras.`,
+
+  novidade: `Explique uma funcionalidade do Backfindr.
+Comece pelo problema que existia antes.
+Depois explique como o recurso resolve.
+Tom de conversa. Entre 300 e 450 palavras.`,
+
+  seguranca: `Escreva conteúdo de prevenção sobre o tema.
+Explique riscos reais sem alarmismo.
+Explique erros comuns e como evitá-los.
+Orientação prática em texto corrido, sem lista numerada.
+Cite o Backfindr naturalmente. Termine com pergunta.
+Entre 400 e 550 palavras.`,
 };
 
 // ─── Gerar slug a partir do título ───────────────────────────────────────────
@@ -123,11 +149,13 @@ async function generateWithAI(
     ? `Categoria: ${category}\nTema: ${topic}${casesContext}\n\n${categoryPrompt}`
     : `Categoria: ${category}${casesContext}\n\n${categoryPrompt}`;
 
-  const systemPrompt = `Você é redator especialista em storytelling emocional para o Backfindr.
+  const systemPrompt = `Você é redator especialista em conteúdo para a Comunidade Backfindr.
 
-Sua missão NÃO é ensinar, criar tutoriais, listas, dicas, conselhos ou artigos educativos.
+Sua missão é criar conteúdo de alta qualidade. O formato depende da categoria — cada categoria tem objetivos diferentes.
 
-Sua missão é criar histórias curtas que façam o leitor sentir a situação de quem perdeu e de quem encontrou um objeto.
+Para histórias (caso, debate): foque em narrativa emocional com dois personagens.
+Para conteúdo prático (dica, guia, segurança): foque em orientação útil e direta.
+Para novidades: foque no problema que existia antes e como foi resolvido.
 
 REGRAS OBRIGATÓRIAS
 
