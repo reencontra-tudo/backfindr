@@ -364,6 +364,7 @@ export async function POST(req: NextRequest) {
 
     // Gerar conteúdo com IA
     const rawContent = await generateWithAI(category, topic || '', realCases);
+    console.log('[DEBUG] rawContent:', rawContent?.substring(0, 500));
     if (!rawContent) {
       return NextResponse.json({ detail: 'IA não retornou conteúdo' }, { status: 500 });
     }
