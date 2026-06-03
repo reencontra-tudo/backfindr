@@ -22,39 +22,72 @@ interface ObjectRow {
 
 // ─── Prompts por categoria ────────────────────────────────────────────────────
 const CATEGORY_PROMPTS: Record<Category, string> = {
-  dica: `Escreva uma reflexão humana sobre uma situação comum envolvendo objetos perdidos.
-Não escreva tutorial. Não escreva passo a passo. Não escreva lista de dicas.
-Mostre uma situação real que faça o leitor pensar sobre a desconexão entre quem perdeu e quem encontrou.
-Termine com uma pergunta baseada em experiência pessoal do leitor.
-Máximo 300 palavras.`,
+  dica: `Escreva um artigo de utilidade pública com exatamente esta estrutura:
 
-  caso: `Escreva uma narrativa humana inspirada em uma situação possível envolvendo objeto perdido.
-O foco não é o objeto. O foco são as pessoas tentando se reencontrar — e não conseguindo.
-Mostre os dois lados: quem perdeu e quem encontrou, cada um procurando em um lugar diferente.
-Termine com uma pergunta que gere identificação.
-Máximo 300 palavras.`,
+Parágrafo 1: Descreva uma situação real e específica onde alguém encontra ou perde um objeto. Sem emoção. Apenas a cena.
+Parágrafo 2: Explique por que a situação é difícil — o que impede a devolução ou recuperação.
+Parágrafo 3: Diga o que fazer de forma prática. Sem lista. Texto corrido.
+Parágrafo 4: Explique os erros mais comuns que as pessoas cometem.
+Parágrafo 5: Cite o Backfindr em no máximo 2 frases, de forma natural.
+Parágrafo 6: Faça uma pergunta ao leitor baseada em experiência pessoal.
 
-  guia: `Escreva uma reflexão mais longa sobre o tema — não um guia técnico.
-Explore o problema da desconexão com profundidade: por que quem perdeu e quem encontrou raramente se encontram?
-Use situações concretas e reconhecíveis. Nada de listas ou passos.
-Termine com reflexão ou pergunta aberta.
-Máximo 500 palavras.`,
+Proibido: emoções, sentimentos, memórias, metáforas, linguagem filosófica, linguagem poética.
+Escreva como uma reportagem de utilidade pública. Entre 400 e 600 palavras.`,
 
-  debate: `Escreva uma reflexão curta que provoque comentários.
-Apresente uma situação comum. Mostre o problema da desconexão. Faça uma pergunta simples ao final que gere identificação pessoal.
-A pergunta deve ser sobre experiência real do leitor — não abstrata.
-Máximo 250 palavras.`,
+  caso: `Escreva um relato realista com exatamente esta estrutura:
 
-  novidade: `Escreva sobre uma funcionalidade do Backfindr começando pela situação humana que ela resolve.
-Não anuncie a funcionalidade — mostre o problema que existia antes dela.
-Tom de conversa, como alguém contando o que construiu e por quê.
-Máximo 350 palavras.`,
+Parágrafo 1: Descreva a cena onde o objeto foi perdido ou encontrado. Hora, lugar, situação específica.
+Parágrafo 2: O que quem perdeu fez imediatamente. Ações concretas, não sentimentos.
+Parágrafo 3: O que quem encontrou fez. Ações concretas, não sentimentos.
+Parágrafo 4: Por que os dois não se encontraram — cada um procurou em um lugar diferente.
+Parágrafo 5: Como o objeto foi recuperado ou por que não foi.
+Parágrafo 6: O que poderia ter facilitado a devolução. Cite o Backfindr se fizer sentido.
+Parágrafo 7: Pergunta ao leitor baseada em experiência pessoal.
 
-  seguranca: `Escreva uma reflexão sobre como objetos perdidos afetam as pessoas — emocionalmente, não tecnicamente.
-O foco é a desconexão: quem perdeu procura de um lado, quem encontrou procura do outro.
-Nada de alertas, riscos ou conselhos de segurança.
-Termine com pergunta de experiência pessoal.
-Máximo 300 palavras.`,
+Proibido: emoções excessivas, metáforas, linguagem filosófica, inventar estatísticas.
+Entre 400 e 600 palavras.`,
+
+  guia: `Escreva um guia prático com subtítulos H2 e exatamente esta estrutura:
+
+Abertura: Uma cena real que apresenta o problema.
+## Por que isso acontece: Explique de forma simples e direta.
+## O que fazer: Orientações práticas em texto corrido, sem lista numerada.
+## Erros comuns: O que as pessoas fazem errado e por quê.
+## Como o Backfindr ajuda: No máximo 3 frases, sem exagero.
+Encerramento: Pergunta ao leitor.
+
+Proibido: emoções, metáforas, linguagem filosófica, inventar dados.
+Entre 600 e 900 palavras.`,
+
+  debate: `Escreva um texto curto com exatamente esta estrutura:
+
+Parágrafo 1: Uma situação real e específica — 2 ou 3 frases.
+Parágrafo 2: Por que essa situação é comum e difícil — sem emoção, apenas fato.
+Parágrafo 3: Uma pergunta direta ao leitor baseada em experiência pessoal.
+
+Proibido: emoções, metáforas, linguagem filosófica, mais de 3 parágrafos.
+Máximo 200 palavras. Direto ao ponto.`,
+
+  novidade: `Escreva sobre o recurso do Backfindr com exatamente esta estrutura:
+
+Parágrafo 1: O problema que existia antes do recurso — situação real, sem emoção.
+Parágrafo 2: Como o recurso funciona — explicação simples e direta.
+Parágrafo 3: Quem se beneficia e como usar — prático, sem exagero.
+Parágrafo 4: Pergunta ao leitor.
+
+Proibido: linguagem de press release, exagero, metáforas, emoções.
+Entre 300 e 450 palavras.`,
+
+  seguranca: `Escreva um artigo de prevenção com exatamente esta estrutura:
+
+Parágrafo 1: Uma situação real onde alguém foi prejudicado por não tomar cuidado com objeto perdido.
+Parágrafo 2: Quais cuidados básicos evitariam o problema — prático, sem alarmismo.
+Parágrafo 3: Erros comuns que as pessoas cometem.
+Parágrafo 4: Como o Backfindr ajuda na prevenção — no máximo 2 frases.
+Parágrafo 5: Pergunta ao leitor.
+
+Proibido: alarmismo, emoções, metáforas, linguagem filosófica.
+Entre 350 e 500 palavras.`,
 };
 
 // ─── Gerar slug a partir do título ───────────────────────────────────────────
@@ -147,8 +180,8 @@ async function generateWithAI(
     : '';
 
   const userPrompt = topic
-    ? `Tema específico solicitado: "${topic}"${casesContext}\n\n${categoryPrompt}`
-    : `${categoryPrompt}${casesContext}`;
+    ? `Categoria: ${category}\nTema: ${topic}${casesContext}\n\n${categoryPrompt}`
+    : `Categoria: ${category}${casesContext}\n\n${categoryPrompt}`;
 
   const systemPrompt = `Você é o redator oficial da Comunidade Backfindr.
 Sua função é gerar posts prontos para preencher os campos: título, subtítulo, conteúdo, título SEO, descrição SEO, tags e slug.
@@ -220,7 +253,7 @@ RETORNE APENAS JSON VÁLIDO, SEM MARKDOWN:
           { role: 'user', content: userPrompt },
         ],
         max_tokens: 1500,
-        temperature: 0.85, // liberdade narrativa — reflexão humana, não artigo
+        temperature: 0.7, // criativo mas controlado — estrutura por parágrafo
       }),
       signal: controller.signal,
     });
