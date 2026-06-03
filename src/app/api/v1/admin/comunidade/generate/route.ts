@@ -22,40 +22,39 @@ interface ObjectRow {
 
 // ─── Prompts por categoria ────────────────────────────────────────────────────
 const CATEGORY_PROMPTS: Record<Category, string> = {
-  dica: `Escreva um artigo de dicas práticas sobre o tema solicitado.
-Estrutura: título com termo buscável no Google, subtítulo com promessa prática, situação concreta que abre o texto (o problema real), orientação prática em etapas numeradas com ## para cada bloco, conclusão com reflexão.
-Comece pelo problema — nunca por introdução genérica. Sem "neste artigo vamos ver".
-O Backfindr pode aparecer quando fizer sentido orgânico — não force.
-Tamanho: 400 a 600 palavras.
-Palavras proibidas: revoluciona, inovador, disruptivo, game changer, especialistas afirmam, estudos mostram.`,
+  dica: `Escreva uma reflexão humana sobre uma situação comum envolvendo objetos perdidos.
+Não escreva tutorial. Não escreva passo a passo. Não escreva lista de dicas.
+Mostre uma situação real que faça o leitor pensar sobre a desconexão entre quem perdeu e quem encontrou.
+Termine com uma pergunta baseada em experiência pessoal do leitor.
+Máximo 300 palavras.`,
 
-  caso: `Escreva um relato no estilo caso real — uma situação reconhecível, não necessariamente documentada, mas que o leitor sinta que poderia ter acontecido com alguém que ele conhece.
-Estrutura: título que desperta curiosidade, subtítulo contextual, narrativa com ## para "O que aconteceu", "Como a recuperação ocorreu", "O que tornou possível", "Lição aprendida".
-Sem identificar ninguém. Detalhes realistas. Tom jornalístico leve.
-O Backfindr aparece de forma natural, nunca publicitária.
-Tamanho: 350 a 500 palavras.`,
+  caso: `Escreva uma narrativa humana inspirada em uma situação possível envolvendo objeto perdido.
+O foco não é o objeto. O foco são as pessoas tentando se reencontrar — e não conseguindo.
+Mostre os dois lados: quem perdeu e quem encontrou, cada um procurando em um lugar diferente.
+Termine com uma pergunta que gere identificação.
+Máximo 300 palavras.`,
 
-  guia: `Escreva um guia completo sobre o tema, voltado para quem perdeu ou pode perder algo no Brasil.
-Estrutura: título com palavra-chave buscável, subtítulo descritivo, introdução de 2 parágrafos que vai direto ao problema, seções em ## com conteúdo denso, checklist ou tabela quando útil, conclusão prática.
-Tom de especialista acessível — não acadêmico, não corporativo.
-O Backfindr como ferramenta complementar, não como foco.
-Tamanho: mínimo 600 palavras.`,
+  guia: `Escreva uma reflexão mais longa sobre o tema — não um guia técnico.
+Explore o problema da desconexão com profundidade: por que quem perdeu e quem encontrou raramente se encontram?
+Use situações concretas e reconhecíveis. Nada de listas ou passos.
+Termine com reflexão ou pergunta aberta.
+Máximo 500 palavras.`,
 
-  debate: `Escreva um texto que provoca debate genuíno sobre comportamento social relacionado a objetos perdidos e devoluções.
-Estrutura: título em forma de pergunta ou afirmação provocativa, subtítulo que contextualiza, apresentação da situação em até 3 linhas, problema explicado brevemente, UMA única pergunta simples ao final que convide comentários.
-Sem resposta — só provocação. Sem dois lados longos. Direto e instigante.
-Tamanho: máximo 300 palavras.`,
+  debate: `Escreva uma reflexão curta que provoque comentários.
+Apresente uma situação comum. Mostre o problema da desconexão. Faça uma pergunta simples ao final que gere identificação pessoal.
+A pergunta deve ser sobre experiência real do leitor — não abstrata.
+Máximo 250 palavras.`,
 
-  novidade: `Escreva sobre uma funcionalidade ou melhoria do Backfindr começando pelo problema que ela resolve — nunca pela funcionalidade em si.
-Estrutura: título com o que mudou, subtítulo do impacto para o usuário, contexto do problema que existia antes, como o recurso resolve, como usar em passos práticos com Markdown, encerramento em tom de conversa.
-Sem release corporativo. Sem "temos o prazer de anunciar". Como alguém contando o que construiu.
-Tamanho: 300 a 450 palavras.`,
+  novidade: `Escreva sobre uma funcionalidade do Backfindr começando pela situação humana que ela resolve.
+Não anuncie a funcionalidade — mostre o problema que existia antes dela.
+Tom de conversa, como alguém contando o que construiu e por quê.
+Máximo 350 palavras.`,
 
-  seguranca: `Escreva sobre segurança pessoal e proteção de objetos no Brasil.
-Estrutura: título com urgência real (não alarmismo), subtítulo propositivo, abertura com situação reconhecível, risco concreto explicado sem exagero, como evitar em passos práticos com ##, conclusão tranquilizadora e prática.
-Tom educativo de quem conhece o problema — não de quem quer assustar.
-O Backfindr como camada adicional de proteção, não como solução mágica.
-Tamanho: 400 a 550 palavras.`,
+  seguranca: `Escreva uma reflexão sobre como objetos perdidos afetam as pessoas — emocionalmente, não tecnicamente.
+O foco é a desconexão: quem perdeu procura de um lado, quem encontrou procura do outro.
+Nada de alertas, riscos ou conselhos de segurança.
+Termine com pergunta de experiência pessoal.
+Máximo 300 palavras.`,
 };
 
 // ─── Gerar slug a partir do título ───────────────────────────────────────────
