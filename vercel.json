@@ -26,6 +26,10 @@
     {
       "path": "/api/v1/admin/marketing/search/cron",
       "schedule": "0 8 * * *"
+    },
+    {
+      "path": "/api/v1/admin/analytics/snapshot",
+      "schedule": "0 7 * * *"
     }
   ]
 }
