@@ -234,21 +234,18 @@ Errado: "O que você acha dessa situação?"
 OBJETIVO
 Fazer o leitor pensar "isso poderia acontecer comigo" — e não "estou lendo um tutorial."
 
-RETORNE APENAS JSON VÁLIDO, SEM MARKDOWN:
-{
-  "title": "",
-  "subtitle": "",
-  "content": "",
-  "seo_title": "",
-  "seo_desc": "",
-  "tags": "",
-  "slug": "",
-  "debate_question": ""
-}
+FORMATO DE RESPOSTA:
+Responda em texto puro com esta estrutura exata:
 
-O campo debate_question deve ser preenchido APENAS quando a categoria for debate.
-Para debate: coloque aqui a pergunta principal que o leitor deve responder nos comentários.
-Para outras categorias: deixe debate_question como string vazia.`;
+TITULO: [título do post]
+SUBTITULO: [subtítulo curto]
+SEO_TITLE: [título SEO máx 60 chars]
+SEO_DESC: [descrição SEO máx 160 chars]
+TAGS: [tag1, tag2, tag3]
+SLUG: [slug-sem-acentos]
+DEBATE_QUESTION: [pergunta do debate, vazio se não for debate]
+CONTEUDO:
+[conteúdo completo aqui]`;
 
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), 30000); // 30s para geração de conteúdo
@@ -369,24 +366,52 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ detail: 'IA não retornou conteúdo' }, { status: 500 });
     }
 
-    // Parsear JSON retornado diretamente pela IA
+    // Parsear resposta em texto estruturado (TITULO: / SUBTITULO: / etc.)
+    const parseTextResponse = (text: string) => {
+      const extract = (key: string): string => {
+        const regex = new RegExp(`^${key}:\s*(.+)$`, 'mi');
+        const match = text.match(regex);
+        return match ? match[1].trim() : '';
+      };
+      const conteudoMatch = text.match(/^CONTEUDO:\s*\n([\s\S]*)$/mi);
+      return {
+        title: extract('TITULO'),
+        subtitle: extract('SUBTITULO'),
+        seo_title: extract('SEO_TITLE'),
+        seo_desc: extract('SEO_DESC'),
+        tags: extract('TAGS'),
+        slug: extract('SLUG'),
+        debate_question: extract('DEBATE_QUESTION'),
+        content: conteudoMatch ? conteudoMatch[1].trim() : '',
+      };
+    };
+
     let parsed: {
       title?: string; subtitle?: string; content?: string;
       seo_title?: string; seo_desc?: string; tags?: string; slug?: string;
       debate_question?: string;
     } = {};
-    try {
-      // Tentar extrair JSON mesmo que venha com texto antes/depois
-      let clean = rawContent.replace(/```json|```/g, '').trim();
-      // Se não começar com {, tentar encontrar o JSON dentro do texto
-      if (!clean.startsWith('{')) {
-        const jsonMatch = clean.match(/\{[\s\S]*\}/);
-        if (jsonMatch) clean = jsonMatch[0];
+
+    if (rawContent.includes('TITULO:') && rawContent.includes('CONTEUDO:')) {
+      parsed = parseTextResponse(rawContent);
+    } else {
+      // fallback: tentar JSON
+      try {
+        let clean = rawContent.replace(/```json|```/g, '').trim();
+        if (!clean.startsWith('{')) {
+          const jsonMatch = clean.match(/\{[\s\S]*\}/);
+          if (jsonMatch) clean = jsonMatch[0];
+        }
+        const jsonParsed = JSON.parse(clean);
+        if (jsonParsed.title && jsonParsed.content) {
+          parsed = jsonParsed;
+        } else {
+          throw new Error('JSON vazio');
+        }
+      } catch {
+        const extracted = extractTitleAndSubtitle(rawContent);
+        parsed = { title: extracted.title, subtitle: extracted.subtitle, content: extracted.body };
       }
-      parsed = JSON.parse(clean);
-    } catch {
-      const extracted = extractTitleAndSubtitle(rawContent);
-      parsed = { title: extracted.title, subtitle: extracted.subtitle, content: extracted.body };
     }
 
     const title = parsed.title || 'Novo artigo';
