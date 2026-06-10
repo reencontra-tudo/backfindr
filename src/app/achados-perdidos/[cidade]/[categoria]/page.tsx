@@ -81,7 +81,17 @@ export default async function CidadeCategoria({ params }: Props) {
           <h2 className="text-xl font-semibold mb-3">
             {params.categoria === 'veiculo'
               ? `O que fazer se seu veículo foi roubado ou furtado em ${city.name}`
-              : `O que fazer em ${city.name}`}
+              : params.categoria === 'pet'
+              ? `O que fazer quando seu pet desaparece em ${city.name}`
+              : params.categoria === 'celular'
+              ? `O que fazer quando perde o celular em ${city.name}`
+              : params.categoria === 'documento'
+              ? `O que fazer quando perde um documento em ${city.name}`
+              : params.categoria === 'chave'
+              ? `O que fazer quando perde uma chave em ${city.name}`
+              : params.categoria === 'bagagem'
+              ? `O que fazer quando perde bagagem em ${city.name}`
+              : `Como recuperar seu objeto perdido em ${city.name}`}
           </h2>
           <div className="prose prose-sm max-w-none text-gray-700"
             dangerouslySetInnerHTML={{ __html: page.tips_content }} />
