@@ -19,7 +19,6 @@ const STATUS_COLOR: Record<string, string> = {
   recovered: '#14b8a6',
 };
 
-// Haversine distance em km
 function haversine(lat1: number, lng1: number, lat2: number, lng2: number): number {
   const R = 6371;
   const dLat = ((lat2 - lat1) * Math.PI) / 180;
@@ -32,7 +31,6 @@ function haversine(lat1: number, lng1: number, lat2: number, lng2: number): numb
   return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
 }
 
-// Threshold: mínimo de objetos num raio de 30km para considerar região densa
 const DENSITY_THRESHOLD = 15;
 const DENSITY_RADIUS_KM = 30;
 
@@ -47,11 +45,41 @@ export default function HomeLiveMap() {
   const [isDense, setIsDense] = useState(false);
   const [showPopup, setShowPopup] = useState(false);
 
-  // 1. Detectar coords — GPS como fonte primária, IP como fallback
+  // 1. GPS como fonte primária, IP como fallback
   useEffect(() => {
     let cancelled = false;
 
-    const fetchFromIP = () => {
+    const fetchCityFromIP = () => {
+      fetch('https://ipapi.co/json/')
+        .then(r => r.json())
+        .then(d => { if (!cancelled && d?.city) setCity(d.city); })
+        .catch(() => {});
+    };
+
+    if (navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(
+        pos => {
+          if (cancelled) return;
+          setUserCoords({ lat: pos.coords.latitude, lng: pos.coords.longitude });
+          fetchCityFromIP();
+        },
+        () => {
+          if (cancelled) return;
+          // GPS negado — usa IP para coords e cidade
+          fetch('https://ipapi.co/json/')
+            .then(r => r.json())
+            .then(d => {
+              if (cancelled) return;
+              if (d?.city) setCity(d.city);
+              if (d?.latitude && d?.longitude) {
+                setUserCoords({ lat: d.latitude, lng: d.longitude });
+              }
+            })
+            .catch(() => {});
+        },
+        { timeout: 5000, maximumAge: 60000 }
+      );
+    } else {
       fetch('https://ipapi.co/json/')
         .then(r => r.json())
         .then(d => {
@@ -62,33 +90,12 @@ export default function HomeLiveMap() {
           }
         })
         .catch(() => {});
-    };
-
-    if (navigator.geolocation) {
-      navigator.geolocation.getCurrentPosition(
-        pos => {
-          if (cancelled) return;
-          setUserCoords({ lat: pos.coords.latitude, lng: pos.coords.longitude });
-          // Busca cidade via IP só para o nome (não para coords)
-          fetch('https://ipapi.co/json/')
-            .then(r => r.json())
-            .then(d => { if (!cancelled && d?.city) setCity(d.city); })
-            .catch(() => {});
-        },
-        () => {
-          // GPS negado ou indisponível — usa IP
-          if (!cancelled) fetchFromIP();
-        },
-        { timeout: 5000, maximumAge: 60000 }
-      );
-    } else {
-      fetchFromIP();
     }
 
     return () => { cancelled = true; };
   }, []);
 
-  // 2. Inicializar mapa Mapbox com pins reais
+  // 2. Inicializar mapa e calcular densidade
   useEffect(() => {
     const token = process.env.NEXT_PUBLIC_MAPBOX_TOKEN;
     if (!token || !containerRef.current) return;
@@ -105,22 +112,37 @@ export default function HomeLiveMap() {
         const mbgl = (mapboxgl as any).default ?? mapboxgl;
         mbgl.accessToken = token;
 
+        // Suporta tanto location quanto local
         const objects: MapObject[] = (data?.items ?? [])
-          .filter((o: any) => o.location?.lat && o.location?.lng)
-          .map((o: any) => ({
-            id: o.id,
-            title: o.title,
-            status: o.status,
-            lat: o.location.lat,
-            lng: o.location.lng,
-          }));
+          .filter((o: any) => {
+            const loc = o.location ?? o.local;
+            return loc?.lat && loc?.lng;
+          })
+          .map((o: any) => {
+            const loc = o.location ?? o.local;
+            return {
+              id: o.id,
+              title: o.title,
+              status: o.status,
+              lat: loc.lat,
+              lng: loc.lng,
+            };
+          });
 
         if (objects.length === 0) {
           setError(true);
           return;
         }
 
-        // Calcular densidade na região do usuário (via IP coords)
+        // Centro no usuário se disponível, senão centroide dos objetos
+        const center: [number, number] = userCoords
+          ? [userCoords.lng, userCoords.lat]
+          : [
+              objects.reduce((s, o) => s + o.lng, 0) / objects.length,
+              objects.reduce((s, o) => s + o.lat, 0) / objects.length,
+            ];
+
+        // Calcular densidade na região do usuário
         if (userCoords) {
           const count = objects.filter(o =>
             haversine(userCoords.lat, userCoords.lng, o.lat, o.lng) <= DENSITY_RADIUS_KM
@@ -129,14 +151,11 @@ export default function HomeLiveMap() {
           setIsDense(count >= DENSITY_THRESHOLD);
         }
 
-        const avgLat = objects.reduce((s, o) => s + o.lat, 0) / objects.length;
-        const avgLng = objects.reduce((s, o) => s + o.lng, 0) / objects.length;
-
         const map = new mbgl.Map({
           container: containerRef.current!,
           style: 'mapbox://styles/mapbox/dark-v11',
-          center: [avgLng, avgLat],
-          zoom: 10,
+          center,
+          zoom: userCoords ? 11 : 10,
           interactive: false,
           attributionControl: false,
         });
@@ -162,8 +181,6 @@ export default function HomeLiveMap() {
           });
 
           setReady(true);
-
-          // Popup aparece 3s após o mapa carregar
           setTimeout(() => setShowPopup(true), 3000);
         });
 
@@ -178,10 +195,8 @@ export default function HomeLiveMap() {
         mapRef.current = null;
       }
     };
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [userCoords]);
 
-  // Mensagem do popup baseada na densidade
   const popupMessage = isDense
     ? `Há ${nearbyCount} objeto${nearbyCount !== 1 ? 's' : ''} registrado${nearbyCount !== 1 ? 's' : ''} perto de você. Cada novo cadastro aumenta suas chances de recuperar o que perdeu.`
     : `Sua região ainda está crescendo. Seja o primeiro a registrar — quando alguém achar seu objeto, o Backfindr já estará aqui.`;
@@ -196,12 +211,10 @@ export default function HomeLiveMap() {
 
   return (
     <div className="relative overflow-hidden rounded-3xl border border-white/[0.08] bg-white/[0.03]" style={{ height: 340 }}>
-      {/* Badge */}
       <div className="absolute left-4 top-4 z-10 rounded-full border border-teal-500/20 bg-[#08111f]/88 px-3 py-1.5 text-[11px] font-semibold uppercase tracking-wide text-teal-300 backdrop-blur-sm">
         mapa público
       </div>
 
-      {/* Container do mapa */}
       {!error ? (
         <div ref={containerRef} className="absolute inset-0 w-full h-full" />
       ) : (
@@ -212,10 +225,8 @@ export default function HomeLiveMap() {
         />
       )}
 
-      {/* Gradiente inferior */}
       <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-[#07090e] via-[#07090e]/20 to-transparent" />
 
-      {/* Indicador de carregamento */}
       {!ready && !error && (
         <div className="absolute inset-0 flex items-center justify-center">
           <div className="h-6 w-6 rounded-full border-2 border-teal-500/30 border-t-teal-400 animate-spin" />
@@ -223,7 +234,7 @@ export default function HomeLiveMap() {
       )}
 
       {/* Popup de engajamento */}
-      {showPopup && ready && (
+      {showPopup && ready && userCoords && (
         <div
           className="absolute left-4 right-4 z-20 rounded-2xl border border-white/[0.12] bg-[#08111f]/95 backdrop-blur-md p-4 shadow-2xl"
           style={{
@@ -239,7 +250,6 @@ export default function HomeLiveMap() {
             }
           `}</style>
 
-          {/* Botão fechar */}
           <button
             onClick={() => setShowPopup(false)}
             className="absolute right-3 top-3 text-white/30 hover:text-white transition-colors"
@@ -247,28 +257,19 @@ export default function HomeLiveMap() {
             <X className="w-3.5 h-3.5" />
           </button>
 
-          {/* Ícone + título */}
           <div className="flex items-center gap-2 mb-2 pr-5">
-            <div className={`w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0 ${
-              isDense ? 'bg-teal-500/15' : 'bg-blue-500/15'
-            }`}>
+            <div className={`w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0 ${isDense ? 'bg-teal-500/15' : 'bg-blue-500/15'}`}>
               <MapPin className={`w-3.5 h-3.5 ${isDense ? 'text-teal-400' : 'text-blue-400'}`} />
             </div>
             <p className="text-white text-sm font-bold leading-tight">{popupTitle}</p>
           </div>
 
-          <p className="text-white/55 text-xs leading-relaxed mb-3">
-            {popupMessage}
-          </p>
+          <p className="text-white/55 text-xs leading-relaxed mb-3">{popupMessage}</p>
 
           <div className="flex gap-2">
             <Link
               href="/auth/register"
-              className={`flex-1 text-center py-2 rounded-xl text-xs font-bold text-white transition-all ${
-                isDense
-                  ? 'bg-teal-500 hover:bg-teal-400'
-                  : 'bg-blue-500 hover:bg-blue-400'
-              }`}
+              className={`flex-1 text-center py-2 rounded-xl text-xs font-bold text-white transition-all ${isDense ? 'bg-teal-500 hover:bg-teal-400' : 'bg-blue-500 hover:bg-blue-400'}`}
             >
               {isDense ? 'Cadastrar objeto' : 'Ser o primeiro'}
             </Link>
@@ -282,7 +283,7 @@ export default function HomeLiveMap() {
         </div>
       )}
 
-      {/* CTA flutuante — só aparece quando popup está fechado */}
+      {/* CTA flutuante — só quando popup fechado */}
       {!showPopup && (
         <div className="absolute bottom-5 left-0 right-0 flex justify-center px-5 z-10">
           <Link
