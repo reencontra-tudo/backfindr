@@ -270,6 +270,40 @@ export default function HomePage() {
   const [activities, setActivities] = useState<ActivityItem[]>(FALLBACK_ACTIVITIES);
   const [publicStats, setPublicStats] = useState(STATS_FALLBACK);
 
+  // Geolocalização por IP para personalização regional
+  const [geoCity, setGeoCity] = useState<string | null>(null);
+  const [nearbyCount, setNearbyCount] = useState<number>(0);
+  const [isDenseRegion, setIsDenseRegion] = useState<boolean | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    fetch('https://ipapi.co/json/')
+      .then(r => r.json())
+      .then(async d => {
+        if (cancelled) return;
+        if (d?.city) setGeoCity(d.city);
+        if (!d?.latitude || !d?.longitude) { setIsDenseRegion(false); return; }
+        const lat = d.latitude;
+        const lng = d.longitude;
+        const res = await fetch('/api/v1/objects/public?size=200&status=lost');
+        const data = res.ok ? await res.json() : null;
+        const items: any[] = data?.items ?? [];
+        const count = items.filter((o: any) => {
+          const oLat = o.location?.lat;
+          const oLng = o.location?.lng;
+          if (!oLat || !oLng) return false;
+          const R = 6371;
+          const dLat = ((oLat - lat) * Math.PI) / 180;
+          const dLng = ((oLng - lng) * Math.PI) / 180;
+          const a = Math.sin(dLat/2)**2 + Math.cos(lat*Math.PI/180)*Math.cos(oLat*Math.PI/180)*Math.sin(dLng/2)**2;
+          return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a)) <= 30;
+        }).length;
+        if (!cancelled) { setNearbyCount(count); setIsDenseRegion(count >= 15); }
+      })
+      .catch(() => setIsDenseRegion(false));
+    return () => { cancelled = true; };
+  }, []);
+
   useEffect(() => {
     fetch('/api/v1/stats/public')
       .then(r => r.ok ? r.json() : null)
@@ -490,21 +524,35 @@ export default function HomePage() {
       <section id="ao-vivo" className="px-5 py-20">
         <div className="mx-auto max-w-6xl">
           <FadeIn>
-            {/* Linha de tensão */}
-            <p className="mb-2 text-center text-xs font-semibold uppercase tracking-[0.22em] text-white/28">acontecendo agora perto de você</p>
+            {/* Linha de tensão — personalizada por região */}
+            <p className="mb-2 text-center text-xs font-semibold uppercase tracking-[0.22em] text-white/28">
+              {isDenseRegion === null
+                ? 'acontecendo agora perto de você'
+                : isDenseRegion
+                  ? `acontecendo agora em ${geoCity ?? 'sua cidade'}`
+                  : 'acontecendo todos os dias no Brasil'}
+            </p>
             <h2 className="mb-3 text-center text-3xl font-extrabold text-white md:text-4xl">
-              Isso acontece todos os dias.
+              {isDenseRegion === null || isDenseRegion
+                ? 'Isso acontece todos os dias.'
+                : 'Seja o primeiro da sua região.'}
             </h2>
             <p className="mx-auto mb-12 max-w-xl text-center text-sm leading-relaxed text-white/42 md:text-base">
-              A diferença é quem já está preparado.
+              {isDenseRegion
+                ? <>Há <span className="text-teal-400 font-semibold">{nearbyCount} objeto{nearbyCount !== 1 ? 's' : ''} registrado{nearbyCount !== 1 ? 's' : ''}</span> próximos a você. Cada cadastro aumenta as chances de todos na rede.</>
+                : isDenseRegion === false
+                  ? 'Sua região ainda está crescendo. Registre agora e quando alguém achar seu objeto, o Backfindr já estará aqui.'
+                  : 'A diferença é quem já está preparado.'}
             </p>
           </FadeIn>
 
-          <div className="grid gap-5 lg:grid-cols-[1.05fr_.95fr]">
-            {/* Mini mapa com CTA flutuante */}
-            <FadeIn delay={40}>
-              <HomeLiveMap />
-            </FadeIn>
+          <div className={`grid gap-5 ${isDenseRegion !== false ? 'lg:grid-cols-[1.05fr_.95fr]' : 'lg:grid-cols-1 max-w-2xl mx-auto'}`}>
+            {/* Mini mapa — só aparece em regiões com densidade suficiente */}
+            {isDenseRegion !== false && (
+              <FadeIn delay={40}>
+                <HomeLiveMap />
+              </FadeIn>
+            )}
 
             {/* Feed ao vivo */}
             <div className="grid gap-4">
