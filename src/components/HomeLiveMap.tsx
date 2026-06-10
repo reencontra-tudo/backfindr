@@ -155,7 +155,7 @@ export default function HomeLiveMap() {
           container: containerRef.current!,
           style: 'mapbox://styles/mapbox/dark-v11',
           center,
-          zoom: userCoords ? 11 : 10,
+          zoom: userCoords ? 12 : 10,
           interactive: false,
           attributionControl: false,
         });
