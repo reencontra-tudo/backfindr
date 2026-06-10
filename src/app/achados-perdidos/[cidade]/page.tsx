@@ -9,7 +9,7 @@ const CATEGORIES = [
   { slug: 'celular', label: 'Celular', icon: '📱' },
   { slug: 'pet', label: 'Pet', icon: '🐾' },
   { slug: 'documento', label: 'Documento', icon: '📄' },
-  { slug: 'veiculo', label: 'Veículo', icon: '🚗' },
+  { slug: 'veiculo', label: 'Veículo Roubado', icon: '🚗' },
   { slug: 'chave', label: 'Chave', icon: '🔑' },
   { slug: 'bagagem', label: 'Bagagem', icon: '🧳' },
 ]
