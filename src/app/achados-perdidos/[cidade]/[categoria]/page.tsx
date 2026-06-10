@@ -54,12 +54,25 @@ export default async function CidadeCategoria({ params }: Props) {
           {page?.cta_text ?? `Perdeu ou achou um ${params.categoria} em ${city.name}?`}
         </p>
         <div className="flex gap-3 justify-center">
-          <Link href="/perdi" className="bg-white text-blue-600 px-5 py-2 rounded-lg font-medium hover:bg-blue-50">
-            Perdi um {params.categoria}
-          </Link>
-          <Link href="/achei" className="bg-blue-500 text-white border border-white px-5 py-2 rounded-lg font-medium hover:bg-blue-400">
-            Achei um {params.categoria}
-          </Link>
+          {params.categoria === 'veiculo' ? (
+            <>
+              <Link href="/roubado" className="bg-white text-blue-600 px-5 py-2 rounded-lg font-medium hover:bg-blue-50">
+                Registrar veículo roubado
+              </Link>
+              <Link href="/achei" className="bg-blue-500 text-white border border-white px-5 py-2 rounded-lg font-medium hover:bg-blue-400">
+                Encontrei um veículo
+              </Link>
+            </>
+          ) : (
+            <>
+              <Link href="/perdi" className="bg-white text-blue-600 px-5 py-2 rounded-lg font-medium hover:bg-blue-50">
+                Perdi um {params.categoria}
+              </Link>
+              <Link href="/achei" className="bg-blue-500 text-white border border-white px-5 py-2 rounded-lg font-medium hover:bg-blue-400">
+                Achei um {params.categoria}
+              </Link>
+            </>
+          )}
         </div>
       </div>
 
