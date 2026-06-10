@@ -77,7 +77,7 @@ export default function HomeLiveMap() {
         const mbgl = (mapboxgl as any).default ?? mapboxgl;
         mbgl.accessToken = token;
 
-        const objects: MapObject[] = (data?.objects ?? [])
+        const objects: MapObject[] = (data?.items ?? [])
           .filter((o: any) => o.location?.lat && o.location?.lng)
           .map((o: any) => ({
             id: o.id,
