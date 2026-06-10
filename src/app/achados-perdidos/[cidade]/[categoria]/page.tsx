@@ -78,7 +78,11 @@ export default async function CidadeCategoria({ params }: Props) {
 
       {page?.tips_content && (
         <section className="mb-8">
-          <h2 className="text-xl font-semibold mb-3">O que fazer em {city.name}</h2>
+          <h2 className="text-xl font-semibold mb-3">
+            {params.categoria === 'veiculo'
+              ? `O que fazer se seu veículo foi roubado ou furtado em ${city.name}`
+              : `O que fazer em ${city.name}`}
+          </h2>
           <div className="prose prose-sm max-w-none text-gray-700"
             dangerouslySetInnerHTML={{ __html: page.tips_content }} />
         </section>
