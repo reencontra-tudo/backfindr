@@ -2,6 +2,8 @@ import { notFound } from 'next/navigation'
 import Link from 'next/link'
 import type { Metadata } from 'next'
 
+export const dynamic = 'force-dynamic'
+
 const CATEGORIES = [
   { slug: 'celular', label: 'Celular', icon: '📱' },
   { slug: 'pet', label: 'Pet', icon: '🐾' },

@@ -2,6 +2,8 @@ import { notFound } from 'next/navigation'
 import Link from 'next/link'
 import type { Metadata } from 'next'
 
+export const dynamic = 'force-dynamic'
+
 const SUPA = () => ({
   url: process.env.NEXT_PUBLIC_SUPABASE_URL!,
   headers: {

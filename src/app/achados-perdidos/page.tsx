@@ -1,6 +1,8 @@
 import Link from 'next/link'
 import type { Metadata } from 'next'
 
+export const dynamic = 'force-dynamic'
+
 export const metadata: Metadata = {
   title: 'Achados e Perdidos no Brasil | Backfindr',
   description: 'Encontre o serviço de achados e perdidos da sua cidade. Cadastre objetos perdidos ou achados e ajude a devolver o que é de cada um.',
