@@ -57,7 +57,7 @@ export default async function CidadeCategoria({ params }: Props) {
           {params.categoria === 'veiculo' ? (
             <>
               <Link href="/roubado" className="bg-white text-blue-600 px-5 py-2 rounded-lg font-medium hover:bg-blue-50">
-                Registrar veículo roubado
+                Meu veículo foi roubado
               </Link>
               <Link href="/achei" className="bg-blue-500 text-white border border-white px-5 py-2 rounded-lg font-medium hover:bg-blue-400">
                 Encontrei um veículo
