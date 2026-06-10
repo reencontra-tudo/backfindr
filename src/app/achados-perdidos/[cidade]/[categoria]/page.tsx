@@ -1,13 +1,33 @@
-import { createClient } from '@/lib/supabase/server'
 import { notFound } from 'next/navigation'
 import Link from 'next/link'
 import type { Metadata } from 'next'
 
+const SUPA = () => ({
+  url: process.env.NEXT_PUBLIC_SUPABASE_URL!,
+  headers: {
+    apikey: process.env.SUPABASE_SERVICE_ROLE_KEY!,
+    Authorization: `Bearer ${process.env.SUPABASE_SERVICE_ROLE_KEY!}`,
+  }
+})
+
+async function getCity(slug: string) {
+  const { url, headers } = SUPA()
+  const res = await fetch(`${url}/rest/v1/municipalities?slug=eq.${slug}&select=*&limit=1`, { headers, next: { revalidate: 3600 } })
+  const data = await res.json()
+  return data?.[0] ?? null
+}
+
+async function getPage(municipalityId: number, categorySlug: string) {
+  const { url, headers } = SUPA()
+  const res = await fetch(`${url}/rest/v1/local_pages?municipality_id=eq.${municipalityId}&category_slug=eq.${categorySlug}&status=eq.published&limit=1`, { headers, next: { revalidate: 3600 } })
+  const data = await res.json()
+  return data?.[0] ?? null
+}
+
 interface Props { params: { cidade: string; categoria: string } }
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
-  const supabase = createClient()
-  const { data: city } = await supabase.from('municipalities').select('name, state_name').eq('slug', params.cidade).single()
+  const city = await getCity(params.cidade)
   if (!city) return {}
   return {
     title: `${params.categoria} Perdido em ${city.name} | Backfindr`,
@@ -17,25 +37,18 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 }
 
 export default async function CidadeCategoria({ params }: Props) {
-  const supabase = createClient()
-  const { data: city } = await supabase.from('municipalities').select('*').eq('slug', params.cidade).single()
+  const city = await getCity(params.cidade)
   if (!city) notFound()
 
-  const { data: page } = await supabase.from('local_pages').select('*')
-    .eq('municipality_id', city.id).eq('category_slug', params.categoria).eq('status', 'published').single()
-
-  const { data: objects } = await supabase.from('objects').select('id, name, status, created_at')
-    .ilike('city', `%${city.name}%`).eq('category', params.categoria)
-    .order('created_at', { ascending: false }).limit(4)
-
-  const faq = page?.faq_content as Array<{question: string, answer: string}> ?? []
+  const page = await getPage(city.id, params.categoria)
+  const faq = page?.faq_content ?? []
 
   return (
     <main className="container mx-auto px-4 py-8 max-w-3xl">
       <nav className="text-sm text-gray-500 mb-4">
         <Link href="/achados-perdidos" className="hover:underline">Achados e Perdidos</Link>
         {' › '}
-        <Link href={`/achados-perdidos/${params.cidade}`} className="hover:underline capitalize">{city.name}</Link>
+        <Link href={`/achados-perdidos/${params.cidade}`} className="hover:underline">{city.name}</Link>
         {' › '}
         <span className="capitalize">{params.categoria}</span>
       </nav>
@@ -71,28 +84,11 @@ export default async function CidadeCategoria({ params }: Props) {
         </section>
       )}
 
-      {objects && objects.length > 0 && (
-        <section className="mb-8">
-          <h2 className="text-xl font-semibold mb-3">Cadastrados em {city.name}</h2>
-          <div className="grid grid-cols-2 gap-3">
-            {objects.map(obj => (
-              <Link key={obj.id} href={`/objeto/${obj.id}`}
-                className="border rounded-lg p-3 hover:border-blue-400 transition-colors">
-                <div className="font-medium text-sm">{obj.name}</div>
-                <div className="text-xs text-gray-500 mt-1">
-                  {obj.status === 'lost' ? '🔴 Perdido' : '🟢 Achado'}
-                </div>
-              </Link>
-            ))}
-          </div>
-        </section>
-      )}
-
       {faq.length > 0 && (
         <section className="mb-8">
           <h2 className="text-xl font-semibold mb-4">Perguntas frequentes</h2>
           <div className="space-y-4">
-            {faq.map((item, i) => (
+            {faq.map((item: any, i: number) => (
               <details key={i} className="border rounded-lg p-4">
                 <summary className="font-medium cursor-pointer">{item.question}</summary>
                 <p className="text-gray-600 mt-2 text-sm leading-relaxed">{item.answer}</p>
