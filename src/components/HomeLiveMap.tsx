@@ -47,17 +47,45 @@ export default function HomeLiveMap() {
   const [isDense, setIsDense] = useState(false);
   const [showPopup, setShowPopup] = useState(false);
 
-  // 1. Detectar cidade e coords por IP
+  // 1. Detectar coords — GPS como fonte primária, IP como fallback
   useEffect(() => {
-    fetch('https://ipapi.co/json/')
-      .then(r => r.json())
-      .then(d => {
-        if (d?.city) setCity(d.city);
-        if (d?.latitude && d?.longitude) {
-          setUserCoords({ lat: d.latitude, lng: d.longitude });
-        }
-      })
-      .catch(() => {});
+    let cancelled = false;
+
+    const fetchFromIP = () => {
+      fetch('https://ipapi.co/json/')
+        .then(r => r.json())
+        .then(d => {
+          if (cancelled) return;
+          if (d?.city) setCity(d.city);
+          if (d?.latitude && d?.longitude) {
+            setUserCoords({ lat: d.latitude, lng: d.longitude });
+          }
+        })
+        .catch(() => {});
+    };
+
+    if (navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(
+        pos => {
+          if (cancelled) return;
+          setUserCoords({ lat: pos.coords.latitude, lng: pos.coords.longitude });
+          // Busca cidade via IP só para o nome (não para coords)
+          fetch('https://ipapi.co/json/')
+            .then(r => r.json())
+            .then(d => { if (!cancelled && d?.city) setCity(d.city); })
+            .catch(() => {});
+        },
+        () => {
+          // GPS negado ou indisponível — usa IP
+          if (!cancelled) fetchFromIP();
+        },
+        { timeout: 5000, maximumAge: 60000 }
+      );
+    } else {
+      fetchFromIP();
+    }
+
+    return () => { cancelled = true; };
   }, []);
 
   // 2. Inicializar mapa Mapbox com pins reais
