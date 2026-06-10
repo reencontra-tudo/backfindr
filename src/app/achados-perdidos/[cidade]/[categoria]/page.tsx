@@ -1,35 +1,15 @@
 import { notFound } from 'next/navigation'
 import Link from 'next/link'
 import type { Metadata } from 'next'
+import { query } from '@/lib/db'
 
 export const dynamic = 'force-dynamic'
-
-const SUPA = () => ({
-  url: process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  headers: {
-    apikey: process.env.SUPABASE_SERVICE_ROLE_KEY!,
-    Authorization: `Bearer ${process.env.SUPABASE_SERVICE_ROLE_KEY!}`,
-  }
-})
-
-async function getCity(slug: string) {
-  const { url, headers } = SUPA()
-  const res = await fetch(`${url}/rest/v1/municipalities?slug=eq.${slug}&select=*&limit=1`, { headers, next: { revalidate: 3600 } })
-  const data = await res.json()
-  return data?.[0] ?? null
-}
-
-async function getPage(municipalityId: number, categorySlug: string) {
-  const { url, headers } = SUPA()
-  const res = await fetch(`${url}/rest/v1/local_pages?municipality_id=eq.${municipalityId}&category_slug=eq.${categorySlug}&status=eq.published&limit=1`, { headers, next: { revalidate: 3600 } })
-  const data = await res.json()
-  return data?.[0] ?? null
-}
 
 interface Props { params: { cidade: string; categoria: string } }
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
-  const city = await getCity(params.cidade)
+  const result = await query(`SELECT name, state_name FROM municipalities WHERE slug = $1`, [params.cidade])
+  const city = result.rows[0]
   if (!city) return {}
   return {
     title: `${params.categoria} Perdido em ${city.name} | Backfindr`,
@@ -39,10 +19,15 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 }
 
 export default async function CidadeCategoria({ params }: Props) {
-  const city = await getCity(params.cidade)
+  const cityResult = await query(`SELECT * FROM municipalities WHERE slug = $1`, [params.cidade])
+  const city = cityResult.rows[0]
   if (!city) notFound()
 
-  const page = await getPage(city.id, params.categoria)
+  const pageResult = await query(
+    `SELECT * FROM local_pages WHERE municipality_id = $1 AND category_slug = $2 AND status = 'published' LIMIT 1`,
+    [city.id, params.categoria]
+  )
+  const page = pageResult.rows[0] ?? null
   const faq = page?.faq_content ?? []
 
   return (

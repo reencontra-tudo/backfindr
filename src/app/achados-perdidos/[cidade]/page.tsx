@@ -1,6 +1,7 @@
 import { notFound } from 'next/navigation'
 import Link from 'next/link'
 import type { Metadata } from 'next'
+import { query } from '@/lib/db'
 
 export const dynamic = 'force-dynamic'
 
@@ -13,35 +14,22 @@ const CATEGORIES = [
   { slug: 'bagagem', label: 'Bagagem', icon: '🧳' },
 ]
 
-const SUPA = () => ({
-  url: process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  headers: {
-    apikey: process.env.SUPABASE_SERVICE_ROLE_KEY!,
-    Authorization: `Bearer ${process.env.SUPABASE_SERVICE_ROLE_KEY!}`,
-  }
-})
-
-async function getCity(slug: string) {
-  const { url, headers } = SUPA()
-  const res = await fetch(`${url}/rest/v1/municipalities?slug=eq.${slug}&select=*&limit=1`, { headers, next: { revalidate: 3600 } })
-  const data = await res.json()
-  return data?.[0] ?? null
-}
-
 interface Props { params: { cidade: string } }
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
-  const city = await getCity(params.cidade)
+  const result = await query(`SELECT name, state_name FROM municipalities WHERE slug = $1`, [params.cidade])
+  const city = result.rows[0]
   if (!city) return {}
   return {
     title: `Achados e Perdidos em ${city.name} (${city.state_name}) | Backfindr`,
-    description: `Serviço gratuito de achados e perdidos em ${city.name}. Recupere objetos perdidos ou devolva o que você achou com ajuda do Backfindr.`,
+    description: `Serviço gratuito de achados e perdidos em ${city.name}.`,
     alternates: { canonical: `https://backfindr.com/achados-perdidos/${params.cidade}` }
   }
 }
 
 export default async function CidadePage({ params }: Props) {
-  const city = await getCity(params.cidade)
+  const result = await query(`SELECT * FROM municipalities WHERE slug = $1`, [params.cidade])
+  const city = result.rows[0]
   if (!city) notFound()
 
   return (

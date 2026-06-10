@@ -1,5 +1,6 @@
 import Link from 'next/link'
 import type { Metadata } from 'next'
+import { query } from '@/lib/db'
 
 export const dynamic = 'force-dynamic'
 
@@ -9,21 +10,13 @@ export const metadata: Metadata = {
   alternates: { canonical: 'https://backfindr.com/achados-perdidos' }
 }
 
-async function getCapitals() {
-  const url = `${process.env.NEXT_PUBLIC_SUPABASE_URL}/rest/v1/municipalities?is_capital=eq.true&select=name,slug,state_code,population&order=population.desc`
-  const res = await fetch(url, {
-    headers: {
-      apikey: process.env.SUPABASE_SERVICE_ROLE_KEY!,
-      Authorization: `Bearer ${process.env.SUPABASE_SERVICE_ROLE_KEY!}`,
-    },
-    next: { revalidate: 3600 }
-  })
-  if (!res.ok) return []
-  return res.json()
-}
-
 export default async function AchadosPerdidosHub() {
-  const capitals = await getCapitals()
+  const result = await query(
+    `SELECT name, slug, state_code, total_objects_registered 
+     FROM municipalities WHERE is_capital = true 
+     ORDER BY population DESC`
+  )
+  const capitals = result.rows
 
   return (
     <main className="container mx-auto px-4 py-8 max-w-5xl">
@@ -32,7 +25,7 @@ export default async function AchadosPerdidosHub() {
       <section className="mb-10">
         <h2 className="text-xl font-semibold mb-4">Capitais</h2>
         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
-          {capitals?.map((city: any) => (
+          {capitals.map((city: any) => (
             <Link key={city.slug} href={`/achados-perdidos/${city.slug}`}
               className="p-3 border rounded-lg hover:border-blue-500 hover:bg-blue-50 transition-colors">
               <div className="font-medium text-sm">{city.name}</div>
