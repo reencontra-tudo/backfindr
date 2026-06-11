@@ -11,56 +11,42 @@ const CATEGORIES = [
     label: 'Celular',
     icon: '📱',
     desc: 'iPhone, Android, tablet',
-    color: 'from-blue-500 to-blue-600',
-    bg: 'hover:bg-blue-50 hover:border-blue-400',
   },
   {
     slug: 'pet',
     label: 'Pet',
     icon: '🐾',
     desc: 'Cão, gato, animal de estimação',
-    color: 'from-orange-400 to-orange-500',
-    bg: 'hover:bg-orange-50 hover:border-orange-400',
   },
   {
     slug: 'documento',
     label: 'Documento',
     icon: '📄',
     desc: 'RG, CPF, CNH, passaporte',
-    color: 'from-purple-500 to-purple-600',
-    bg: 'hover:bg-purple-50 hover:border-purple-400',
   },
   {
     slug: 'veiculo',
     label: 'Veículo Roubado',
     icon: '🚗',
     desc: 'Carro, moto, caminhonete',
-    color: 'from-red-500 to-red-600',
-    bg: 'hover:bg-red-50 hover:border-red-400',
   },
   {
     slug: 'chave',
     label: 'Chave',
     icon: '🔑',
     desc: 'Casa, carro, trabalho',
-    color: 'from-yellow-500 to-yellow-600',
-    bg: 'hover:bg-yellow-50 hover:border-yellow-400',
   },
   {
     slug: 'bagagem',
     label: 'Bagagem',
     icon: '🧳',
     desc: 'Mala, mochila, bolsa',
-    color: 'from-teal-500 to-teal-600',
-    bg: 'hover:bg-teal-50 hover:border-teal-400',
   },
   {
     slug: 'geral',
     label: 'Guia Completo',
     icon: '📋',
     desc: 'Todos os canais da cidade',
-    color: 'from-gray-600 to-gray-700',
-    bg: 'hover:bg-gray-50 hover:border-gray-400',
   },
 ]
 
@@ -82,68 +68,78 @@ export default async function CidadePage({ params }: Props) {
   const city = result.rows[0]
   if (!city) notFound()
 
-  // Buscar contagem de páginas publicadas para esta cidade
-  const pagesResult = await query(
-    `SELECT COUNT(*) as total FROM local_pages WHERE municipality_id = $1 AND status = 'published'`,
-    [city.id]
-  )
-  const totalPages = parseInt(pagesResult.rows[0]?.total || '0')
-
   return (
-    <main className="min-h-screen bg-gray-50">
+    <main className="min-h-screen" style={{ backgroundColor: '#0B0F14', color: '#FFFFFF' }}>
 
-      {/* HERO */}
-      <div className="bg-gradient-to-br from-blue-700 via-blue-600 to-indigo-700 text-white">
+      {/* HERO — fundo escuro com acento teal */}
+      <div style={{ backgroundColor: '#111827', borderBottom: '1px solid #1f2937' }}>
         <div className="container mx-auto px-4 py-10 max-w-5xl">
+
           {/* Breadcrumb */}
-          <nav className="text-blue-200 text-sm mb-6 flex items-center gap-1">
-            <Link href="/achados-perdidos" className="hover:text-white transition-colors">
+          <nav className="text-sm mb-6 flex items-center gap-2" style={{ color: '#9CA3AF' }}>
+            <Link href="/achados-perdidos" className="hover:underline transition-colors" style={{ color: '#9CA3AF' }}>
               Achados e Perdidos
             </Link>
-            <span className="text-blue-400">›</span>
-            <span className="text-white font-medium">{city.name}</span>
+            <span>›</span>
+            <span style={{ color: '#FFFFFF' }}>{city.name}</span>
           </nav>
 
-          <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-6">
-            <div>
-              <p className="text-blue-200 text-sm font-medium uppercase tracking-widest mb-2">
-                {city.state_name}
-              </p>
-              <h1 className="text-4xl md:text-5xl font-extrabold leading-tight mb-3">
-                Achados e Perdidos<br />
-                em <span className="text-yellow-300">{city.name}</span>
+          <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-8">
+            <div className="flex-1">
+              {/* Eyebrow */}
+              <div className="flex items-center gap-2 mb-3">
+                <span
+                  className="text-xs font-semibold uppercase tracking-widest px-3 py-1 rounded-full"
+                  style={{ backgroundColor: '#14B8A615', color: '#14B8A6', border: '1px solid #14B8A630' }}
+                >
+                  {city.state_name}
+                </span>
+                <span className="text-xs" style={{ color: '#9CA3AF' }}>• Guia local gratuito</span>
+              </div>
+
+              <h1 className="text-4xl md:text-5xl font-black leading-tight mb-4" style={{ letterSpacing: '-0.02em' }}>
+                Perdeu algo em<br />
+                <span style={{ color: '#14B8A6' }}>{city.name}</span>?
               </h1>
-              <p className="text-blue-100 text-lg max-w-xl">
-                Guias locais com telefones, endereços e canais oficiais para recuperar o que você perdeu na cidade.
+              <p className="text-lg max-w-lg" style={{ color: '#9CA3AF' }}>
+                Canais oficiais, telefones verificados e orientações locais para recuperar o que é seu.
               </p>
             </div>
 
-            {/* Stats */}
-            <div className="flex gap-4 shrink-0">
-              <div className="bg-white/10 backdrop-blur rounded-2xl px-5 py-4 text-center border border-white/20">
-                <div className="text-3xl font-black text-yellow-300">{CATEGORIES.length}</div>
-                <div className="text-blue-100 text-xs mt-1">categorias</div>
+            {/* Stats cards */}
+            <div className="flex gap-3 shrink-0">
+              <div
+                className="rounded-2xl px-5 py-5 text-center"
+                style={{ backgroundColor: '#0B0F14', border: '1px solid #1f2937' }}
+              >
+                <div className="text-3xl font-black" style={{ color: '#14B8A6' }}>7</div>
+                <div className="text-xs mt-1" style={{ color: '#9CA3AF' }}>categorias</div>
               </div>
-              <div className="bg-white/10 backdrop-blur rounded-2xl px-5 py-4 text-center border border-white/20">
-                <div className="text-3xl font-black text-yellow-300">100%</div>
-                <div className="text-blue-100 text-xs mt-1">gratuito</div>
+              <div
+                className="rounded-2xl px-5 py-5 text-center"
+                style={{ backgroundColor: '#0B0F14', border: '1px solid #1f2937' }}
+              >
+                <div className="text-3xl font-black" style={{ color: '#14B8A6' }}>100%</div>
+                <div className="text-xs mt-1" style={{ color: '#9CA3AF' }}>gratuito</div>
               </div>
             </div>
           </div>
 
-          {/* CTA rápido */}
-          <div className="flex gap-3 mt-8">
+          {/* CTAs */}
+          <div className="flex gap-3 mt-8 flex-wrap">
             <Link
               href="/perdi"
-              className="bg-red-500 hover:bg-red-400 text-white font-semibold px-6 py-3 rounded-xl transition-all shadow-lg shadow-red-900/30 text-sm"
+              className="font-semibold px-6 py-3 rounded-xl transition-all text-sm"
+              style={{ backgroundColor: '#F59E0B', color: '#0B0F14' }}
             >
-              🔍 Perdi algo
+              🔍 Perdi algo em {city.name}
             </Link>
             <Link
               href="/achei"
-              className="bg-green-500 hover:bg-green-400 text-white font-semibold px-6 py-3 rounded-xl transition-all shadow-lg shadow-green-900/30 text-sm"
+              className="font-semibold px-6 py-3 rounded-xl transition-all text-sm"
+              style={{ backgroundColor: '#22C55E', color: '#0B0F14' }}
             >
-              ✅ Achei algo
+              ✅ Encontrei um objeto
             </Link>
           </div>
         </div>
@@ -153,8 +149,8 @@ export default async function CidadePage({ params }: Props) {
       <div className="container mx-auto px-4 py-10 max-w-5xl">
 
         <div className="flex items-center justify-between mb-6">
-          <h2 className="text-xl font-bold text-gray-800">O que você perdeu?</h2>
-          <span className="text-sm text-gray-400">{CATEGORIES.length} categorias disponíveis</span>
+          <h2 className="text-xl font-bold">O que você perdeu?</h2>
+          <span className="text-sm" style={{ color: '#9CA3AF' }}>Escolha a categoria</span>
         </div>
 
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
@@ -162,72 +158,96 @@ export default async function CidadePage({ params }: Props) {
             <Link
               key={cat.slug}
               href={`/achados-perdidos/${params.cidade}/${cat.slug}`}
-              className={`group relative bg-white border-2 border-gray-100 rounded-2xl p-4 transition-all duration-200 shadow-sm hover:shadow-md ${cat.bg}`}
+              className="group rounded-2xl p-4 transition-all duration-200"
+              style={{
+                backgroundColor: '#111827',
+                border: '1px solid #1f2937',
+              }}
+              onMouseEnter={e => {
+                (e.currentTarget as HTMLElement).style.borderColor = '#14B8A6'
+                ;(e.currentTarget as HTMLElement).style.backgroundColor = '#14B8A60D'
+              }}
+              onMouseLeave={e => {
+                (e.currentTarget as HTMLElement).style.borderColor = '#1f2937'
+                ;(e.currentTarget as HTMLElement).style.backgroundColor = '#111827'
+              }}
             >
-              {/* Ícone com fundo colorido */}
-              <div className={`w-12 h-12 rounded-xl bg-gradient-to-br ${cat.color} flex items-center justify-center text-2xl mb-3 shadow-sm group-hover:scale-110 transition-transform duration-200`}>
+              {/* Ícone */}
+              <div
+                className="w-11 h-11 rounded-xl flex items-center justify-center text-xl mb-3"
+                style={{ backgroundColor: '#14B8A615', border: '1px solid #14B8A630' }}
+              >
                 {cat.icon}
               </div>
-              <div className="font-semibold text-gray-800 text-sm leading-tight mb-1">
+              <div className="font-semibold text-sm leading-tight mb-1" style={{ color: '#FFFFFF' }}>
                 {cat.label}
               </div>
-              <div className="text-xs text-gray-400 leading-tight">
+              <div className="text-xs leading-tight" style={{ color: '#9CA3AF' }}>
                 {cat.desc}
               </div>
-              {/* Seta */}
-              <div className="absolute top-4 right-4 text-gray-300 group-hover:text-blue-400 transition-colors text-lg">
-                →
+              {/* Seta teal */}
+              <div className="mt-3 text-xs font-medium flex items-center gap-1" style={{ color: '#14B8A6' }}>
+                Ver guia <span>→</span>
               </div>
             </Link>
           ))}
         </div>
 
-        {/* BANNER COMO FUNCIONA */}
-        <div className="mt-10 bg-white border border-gray-100 rounded-2xl p-6 shadow-sm">
-          <h3 className="font-bold text-gray-800 mb-4 text-lg">Como o Backfindr funciona</h3>
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-            <div className="flex gap-3 items-start">
-              <div className="w-9 h-9 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center font-black text-sm shrink-0">1</div>
-              <div>
-                <div className="font-semibold text-gray-700 text-sm">Cadastre o objeto</div>
-                <div className="text-xs text-gray-400 mt-0.5">Descreva o que perdeu e onde. Leva menos de 1 minuto.</div>
+        {/* COMO FUNCIONA */}
+        <div
+          className="mt-10 rounded-2xl p-6"
+          style={{ backgroundColor: '#111827', border: '1px solid #1f2937' }}
+        >
+          <h3 className="font-bold text-lg mb-6">Como o Backfindr funciona</h3>
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
+            {[
+              { n: '1', title: 'Cadastre o objeto', desc: 'Descreva o que perdeu, onde e quando. Menos de 1 minuto.' },
+              { n: '2', title: 'QR Code gerado', desc: 'Cada cadastro gera um QR Code único para identificação imediata.' },
+              { n: '3', title: 'Notificação na hora', desc: 'Quando alguém encontrar e escanear, você é avisado imediatamente.' },
+            ].map(step => (
+              <div key={step.n} className="flex gap-4 items-start">
+                <div
+                  className="w-9 h-9 rounded-full flex items-center justify-center font-black text-sm shrink-0"
+                  style={{ backgroundColor: '#14B8A620', color: '#14B8A6', border: '1px solid #14B8A640' }}
+                >
+                  {step.n}
+                </div>
+                <div>
+                  <div className="font-semibold text-sm mb-1">{step.title}</div>
+                  <div className="text-xs leading-relaxed" style={{ color: '#9CA3AF' }}>{step.desc}</div>
+                </div>
               </div>
-            </div>
-            <div className="flex gap-3 items-start">
-              <div className="w-9 h-9 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center font-black text-sm shrink-0">2</div>
-              <div>
-                <div className="font-semibold text-gray-700 text-sm">QR Code gerado</div>
-                <div className="text-xs text-gray-400 mt-0.5">Cada cadastro gera um QR Code único para identificação.</div>
-              </div>
-            </div>
-            <div className="flex gap-3 items-start">
-              <div className="w-9 h-9 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center font-black text-sm shrink-0">3</div>
-              <div>
-                <div className="font-semibold text-gray-700 text-sm">Notificação imediata</div>
-                <div className="text-xs text-gray-400 mt-0.5">Quando alguém encontrar, você é avisado na hora.</div>
-              </div>
-            </div>
+            ))}
           </div>
         </div>
 
         {/* CTA FINAL */}
-        <div className="mt-6 bg-gradient-to-r from-blue-600 to-indigo-600 rounded-2xl p-6 text-white text-center shadow-lg">
-          <h3 className="text-xl font-bold mb-1">Perdeu algo em {city.name}?</h3>
-          <p className="text-blue-100 text-sm mb-5">
-            Cadastre agora no Backfindr — gratuito, sem instalar nada.
+        <div
+          className="mt-6 rounded-2xl p-7 text-center"
+          style={{
+            background: 'linear-gradient(135deg, #14B8A6 0%, #0D9488 100%)',
+          }}
+        >
+          <h3 className="text-xl font-bold mb-2" style={{ color: '#0B0F14' }}>
+            Registre agora. É gratuito.
+          </h3>
+          <p className="text-sm mb-6" style={{ color: '#0B0F1499' }}>
+            Cada compartilhamento em {city.name} é uma chance a mais de reencontro.
           </p>
           <div className="flex gap-3 justify-center flex-wrap">
             <Link
               href="/perdi"
-              className="bg-white text-blue-600 font-bold px-6 py-2.5 rounded-xl hover:bg-blue-50 transition-colors text-sm shadow"
+              className="font-bold px-6 py-3 rounded-xl text-sm transition-all"
+              style={{ backgroundColor: '#0B0F14', color: '#14B8A6' }}
             >
-              🔍 Quero cadastrar o que perdi
+              🔍 Perdi algo
             </Link>
             <Link
               href="/achei"
-              className="bg-blue-500 text-white border border-white/30 font-semibold px-6 py-2.5 rounded-xl hover:bg-blue-400 transition-colors text-sm"
+              className="font-semibold px-6 py-3 rounded-xl text-sm transition-all"
+              style={{ backgroundColor: '#0B0F1430', color: '#0B0F14', border: '1px solid #0B0F1440' }}
             >
-              ✅ Encontrei um objeto
+              ✅ Achei algo
             </Link>
           </div>
         </div>
