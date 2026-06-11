@@ -163,14 +163,7 @@ export default async function CidadePage({ params }: Props) {
                 backgroundColor: '#111827',
                 border: '1px solid #1f2937',
               }}
-              onMouseEnter={e => {
-                (e.currentTarget as HTMLElement).style.borderColor = '#14B8A6'
-                ;(e.currentTarget as HTMLElement).style.backgroundColor = '#14B8A60D'
-              }}
-              onMouseLeave={e => {
-                (e.currentTarget as HTMLElement).style.borderColor = '#1f2937'
-                ;(e.currentTarget as HTMLElement).style.backgroundColor = '#111827'
-              }}
+
             >
               {/* Ícone */}
               <div
