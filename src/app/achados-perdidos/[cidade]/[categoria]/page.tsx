@@ -66,10 +66,10 @@ export default async function CidadeCategoria({ params }: Props) {
           ) : (
             <>
               <Link href="/perdi" className="bg-white text-blue-600 px-5 py-2 rounded-lg font-medium hover:bg-blue-50">
-                Perdi um {params.categoria}
+                {params.categoria === 'geral' ? 'Perdi algo' : `Perdi um ${params.categoria}`}
               </Link>
               <Link href="/achei" className="bg-blue-500 text-white border border-white px-5 py-2 rounded-lg font-medium hover:bg-blue-400">
-                Achei um {params.categoria}
+                {params.categoria === 'geral' ? 'Achei algo' : `Achei um ${params.categoria}`}
               </Link>
             </>
           )}
