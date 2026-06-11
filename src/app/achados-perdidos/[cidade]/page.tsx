@@ -12,6 +12,7 @@ const CATEGORIES = [
   { slug: 'veiculo', label: 'Veículo Roubado', icon: '🚗' },
   { slug: 'chave', label: 'Chave', icon: '🔑' },
   { slug: 'bagagem', label: 'Bagagem', icon: '🧳' },
+  { slug: 'geral', label: 'Guia Completo', icon: '📋' },
 ]
 
 interface Props { params: { cidade: string } }
