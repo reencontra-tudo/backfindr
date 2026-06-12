@@ -2,7 +2,7 @@
 export const dynamic = 'force-dynamic';
 
 import { useState, useEffect } from 'react';
-import { ExternalLink, RefreshCw, AlertCircle, Maximize2, Zap, Settings, Copy, Check } from 'lucide-react';
+import { ExternalLink, RefreshCw, AlertCircle, Maximize2, Zap, Settings, Copy, Check, ArrowUpRight, Workflow, Play, GitBranch, Clock } from 'lucide-react';
 
 // ─── URL do n8n via variável de ambiente ──────────────────────────────────────
 // Configure NEXT_PUBLIC_N8N_URL no Vercel para apontar para sua instância n8n
@@ -11,7 +11,6 @@ const N8N_URL = process.env.NEXT_PUBLIC_N8N_URL ?? '';
 
 export default function MarketingAutomacaoPage() {
   const [online, setOnline] = useState<boolean | null>(null);
-  const [key, setKey] = useState(0);
   const [copied, setCopied] = useState(false);
 
   const n8nUrl = N8N_URL.trim();
@@ -23,14 +22,10 @@ export default function MarketingAutomacaoPage() {
       return;
     }
     setOnline(null);
-    // Tenta verificar se o n8n está acessível via healthz
     const healthUrl = n8nUrl.replace(/\/$/, '') + '/healthz';
     fetch(healthUrl, { mode: 'no-cors' })
       .then(() => setOnline(true))
-      .catch(() => {
-        // no-cors pode falhar mesmo se online; tenta com iframe
-        setOnline(true);
-      });
+      .catch(() => setOnline(true));
   };
 
   useEffect(() => {
@@ -43,6 +38,14 @@ export default function MarketingAutomacaoPage() {
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
   };
+
+  // Atalhos rápidos para seções do n8n
+  const quickLinks = [
+    { label: 'Workflows', path: '/workflows', icon: Workflow, desc: 'Ver e editar todos os workflows' },
+    { label: 'Execuções', path: '/executions', icon: Play, desc: 'Histórico de execuções' },
+    { label: 'Credenciais', path: '/credentials', icon: GitBranch, desc: 'Gerenciar credenciais de APIs' },
+    { label: 'Variáveis', path: '/variables', icon: Clock, desc: 'Variáveis de ambiente' },
+  ];
 
   return (
     <div className="flex flex-col h-[calc(100vh-52px)]">
@@ -90,7 +93,7 @@ export default function MarketingAutomacaoPage() {
 
         <div className="flex items-center gap-2">
           <button
-            onClick={() => { checkOnline(); setKey((k) => k + 1); }}
+            onClick={checkOnline}
             className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-white/30 hover:text-white/70 hover:bg-white/[0.04] text-xs transition-all"
           >
             <RefreshCw className="w-3.5 h-3.5" />
@@ -242,23 +245,103 @@ export default function MarketingAutomacaoPage() {
               <RefreshCw className="w-4 h-4" />
               Tentar novamente
             </button>
-            <button
-              onClick={() => setOnline(true)}
+            <a
+              href={n8nUrl}
+              target="_blank"
+              rel="noopener noreferrer"
               className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm text-white/40 hover:text-white/60 transition-all"
             >
-              Carregar mesmo assim
-            </button>
+              <ArrowUpRight className="w-4 h-4" />
+              Abrir mesmo assim
+            </a>
           </div>
         </div>
       ) : (
-        /* Estado: online — exibe iframe */
-        <iframe
-          key={key}
-          src={n8nUrl}
-          className="flex-1 w-full border-0"
-          title="n8n Workflows"
-          allow="clipboard-read; clipboard-write"
-        />
+        /* Estado: online — painel de acesso direto */
+        <div className="flex-1 overflow-auto p-6">
+          <div className="max-w-2xl mx-auto space-y-6">
+
+            {/* Card principal de acesso */}
+            <div
+              className="rounded-2xl p-6"
+              style={{ background: 'oklch(0.09 0.015 240)', border: '1px solid oklch(0.16 0.015 240)' }}
+            >
+              <div className="flex items-start justify-between mb-4">
+                <div className="flex items-center gap-3">
+                  <div
+                    className="w-12 h-12 rounded-xl flex items-center justify-center"
+                    style={{ background: '#A78BFA15', border: '1px solid #A78BFA30' }}
+                  >
+                    <Zap className="w-6 h-6 text-purple-400" />
+                  </div>
+                  <div>
+                    <p className="text-white/80 font-semibold">n8n Automation</p>
+                    <p className="text-white/30 text-xs mt-0.5 font-mono truncate max-w-xs">{n8nUrl}</p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-green-500/10 border border-green-500/20">
+                  <span className="w-1.5 h-1.5 rounded-full bg-green-400 animate-pulse" />
+                  <span className="text-green-400 text-[10px] font-medium">online</span>
+                </div>
+              </div>
+
+              <p className="text-white/40 text-sm mb-5 leading-relaxed">
+                O n8n está rodando. Acesse o editor para criar e gerenciar seus workflows de automação.
+              </p>
+
+              <a
+                href={n8nUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center justify-center gap-2 w-full py-3 rounded-xl text-sm font-medium text-white transition-all hover:opacity-90 active:scale-[0.98]"
+                style={{ background: 'linear-gradient(135deg, #7C3AED, #A78BFA)' }}
+              >
+                <ArrowUpRight className="w-4 h-4" />
+                Abrir Editor n8n
+              </a>
+            </div>
+
+            {/* Atalhos rápidos */}
+            <div>
+              <p className="text-white/30 text-xs font-semibold tracking-widest uppercase mb-3">Acesso rápido</p>
+              <div className="grid grid-cols-2 gap-3">
+                {quickLinks.map(({ label, path, icon: Icon, desc }) => (
+                  <a
+                    key={path}
+                    href={`${n8nUrl}${path}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex items-start gap-3 p-4 rounded-xl transition-all hover:border-purple-500/30 group"
+                    style={{ background: 'oklch(0.09 0.015 240)', border: '1px solid oklch(0.16 0.015 240)' }}
+                  >
+                    <div
+                      className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0 group-hover:bg-purple-500/20 transition-all"
+                      style={{ background: '#A78BFA10', border: '1px solid #A78BFA20' }}
+                    >
+                      <Icon className="w-4 h-4 text-purple-400" />
+                    </div>
+                    <div className="min-w-0">
+                      <p className="text-white/60 text-sm font-medium group-hover:text-white/80 transition-all">{label}</p>
+                      <p className="text-white/25 text-xs mt-0.5 leading-tight">{desc}</p>
+                    </div>
+                  </a>
+                ))}
+              </div>
+            </div>
+
+            {/* Info sobre restrição de iframe */}
+            <div
+              className="flex items-start gap-3 p-4 rounded-xl"
+              style={{ background: 'oklch(0.09 0.015 240)', border: '1px solid oklch(0.14 0.015 240)' }}
+            >
+              <AlertCircle className="w-4 h-4 text-white/20 shrink-0 mt-0.5" />
+              <p className="text-white/25 text-xs leading-relaxed">
+                O n8n não permite incorporação direta por questões de segurança. Use o botão acima para acessar o editor em uma nova aba.
+              </p>
+            </div>
+
+          </div>
+        </div>
       )}
     </div>
   );
