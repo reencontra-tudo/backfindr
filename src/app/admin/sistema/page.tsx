@@ -25,12 +25,13 @@
  * ║  • Stripe          — estático                                            ║
  * ║  • Mapbox          — estático                                            ║
  * ║  • Google Analytics — via /api/v1/admin/analytics/ga4 (OAuth2)           ║
+ * ║  • n8n (Automação)  — /api/v1/admin/n8n/health (health check real)        ║
  * ╚══════════════════════════════════════════════════════════════════════════╝
  */
 
 import { useState, useEffect, useCallback } from 'react';
 import { useSearchParams } from 'next/navigation';
-import { Server, Database, Zap, Globe, CheckCircle2, AlertTriangle, XCircle, RefreshCw, Activity, Clock, HardDrive, BarChart3, ExternalLink, Users, Eye, TrendingUp, Link2 } from 'lucide-react';
+import { Server, Database, Zap, Globe, CheckCircle2, AlertTriangle, XCircle, RefreshCw, Activity, Clock, HardDrive, BarChart3, ExternalLink, Users, Eye, TrendingUp, Link2, Workflow } from 'lucide-react';
 import { api, parseApiError } from '@/lib/api';
 import { toast } from 'sonner';
 
@@ -65,6 +66,7 @@ const SERVICES = [
   { name: 'Resend (E-mail)',              key: 'email',   icon: Server   },
   { name: 'Stripe (Pagamentos)',          key: 'stripe',  icon: Server   },
   { name: 'Mapbox',                       key: 'mapbox',  icon: Server   },
+  { name: 'n8n (Automação)',              key: 'n8n',     icon: Workflow },
 ];
 
 const LOGS = [
@@ -104,7 +106,7 @@ export default function AdminSistema() {
   const [loading, setLoading] = useState(true);
   const [actionLoading, setActionLoading] = useState<string | null>(null);
   const [statuses, setStatuses] = useState<Record<string, ServiceStatus>>({
-    api: 'checking', db: 'checking', r2: 'checking',
+    api: 'checking', db: 'checking', r2: 'checking', n8n: 'checking',
     edge: 'ok', email: 'ok', stripe: 'ok', mapbox: 'ok',
   });
 
@@ -151,11 +153,12 @@ export default function AdminSistema() {
 
   const checkHealth = useCallback(async () => {
     setLoading(true);
-    setStatuses(prev => ({ ...prev, api: 'checking', db: 'checking', r2: 'checking' }));
+    setStatuses(prev => ({ ...prev, api: 'checking', db: 'checking', r2: 'checking', n8n: 'checking' }));
     try {
-      const [apiRes, r2Res] = await Promise.allSettled([
+      const [apiRes, r2Res, n8nRes] = await Promise.allSettled([
         fetch('/api/health', { cache: 'no-store' }),
         fetch('/api/v1/admin/r2/health', { cache: 'no-store' }),
+        fetch('/api/v1/admin/n8n/health', { cache: 'no-store' }),
       ]);
 
       if (apiRes.status === 'fulfilled' && apiRes.value.ok) {
@@ -179,8 +182,15 @@ export default function AdminSistema() {
       } else {
         setStatuses(prev => ({ ...prev, r2: 'down' }));
       }
+
+      if (n8nRes.status === 'fulfilled' && n8nRes.value.ok) {
+        const n8nData = await n8nRes.value.json();
+        setStatuses(prev => ({ ...prev, n8n: n8nData.status === 'ok' ? 'ok' : 'down' }));
+      } else {
+        setStatuses(prev => ({ ...prev, n8n: 'down' }));
+      }
     } catch {
-      setStatuses(prev => ({ ...prev, api: 'down', db: 'down', r2: 'down' }));
+      setStatuses(prev => ({ ...prev, api: 'down', db: 'down', r2: 'down', n8n: 'down' }));
     } finally {
       setLoading(false);
     }
