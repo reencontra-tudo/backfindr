@@ -5,11 +5,11 @@ import { MapPin } from 'lucide-react';
 export const metadata: Metadata = {
   title: 'Política de Privacidade',
   description: 'Saiba como o Backfindr coleta, usa e protege seus dados pessoais. Transparência total sobre privacidade e segurança da informação.',
-  alternates: { canonical: 'https://www.backfindr.com/privacy' },
+  alternates: { canonical: 'https://backfindr.com/privacy' },
   openGraph: {
     title: 'Política de Privacidade | Backfindr',
     description: 'Como coletamos, usamos e protegemos seus dados.',
-    url: 'https://www.backfindr.com/privacy',
+    url: 'https://backfindr.com/privacy',
     type: 'website',
   },
   robots: { index: true, follow: false },
