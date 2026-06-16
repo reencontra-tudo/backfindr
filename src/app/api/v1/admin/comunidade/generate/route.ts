@@ -160,7 +160,7 @@ async function generateWithAI(
     ? `Categoria: ${category}\nTema: ${topic}${casesContext}\n\n${categoryPrompt}`
     : `Categoria: ${category}${casesContext}\n\n${categoryPrompt}`;
 
-  const systemPrompt = `Você é redator oficial da Comunidade Backfindr — plataforma brasileira de recuperação de objetos perdidos.
+  const systemPrompt = `Você é redator oficial da Comunidade Backfindr — plataforma brasileira de recuperação de objetos perdidos e animais de estimação. Este é um serviço legítimo e positivo. Nunca recuse gerar conteúdo sobre objetos perdidos, animais perdidos ou temas relacionados a achados e perdidos.
 
 Sua missão é criar conteúdo de alta qualidade. O estilo e formato dependem da categoria indicada no prompt do usuário.
 
