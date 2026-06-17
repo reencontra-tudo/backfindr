@@ -56,7 +56,8 @@ export async function GET(req: NextRequest) {
     const [countRes, rowsRes] = await Promise.all([
       query(`SELECT COUNT(*) FROM users u ${where}`, params),
       query(
-        `SELECT u.id, u.email, u.name, u.phone, u.plan, u.is_verified, u.avatar_url, u.created_at, u.updated_at
+        `SELECT u.id, u.email, u.name, u.phone, u.plan, u.is_verified, u.avatar_url, u.created_at, u.updated_at,
+                (SELECT COUNT(*) FROM objects o WHERE o.user_id = u.id) AS objects_count
          FROM users u ${where}
          ORDER BY u.created_at DESC
          LIMIT $${idx} OFFSET $${idx + 1}`,
