@@ -213,6 +213,13 @@ export async function POST(request: NextRequest) {
       return successResponse({ detail: 'Object not found' }, 404);
 
     const object = objectResult.rows[0];
+
+    // Objetos protegidos (QR preventivo) não participam do matching —
+    // eles só são ativados quando alguém escaneia o QR fisicamente.
+    if (object.status === 'protected') {
+      return successResponse({ detail: 'Protected objects do not participate in matching', matches: 0 });
+    }
+
     const oppositeStatus = object.status === 'lost' ? 'found' : 'lost';
     const lat = parseFloat(object.latitude);
     const lon = parseFloat(object.longitude);

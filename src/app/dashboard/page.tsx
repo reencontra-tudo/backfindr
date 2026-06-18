@@ -345,12 +345,12 @@ export default function DashboardPage() {
             </div>
           ) : objects.length === 0 ? (
             <div className="text-center py-12 bg-white/[0.02] border border-white/[0.06] rounded-2xl">
-              <p className="text-3xl mb-3">📦</p>
+              <p className="text-3xl mb-3">🛡️</p>
               <p className="text-white font-semibold mb-1">Nenhum objeto ainda</p>
-              <p className="text-white/40 text-sm mb-4">Registre seu primeiro objeto e receba um QR Code exclusivo.</p>
+              <p className="text-white/40 text-sm mb-4">Proteja seus pertences com QR Code ou registre uma ocorrência.</p>
               <Link href="/dashboard/objects/new"
                 className="inline-flex items-center gap-1.5 bg-teal-500 hover:bg-teal-400 text-white text-sm font-semibold px-4 py-2 rounded-lg transition-all">
-                <Plus className="w-4 h-4" /> Registrar primeiro objeto
+                <Plus className="w-4 h-4" /> Começar agora
               </Link>
             </div>
           ) : (

@@ -67,6 +67,10 @@ export function buildPostText(obj: SocialPostObject, template: string, appUrl: s
 // ─── Enfileirar posts para todos os canais ativos ─────────────────────────────
 export async function enqueueSocialPosts(obj: SocialPostObject): Promise<void> {
   try {
+    // Objetos protegidos (QR preventivo) não são postados nas redes sociais —
+    // o usuário ainda tem o objeto, não há ocorrência pública a divulgar.
+    if (obj.status === 'protected') return;
+
     const autoEnabled = await getSetting('auto_post_enabled');
     if (autoEnabled !== 'true') return;
 

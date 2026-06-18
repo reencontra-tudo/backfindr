@@ -101,10 +101,10 @@ interface Step {
 const STEPS: Step[] = [
   {
     id: 'register_object',
-    label: 'Registre seu primeiro objeto',
-    desc: 'Adicione fotos e receba um QR Code único.',
+    label: 'Registre ou proteja um objeto',
+    desc: 'Gere um QR Code preventivo ou registre uma ocorrência.',
     href: '/dashboard/objects/new',
-    cta: 'Registrar agora',
+    cta: 'Começar agora',
     check: ({ objectsCount }) => objectsCount > 0,
   },
   {
@@ -154,14 +154,12 @@ export default function OnboardingChecklist({ objectsCount, objectStatuses = [],
   // Há pelo menos um objeto perdido ou roubado?
   const hasLostObject = objectStatuses.some(s => s === 'lost' || s === 'stolen');
 
-  // Filtrar passos: o passo de QR Code só aparece se NÃO houver apenas objetos perdidos
-  // (se o usuário só tem objetos perdidos, o QR Code não faz sentido pois ele não tem o objeto)
+  // Filtrar passos: o passo de QR Code aparece se o usuário tem objetos que ainda estão com ele
+  // (protected = QR preventivo, found = achou e tem o objeto, returned, ou nenhum objeto ainda)
   const visibleSteps = STEPS.filter(step => {
     if (step.id === 'share_qr') {
-      // Mostrar QR Code apenas se o usuário tem objetos que não são "lost" ou "stolen"
-      // (ou seja, tem objetos que ainda estão com ele: found, returned, ou nenhum objeto ainda)
-      const hasNonLostObject = objectStatuses.some(s => s !== 'lost' && s !== 'stolen');
-      return objectsCount === 0 || hasNonLostObject;
+      const hasPhysicalObject = objectStatuses.some(s => s === 'protected' || s === 'found' || s === 'returned');
+      return objectsCount === 0 || hasPhysicalObject;
     }
     return true;
   });

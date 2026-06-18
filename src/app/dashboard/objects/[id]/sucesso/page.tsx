@@ -31,9 +31,10 @@ const CATEGORY_EMOJI: Record<string, string> = {
 };
 
 const STATUS_MESSAGES: Record<string, { headline: string; sub: string }> = {
-  lost:   { headline: 'Alerta publicado na rede!',      sub: 'Você será notificado assim que alguém encontrar.' },
-  found:  { headline: 'Achado registrado!',             sub: 'Se o dono procurar, a gente conecta vocês automaticamente.' },
-  stolen: { headline: 'Registro de furto publicado!',   sub: 'Sua ocorrência está visível para toda a rede.' },
+  lost:      { headline: 'Alerta publicado na rede!',      sub: 'Você será notificado assim que alguém encontrar.' },
+  found:     { headline: 'Achado registrado!',             sub: 'Se o dono procurar, a gente conecta vocês automaticamente.' },
+  stolen:    { headline: 'Registro de furto publicado!',   sub: 'Sua ocorrência está visível para toda a rede.' },
+  protected: { headline: 'Objeto protegido com QR Code!', sub: 'Cole o QR Code no objeto físico. Se alguém encontrar e escanear, você será notificado imediatamente.' },
 };
 
 // Extrai cidade/bairro do objeto para o texto magnético
@@ -58,6 +59,10 @@ function buildWhatsAppText(obj: ObjectData): string {
   const code = obj.unique_code || obj.qr_code || '';
   const publicUrl = `https://www.backfindr.com/objeto/${code}`;
 
+  if (obj.status === 'protected') {
+    return `Colei um QR Code do Backfindr no meu ${obj.title}. Se você encontrar, é só escanear — ele me avisa automaticamente: ${publicUrl}`;
+  }
+
   if (obj.status === 'lost') {
     if (location) {
       return `Gente, perdi meu ${obj.title} perto de ${location}. Cadastrei no Backfindr — se alguém encontrar, o link já identifica o dono: ${publicUrl}`;
@@ -79,6 +84,9 @@ function buildWhatsAppText(obj: ObjectData): string {
 // Texto curto para Instagram Stories (máx ~80 chars)
 function buildStoriesText(obj: ObjectData): string {
   const location = extractLocation(obj);
+  if (obj.status === 'protected') {
+    return `Protegi meu ${obj.title} com QR Code 🛡️ ${location ? `em ${location}` : ''}`.trim();
+  }
   if (obj.status === 'lost') {
     return location
       ? `Perdi meu ${obj.title} em ${location} 🔍`

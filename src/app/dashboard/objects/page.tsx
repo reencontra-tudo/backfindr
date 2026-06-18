@@ -22,29 +22,32 @@ const CATEGORY_EMOJI: Record<string, string> = {
 };
 
 const STATUS_FILTERS: { value: string; label: string; color: string }[] = [
-  { value: '',         label: 'Todos',       color: 'text-slate-300' },
-  { value: 'lost',     label: 'Perdidos',    color: 'text-red-400' },
-  { value: 'found',    label: 'Achados',     color: 'text-brand-400' },
-  { value: 'returned', label: 'Recuperados', color: 'text-green-400' },
-  { value: 'stolen',   label: 'Roubados',    color: 'text-orange-400' },
+  { value: '',          label: 'Todos',       color: 'text-slate-300' },
+  { value: 'protected', label: 'Protegidos',  color: 'text-blue-400' },
+  { value: 'lost',      label: 'Perdidos',    color: 'text-red-400' },
+  { value: 'found',     label: 'Achados',     color: 'text-brand-400' },
+  { value: 'returned',  label: 'Recuperados', color: 'text-green-400' },
+  { value: 'stolen',    label: 'Roubados',    color: 'text-orange-400' },
 ];
 
 const STATUS_ICON: Record<string, React.ReactNode> = {
-  lost:     <AlertTriangle className="w-3.5 h-3.5" />,
-  found:    <Package className="w-3.5 h-3.5" />,
-  returned: <CheckCircle2 className="w-3.5 h-3.5" />,
-  stolen:   <Clock className="w-3.5 h-3.5" />,
+  protected: <CheckCircle2 className="w-3.5 h-3.5" />,
+  lost:      <AlertTriangle className="w-3.5 h-3.5" />,
+  found:     <Package className="w-3.5 h-3.5" />,
+  returned:  <CheckCircle2 className="w-3.5 h-3.5" />,
+  stolen:    <Clock className="w-3.5 h-3.5" />,
 };
 
 const STATUS_COLOR: Record<string, string> = {
-  lost:     'text-red-400 bg-red-500/10 border-red-500/20',
-  found:    'text-brand-400 bg-brand-500/10 border-brand-500/20',
-  returned: 'text-green-400 bg-green-500/10 border-green-500/20',
-  stolen:   'text-orange-400 bg-orange-500/10 border-orange-500/20',
+  protected: 'text-blue-400 bg-blue-500/10 border-blue-500/20',
+  lost:      'text-red-400 bg-red-500/10 border-red-500/20',
+  found:     'text-brand-400 bg-brand-500/10 border-brand-500/20',
+  returned:  'text-green-400 bg-green-500/10 border-green-500/20',
+  stolen:    'text-orange-400 bg-orange-500/10 border-orange-500/20',
 };
 
 const STATUS_LABEL: Record<string, string> = {
-  lost: 'Perdido', found: 'Achado', returned: 'Recuperado', stolen: 'Roubado',
+  protected: 'Protegido', lost: 'Perdido', found: 'Achado', returned: 'Recuperado', stolen: 'Roubado',
 };
 
 // ─── Object Card ─────────────────────────────────────────────────────────────
@@ -255,14 +258,14 @@ export default function ObjectsPage() {
         </div>
       ) : filtered.length === 0 ? (
         <div className="text-center py-20">
-          <div className="text-5xl mb-4">📦</div>
+          <div className="text-5xl mb-4">🛡️</div>
           <p className="text-slate-400 font-display font-semibold text-lg mb-2">
-            {search || statusFilter ? 'Nenhum resultado encontrado' : 'Nenhum objeto registrado'}
+            {search || statusFilter ? 'Nenhum resultado encontrado' : 'Nenhum objeto ainda'}
           </p>
           <p className="text-slate-500 text-sm mb-6">
             {search || statusFilter
               ? 'Tente outros filtros ou termos de busca.'
-              : 'Registre seu primeiro objeto e receba um QR Code exclusivo.'}
+              : 'Proteja seus pertences com QR Code ou registre uma ocorrência.'}
           </p>
           {!search && !statusFilter && (
             <Link
@@ -270,7 +273,7 @@ export default function ObjectsPage() {
               className="inline-flex items-center gap-2 bg-brand-500 hover:bg-brand-400 text-white text-sm font-semibold px-6 py-3 rounded-xl transition-all glow-teal"
             >
               <Plus className="w-4 h-4" />
-              Registrar primeiro objeto
+              Começar agora
             </Link>
           )}
         </div>

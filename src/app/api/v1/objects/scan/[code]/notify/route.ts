@@ -9,9 +9,9 @@ export async function POST(
   { params }: { params: { code: string } }
 ) {
   try {
-    // Buscar objeto pelo QR code
+    // Buscar objeto pelo QR code — incluindo status para distinguir protected
     const objectResult = await query(
-      `SELECT id, user_id, title FROM objects WHERE qr_code = $1`,
+      `SELECT id, user_id, title, status FROM objects WHERE qr_code = $1`,
       [params.code]
     );
 
@@ -19,24 +19,26 @@ export async function POST(
       return notFoundResponse();
     }
 
-    const object = objectResult.rows[0] as { id: string; user_id: string; title: string };
+    const object = objectResult.rows[0] as { id: string; user_id: string; title: string; status: string };
 
-    // Registrar scan na tabela de scans (se existir) e criar notificação para o dono
+    // Mensagem contextual: objeto protegido preventivamente vs objeto perdido
+    const isProtected = object.status === 'protected';
+    const notifTitle   = isProtected ? 'QR Code escaneado! 📍' : 'Seu objeto foi encontrado! 🎉';
+    const notifMessage = isProtected
+      ? `Alguém escaneou o QR Code do seu objeto "${object.title}". Verifique se está tudo bem.`
+      : `Alguém escaneou o QR Code do seu objeto "${object.title}" e quer devolvê-lo.`;
+
+    // Registrar notificação para o dono
     await query(
       `INSERT INTO notifications (user_id, title, message, type, created_at)
        VALUES ($1, $2, $3, $4, NOW())`,
-      [
-        object.user_id,
-        'Seu objeto foi encontrado! 🎉',
-        `Alguém escaneou o QR Code do seu objeto "${object.title}" e quer devolvê-lo.`,
-        'scan',
-      ]
+      [object.user_id, notifTitle, notifMessage, 'scan']
     );
 
-    // Atualizar status para 'found' se estava 'lost'
+    // Atualizar status para 'found' se estava 'lost' ou 'protected'
     await query(
       `UPDATE objects SET status = 'found', updated_at = NOW()
-       WHERE id = $1 AND status = 'lost'`,
+       WHERE id = $1 AND status IN ('lost', 'protected')`,
       [object.id]
     );
 

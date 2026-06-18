@@ -24,10 +24,11 @@ const CATEGORY_OPTIONS: { value: ObjectCategory; label: string; emoji: string }[
 ];
 
 const STATUS_OPTIONS: { value: ObjectStatus; label: string; color: string }[] = [
-  { value: 'lost',     label: 'Perdido',   color: 'text-red-400' },
-  { value: 'found',    label: 'Achado',    color: 'text-green-400' },
-  { value: 'returned', label: 'Devolvido', color: 'text-brand-400' },
-  { value: 'stolen',   label: 'Roubado',   color: 'text-orange-400' },
+  { value: 'protected', label: 'Protegido',  color: 'text-blue-400' },
+  { value: 'lost',      label: 'Perdido',    color: 'text-red-400' },
+  { value: 'found',     label: 'Achado',     color: 'text-green-400' },
+  { value: 'returned',  label: 'Devolvido',  color: 'text-brand-400' },
+  { value: 'stolen',    label: 'Roubado',    color: 'text-orange-400' },
 ];
 
 export default function EditObjectPage() {

@@ -8,7 +8,7 @@ import { z } from 'zod';
 import { toast } from 'sonner';
 import {
   ChevronLeft, ChevronRight, Loader2, Upload,
-  MapPin, Package, Info, Check, Gift, X
+  MapPin, Package, Info, Check, Gift, X, Shield, Search
 } from 'lucide-react';
 import axios from 'axios';
 import { objectsApi, parseApiError } from '@/lib/api';
@@ -51,22 +51,88 @@ const CATEGORIES: { value: ObjectCategory; label: string; emoji: string }[] = [
   { value: 'other', label: 'Outro', emoji: '📦' },
 ];
 
-const STATUSES: { value: ObjectStatus; label: string; desc: string; color: string }[] = [
-  { value: 'lost', label: 'Perdi', desc: 'Quero encontrá-lo', color: 'border-red-500/40 text-red-400 bg-red-500/5' },
-  { value: 'found', label: 'Encontrei', desc: 'Quero devolver ao dono', color: 'border-brand-500/40 text-brand-400 bg-brand-500/5' },
-  { value: 'stolen', label: 'Fui roubado', desc: 'Registrar como roubado', color: 'border-orange-500/40 text-orange-400 bg-orange-500/5' },
+// STATUSES para o caso de REPORTAR ocorrência
+const STATUSES_REPORT: { value: ObjectStatus; label: string; desc: string; color: string }[] = [
+  { value: 'lost',   label: 'Perdi',       desc: 'Quero encontrá-lo',       color: 'border-red-500/40 text-red-400 bg-red-500/5' },
+  { value: 'found',  label: 'Encontrei',   desc: 'Quero devolver ao dono',   color: 'border-brand-500/40 text-brand-400 bg-brand-500/5' },
+  { value: 'stolen', label: 'Fui roubado', desc: 'Registrar como roubado',   color: 'border-orange-500/40 text-orange-400 bg-orange-500/5' },
 ];
 
 const STEPS = ['Categoria', 'Status', 'Detalhes', 'Localização'];
 
 // ─── Intent map ────────────────────────────────────────────────────────────────
-const INTENT_MAP: Record<string, { category?: string; status?: string; startStep?: number }> = {
-  lost:    { status: 'lost',   startStep: 1 },
-  found:   { status: 'found',  startStep: 1 },
-  stolen:  { status: 'stolen', startStep: 1 },
-  protect: { status: 'lost',   startStep: 0 },
-  pet:     { category: 'pet',  status: 'lost', startStep: 1 },
+// 'protect' agora mapeia corretamente para status 'protected'
+const INTENT_MAP: Record<string, { category?: string; status?: string; startStep?: number; mode?: 'protect' | 'report' }> = {
+  lost:      { status: 'lost',      startStep: 1, mode: 'report' },
+  found:     { status: 'found',     startStep: 1, mode: 'report' },
+  stolen:    { status: 'stolen',    startStep: 1, mode: 'report' },
+  protect:   { status: 'protected', startStep: 0, mode: 'protect' },
+  pet:       { category: 'pet',     status: 'lost', startStep: 1, mode: 'report' },
 };
+
+// ─── Tela de escolha inicial ──────────────────────────────────────────────────
+function ModeSelector({ onSelect }: { onSelect: (mode: 'protect' | 'report') => void }) {
+  return (
+    <div className="p-8 max-w-2xl">
+      <div className="mb-8">
+        <h1 className="font-display text-2xl font-bold text-white mb-2">O que você precisa fazer?</h1>
+        <p className="text-slate-400 text-sm">Escolha para seguir o caminho certo.</p>
+      </div>
+
+      <div className="space-y-4">
+        {/* Opção 1: Proteger preventivamente */}
+        <button
+          type="button"
+          onClick={() => onSelect('protect')}
+          className="w-full p-5 rounded-2xl border border-blue-500/30 bg-blue-500/5 hover:bg-blue-500/10 hover:border-blue-500/50 transition-all text-left group"
+        >
+          <div className="flex items-start gap-4">
+            <div className="w-11 h-11 rounded-xl bg-blue-500/20 border border-blue-500/30 flex items-center justify-center flex-shrink-0 mt-0.5 group-hover:bg-blue-500/30 transition-colors">
+              <Shield className="w-5 h-5 text-blue-400" />
+            </div>
+            <div className="flex-1">
+              <p className="font-semibold text-white text-base mb-1">🛡️ Proteger um objeto</p>
+              <p className="text-slate-400 text-sm leading-relaxed">
+                Tenho o objeto agora e quero gerar um QR Code para colar nele. Se alguém encontrar no futuro, me avisa automaticamente.
+              </p>
+              <div className="mt-3 flex flex-wrap gap-2">
+                {['Celular', 'Carteira', 'Chaves', 'Mochila', 'Pet', 'Veículo'].map(item => (
+                  <span key={item} className="text-xs text-blue-400/70 bg-blue-500/10 border border-blue-500/20 px-2 py-0.5 rounded-full">{item}</span>
+                ))}
+              </div>
+            </div>
+            <ChevronRight className="w-5 h-5 text-blue-400 flex-shrink-0 mt-3 group-hover:translate-x-0.5 transition-transform" />
+          </div>
+        </button>
+
+        {/* Opção 2: Reportar ocorrência */}
+        <button
+          type="button"
+          onClick={() => onSelect('report')}
+          className="w-full p-5 rounded-2xl border border-white/10 bg-white/[0.02] hover:bg-white/[0.04] hover:border-white/20 transition-all text-left group"
+        >
+          <div className="flex items-start gap-4">
+            <div className="w-11 h-11 rounded-xl bg-white/5 border border-white/10 flex items-center justify-center flex-shrink-0 mt-0.5 group-hover:bg-white/10 transition-colors">
+              <Search className="w-5 h-5 text-slate-400" />
+            </div>
+            <div className="flex-1">
+              <p className="font-semibold text-white text-base mb-1">🔍 Reportar uma ocorrência</p>
+              <p className="text-slate-400 text-sm leading-relaxed">
+                Perdi um objeto, fui roubado ou encontrei algo de outra pessoa e quero devolver.
+              </p>
+              <div className="mt-3 flex flex-wrap gap-2">
+                {['Perdi algo', 'Fui roubado', 'Encontrei algo'].map(item => (
+                  <span key={item} className="text-xs text-slate-500 bg-white/5 border border-white/10 px-2 py-0.5 rounded-full">{item}</span>
+                ))}
+              </div>
+            </div>
+            <ChevronRight className="w-5 h-5 text-slate-500 flex-shrink-0 mt-3 group-hover:translate-x-0.5 transition-transform" />
+          </div>
+        </button>
+      </div>
+    </div>
+  );
+}
 
 // ─── Component ────────────────────────────────────────────────────────────────
 function NewObjectForm() {
@@ -79,6 +145,12 @@ function NewObjectForm() {
   const prefillBreed    = searchParams.get('prefill_breed')    ?? '';
   const prefillColor    = searchParams.get('prefill_color')    ?? '';
   const intentPreset = INTENT_MAP[intent] ?? {};
+
+  // Modo: 'choose' = tela inicial de escolha, 'protect' ou 'report'
+  // Se vier um intent definido, pula direto para o modo correto
+  const initialMode = intentPreset.mode ?? 'choose';
+  const [mode, setMode] = useState<'choose' | 'protect' | 'report'>(initialMode as 'choose' | 'protect' | 'report');
+
   const [step, setStep] = useState(intentPreset.startStep ?? 0);
   const [submitting, setSubmitting] = useState(false);
   const [photos, setPhotos] = useState<File[]>([]);
@@ -128,6 +200,16 @@ function NewObjectForm() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  // Quando o usuário escolhe o modo na tela inicial, aplicar o status padrão
+  const handleModeSelect = (selectedMode: 'protect' | 'report') => {
+    setMode(selectedMode);
+    setStep(0);
+    if (selectedMode === 'protect') {
+      setValue('status', 'protected' as ObjectStatus);
+    }
+    // Para 'report', o status será escolhido no step 1
+  };
+
   const {
     register,
     handleSubmit,
@@ -151,8 +233,17 @@ function NewObjectForm() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isPet]);
 
-  const nextStep = () => setStep((s) => Math.min(s + 1, STEPS.length - 1));
-  const prevStep = () => setStep((s) => Math.max(s - 1, 0));
+  // No modo protect, o step 1 (Status) é pulado — o status já é 'protected'
+  const nextStep = () => setStep((s) => {
+    const next = s + 1;
+    if (mode === 'protect' && next === 1) return 2; // pula step de Status
+    return Math.min(next, STEPS.length - 1);
+  });
+  const prevStep = () => setStep((s) => {
+    const prev = s - 1;
+    if (mode === 'protect' && prev === 1) return 0; // pula step de Status ao voltar
+    return Math.max(prev, 0);
+  });
 
   const removePhoto = (index: number) => {
     setPhotos(prev => prev.filter((_, i) => i !== index));
@@ -249,17 +340,36 @@ function NewObjectForm() {
   };
 
   return (
+    <>
+      {/* ── Tela de escolha inicial ── */}
+      {mode === 'choose' && (
+        <ModeSelector onSelect={handleModeSelect} />
+      )}
+
+      {/* ── Formulário (protect ou report) ── */}
+      {mode !== 'choose' && (
     <div className="p-8 max-w-2xl">
       {/* Header */}
       <div className="flex items-center gap-3 mb-8">
         <button
-          onClick={() => router.back()}
+          onClick={() => {
+            // Se veio de um intent externo (flow/*), volta para a tela anterior
+            // Caso contrário, volta para a tela de escolha
+            if (intent) {
+              router.back();
+            } else {
+              setMode('choose');
+              setStep(0);
+            }
+          }}
           className="w-9 h-9 glass rounded-lg flex items-center justify-center text-slate-400 hover:text-white transition-colors"
         >
           <ChevronLeft className="w-4 h-4" />
         </button>
         <div>
-          <h1 className="font-display text-xl font-bold text-white">Registrar Objeto</h1>
+          <h1 className="font-display text-xl font-bold text-white">
+            {mode === 'protect' ? '🛡️ Proteger Objeto' : '🔍 Registrar Ocorrência'}
+          </h1>
           <p className="text-slate-400 text-sm">
             Passo {step + 1} de {STEPS.length} — {STEPS[step]}
           </p>
@@ -272,16 +382,20 @@ function NewObjectForm() {
           <div key={s} className="flex-1 flex flex-col gap-1.5">
             <div
               className={`h-1 rounded-full transition-all duration-300 ${
-                i <= step ? 'bg-brand-500' : 'bg-surface-border'
+                i <= step
+                  ? mode === 'protect' ? 'bg-blue-500' : 'bg-brand-500'
+                  : 'bg-surface-border'
               }`}
             />
             <span
               className={`text-xs flex items-center gap-1 ${
-                i === step ? 'text-brand-400 font-semibold' : i < step ? 'text-slate-400' : 'text-slate-600'
+                i === step
+                  ? mode === 'protect' ? 'text-blue-400 font-semibold' : 'text-brand-400 font-semibold'
+                  : i < step ? 'text-slate-400' : 'text-slate-600'
               }`}
             >
               {s}
-              {i === 3 && i === step && <span className="text-brand-400 animate-pulse">📍</span>}
+              {i === 3 && i === step && <span className={mode === 'protect' ? 'text-blue-400 animate-pulse' : 'text-brand-400 animate-pulse'}>📍</span>}
             </span>
           </div>
         ))}
@@ -294,6 +408,12 @@ function NewObjectForm() {
         {/* Step 0 — Category */}
         {step === 0 && (
           <div className="space-y-4">
+            {mode === 'protect' && (
+              <div className="bg-blue-500/10 border border-blue-500/20 rounded-xl p-3 mb-4 flex items-center gap-2 text-blue-300 text-sm">
+                <Shield className="w-4 h-4 flex-shrink-0" />
+                <span>Você está criando um QR Code preventivo. Cole no objeto e ele ficará protegido.</span>
+              </div>
+            )}
             <h2 className="font-display font-semibold text-white text-lg">
               Que tipo de objeto é?
             </h2>
@@ -305,7 +425,9 @@ function NewObjectForm() {
                   onClick={() => { setValue('category', cat.value); nextStep(); }}
                   className={`p-4 rounded-xl border text-left transition-all ${
                     category === cat.value
-                      ? 'border-brand-500 bg-brand-500/10 text-white'
+                      ? mode === 'protect'
+                        ? 'border-blue-500 bg-blue-500/10 text-white'
+                        : 'border-brand-500 bg-brand-500/10 text-white'
                       : 'border-surface-border glass text-slate-400 hover:text-white hover:border-slate-500'
                   }`}
                 >
@@ -320,14 +442,14 @@ function NewObjectForm() {
           </div>
         )}
 
-        {/* Step 1 — Status */}
-        {step === 1 && (
+        {/* Step 1 — Status: só aparece no modo 'report'; no modo 'protect' é pulado */}
+        {step === 1 && mode === 'report' && (
           <div className="space-y-4">
             <h2 className="font-display font-semibold text-white text-lg">
               O que aconteceu?
             </h2>
             <div className="space-y-3">
-              {STATUSES.map((s) => (
+              {STATUSES_REPORT.map((s) => (
                 <button
                   key={s.value}
                   type="button"
@@ -631,7 +753,11 @@ function NewObjectForm() {
             <button
               type="button"
               onClick={nextStep}
-              className="flex items-center gap-2 px-6 py-2.5 bg-brand-500 hover:bg-brand-400 text-white font-semibold rounded-xl transition-all glow-teal text-sm"
+              className={`flex items-center gap-2 px-6 py-2.5 text-white font-semibold rounded-xl transition-all text-sm ${
+                mode === 'protect'
+                  ? 'bg-blue-500 hover:bg-blue-400'
+                  : 'bg-brand-500 hover:bg-brand-400 glow-teal'
+              }`}
             >
               Continuar
               <ChevronRight className="w-4 h-4" />
@@ -640,10 +766,19 @@ function NewObjectForm() {
             <button
               type="submit"
               disabled={submitting}
-              className="flex items-center gap-2 px-6 py-2.5 bg-brand-500 hover:bg-brand-400 disabled:opacity-60 disabled:cursor-not-allowed text-white font-semibold rounded-xl transition-all glow-teal text-sm"
+              className={`flex items-center gap-2 px-6 py-2.5 disabled:opacity-60 disabled:cursor-not-allowed text-white font-semibold rounded-xl transition-all text-sm ${
+                mode === 'protect'
+                  ? 'bg-blue-500 hover:bg-blue-400'
+                  : 'bg-brand-500 hover:bg-brand-400 glow-teal'
+              }`}
             >
               {submitting ? (
                 <Loader2 className="w-4 h-4 animate-spin" />
+              ) : mode === 'protect' ? (
+                <>
+                  <Shield className="w-4 h-4" />
+                  Gerar QR e Proteger
+                </>
               ) : (
                 <>
                   <Package className="w-4 h-4" />
@@ -655,6 +790,8 @@ function NewObjectForm() {
         </div>
       </form>
     </div>
+      )}
+    </>
   );
 }
 

@@ -34,16 +34,18 @@ const CATEGORY_LABEL: Record<string, string> = {
 };
 
 const STATUS_CONFIG: Record<string, { label: string; icon: React.ReactNode; color: string; bg: string }> = {
-  lost:     { label: 'Perdido',     icon: <AlertTriangle className="w-4 h-4" />, color: 'text-red-400',    bg: 'bg-red-500/10 border-red-500/20' },
-  found:    { label: 'Achado',      icon: <Package className="w-4 h-4" />,       color: 'text-brand-400',  bg: 'bg-brand-500/10 border-brand-500/20' },
-  returned: { label: 'Recuperado',  icon: <CheckCircle2 className="w-4 h-4" />,  color: 'text-green-400',  bg: 'bg-green-500/10 border-green-500/20' },
-  stolen:   { label: 'Roubado',     icon: <Clock className="w-4 h-4" />,         color: 'text-orange-400', bg: 'bg-orange-500/10 border-orange-500/20' },
+  lost:      { label: 'Perdido',    icon: <AlertTriangle className="w-4 h-4" />, color: 'text-red-400',    bg: 'bg-red-500/10 border-red-500/20' },
+  found:     { label: 'Achado',     icon: <Package className="w-4 h-4" />,       color: 'text-brand-400',  bg: 'bg-brand-500/10 border-brand-500/20' },
+  returned:  { label: 'Recuperado', icon: <CheckCircle2 className="w-4 h-4" />,  color: 'text-green-400',  bg: 'bg-green-500/10 border-green-500/20' },
+  stolen:    { label: 'Roubado',    icon: <Clock className="w-4 h-4" />,         color: 'text-orange-400', bg: 'bg-orange-500/10 border-orange-500/20' },
+  protected: { label: 'Protegido',  icon: <CheckCircle2 className="w-4 h-4" />,  color: 'text-blue-400',   bg: 'bg-blue-500/10 border-blue-500/20' },
 };
 
 // ─── QR Code component ────────────────────────────────────────────────────────
 
 function QRCodeDisplay({ code, title, status }: { code: string; title: string; status: string }) {
   const isLost = status === 'lost' || status === 'stolen';
+  const isProtected = status === 'protected';
   const scanUrl = `${process.env.NEXT_PUBLIC_APP_URL ?? 'https://backfindr.com.br'}/scan/${code}`;
   const [theme, setTheme] = useState<'dark'|'light'|'teal'>('dark');
   const [size, setSize] = useState<'85x55'|'50x50'|'a4'>('85x55');
@@ -70,15 +72,19 @@ function QRCodeDisplay({ code, title, status }: { code: string; title: string; s
     link.click();
   };
   const shareWhatsApp = () => {
-    const msg = isLost
-      ? `Perdi meu objeto e preciso de ajuda! Se voce viu ou encontrou, acesse: ${scanUrl}`
-      : `Encontrei um objeto perdido. Se for seu, acesse: ${scanUrl}`;
+    const msg = isProtected
+      ? `Colei um QR Code do Backfindr no meu ${title}. Se você encontrar, escaneie para me avisar: ${scanUrl}`
+      : isLost
+        ? `Perdi meu objeto e preciso de ajuda! Se voce viu ou encontrou, acesse: ${scanUrl}`
+        : `Encontrei um objeto perdido. Se for seu, acesse: ${scanUrl}`;
     window.open(`https://wa.me/?text=${encodeURIComponent(msg)}`, '_blank');
   };
   const shareTwitter = () => {
-    const msg = isLost
-      ? `Perdi meu objeto! Se alguem encontrou, acesse ${scanUrl} #Backfindr #AchouPerdeu`
-      : `Encontrei um objeto perdido! Dono, acesse ${scanUrl} #Backfindr`;
+    const msg = isProtected
+      ? `Protegi meu ${title} com QR Code do @Backfindr. Se alguem encontrar, basta escanear: ${scanUrl}`
+      : isLost
+        ? `Perdi meu objeto! Se alguem encontrou, acesse ${scanUrl} #Backfindr #AchouPerdeu`
+        : `Encontrei um objeto perdido! Dono, acesse ${scanUrl} #Backfindr`;
     window.open(`https://twitter.com/intent/tweet?text=${encodeURIComponent(msg)}`, '_blank');
   };
   const shareFacebook = () => {
@@ -716,11 +722,62 @@ export default function ObjectDetailPage() {
 
               {/* ── ZONA 3: SECUNDÁRIOS ── */}
 
-              {/* Atualizar status — chips horizontais */}
+              {/* CTA especial para objetos PROTEGIDOS — "algo aconteceu?" */}
+              {obj.status === 'protected' && (
+                <div className="glass rounded-2xl p-4 sm:p-5 border border-amber-500/20 bg-amber-500/5">
+                  <div className="flex items-start gap-3 mb-4">
+                    <div className="w-8 h-8 rounded-lg bg-amber-500/20 border border-amber-500/30 flex items-center justify-center flex-shrink-0 mt-0.5">
+                      <AlertTriangle className="w-4 h-4 text-amber-400" />
+                    </div>
+                    <div>
+                      <h3 className="font-display font-bold text-white text-sm mb-0.5">Algo aconteceu com este objeto?</h3>
+                      <p className="text-slate-400 text-xs leading-relaxed">
+                        Publique como ocorrência para acionar a rede e o matching de IA.
+                      </p>
+                    </div>
+                  </div>
+                  <div className="space-y-2">
+                    {([
+                      { s: 'lost'   as const, label: 'Perdi este objeto',    icon: <AlertTriangle className="w-4 h-4" />, color: 'border-red-500/40 bg-red-500/10 text-red-400 hover:bg-red-500/20' },
+                      { s: 'stolen' as const, label: 'Fui roubado',          icon: <Clock className="w-4 h-4" />,         color: 'border-orange-500/40 bg-orange-500/10 text-orange-400 hover:bg-orange-500/20' },
+                    ]).map(({ s, label, icon, color }) => (
+                      <button
+                        key={s}
+                        onClick={async () => {
+                          try {
+                            await objectsApi.update(id, { status: s });
+                            setObj((prev) => prev ? { ...prev, status: s } : prev);
+                            toast.success(`Publicado como "${s === 'lost' ? 'Perdido' : 'Roubado'}" — a rede foi acionada!`);
+                            // Disparar matching em background
+                            const token = Cookies.get('access_token');
+                            if (token) {
+                              fetch(`${process.env.NEXT_PUBLIC_APP_URL ?? ''}/api/v1/matching/run`, {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+                                body: JSON.stringify({ object_id: id }),
+                              }).catch(() => {});
+                            }
+                          } catch (err) {
+                            toast.error(parseApiError(err));
+                          }
+                        }}
+                        className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl border text-sm font-semibold transition-all ${color}`}
+                      >
+                        {icon}
+                        {label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Atualizar status — chips para todos os outros casos */}
               <div className="glass rounded-2xl p-4 sm:p-5">
-                <h3 className="font-display font-semibold text-white text-sm mb-3">Atualizar status</h3>
+                <h3 className="font-display font-semibold text-white text-sm mb-3">
+                  {obj.status === 'protected' ? 'Outras opções de status' : 'Atualizar status'}
+                </h3>
                 <div className="flex flex-col gap-2">
-                  {(['lost', 'found', 'returned'] as const).map((s) => {
+                  {(['lost', 'found', 'stolen', 'returned', 'protected'] as const).map((s) => {
                     const cfg = STATUS_CONFIG[s];
                     const active = obj.status === s;
                     return (
@@ -735,6 +792,17 @@ export default function ObjectDetailPage() {
                               setShowRecoveredModal(true);
                             } else {
                               toast.success(`Status atualizado para ${cfg.label}`);
+                              // Se saiu de protected para lost/stolen, dispara matching
+                              if ((s === 'lost' || s === 'stolen') && obj.status === 'protected') {
+                                const token = Cookies.get('access_token');
+                                if (token) {
+                                  fetch(`${process.env.NEXT_PUBLIC_APP_URL ?? ''}/api/v1/matching/run`, {
+                                    method: 'POST',
+                                    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+                                    body: JSON.stringify({ object_id: id }),
+                                  }).catch(() => {});
+                                }
+                              }
                             }
                           } catch (err) {
                             toast.error(parseApiError(err));
