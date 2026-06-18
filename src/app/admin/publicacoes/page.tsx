@@ -27,14 +27,14 @@ interface Pub {
 }
 
 const STATUS_STYLE: Record<string, { text: string; bg: string; border: string; dot: string }> = {
-  lost:     { text: 'text-red-400',    bg: 'bg-red-500/10',    border: 'border-red-500/20',    dot: 'bg-red-400' },
-  found:    { text: 'text-teal-400',   bg: 'bg-teal-500/10',   border: 'border-teal-500/20',   dot: 'bg-teal-400' },
-  returned: { text: 'text-green-400',  bg: 'bg-green-500/10',  border: 'border-green-500/20',  dot: 'bg-green-400' },
-  stolen:   { text: 'text-orange-400', bg: 'bg-orange-500/10', border: 'border-orange-500/20', dot: 'bg-orange-400' },
-  protect:  { text: 'text-blue-400',   bg: 'bg-blue-500/10',   border: 'border-blue-500/20',   dot: 'bg-blue-400' },
+  lost:      { text: 'text-red-400',    bg: 'bg-red-500/10',    border: 'border-red-500/20',    dot: 'bg-red-400' },
+  found:     { text: 'text-teal-400',   bg: 'bg-teal-500/10',   border: 'border-teal-500/20',   dot: 'bg-teal-400' },
+  returned:  { text: 'text-green-400',  bg: 'bg-green-500/10',  border: 'border-green-500/20',  dot: 'bg-green-400' },
+  stolen:    { text: 'text-orange-400', bg: 'bg-orange-500/10', border: 'border-orange-500/20', dot: 'bg-orange-400' },
+  protected: { text: 'text-blue-400',   bg: 'bg-blue-500/10',   border: 'border-blue-500/20',   dot: 'bg-blue-400' },
 };
 const STATUS_LABEL: Record<string, string> = {
-  lost: 'Perdido', found: 'Achado', returned: 'Recuperado', stolen: 'Roubado', protect: 'Protegido',
+  lost: 'Perdido', found: 'Achado', returned: 'Recuperado', stolen: 'Roubado', protected: 'Protegido',
 };
 const CATEGORY_EMOJI: Record<string, string> = {
   phone: '📱', wallet: '👛', keys: '🔑', bag: '🎒', pet: '🐾',
@@ -42,12 +42,12 @@ const CATEGORY_EMOJI: Record<string, string> = {
 };
 
 const STATUS_FILTERS = [
-  { value: 'all',      label: 'Todos' },
-  { value: 'lost',     label: 'Perdidos' },
-  { value: 'found',    label: 'Achados' },
-  { value: 'stolen',   label: 'Roubados' },
-  { value: 'returned', label: 'Recuperados' },
-  { value: 'protect',  label: 'Protegidos' },
+  { value: 'all',       label: 'Todos' },
+  { value: 'lost',      label: 'Perdidos' },
+  { value: 'found',     label: 'Achados' },
+  { value: 'stolen',    label: 'Roubados' },
+  { value: 'returned',  label: 'Recuperados' },
+  { value: 'protected', label: 'Protegidos' },
 ];
 
 function PubRow({ pub, onAction }: { pub: Pub; onAction: (id: string, action: string) => void }) {
@@ -186,12 +186,13 @@ export default function AdminPublicacoes() {
       </div>
 
       {/* Cards de status */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+      <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
         {[
-          { key: 'lost',     label: 'Perdidos',    cls: 'text-red-400 bg-red-500/10 border-red-500/15' },
-          { key: 'found',    label: 'Achados',     cls: 'text-teal-400 bg-teal-500/10 border-teal-500/15' },
-          { key: 'returned', label: 'Recuperados', cls: 'text-green-400 bg-green-500/10 border-green-500/15' },
-          { key: 'stolen',   label: 'Roubados',    cls: 'text-orange-400 bg-orange-500/10 border-orange-500/15' },
+          { key: 'lost',      label: 'Perdidos',    cls: 'text-red-400 bg-red-500/10 border-red-500/15' },
+          { key: 'found',     label: 'Achados',     cls: 'text-teal-400 bg-teal-500/10 border-teal-500/15' },
+          { key: 'returned',  label: 'Recuperados', cls: 'text-green-400 bg-green-500/10 border-green-500/15' },
+          { key: 'stolen',    label: 'Roubados',    cls: 'text-orange-400 bg-orange-500/10 border-orange-500/15' },
+          { key: 'protected', label: 'Protegidos',  cls: 'text-blue-400 bg-blue-500/10 border-blue-500/15' },
         ].map(s => (
           <button key={s.key} onClick={() => { setStatus(s.key); setPage(1); }}
             className={`p-3 rounded-2xl border text-left transition-all hover:opacity-80 ${s.cls} ${status === s.key ? 'ring-1 ring-current ring-opacity-30' : ''}`}>
