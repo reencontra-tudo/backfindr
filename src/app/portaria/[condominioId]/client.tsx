@@ -314,10 +314,70 @@ function TelaScan({ condominioId, onBack, onSuccess }: {
     </div>
   );
 
+  // ── Scanner de câmera ──────────────────────────────────────────────────────
+  const videoRef = useRef<HTMLVideoElement>(null);
+  const streamRef = useRef<MediaStream | null>(null);
+  const scannerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const [cameraActive, setCameraActive] = useState(false);
+  const [cameraError, setCameraError] = useState<string | null>(null);
+
+  const stopCamera = useCallback(() => {
+    if (scannerRef.current) { clearInterval(scannerRef.current); scannerRef.current = null; }
+    if (streamRef.current) { streamRef.current.getTracks().forEach(t => t.stop()); streamRef.current = null; }
+    if (videoRef.current) videoRef.current.srcObject = null;
+    setCameraActive(false);
+  }, []);
+
+  const startCamera = useCallback(async () => {
+    setCameraError(null);
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({
+        video: { facingMode: 'environment', width: { ideal: 1280 }, height: { ideal: 720 } },
+      });
+      streamRef.current = stream;
+      if (videoRef.current) {
+        videoRef.current.srcObject = stream;
+        await videoRef.current.play();
+      }
+      setCameraActive(true);
+
+      // BarcodeDetector nativo — disponível no Safari iOS 16+ e Chrome
+      const BD = (window as any).BarcodeDetector;
+      if (BD) {
+        const detector = new BD({ formats: ['qr_code'] });
+        scannerRef.current = setInterval(async () => {
+          if (!videoRef.current || videoRef.current.readyState < 2) return;
+          try {
+            const codes = await detector.detect(videoRef.current);
+            if (codes.length > 0) {
+              const raw = codes[0].rawValue as string;
+              stopCamera();
+              setQrInput(raw.toUpperCase());
+              handleScan(raw.toUpperCase());
+            }
+          } catch { /* frame ainda carregando */ }
+        }, 300);
+      } else {
+        // BarcodeDetector não disponível (Safari < 16 ou browser antigo)
+        // Câmera fica ativa mas não faz detecção automática — porteiro digita o código
+        setCameraError('Detecção automática não disponível neste dispositivo. Use o campo abaixo.');
+        stopCamera();
+      }
+    } catch (err: any) {
+      const msg = err?.name === 'NotAllowedError'
+        ? 'Permissão de câmera negada. Autorize nas configurações do Safari.'
+        : 'Não foi possível acessar a câmera.';
+      setCameraError(msg);
+    }
+  }, [handleScan, stopCamera]);
+
+  // Parar câmera ao sair da tela
+  useEffect(() => () => stopCamera(), [stopCamera]);
+
   return (
     <div className="flex-1 flex flex-col">
       <div className="bg-[#0F2544] px-5 py-4">
-        <button onClick={onBack} className="flex items-center gap-1.5 text-[#6B8EC4] text-sm mb-3">
+        <button onClick={() => { stopCamera(); onBack(); }} className="flex items-center gap-1.5 text-[#6B8EC4] text-sm mb-3">
           <ArrowLeft className="w-4 h-4" /> Voltar
         </button>
         <h2 className="text-white font-bold text-lg">Escanear QR Code</h2>
@@ -327,15 +387,61 @@ function TelaScan({ condominioId, onBack, onSuccess }: {
       <div className="flex-1 flex flex-col p-4 gap-4">
         {/* Viewfinder */}
         <div className="relative bg-[#162C50] rounded-3xl overflow-hidden aspect-square flex items-center justify-center">
-          <div className="absolute top-5 left-5 w-8 h-8 border-t-4 border-l-4 border-[#7C3AED] rounded-tl-lg" />
-          <div className="absolute top-5 right-5 w-8 h-8 border-t-4 border-r-4 border-[#7C3AED] rounded-tr-lg" />
-          <div className="absolute bottom-5 left-5 w-8 h-8 border-b-4 border-l-4 border-[#7C3AED] rounded-bl-lg" />
-          <div className="absolute bottom-5 right-5 w-8 h-8 border-b-4 border-r-4 border-[#7C3AED] rounded-br-lg" />
-          <div className="text-center">
-            <Camera className="w-10 h-10 text-[#6B8EC4] mx-auto mb-2" />
-            <p className="text-[#6B8EC4] text-sm">Câmera em breve</p>
-            <p className="text-[#6B8EC4]/50 text-xs">Use o campo abaixo por enquanto</p>
-          </div>
+          {/* Cantos decorativos */}
+          <div className="absolute top-5 left-5 w-8 h-8 border-t-4 border-l-4 border-[#7C3AED] rounded-tl-lg z-10" />
+          <div className="absolute top-5 right-5 w-8 h-8 border-t-4 border-r-4 border-[#7C3AED] rounded-tr-lg z-10" />
+          <div className="absolute bottom-5 left-5 w-8 h-8 border-b-4 border-l-4 border-[#7C3AED] rounded-bl-lg z-10" />
+          <div className="absolute bottom-5 right-5 w-8 h-8 border-b-4 border-r-4 border-[#7C3AED] rounded-br-lg z-10" />
+
+          {/* Vídeo da câmera */}
+          <video
+            ref={videoRef}
+            playsInline
+            muted
+            className={`absolute inset-0 w-full h-full object-cover ${cameraActive ? 'opacity-100' : 'opacity-0'}`}
+          />
+
+          {/* Linha de scan animada */}
+          {cameraActive && (
+            <div className="absolute inset-x-5 z-10 pointer-events-none"
+              style={{ animation: 'scanLine 2s ease-in-out infinite', top: '20%' }}>
+              <div className="h-0.5 bg-[#7C3AED] shadow-lg shadow-purple-500/50" />
+            </div>
+          )}
+
+          {/* Estado: inativo */}
+          {!cameraActive && !cameraError && (
+            <button onClick={startCamera}
+              className="flex flex-col items-center gap-3 text-center z-10 p-6">
+              <div className="w-16 h-16 rounded-2xl bg-[#7C3AED]/20 border border-[#7C3AED]/40 flex items-center justify-center">
+                <Camera className="w-8 h-8 text-[#7C3AED]" />
+              </div>
+              <div>
+                <p className="text-white text-sm font-semibold">Ativar câmera</p>
+                <p className="text-[#6B8EC4]/60 text-xs mt-0.5">Toque para escanear o QR Code</p>
+              </div>
+            </button>
+          )}
+
+          {/* Estado: erro de câmera */}
+          {cameraError && (
+            <div className="flex flex-col items-center gap-3 text-center z-10 p-6">
+              <AlertCircle className="w-10 h-10 text-red-400" />
+              <p className="text-red-300 text-sm">{cameraError}</p>
+              <button onClick={startCamera}
+                className="px-4 py-2 bg-[#7C3AED]/20 border border-[#7C3AED]/40 rounded-xl text-[#7C3AED] text-xs font-semibold">
+                Tentar novamente
+              </button>
+            </div>
+          )}
+
+          {/* Botão de parar câmera */}
+          {cameraActive && (
+            <button onClick={stopCamera}
+              className="absolute top-3 right-3 z-20 w-8 h-8 rounded-full bg-black/50 flex items-center justify-center">
+              <X className="w-4 h-4 text-white" />
+            </button>
+          )}
         </div>
 
         {/* Input manual */}
@@ -354,6 +460,13 @@ function TelaScan({ condominioId, onBack, onSuccess }: {
           </button>
         </div>
       </div>
+
+      <style>{`
+        @keyframes scanLine {
+          0%, 100% { transform: translateY(0); opacity: 1; }
+          50% { transform: translateY(calc(60vw - 2rem)); opacity: 0.7; }
+        }
+      `}</style>
     </div>
   );
 }
