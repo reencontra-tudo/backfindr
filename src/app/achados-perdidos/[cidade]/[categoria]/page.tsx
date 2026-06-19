@@ -61,18 +61,29 @@ export default async function CidadeCategoria({ params }: Props) {
       <div style={{ backgroundColor: '#111827', borderBottom: '1px solid #1f2937' }}>
         <div className="container mx-auto px-4 py-10 max-w-3xl">
 
-          {/* Breadcrumb */}
-          <nav className="text-sm mb-6 flex items-center gap-2 flex-wrap" style={{ color: '#9CA3AF' }}>
-            <Link href="/achados-perdidos" className="hover:underline" style={{ color: '#9CA3AF' }}>
+          {/* Breadcrumb + botão voltar */}
+          <nav className="text-base mb-4 flex items-center gap-2 flex-wrap font-medium" style={{ color: '#14B8A6' }}>
+            <Link href="/achados-perdidos" className="hover:underline" style={{ color: '#14B8A6' }}>
               Achados e Perdidos
             </Link>
-            <span>›</span>
-            <Link href={`/achados-perdidos/${params.cidade}`} className="hover:underline" style={{ color: '#9CA3AF' }}>
+            <span style={{ color: '#4B5563' }}>›</span>
+            <Link href={`/achados-perdidos/${params.cidade}`} className="hover:underline" style={{ color: '#14B8A6' }}>
               {city.name}
             </Link>
-            <span>›</span>
-            <span style={{ color: '#14B8A6' }}>{cat.label}</span>
+            <span style={{ color: '#4B5563' }}>›</span>
+            <span style={{ color: '#FFFFFF' }}>{cat.label}</span>
           </nav>
+
+          {/* Botão voltar */}
+          <div className="mb-6">
+            <Link
+              href={`/achados-perdidos/${params.cidade}`}
+              className="inline-flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold transition-all"
+              style={{ backgroundColor: '#14B8A615', color: '#14B8A6', border: '1px solid #14B8A630' }}
+            >
+              ← Voltar para {city.name}
+            </Link>
+          </div>
 
           <div className="flex items-start gap-4 mb-4">
             {/* Ícone da categoria */}

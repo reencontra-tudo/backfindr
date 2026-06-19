@@ -75,14 +75,25 @@ export default async function CidadePage({ params }: Props) {
       <div style={{ backgroundColor: '#111827', borderBottom: '1px solid #1f2937' }}>
         <div className="container mx-auto px-4 py-10 max-w-5xl">
 
-          {/* Breadcrumb */}
-          <nav className="text-sm mb-6 flex items-center gap-2" style={{ color: '#9CA3AF' }}>
-            <Link href="/achados-perdidos" className="hover:underline transition-colors" style={{ color: '#9CA3AF' }}>
+          {/* Breadcrumb + botão voltar */}
+          <nav className="text-base mb-4 flex items-center gap-2 font-medium" style={{ color: '#14B8A6' }}>
+            <Link href="/achados-perdidos" className="hover:underline transition-colors" style={{ color: '#14B8A6' }}>
               Achados e Perdidos
             </Link>
-            <span>›</span>
+            <span style={{ color: '#4B5563' }}>›</span>
             <span style={{ color: '#FFFFFF' }}>{city.name}</span>
           </nav>
+
+          {/* Botão voltar */}
+          <div className="mb-6">
+            <Link
+              href="/achados-perdidos"
+              className="inline-flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold transition-all"
+              style={{ backgroundColor: '#14B8A615', color: '#14B8A6', border: '1px solid #14B8A630' }}
+            >
+              ← Todas as cidades
+            </Link>
+          </div>
 
           <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-8">
             <div className="flex-1">
