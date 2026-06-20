@@ -28,10 +28,10 @@ export default async function AchadosPerdidosHub() {
   const capitals = result.rows
 
   const grandeSPResult = await query(
-    `SELECT name, slug, state_code, total_objects_registered 
-     FROM municipalities 
-     WHERE slug IN ('sao-bernardo-do-campo', 'santo-andre', 'osasco', 'guarulhos', 'campinas', 'sao-jose-dos-campos', 'ribeirao-preto', 'sorocaba', 'mogi-das-cruzes', 'santo-andre', 'diadema', 'carapicuiba', 'barueri', 'itaquaquecetuba', 'suzano', 'taboao-da-serra', 'cotia', 'jandira', 'embu-das-artes', 'itapevi', 'francisco-morato', 'franco-da-rocha', 'mairipora', 'santana-de-parnaiba', 'caieiras', 'pirapora-do-bom-jesus')
-     ORDER BY population DESC`
+    `SELECT name, slug, state_code, total_objects_registered
+     FROM municipalities
+     WHERE is_capital = false AND state_code = 'SP'
+     ORDER BY name ASC`
   )
   const grandeSP = grandeSPResult.rows
 
