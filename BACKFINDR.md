@@ -1,30 +1,70 @@
 # BACKFINDR — Documento Mestre
 > Arquivo único de referência. Toda sessão de desenvolvimento deve começar lendo este arquivo.
 > Localização canônica: `~/Downloads/backfindr-local/backfindr-main/BACKFINDR.md`
-> Última atualização: 2026-06-20
+> Última atualização: 2026-06-21
 
 ---
 
 ## 1. O QUE É O BACKFINDR
 
-Plataforma SaaS brasileira de recuperação ativa de objetos perdidos. Combina QR Codes permanentes, matching por IA e distribuição inteligente de ocorrências para fechar o ciclo completo: perda → encontro → devolução.
+Plataforma SaaS brasileira composta por **4 produtos independentes** que compartilham a mesma base de usuários, banco de dados e infraestrutura. Cada produto pode ser usado de forma autônoma ou em conjunto.
 
-Fundador solo: Marcos (Cido Menezes) — São Paulo/Guarulhos.
+Fundador solo: Marcos (Cido Menezes) — São Paulo/Guarulhos
 Repositório: `https://github.com/reencontra-tudo/backfindr` (branch: `main`)
 Produção: `https://backfindr.com`
+Projeto anterior: Webjetos (2015) — base de usuários existente, migração planejada
 
 ---
 
-## 2. PREMISSAS ESTRATÉGICAS DO NEGÓCIO
-> Consultar sempre antes de propor features, planos ou integrações.
+## 2. OS 4 PRODUTOS
 
-### 2.1 Marketplace de Recompensas
+### P1 — Backfindr Core
+Plataforma pública de achados, perdidos e roubados.
+- Usuários cadastram objetos (lost/found/stolen/returned)
+- IA faz matching entre objetos perdidos e encontrados
+- QR codes físicos colados nos objetos — DNA do objeto
+- Chat entre usuário e achador após match confirmado
+- Notificações push, e-mail, WhatsApp
+- **Status funcional:** cadastro, matching manual, QR code, chat, notificações
+- **Incompletos:** Loop WhatsApp tela de sucesso (não funciona em produção), BarcodeDetector portaria (não validado em produção), Social Posts automático, Boost conectado ao checkout, Moderação
+- **Matching automático:** POST /objects NÃO chama matching/run automaticamente após salvar objeto
+
+### P2 — Backfindr B2B
+Empresas com área própria dentro da plataforma.
+- Role: `b2b_admin` com `b2b_partner_id` no banco
+- Portal do parceiro: `/parceiro/*` (dashboard, objetos, QRcodes, equipe, relatórios)
+- **Ciclo incompleto:** onboarding do parceiro não existe (cadastro manual no banco hoje)
+- **Monetização pendente:** mensalidade + limite de objetos
+
+### P3 — Backfindr Condomínios
+Portaria PWA + moradores + encomendas + custódia + achados internos.
+- PWA da portaria: `/portaria/[condominioId]` — completo e funcional
+- Página de entrada do morador: `/condominio/[slug]` — completa
+- Branding customizável por condomínio
+- Notificações de encomenda via WhatsApp e push
+- **Ciclo incompleto:** morador cai no `/dashboard` genérico após cadastro
+- **Faltando:** histórico de encomendas do morador, achados internos, relatório para síndico
+- **Monetização pendente:** mensalidade por nº de unidades
+
+### P4 — Backfindr Delivery
+Entregas rastreadas com QR code — produto independente.
+- Backend pronto: `entregas`, `estabelecimentos`, `entregadores`
+- Página pública de rastreio: `/delivery/[token]` — funcional
+- **Ciclo completamente ausente na UI:** criar entrega, interface do entregador, dashboard
+- **Monetização pendente:** X entregas/mês grátis, pago acima
+
+---
+
+## 3. PREMISSAS ESTRATÉGICAS DO NEGÓCIO
+> Consultar SEMPRE antes de propor features, planos ou integrações.
+
+### 3.1 Marketplace de Recompensas
 Quem perdeu algo de valor tem alta disposição a pagar para divulgar a busca. O Backfindr intermedia essa transação entre quem perdeu e quem encontrou.
 
-### 2.2 Motor de Distribuição (user-funded acquisition)
-A divulgação da ocorrência — redes sociais, push, grupos, ads — é financiada pelo próprio usuário. Quanto maior o valor do objeto, maior a disposição de pagar. O usuário não compra mídia, compra **probabilidade de recuperação**.
+### 3.2 Motor de Distribuição (user-funded acquisition)
+A divulgação da ocorrência — redes sociais, push, grupos, ads — é financiada pelo próprio usuário. O usuário não compra mídia, compra **probabilidade de recuperação**.
 
-### 2.3 Intelligence Hub (maior valor a longo prazo)
+### 3.3 Intelligence Hub (maior valor a longo prazo)
 O banco de dados de ocorrências é um produto B2B:
 - Seguradoras → mapa de risco por bairro/região
 - Concessionárias → abordam quem teve veículo roubado
@@ -32,67 +72,82 @@ O banco de dados de ocorrências é um produto B2B:
 - Empresas de rastreamento → venda preventiva
 - Condomínios e shoppings → relatório mensal
 
-### 2.4 QR Code é o DNA do Objeto
+### 3.4 QR Code é o DNA do Objeto
 Não é feature — é o produto físico de entrada no Backfindr.
 Objeto com QR Code = objeto com identidade rastreável.
 Status `protected` = prevenção antes da perda.
 
-### 2.5 Modelo de Receita
+### 3.5 Modelo de Receita
 - (a) Impulsos avulsos — quem perdeu paga para amplificar
 - (b) Assinatura preventiva — quem quer proteger antes de perder
 - (c) B2B — empresas com múltiplos ativos
 - (d) Intelligence Hub — dados estruturados para mercado corporativo
 
-### 2.6 Foco
-Cada feature, plano ou integração deve servir a um desses pilares. Nunca propor algo que não se encaixe nessa lógica sem alertar o fundador primeiro.
+### 3.6 Foco
+Cada feature, plano ou integração deve servir a um desses pilares. Nunca propor algo fora dessa lógica sem alertar o fundador primeiro.
 
 ---
 
-## 3. STACK TECNOLÓGICA
+## 4. STACK TECNOLÓGICA
 
 | Camada | Tecnologia |
 |--------|-----------|
-| Frontend | Next.js 14 (App Router), React, TypeScript |
-| Estilo | Tailwind CSS |
+| Frontend | Next.js 14 (App Router), React, TypeScript, Tailwind CSS |
 | Banco de Dados | PostgreSQL via helper `query()` em `@/lib/db` — **NUNCA usar cliente Supabase diretamente** |
-| Autenticação | JWT (access + refresh tokens), Google OAuth, Facebook OAuth |
-| Pagamentos | Stripe (Checkout + Webhooks) |
+| Autenticação | JWT + cookies (`access_token`), Google OAuth, Facebook OAuth |
+| Pagamentos | MercadoPago + Stripe (ambos integrados) |
 | Email | Resend (domínio: `send.backfindr.com.br`) |
 | Mapa | Mapbox GL JS |
+| Storage | Cloudflare R2 |
+| Analytics | PostHog, GA4 |
 | Deploy | Vercel (região: `iad1`) |
 | Automação | n8n no Railway (`https://n8n-production-b99a.up.railway.app`) |
-| Gerenciador de pacotes | **pnpm** (nunca npm) |
+| Gerenciador de pacotes | **pnpm** — nunca npm |
+| IA conteúdo | `gpt-4.1-mini` — nunca `gpt-4o-mini` |
 
 ---
 
-## 4. REGRAS TÉCNICAS PERMANENTES
+## 5. REGRAS TÉCNICAS PERMANENTES
 
 ### Deploy
-- Workflow correto: sempre commitar na `main` → deploy automático via Vercel
-- Vercel pode ser atualizado por: (1) GitHub com deploy automático, ou (2) upload de zip direto
-- Correções via zip no Vercel NÃO entram no GitHub — risco de regressão
+- Workflow correto: commitar na `main` → deploy automático via Vercel
+- Vercel pode ser atualizado por: (1) GitHub automático, ou (2) upload de zip direto
+- Correções via zip NO Vercel NÃO entram no GitHub — risco de regressão
 - **NUNCA** afirmar que "não é possível mexer no Vercel sem o GitHub"
 
 ### Banco de Dados
 - Usar sempre `query()` de `@/lib/db`
 - **NUNCA** usar o cliente Supabase diretamente
-- Padrão crítico estabelecido e não negociável
+- DATABASE_URL de produção: obter via `npx vercel env pull .env.vercel.local --yes`
 
 ### Pacotes
-- Sempre `pnpm install`, nunca `npm install`
-- Build: `pnpm run build`
+- Sempre `pnpm install` e `pnpm run build` — nunca npm
 
 ### Arquivos
 - Nunca perguntar ao Marcos onde está um arquivo
 - Sempre dar o comando de terminal para ele colar o resultado
 - Padrão: `find`, `cat`, `ls` → Marcos cola → Claude trabalha
 
-### IA
-- Modelo de geração de conteúdo: `gpt-4.1-mini` (não `gpt-4o-mini`)
+---
+
+## 6. AMBIENTE LOCAL
+
+```bash
+# Subir banco
+bash ~/Downloads/iniciar-backfindr.sh
+
+# Rodar projetos (duas abas)
+cd ~/Downloads/rastrear-integrado && pnpm dev        # porta 3002
+cd ~/Downloads/backfindr-local/backfindr-main && pnpm dev  # porta 3003
+
+# Admin local
+localhost:3003/admin/dashboard
+admin@backfindr.com / admin123
+```
 
 ---
 
-## 5. DOMÍNIOS CONFIGURADOS
+## 7. DOMÍNIOS
 
 | Domínio | Status |
 |---------|--------|
@@ -103,11 +158,42 @@ Cada feature, plano ou integração deve servir a um desses pilares. Nunca propo
 
 ---
 
-## 6. MODELO DE RECEITA ATUAL (em revisão)
+## 8. BANCO DE DADOS — TABELAS PRINCIPAIS
 
-> ⚠️ Esta seção está sendo reestruturada. Os planos abaixo são o ponto de partida, não o estado final.
+```
+users            — base compartilhada de todos os produtos
+objects          — P1: objetos perdidos/achados/roubados
+matches          — P1: matches por IA entre objetos
+municipalities   — SEO: municípios brasileiros
+local_pages      — SEO: páginas por município+categoria
+condominios      — P3: condomínios cadastrados
+porteiros        — P3: porteiros vinculados
+unidades         — P3: unidades/apartamentos e moradores
+encomendas       — P3: encomendas na portaria
+custodias        — P3: itens em custódia
+b2b_partners     — P2: empresas parceiras
+entregas         — P4: entregas rastreadas
+estabelecimentos — P4: remetentes/estabelecimentos
+entregadores     — P4: entregadores cadastrados
+analytics_snapshots — snapshots diários às 7h
+```
 
-### Impulsos (avulso, qualquer usuário)
+### Roles de usuário
+```
+user        — usuário comum (P1)
+super_admin — superadmin da plataforma
+admin       — colaborador interno
+b2b_admin   — admin de parceiro B2B (P2)
+porteiro    — porteiro de condomínio (P3) via tabela porteiros
+```
+
+---
+
+## 9. MODELO DE RECEITA (em reestruturação)
+
+> ⚠️ Os planos Free/Pro/Business originais estão sendo revistos. Não usar como referência final.
+
+### Impulsos — P1 (avulso, qualquer usuário)
 | Plano | Preço | Duração |
 |-------|-------|---------|
 | Impulso | R$ 9,90 | 24h |
@@ -116,12 +202,9 @@ Cada feature, plano ou integração deve servir a um desses pilares. Nunca propo
 
 O que entrega: destaque no mapa + push para usuários próximos + (futuro) post automático nas redes do Backfindr.
 
-### Assinatura Preventiva (a definir)
-Proposta de valor: proteger objetos antes de perder, não depois.
-Preço e features em revisão — não usar os planos antigos (Free/Pro/Business) como referência sem validar primeiro.
-
-### B2B
-Condomínios, hotéis, empresas, frotas — precificação sob consulta.
+### Assinatura Preventiva — P1 (em revisão)
+Proposta de valor: proteger objetos antes de perder.
+Preço e features em revisão — aguardar definição.
 
 ### QR Code Físico (produto independente)
 | Produto | Preço |
@@ -131,92 +214,98 @@ Condomínios, hotéis, empresas, frotas — precificação sob consulta.
 | Tag metálica premium | R$ 34,90 |
 | Placa veículo/moto | R$ 49,90 |
 
----
-
-## 7. ESTRUTURA DE ROTAS PRINCIPAIS
-
-### Páginas Públicas
-- `/` — Landing page
-- `/map` — Mapa público
-- `/pricing` — Planos
-- `/objeto/[code]` — Página pública do objeto (SSR + SEO)
-- `/scan/[code]` — Scan de QR Code
-- `/achados-perdidos/` — SEO municipal
-- `/achados-perdidos/[cidade]/` — SEO por cidade
-- `/achados-perdidos/[cidade]/[categoria]/` — SEO por cidade+categoria
-
-### Dashboard
-- `/dashboard` — Painel principal
-- `/dashboard/objects` — Lista de objetos
-- `/dashboard/objects/new` — Novo objeto
-- `/dashboard/matches` — Matches da IA
-- `/dashboard/chat/[matchId]` — Chat mediado
-- `/dashboard/billing` — Plano e pagamento
+### B2B — P2, P3, P4
+| Produto | Modelo |
+|---------|--------|
+| P2 B2B | Mensalidade + limite de objetos por parceiro |
+| P3 Condomínios | Mensalidade por nº de unidades |
+| P4 Delivery | X entregas/mês grátis, pago acima |
 
 ---
 
-## 8. SEO LOCAL — STATUS
+## 10. SEO LOCAL — STATUS (auditado 21/06/2026)
 
-### Publicadas
-- São Paulo (capital) — 18 páginas
-- Guarulhos — 34 páginas
-- Rio de Janeiro — 17 páginas
-- 18 municípios da Grande SP — 126 páginas (commit `b3139ea`)
-- Total: ~308 páginas publicadas
+### Publicadas — dados reais do banco de produção
+- **Total: 434 páginas publicadas** (62 municípios × 7 categorias)
+- Verificado via query direta no Supabase em 21/06/2026
+
+### Municípios com páginas publicadas (62 no total)
+**Capitais:** São Paulo SP, Rio de Janeiro RJ, Belo Horizonte MG, Salvador BA, Fortaleza CE, Curitiba PR, Recife PE, Porto Alegre RS, Brasília DF, Manaus AM, Belém PA, Goiânia GO, São Luís MA, Maceió AL, Natal RN, Teresina PI, Campo Grande MS, João Pessoa PB, Aracaju SE, Cuiabá MT, Macapá AP, Boa Vista RR, Palmas TO, Vitória ES, Florianópolis SC, Rio Branco AC
+
+**Grande SP:** Guarulhos, Santo André, Osasco, São Bernardo do Campo, São Caetano do Sul, Diadema, Mauá, Ribeirão Pires, Rio Grande da Serra, Mogi das Cruzes, Suzano, Itaquaquecetuba, Poá, Ferraz de Vasconcelos, Guararema, Arujá, Biritiba Mirim, Salesópolis, Barueri, Carapicuíba, Cotia, Embu das Artes, Embu-Guaçu, Itapecerica da Serra, Itapevi, Jandira, Juquitiba, Mairiporã, Santana de Parnaíba, São Lourenço da Serra, Taboão da Serra, Vargem Grande Paulista, Caieiras, Cajamar, Francisco Morato, Franco da Rocha
 
 ### Query de municípios (página /achados-perdidos)
 ```sql
 -- Capitais
-SELECT name, slug, state_code FROM municipalities WHERE is_capital = true ORDER BY population DESC
+SELECT name, slug, state_code FROM municipalities
+WHERE is_capital = true ORDER BY population DESC
 
 -- Grande SP
-SELECT name, slug, state_code FROM municipalities WHERE is_capital = false AND state_code = 'SP' ORDER BY name ASC
+SELECT name, slug, state_code FROM municipalities
+WHERE is_capital = false AND state_code = 'SP' ORDER BY name ASC
 ```
 
-### Pendentes — Capitais
-Salvador (15), Fortaleza (9), Belo Horizonte (16), Curitiba (20), Recife (12), Porto Alegre (22), Brasília (26)
+### Próximos passos SEO
+- Enriquecer páginas existentes com eventos anuais locais (P-SEO1)
+- Melhorar qualidade geral do conteúdo (P-SEO2)
+- Páginas /objeto/[codigo] como SEO — 2.017 objetos indexáveis (P-SEO3)
+- GSC — resolver redirecionamentos, canonicals, robots.txt (P-SEO4)
+- Navegação de retorno nas páginas de categoria (P-SEO5)
 
 ### Padrão obrigatório de conteúdo SEO
 1. Intro com contexto local real — bairros, pontos de referência, transporte
 2. Dados reais verificados — telefones, endereços, sites oficiais
 3. Seções H3 específicas por ponto local
-4. Cada seção termina com CTA do Backfindr
+4. CTA do Backfindr ao final de cada seção
 5. Títulos NUNCA genéricos
 6. FAQ com 3 perguntas locais reais
 7. Categoria veículo = ROUBO/FURTO, nunca "perdido"
-8. Conteúdo único por cidade
+8. Conteúdo único por cidade — nunca copiar trocando só o nome
 
 ---
 
-## 9. AUTOMAÇÃO — n8n NO RAILWAY
+## 11. AUTOMAÇÃO — n8n NO RAILWAY
 
 - URL: `https://n8n-production-b99a.up.railway.app`
-- Imagem: `n8nio/n8n`
-- Config: `PORT=5678`, `N8N_USER_FOLDER=/tmp/n8n`
-- ⚠️ Sem volume persistente — dados perdidos no restart (P1 crítico)
+- Admin: `admin@backfindr.com`
+- Config: `PORT=5678`
+- ✅ **Volume persistente: RESOLVIDO** (dados não se perdem mais no restart)
 - Workflow ativo: "Backfindr AutoPost — Facebook"
-- Regras de nicho: veículo/bicicleta = sempre roubado/furtado | celular = aleatório | pet/geral = perdido
+- Modelo de imagem: `gpt-image-1` (retorna base64, requer `prepareBinaryData()`)
+- Modelo de texto: `gpt-4o-mini`
+- 6 nichos equalizados (~17% cada): pet, celular, bicicleta, veículo, geral, protect
+- Regras de nicho: veículo/bicicleta = roubado/furtado | celular = aleatório | pet/geral = perdido
+- Tokens Facebook expiram ~30/07/2026 — renovar via `fb_exchange_token` + `me/accounts` em janela anônima
+- **Pendente:** multiplataformas (Instagram e outras plataformas possíveis) + fila de imagens/vídeos
 
 ---
 
-## 10. PRIORIDADES ABERTAS
+## 12. PRIORIDADES ABERTAS (auditado 21/06/2026)
 
 | ID | Prioridade | Descrição |
 |----|-----------|-----------|
-| P1 | 🔴 Crítico | n8n Railway — adicionar volume persistente (dados perdidos no restart) |
-| P2 | 🟡 Alto | Verificar deploy do loop WhatsApp (commit `3729529`) |
-| P3 | 🟡 Alto | Validar câmera portaria BarcodeDetector em produção |
-| P4 | 🟡 Alto | Reestruturação dos planos de receita (em andamento) |
-| P5 | 🟠 Médio | 6 índices de performance no Supabase SQL Editor |
-| P6 | 🟠 Médio | POST /objects não chama matching/run automaticamente |
-| P7 | 🟠 Médio | Navegação de retorno nas páginas SEO local |
-| P8 | 🟠 Médio | SEO capitais pendentes (Salvador, Fortaleza, BH, Curitiba, Recife, POA, Brasília) |
+| P1 | 🔴 Crítico | n8n — implementar multiplataformas (Instagram + outras) + fila de imagens/vídeos |
+| P2 | 🔴 Crítico | Loop WhatsApp tela de sucesso — NÃO funciona em produção |
+| P3 | 🔴 Crítico | BarcodeDetector câmera portaria — NÃO validado em produção |
+| P4 | 🟡 Alto | Matching automático — POST /objects não chama matching/run após salvar |
+| P5 | 🟡 Alto | Reestruturação dos planos de receita |
+| P6 | 🟠 Médio | 6 índices de performance no Supabase |
+| P7 | 🟠 Médio | Navegação de retorno nas páginas SEO local (botão ← voltar) |
+| P8 | 🟠 Médio | Enriquecer 434 páginas SEO com eventos anuais e mais qualidade |
 | P9 | 🟠 Médio | GSC — redirecionamentos, canonicals, robots.txt |
-| P10 | 🟠 Médio | 2.017 páginas /objeto/[codigo] como SEO |
-| P11 | 🟢 Baixo | Enriquecer 126 páginas existentes com eventos anuais locais |
-| P12 | 🟢 Baixo | Instagram AutoPost via n8n |
+| P10 | 🟠 Médio | Páginas /objeto/[codigo] como SEO (2.017 objetos) |
+| P11 | 🟢 Baixo | P2 B2B — onboarding do parceiro, plano e cobrança |
+| P12 | 🟢 Baixo | P3 Condomínios — histórico encomendas, achados internos, relatório síndico |
+| P13 | 🟢 Baixo | P4 Delivery — dashboard remetente, interface entregador |
+| P14 | 🟢 Baixo | P1 Boost — conectar botão ao checkout MercadoPago |
 
-### Índices pendentes (P5) — colar no Supabase SQL Editor
+### Ciclos incompletos por produto
+- **P1 Core:** loop WhatsApp, BarcodeDetector, matching automático, boost, social posts, moderação
+- **P2 B2B:** onboarding do parceiro, plano e cobrança
+- **P3 Condomínios:** histórico de encomendas do morador, achados internos, relatório síndico
+- **P4 Delivery:** dashboard do remetente, interface do entregador, dashboard de acompanhamento
+
+### Índices pendentes (P6) — colar no Supabase SQL Editor
 ```sql
 CREATE INDEX idx_users_created_at ON users(created_at);
 CREATE INDEX idx_objects_created_at ON objects(created_at);
@@ -228,11 +317,11 @@ CREATE INDEX idx_notifications_type ON notifications(type);
 
 ---
 
-## 11. VARIÁVEIS DE AMBIENTE (Vercel)
+## 13. VARIÁVEIS DE AMBIENTE (Vercel)
 
 | Variável | Descrição |
 |----------|-----------|
-| `DATABASE_URL` | String de conexão PostgreSQL |
+| `DATABASE_URL` | String de conexão PostgreSQL (obter via `npx vercel env pull`) |
 | `JWT_SECRET` | Chave secreta JWT |
 | `GOOGLE_CLIENT_ID` / `GOOGLE_CLIENT_SECRET` | OAuth Google |
 | `FACEBOOK_APP_ID` / `FACEBOOK_APP_SECRET` | OAuth Facebook |
@@ -245,30 +334,32 @@ CREATE INDEX idx_notifications_type ON notifications(type);
 | `VAPID_PRIVATE_KEY` | Chave privada VAPID |
 | `ADMIN_IDS` | IDs de admins (separados por vírgula) |
 | `NEXT_PUBLIC_API_URL` | URL base da API |
+| `NEXT_PUBLIC_APP_URL` | `https://backfindr.com` (sem www) |
 | `SERPAPI_KEY` | Chave SerpAPI (250 buscas/mês) |
 | `OPENAI_API_KEY` | Chave OpenAI (matching + conteúdo) |
 
 ---
 
-## 12. PROTOCOLO DE SESSÃO
+## 14. PROTOCOLO DE SESSÃO
 
-### Início de sessão
-1. Ler este arquivo completo
-2. Verificar prioridades abertas (Seção 10)
-3. Perguntar por onde começar — sem exigir reexplicação
+### Início
+1. Ler este arquivo completo: `cat ~/Downloads/backfindr-local/backfindr-main/BACKFINDR.md`
+2. Verificar prioridades abertas (Seção 12)
+3. Perguntar por onde começar — sem exigir reexplicação do Marcos
 
-### Durante a sessão
-- Sempre fazer `cat` do arquivo antes de editar
-- Sempre fazer backup antes de modificar arquivos críticos
+### Durante
+- Sempre `cat` do arquivo antes de editar
+- Sempre backup antes de modificar arquivos críticos
 - Usar pnpm, nunca npm
 - Commitar na `main` após cada mudança validada
 
-### Fim de sessão
+### Fim
 1. Resumir o que foi feito
-2. Atualizar as prioridades abertas neste arquivo
-3. Commitar o BACKFINDR.md atualizado junto com as demais mudanças
+2. Atualizar prioridades abertas neste arquivo (Seção 12)
+3. Atualizar data no cabeçalho
+4. Commitar o BACKFINDR.md junto com as demais mudanças
 
-### Comando para atualizar este arquivo no repositório
+### Instalar/atualizar este arquivo no repositório
 ```bash
 cp ~/Downloads/BACKFINDR.md ~/Downloads/backfindr-local/backfindr-main/BACKFINDR.md
 cd ~/Downloads/backfindr-local/backfindr-main
