@@ -26,8 +26,8 @@ Plataforma pública de achados, perdidos e roubados.
 - Chat entre usuário e achador após match confirmado
 - Notificações push, e-mail, WhatsApp
 - **Status funcional:** cadastro, matching manual, QR code, chat, notificações
-- **Incompletos:** Loop WhatsApp tela de sucesso (não funciona em produção), BarcodeDetector portaria (não validado em produção), Social Posts automático, Boost conectado ao checkout, Moderação
-- **Matching automático:** POST /objects NÃO chama matching/run automaticamente após salvar objeto
+- **Incompletos:** Loop WhatsApp tela de sucesso (não funciona em produção), BarcodeDetector portaria (não validado em produção), Social Posts automático, Moderação
+- **Matching automático:** POST /objects JÁ chama matching/run automaticamente ✅
 
 ### P2 — Backfindr B2B
 Empresas com área própria dentro da plataforma.
@@ -77,11 +77,14 @@ Não é feature — é o produto físico de entrada no Backfindr.
 Objeto com QR Code = objeto com identidade rastreável.
 Status `protected` = prevenção antes da perda.
 
-### 3.5 Modelo de Receita
+### 3.5 Modelo de Receita (estrutura aprovada 21/06/2026)
+Seis linhas de receita independentes:
 - (a) Impulsos avulsos — quem perdeu paga para amplificar
 - (b) Assinatura preventiva — quem quer proteger antes de perder
-- (c) B2B — empresas com múltiplos ativos
-- (d) Intelligence Hub — dados estruturados para mercado corporativo
+- (c) Backfindr Auto — produto dedicado a veículos (58% da base)
+- (d) Backfindr Pet — produto dedicado a animais (35% da base)
+- (e) QR Code físico — produto físico de entrada (adesivo, tag, placa, coleira)
+- (f) B2B + Intelligence Hub — empresas, condomínios, seguradoras
 
 ### 3.6 Foco
 Cada feature, plano ou integração deve servir a um desses pilares. Nunca propor algo fora dessa lógica sem alertar o fundador primeiro.
@@ -176,7 +179,15 @@ entregas         — P4: entregas rastreadas
 estabelecimentos — P4: remetentes/estabelecimentos
 entregadores     — P4: entregadores cadastrados
 analytics_snapshots — snapshots diários às 7h
+boosts           — impulsos pagos por objeto
+payment_settings — configurações de pagamento
 ```
+
+### Dados reais de produção (auditado 21/06/2026)
+- 4.303 usuários (99,95% free, 2 pro)
+- 2.019 objetos: 58% veículos, 35% animais
+- 1 boost vendido, 1 condomínio, 0 parceiros B2B
+- 434 páginas SEO publicadas (62 municípios × 7 categorias)
 
 ### Roles de usuário
 ```
@@ -189,37 +200,51 @@ porteiro    — porteiro de condomínio (P3) via tabela porteiros
 
 ---
 
-## 9. MODELO DE RECEITA (em reestruturação)
+## 9. MODELO DE RECEITA (estrutura definida 21/06/2026)
 
-> ⚠️ Os planos Free/Pro/Business originais estão sendo revistos. Não usar como referência final.
+### Linha 1 — Impulsos avulsos (qualquer usuário, sem assinatura)
+| Plano | Preço | Duração | O que entrega |
+|-------|-------|---------|---------------|
+| Impulso Básico | R$ 9,90 | 24h | Destaque no mapa + push 5km |
+| Impulso Plus | R$ 29,90 | 7 dias | + post redes Backfindr + push diário |
+| Alerta Máximo | R$ 69,90 | 30 dias | + raio 50km + relatório semanal |
 
-### Impulsos — P1 (avulso, qualquer usuário)
-| Plano | Preço | Duração |
-|-------|-------|---------|
-| Impulso | R$ 9,90 | 24h |
-| Impulso Plus | R$ 29,90 | 7 dias |
-| Impulso Max | R$ 69,90 | 30 dias |
+**Oferta deve aparecer imediatamente após cadastro de objeto lost/stolen — não na página de detalhes.**
 
-O que entrega: destaque no mapa + push para usuários próximos + (futuro) post automático nas redes do Backfindr.
+### Linha 2 — Assinatura Proteção
+| Plano | Preço | O que entrega |
+|-------|-------|---------------|
+| Gratuito | R$ 0 | 1 objeto, QR digital, mapa, matching básico |
+| Proteção | R$ 14,90/mês | 10 objetos, QR ativo, alerta escaneamento, IA prioritária, 1 impulso/mês |
 
-### Assinatura Preventiva — P1 (em revisão)
-Proposta de valor: proteger objetos antes de perder.
-Preço e features em revisão — aguardar definição.
+### Linha 3 — Backfindr Auto (novo produto — veículos)
+| Produto | Preço | Modelo |
+|---------|-------|--------|
+| Alerta Veicular | R$ 49,90 | Avulso — disparo para mecânicas, despachantes, raio ampliado |
+| Monitoramento Ativo | R$ 19,90/mês | Recorrente — alerta contínuo se veículo visto/escaneado |
+| Pacote Seguradora | B2B | Dado estruturado de ocorrência vendido para seguradoras |
 
-### QR Code Físico (produto independente)
+### Linha 4 — Backfindr Pet (novo produto — animais)
+| Produto | Preço | Modelo |
+|---------|-------|--------|
+| Proteção Pet | R$ 19,90/mês | Perfil animal + alerta avistamento + rede tutores |
+| Coleira QR | R$ 29,90 | Produto físico — ativa Proteção Pet grátis por 30 dias |
+
+### Linha 5 — QR Code físico
 | Produto | Preço |
 |---------|-------|
-| Digital (PDF para imprimir) | Grátis |
-| Adesivo resistente — kit 3 | R$ 19,90 |
-| Tag metálica premium | R$ 34,90 |
-| Placa veículo/moto | R$ 49,90 |
+| Digital (PDF) | Grátis |
+| Adesivo kit 3 | R$ 19,90 |
+| Tag metálica | R$ 34,90 |
+| Placa veículo | R$ 49,90 |
+| Coleira pet | R$ 29,90 |
 
-### B2B — P2, P3, P4
-| Produto | Modelo |
-|---------|--------|
-| P2 B2B | Mensalidade + limite de objetos por parceiro |
-| P3 Condomínios | Mensalidade por nº de unidades |
-| P4 Delivery | X entregas/mês grátis, pago acima |
+### Linha 6 — B2B e Intelligence Hub
+| Produto | Preço |
+|---------|-------|
+| P2 Empresas | R$ 599–2.999/mês |
+| P3 Condomínios | R$ 2–5/unidade/mês |
+| Intelligence Hub | R$ 2k–15k (relatório) / R$ 3k/mês (API) |
 
 ---
 
@@ -234,23 +259,10 @@ Preço e features em revisão — aguardar definição.
 
 **Grande SP:** Guarulhos, Santo André, Osasco, São Bernardo do Campo, São Caetano do Sul, Diadema, Mauá, Ribeirão Pires, Rio Grande da Serra, Mogi das Cruzes, Suzano, Itaquaquecetuba, Poá, Ferraz de Vasconcelos, Guararema, Arujá, Biritiba Mirim, Salesópolis, Barueri, Carapicuíba, Cotia, Embu das Artes, Embu-Guaçu, Itapecerica da Serra, Itapevi, Jandira, Juquitiba, Mairiporã, Santana de Parnaíba, São Lourenço da Serra, Taboão da Serra, Vargem Grande Paulista, Caieiras, Cajamar, Francisco Morato, Franco da Rocha
 
-### Query de municípios (página /achados-perdidos)
-```sql
--- Capitais
-SELECT name, slug, state_code FROM municipalities
-WHERE is_capital = true ORDER BY population DESC
-
--- Grande SP
-SELECT name, slug, state_code FROM municipalities
-WHERE is_capital = false AND state_code = 'SP' ORDER BY name ASC
-```
-
 ### Próximos passos SEO
-- Enriquecer páginas existentes com eventos anuais locais (P-SEO1)
-- Melhorar qualidade geral do conteúdo (P-SEO2)
-- Páginas /objeto/[codigo] como SEO — 2.017 objetos indexáveis (P-SEO3)
-- GSC — resolver redirecionamentos, canonicals, robots.txt (P-SEO4)
-- Navegação de retorno nas páginas de categoria (P-SEO5)
+- Enriquecer páginas existentes com eventos anuais locais (P8)
+- Páginas /objeto/[codigo] como SEO — 2.019 objetos indexáveis (P10)
+- GSC — resolver redirecionamentos, canonicals, robots.txt (P9)
 
 ### Padrão obrigatório de conteúdo SEO
 1. Intro com contexto local real — bairros, pontos de referência, transporte
@@ -269,51 +281,42 @@ WHERE is_capital = false AND state_code = 'SP' ORDER BY name ASC
 - URL: `https://n8n-production-b99a.up.railway.app`
 - Admin: `admin@backfindr.com`
 - Config: `PORT=5678`
-- ✅ **Volume persistente: RESOLVIDO** (dados não se perdem mais no restart)
+- ✅ **Volume persistente: RESOLVIDO**
 - Workflow ativo: "Backfindr AutoPost — Facebook"
 - Modelo de imagem: `gpt-image-1` (retorna base64, requer `prepareBinaryData()`)
 - Modelo de texto: `gpt-4o-mini`
 - 6 nichos equalizados (~17% cada): pet, celular, bicicleta, veículo, geral, protect
-- Regras de nicho: veículo/bicicleta = roubado/furtado | celular = aleatório | pet/geral = perdido
-- Tokens Facebook expiram ~30/07/2026 — renovar via `fb_exchange_token` + `me/accounts` em janela anônima
-- **Pendente:** multiplataformas (Instagram e outras plataformas possíveis) + fila de imagens/vídeos
+- Tokens Facebook expiram ~30/07/2026
+- **Pendente:** multiplataformas (Instagram + outras) + fila de imagens/vídeos
 
 ---
 
-## 12. PRIORIDADES ABERTAS (auditado 21/06/2026)
+## 12. PRIORIDADES ABERTAS (atualizado 21/06/2026)
 
 | ID | Prioridade | Descrição |
 |----|-----------|-----------|
-| P1 | 🔴 Crítico | n8n — implementar multiplataformas (Instagram + outras) + fila de imagens/vídeos |
+| P1 | 🔴 Crítico | n8n — multiplataformas (Instagram + outras) + fila imagens/vídeos |
 | P2 | 🔴 Crítico | Loop WhatsApp tela de sucesso — NÃO funciona em produção |
 | P3 | 🔴 Crítico | BarcodeDetector câmera portaria — NÃO validado em produção |
-| P4 | 🟡 Alto | Matching automático — POST /objects não chama matching/run após salvar |
-| P5 | 🟡 Alto | Reestruturação dos planos de receita |
-| P6 | 🟠 Médio | 6 índices de performance no Supabase |
-| P7 | 🟠 Médio | Navegação de retorno nas páginas SEO local (botão ← voltar) |
+| P5 | 🟡 Alto | Implementar estrutura de monetização (ver Seção 9) |
 | P8 | 🟠 Médio | Enriquecer 434 páginas SEO com eventos anuais e mais qualidade |
 | P9 | 🟠 Médio | GSC — redirecionamentos, canonicals, robots.txt |
-| P10 | 🟠 Médio | Páginas /objeto/[codigo] como SEO (2.017 objetos) |
+| P10 | 🟠 Médio | Páginas /objeto/[codigo] como SEO (2.019 objetos) |
 | P11 | 🟢 Baixo | P2 B2B — onboarding do parceiro, plano e cobrança |
 | P12 | 🟢 Baixo | P3 Condomínios — histórico encomendas, achados internos, relatório síndico |
 | P13 | 🟢 Baixo | P4 Delivery — dashboard remetente, interface entregador |
-| P14 | 🟢 Baixo | P1 Boost — conectar botão ao checkout MercadoPago |
+
+### Resolvidos nesta sessão (21/06/2026)
+- ✅ P4 — Matching automático já estava implementado no POST /objects
+- ✅ P6 — 6 índices de performance executados no Supabase
+- ✅ P7 — Navegação de retorno SEO já estava pronta
+- ✅ P14 — Boost conectado ao checkout MercadoPago já estava implementado
 
 ### Ciclos incompletos por produto
-- **P1 Core:** loop WhatsApp, BarcodeDetector, matching automático, boost, social posts, moderação
+- **P1 Core:** loop WhatsApp, BarcodeDetector, social posts, moderação
 - **P2 B2B:** onboarding do parceiro, plano e cobrança
 - **P3 Condomínios:** histórico de encomendas do morador, achados internos, relatório síndico
 - **P4 Delivery:** dashboard do remetente, interface do entregador, dashboard de acompanhamento
-
-### Índices pendentes (P6) — colar no Supabase SQL Editor
-```sql
-CREATE INDEX idx_users_created_at ON users(created_at);
-CREATE INDEX idx_objects_created_at ON objects(created_at);
-CREATE INDEX idx_objects_status ON objects(status);
-CREATE INDEX idx_objects_user_id ON objects(user_id);
-CREATE INDEX idx_matches_created_at ON matches(created_at);
-CREATE INDEX idx_notifications_type ON notifications(type);
-```
 
 ---
 
@@ -337,6 +340,7 @@ CREATE INDEX idx_notifications_type ON notifications(type);
 | `NEXT_PUBLIC_APP_URL` | `https://backfindr.com` (sem www) |
 | `SERPAPI_KEY` | Chave SerpAPI (250 buscas/mês) |
 | `OPENAI_API_KEY` | Chave OpenAI (matching + conteúdo) |
+| `MP_ACCESS_TOKEN` | Access token MercadoPago (env Vercel) |
 
 ---
 
@@ -352,6 +356,7 @@ CREATE INDEX idx_notifications_type ON notifications(type);
 - Sempre backup antes de modificar arquivos críticos
 - Usar pnpm, nunca npm
 - Commitar na `main` após cada mudança validada
+- NUNCA declarar algo como "feito" sem verificar no código primeiro
 
 ### Fim
 1. Resumir o que foi feito
