@@ -1,7 +1,7 @@
 # BACKFINDR — Documento Mestre
 > Arquivo único de referência. Toda sessão de desenvolvimento deve começar lendo este arquivo.
 > Localização canônica: `~/Downloads/backfindr-local/backfindr-main/BACKFINDR.md`
-> Última atualização: 2026-06-21 (sessão tarde)
+> Última atualização: 2026-06-22
 
 ---
 
@@ -28,7 +28,6 @@ Plataforma pública de achados, perdidos e roubados.
 - **Status funcional:** cadastro, matching manual, QR code, chat, notificações
 - **Incompletos:** Social Posts automático, Moderação, BarcodeDetector portaria (feature pendente — nunca implementada)
 - **Funcional confirmado:** Tela de sucesso com loop WhatsApp ✅, matching automático ✅, boost conectado ao checkout ✅
-- **Matching automático:** POST /objects JÁ chama matching/run automaticamente ✅
 
 ### P2 — Backfindr B2B
 Empresas com área própria dentro da plataforma.
@@ -221,9 +220,9 @@ porteiro    — porteiro de condomínio (P3) via tabela porteiros
 ### Linha 3 — Backfindr Auto (novo produto — veículos)
 | Produto | Preço | Modelo |
 |---------|-------|--------|
-| Alerta Veicular | R$ 49,90 | Avulso — disparo para mecânicas, despachantes, raio ampliado |
-| Monitoramento Ativo | R$ 19,90/mês | Recorrente — alerta contínuo se veículo visto/escaneado |
-| Pacote Seguradora | B2B | Dado estruturado de ocorrência vendido para seguradoras |
+| Alerta Veicular | R$ 49,90 | Avulso |
+| Monitoramento Ativo | R$ 19,90/mês | Recorrente |
+| Pacote Seguradora | B2B | Dado estruturado vendido para seguradoras |
 
 ### Linha 4 — Backfindr Pet (novo produto — animais)
 | Produto | Preço | Modelo |
@@ -253,17 +252,11 @@ porteiro    — porteiro de condomínio (P3) via tabela porteiros
 
 ### Publicadas — dados reais do banco de produção
 - **Total: 434 páginas publicadas** (62 municípios × 7 categorias)
-- Verificado via query direta no Supabase em 21/06/2026
 
 ### Municípios com páginas publicadas (62 no total)
 **Capitais:** São Paulo SP, Rio de Janeiro RJ, Belo Horizonte MG, Salvador BA, Fortaleza CE, Curitiba PR, Recife PE, Porto Alegre RS, Brasília DF, Manaus AM, Belém PA, Goiânia GO, São Luís MA, Maceió AL, Natal RN, Teresina PI, Campo Grande MS, João Pessoa PB, Aracaju SE, Cuiabá MT, Macapá AP, Boa Vista RR, Palmas TO, Vitória ES, Florianópolis SC, Rio Branco AC
 
 **Grande SP:** Guarulhos, Santo André, Osasco, São Bernardo do Campo, São Caetano do Sul, Diadema, Mauá, Ribeirão Pires, Rio Grande da Serra, Mogi das Cruzes, Suzano, Itaquaquecetuba, Poá, Ferraz de Vasconcelos, Guararema, Arujá, Biritiba Mirim, Salesópolis, Barueri, Carapicuíba, Cotia, Embu das Artes, Embu-Guaçu, Itapecerica da Serra, Itapevi, Jandira, Juquitiba, Mairiporã, Santana de Parnaíba, São Lourenço da Serra, Taboão da Serra, Vargem Grande Paulista, Caieiras, Cajamar, Francisco Morato, Franco da Rocha
-
-### Próximos passos SEO
-- Enriquecer páginas existentes com eventos anuais locais (P8)
-- Páginas /objeto/[codigo] como SEO — 2.019 objetos indexáveis (P10)
-- GSC — resolver redirecionamentos, canonicals, robots.txt (P9)
 
 ### Padrão obrigatório de conteúdo SEO
 1. Intro com contexto local real — bairros, pontos de referência, transporte
@@ -284,6 +277,7 @@ porteiro    — porteiro de condomínio (P3) via tabela porteiros
 - Admin: `admin@backfindr.com`
 - Config: `PORT=5678`
 - ✅ **Volume persistente: RESOLVIDO**
+- Workflow ID: `urluPuyxe4ccY9ZE`
 
 ### Workflow ativo: "Backfindr AutoPost — Facebook"
 - Modelo de imagem: `gpt-image-1` (retorna base64, requer `prepareBinaryData()`)
@@ -305,30 +299,41 @@ porteiro    — porteiro de condomínio (P3) via tabela porteiros
 - App Secret: `87a517f442f39bb513a03f7cf05be098`
 
 ### Páginas antigas (contas "quentes") — pendente adicionar
-- Marcos localizou contas antigas do Facebook para ampliar o alcance orgânico
-- A serem identificadas e adicionadas ao workflow
-- Vantagem: contas com histórico ("quentes") não sofrem bloqueio por conta nova
+- Marcos localizou contas antigas do Facebook — nomes/IDs a confirmar
+- Vantagem: contas com histórico não sofrem bloqueio
+
+### Instagram @backfindroficial — configuração em andamento (22/06/2026)
+- Instagram Business Account ID: `17841416288148947`
+- Handle: `@backfindroficial`
+- Vinculado à página Webjetos Roubados e Perdidos (`229182413876628`)
+- App Instagram: `Backfindr AutoPost-IG` (ID: `99709492229265`)
+- **Permissões adicionadas:** `instagram_business_basic`, `instagram_business_manage_comments`, `instagram_business_manage_messages`, `instagram_content_publishing` (via "Configuração da API com login do Facebook")
+- **Status:** permissões configuradas, token ainda não gerado com as novas permissões
+- **Próximo passo:** na seção "Configuração da API com login do Facebook" → gerar token com `instagram_content_publishing` e configurar no node HTTP Request3 do n8n
+- **Bloqueador parcial:** a API de publicação exige análise Meta para uso externo; para uso próprio pode ser pulada — confirmar no passo 5 da configuração
+- **Problema técnico identificado:** imagens do `gpt-image-1` chegam em base64 — Instagram não aceita base64, só URLs públicas. Solução: salvar imagem no Cloudflare R2 antes de enviar ao Instagram.
 
 ### Motor de Distribuição Inteligente — roadmap completo
 
-#### Fase 1 — Páginas antigas no workflow (próximo passo)
-- Identificar page IDs das contas antigas
+#### Fase 1 — Páginas antigas no workflow
+- Identificar page IDs das contas antigas do Facebook
 - Adicionar ao Switch node existente no n8n
 
-#### Fase 2 — Instagram
-- Conta Business do Instagram a ser vinculada à página do Facebook
-- 2 nós após Facebook: upload imagem (`/{ig-user-id}/media`) → publicar (`/{ig-user-id}/media_publish`)
-- Mesmo token do Facebook se a conta IG estiver vinculada à Page
+#### Fase 2 — Instagram (em andamento)
+- Conta: @backfindroficial (ID: `17841416288148947`)
+- Fluxo: após HTTP Request1 (Facebook) → HTTP Request IG Upload → HTTP Request IG Publish
+- **Bloqueador:** imagem precisa ser URL pública, não base64 → salvar no Cloudflare R2 primeiro
+- **Próximo passo:** gerar token com `instagram_content_publishing` e implementar o nó de upload para R2
 
 #### Fase 3 — Content Engine com fila de aprovação
 - Tabela `post_queue` no PostgreSQL do Railway
-- Workflow gerador: cria posts em lote (imagens + texto) → salva como `pendente`
+- Workflow gerador: cria posts em lote → salva como `pendente`
 - Aprovação manual no painel admin do Backfindr
 - Workflow publicador: pega aprovados → publica → marca como `publicado`
 - Limpeza automática periódica para não estourar armazenagem
 
 #### Fase 4 — Vídeos via Gemini API (Veo)
-- Google Flow não tem API — usar Gemini API com modelo Veo (vídeos até 10s)
+- Gemini API com modelo Veo (vídeos até 10s)
 - Entram na mesma fila de aprovação da Fase 3
 - Destino: Instagram Reels, Facebook, TikTok, YouTube Shorts
 
@@ -336,46 +341,47 @@ porteiro    — porteiro de condomínio (P3) via tabela porteiros
 - Usuário paga para impulsionar a ocorrência
 - Dinheiro financia ads reais no Facebook/Instagram/Google
 - O caso do usuário vira o criativo do anúncio (user-funded acquisition)
-- Backfindr ganha brand awareness financiado pelo próprio usuário
 - Moderação obrigatória antes de subir o anúncio
 
 ### Scraping de grupos — DECISÃO: NÃO INTEGRAR ao n8n
 - Risco de bloqueio alto demais
-- Captura de leads em grupos continua via sistema **Rastrear** (Apify) — separado
-- n8n faz APENAS publicação nas próprias páginas — sem scraping de terceiros
+- Captura de leads continua via sistema Rastrear (Apify) — separado
+- n8n faz APENAS publicação nas próprias páginas
 
 ---
 
-## 12. PRIORIDADES ABERTAS (atualizado 21/06/2026)
+## 12. PRIORIDADES ABERTAS (atualizado 22/06/2026)
 
 | ID | Prioridade | Descrição |
 |----|-----------|-----------|
-| P1 | 🔴 Crítico | n8n — multiplataformas (Instagram + outras) + fila imagens/vídeos |
-| P2 | ✅ Resolvido | Loop WhatsApp tela de sucesso — código completo e funcional (era info desatualizada) |
-| P3 | 🟠 Médio | BarcodeDetector portaria — feature pendente (nunca implementada, não é bug) |
-| P5 | 🟡 Alto | Implementar estrutura de monetização (ver Seção 9) |
-| P8 | 🟠 Médio | Enriquecer 434 páginas SEO com eventos anuais e mais qualidade |
-| P9 | 🟠 Médio | GSC — redirecionamentos, canonicals, robots.txt |
-| P10 | 🟠 Médio | Páginas /objeto/[codigo] como SEO (2.019 objetos) |
-| P11 | 🟢 Baixo | P2 B2B — onboarding do parceiro, plano e cobrança |
-| P12 | 🟢 Baixo | P3 Condomínios — histórico encomendas, achados internos, relatório síndico |
-| P13 | 🟢 Baixo | P4 Delivery — dashboard remetente, interface entregador |
+| P1 | 🔴 Crítico | n8n Instagram — gerar token com `instagram_content_publishing` + resolver base64→URL via R2 |
+| P2 | 🔴 Crítico | n8n Content Engine — tabela `post_queue` + fila de aprovação no admin |
+| P3 | 🟡 Alto | n8n Páginas antigas Facebook — identificar IDs e adicionar ao workflow |
+| P4 | 🟡 Alto | Implementar estrutura de monetização no código (ver Seção 9) |
+| P5 | 🟠 Médio | BarcodeDetector portaria — feature pendente (nunca implementada) |
+| P6 | 🟠 Médio | Enriquecer 434 páginas SEO com eventos anuais e mais qualidade |
+| P7 | 🟠 Médio | GSC — redirecionamentos, canonicals, robots.txt |
+| P8 | 🟠 Médio | Páginas /objeto/[codigo] como SEO (2.019 objetos) |
+| P9 | 🟢 Baixo | P2 B2B — onboarding do parceiro, plano e cobrança |
+| P10 | 🟢 Baixo | P3 Condomínios — histórico encomendas, achados internos, relatório síndico |
+| P11 | 🟢 Baixo | P4 Delivery — dashboard remetente, interface entregador |
 
-### Resolvidos (21/06/2026 — sessão tarde)
-- ✅ P2 — Tela de sucesso com WhatsApp já estava completa e funcional (BACKFINDR.md desatualizado)
-- ✅ P3 — Reclassificado: não é bug, é feature pendente (BarcodeDetector nunca foi implementado)
+### Resolvidos (22/06/2026)
+- ✅ Permissões Instagram adicionadas ao app Meta (instagram_content_publishing via login Facebook)
+- ✅ Instagram Business Account identificado e vinculado
 
-### Resolvidos (21/06/2026 — sessão manhã)
-- ✅ P4 — Matching automático já estava implementado no POST /objects
-- ✅ P6 — 6 índices de performance executados no Supabase
-- ✅ P7 — Navegação de retorno SEO já estava pronta
-- ✅ P14 — Boost conectado ao checkout MercadoPago já estava implementado
+### Resolvidos (21/06/2026)
+- ✅ P2 — Tela de sucesso WhatsApp já funcional (era info desatualizada)
+- ✅ P3 — BarcodeDetector reclassificado: feature nova, não bug
+- ✅ Matching automático — já implementado no POST /objects
+- ✅ 6 índices de performance executados no Supabase
+- ✅ Boost conectado ao checkout MercadoPago — já implementado
 
 ### Ciclos incompletos por produto
-- **P1 Core:** BarcodeDetector portaria (feature nova), social posts automático, moderação
+- **P1 Core:** BarcodeDetector portaria, social posts automático, moderação
 - **P2 B2B:** onboarding do parceiro, plano e cobrança
-- **P3 Condomínios:** histórico de encomendas do morador, achados internos, relatório síndico
-- **P4 Delivery:** dashboard do remetente, interface do entregador, dashboard de acompanhamento
+- **P3 Condomínios:** histórico encomendas, achados internos, relatório síndico
+- **P4 Delivery:** dashboard remetente, interface entregador
 
 ---
 
@@ -421,11 +427,12 @@ porteiro    — porteiro de condomínio (P3) via tabela porteiros
 1. Resumir o que foi feito
 2. Atualizar prioridades abertas neste arquivo (Seção 12)
 3. Atualizar data no cabeçalho
-4. Commitar o BACKFINDR.md junto com as demais mudanças
+4. Gerar arquivo com nome BACKFINDR-YYYY-MM-DD-vN.md
+5. Marcos baixa, copia e commita
 
 ### Instalar/atualizar este arquivo no repositório
 ```bash
-cp ~/Downloads/BACKFINDR.md ~/Downloads/backfindr-local/backfindr-main/BACKFINDR.md
+cp ~/Downloads/BACKFINDR-YYYY-MM-DD-vN.md ~/Downloads/backfindr-local/backfindr-main/BACKFINDR.md
 cd ~/Downloads/backfindr-local/backfindr-main
 git add BACKFINDR.md
 git commit -m "docs: atualizar BACKFINDR.md"
