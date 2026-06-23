@@ -1,7 +1,7 @@
 # BACKFINDR — Documento Mestre
 > Arquivo único de referência. Toda sessão de desenvolvimento deve começar lendo este arquivo.
 > Localização canônica: `~/Downloads/backfindr-local/backfindr-main/BACKFINDR.md`
-> Última atualização: 2026-06-22
+> Última atualização: 2026-06-22 (sessão noite)
 
 ---
 
@@ -106,7 +106,7 @@ Cada feature, plano ou integração deve servir a um desses pilares. Nunca propo
 | Deploy | Vercel (região: `iad1`) |
 | Automação | n8n no Railway (`https://n8n-production-b99a.up.railway.app`) |
 | Gerenciador de pacotes | **pnpm** — nunca npm |
-| IA conteúdo | `gpt-4.1-mini` — nunca `gpt-4o-mini` |
+| IA conteúdo | `gpt-4o-mini` (texto) + `gpt-image-1` (imagem) |
 
 ---
 
@@ -275,16 +275,49 @@ porteiro    — porteiro de condomínio (P3) via tabela porteiros
 ### Configuração atual
 - URL: `https://n8n-production-b99a.up.railway.app`
 - Admin: `admin@backfindr.com`
-- Config: `PORT=5678`
-- ✅ **Volume persistente: RESOLVIDO**
 - Workflow ID: `urluPuyxe4ccY9ZE`
+- Cron: 4 posts/dia (a cada 6h)
 
 ### Workflow ativo: "Backfindr AutoPost — Facebook"
-- Modelo de imagem: `gpt-image-1` (retorna base64, requer `prepareBinaryData()`)
-- Modelo de texto: `gpt-4o-mini`
-- 6 nichos equalizados (~17% cada): pet, celular, bicicleta, veículo, geral, protect
-- Cron: 4 posts/dia (a cada 6h)
-- Tokens Facebook expiram ~30/07/2026 — renovar via `fb_exchange_token` + `me/accounts` em janela anônima
+
+#### Nichos configurados
+```javascript
+const niches = ['pet','celular','veiculo','bicicleta','geral','geral','protect'];
+const niche = niches[Math.floor(Math.random() * niches.length)];
+return [{ json: { niche, city: 'São Paulo' } }];
+```
+
+#### Prompt do "Gerar post OpenAI" (atualizado 22/06/2026)
+```json
+{
+  "model": "gpt-4o-mini",
+  "messages": [
+    {
+      "role": "system",
+      "content": "Você é um morador real de {{ $json.city }} desabafando no Facebook. Siga rigorosamente as regras: 1) SITUAÇÃO: nicho 'veiculo' e 'bicicleta'→SEMPRE roubado/furtado, NUNCA perdido; 'celular'→perdido OU roubado (varie aleatoriamente); 'pet'→SEMPRE perdido; 'geral'→SEMPRE perdido ou roubado (varie); 'protect'→dono preocupado que AINDA NÃO perdeu nada mas viu casos de furto/roubo ao redor e decidiu proteger seus objetos com QR code preventivo. 2) ESTILO: 3-4 linhas, tom informal e urgente, pessoa real, NUNCA pareça propaganda, termine com CTA natural e o link https://backfindr.com. 3) IMAGEM: descricao_visual deve ser cena urbana brasileira emocional e realista — para 'protect': pessoa colando QR code no objeto, família organizando documentos/chaves, pessoa aliviada vendo notificação de objeto escaneado. Sem texto na imagem. Responda APENAS com JSON: {texto_post, descricao_visual}."
+    },
+    {
+      "role": "user",
+      "content": "Crie um post para o nicho '{{ $json.niche }}' em {{ $json.city }}. Escolha aleatoriamente um objeto específico dentro do nicho: 'veiculo'→carro, moto ou caminhão (contexto urbano, sem máquinas agrícolas); 'pet'→cachorro, gato, pássaro ou outro animal de estimação; 'bicicleta'→bike comum ou elétrica; 'celular'→smartphone (perdido em transporte público/rua ou roubado na rua/festa); 'geral'→qualquer objeto cotidiano como carteira, mochila, chave, óculos, documento, ou carga roubada (mercadoria, encomenda, carga em trânsito); 'protect'→objeto de valor que o dono decidiu proteger preventivamente (celular, mochila, bike, chave do carro)."
+    }
+  ],
+  "response_format": { "type": "json_object" }
+}
+```
+
+#### Fluxo completo do workflow
+```
+Cron 4h → Escolher nicho → Gerar post OpenAI → Extrair texto → HTTP Request (gpt-image-1)
+→ Code in JavaScript (base64 + fileName + ig_image_url)
+→ Upload a file (R2)
+→ If (nicho ≠ protect)
+    → true: HTTP Request4 (IG Create) → Wait 5s → HTTP Request5 (IG Publish)
+    → false: [pula Instagram]
+→ HTTP Request2 (Facebook OpenAI caption)
+→ Code in JavaScript1
+→ HTTP Request1 (Facebook post — todos os nichos)
+→ HTTP Request3 [Deactivated — token antigo]
+```
 
 ### Páginas do Facebook configuradas
 | Página | ID | Nicho |
@@ -293,60 +326,38 @@ porteiro    — porteiro de condomínio (P3) via tabela porteiros
 | Celular Roubado Perdido | `472039546624261` | celular |
 | Bicicleta Roubada Furtada | `301459970061606` | bicicleta |
 | Carro Roubado Furtado | `607774492681517` | veículo |
-| Webjetos Roubados e Perdidos | `229182413876628` | geral + protect (fallback) |
+| Webjetos Roubados e Perdidos | `229182413876628` | geral + protect |
 
 - App ID Meta: `1286158296941920`
 - App Secret: `87a517f442f39bb513a03f7cf05be098`
 
-### Páginas antigas (contas "quentes") — pendente adicionar
-- Marcos localizou contas antigas do Facebook — nomes/IDs a confirmar
-- Vantagem: contas com histórico não sofrem bloqueio
-
-### Instagram @backfindroficial — configuração em andamento (22/06/2026)
+### Instagram @backfindroficial — FUNCIONANDO ✅
 - Instagram Business Account ID: `17841416288148947`
 - Handle: `@backfindroficial`
-- Vinculado à página Webjetos Roubados e Perdidos (`229182413876628`)
-- App Instagram: `Backfindr AutoPost-IG` (ID: `99709492229265`)
-- **Permissões adicionadas:** `instagram_business_basic`, `instagram_business_manage_comments`, `instagram_business_manage_messages`, `instagram_content_publishing` (via "Configuração da API com login do Facebook")
-- **Status:** permissões configuradas, token ainda não gerado com as novas permissões
-- **Próximo passo:** na seção "Configuração da API com login do Facebook" → gerar token com `instagram_content_publishing` e configurar no node HTTP Request3 do n8n
-- **Bloqueador parcial:** a API de publicação exige análise Meta para uso externo; para uso próprio pode ser pulada — confirmar no passo 5 da configuração
-- **Problema técnico identificado:** imagens do `gpt-image-1` chegam em base64 — Instagram não aceita base64, só URLs públicas. Solução: salvar imagem no Cloudflare R2 antes de enviar ao Instagram.
+- Vinculado à página Webjetos (`229182413876628`)
+- **Nichos publicados:** pet, celular, bicicleta, veículo, geral (5 nichos)
+- **Nicho excluído:** `protect` (filtrado pelo nó If)
+- **Token (user token, expira ~30/07/2026):**
+  `EAASRwRBqBWABRzAICB11OKio2kBUzagVPQjZBloiNOZB9THfn7v0Eg5R3t94DQ5zPYJzE3sQUF8TcDuRfNZBbEtjrFtOX317bPynRJ5yZAF3oYFjHUBv0vZCZBPFt71jIzLBmK1kZB8VwiaXF5NM3GRwcDlRO0vZAYpKOk0N20puFG5ldzzmkT3wrZALit688`
 
-### Motor de Distribuição Inteligente — roadmap completo
+### Cloudflare R2
+- Bucket: `backfindr-media`
+- Public URL: `https://pub-a83994ac58034799aad260beb4d55fa3.r2.dev`
+- Account ID: `14823c21203d8830e4bed1efcb94c91c`
+- Credencial S3 no n8n: "S3 account" — endpoint R2, region `auto`, Force Path Style ativado
+- Imagens salvas em: `autopost/{timestamp}.jpg`
 
-#### Fase 1 — Páginas antigas no workflow
-- Identificar page IDs das contas antigas do Facebook
-- Adicionar ao Switch node existente no n8n
+### Renovação de tokens (~30/07/2026)
+```bash
+# 1. Trocar token curto por longo
+curl "https://graph.facebook.com/v20.0/oauth/access_token?grant_type=fb_exchange_token&client_id=1286158296941920&client_secret=87a517f442f39bb513a03f7cf05be098&fb_exchange_token=TOKEN_CURTO"
 
-#### Fase 2 — Instagram (em andamento)
-- Conta: @backfindroficial (ID: `17841416288148947`)
-- Fluxo: após HTTP Request1 (Facebook) → HTTP Request IG Upload → HTTP Request IG Publish
-- **Bloqueador:** imagem precisa ser URL pública, não base64 → salvar no Cloudflare R2 primeiro
-- **Próximo passo:** gerar token com `instagram_content_publishing` e implementar o nó de upload para R2
+# 2. Pegar page tokens
+curl "https://graph.facebook.com/v20.0/me/accounts?access_token=TOKEN_LONGO"
+```
 
-#### Fase 3 — Content Engine com fila de aprovação
-- Tabela `post_queue` no PostgreSQL do Railway
-- Workflow gerador: cria posts em lote → salva como `pendente`
-- Aprovação manual no painel admin do Backfindr
-- Workflow publicador: pega aprovados → publica → marca como `publicado`
-- Limpeza automática periódica para não estourar armazenagem
-
-#### Fase 4 — Vídeos via Gemini API (Veo)
-- Gemini API com modelo Veo (vídeos até 10s)
-- Entram na mesma fila de aprovação da Fase 3
-- Destino: Instagram Reels, Facebook, TikTok, YouTube Shorts
-
-#### Fase 5 — Plano Premium (user-funded ads)
-- Usuário paga para impulsionar a ocorrência
-- Dinheiro financia ads reais no Facebook/Instagram/Google
-- O caso do usuário vira o criativo do anúncio (user-funded acquisition)
-- Moderação obrigatória antes de subir o anúncio
-
-### Scraping de grupos — DECISÃO: NÃO INTEGRAR ao n8n
-- Risco de bloqueio alto demais
-- Captura de leads continua via sistema Rastrear (Apify) — separado
-- n8n faz APENAS publicação nas próprias páginas
+### Erros conhecidos
+- `moderation_blocked` no `gpt-image-1`: ocorre ~5% das execuções com cenas de crime. Não crítico — execução seguinte funciona normalmente. Pendente: adicionar tratamento de erro para continuar sem travar.
 
 ---
 
@@ -354,10 +365,10 @@ porteiro    — porteiro de condomínio (P3) via tabela porteiros
 
 | ID | Prioridade | Descrição |
 |----|-----------|-----------|
-| P1 | 🔴 Crítico | n8n Instagram — gerar token com `instagram_content_publishing` + resolver base64→URL via R2 |
-| P2 | 🔴 Crítico | n8n Content Engine — tabela `post_queue` + fila de aprovação no admin |
-| P3 | 🟡 Alto | n8n Páginas antigas Facebook — identificar IDs e adicionar ao workflow |
-| P4 | 🟡 Alto | Implementar estrutura de monetização no código (ver Seção 9) |
+| P1 | 🟡 Alto | n8n — tratamento de erro `moderation_blocked` (continuar sem travar) |
+| P2 | 🟡 Alto | n8n — Páginas antigas Facebook (identificar IDs, adicionar ao workflow) |
+| P3 | 🟡 Alto | Implementar estrutura de monetização no código (ver Seção 9) |
+| P4 | 🟠 Médio | n8n Content Engine — tabela `post_queue` + fila de aprovação no admin |
 | P5 | 🟠 Médio | BarcodeDetector portaria — feature pendente (nunca implementada) |
 | P6 | 🟠 Médio | Enriquecer 434 páginas SEO com eventos anuais e mais qualidade |
 | P7 | 🟠 Médio | GSC — redirecionamentos, canonicals, robots.txt |
@@ -367,21 +378,19 @@ porteiro    — porteiro de condomínio (P3) via tabela porteiros
 | P11 | 🟢 Baixo | P4 Delivery — dashboard remetente, interface entregador |
 
 ### Resolvidos (22/06/2026)
-- ✅ Permissões Instagram adicionadas ao app Meta (instagram_content_publishing via login Facebook)
-- ✅ Instagram Business Account identificado e vinculado
+- ✅ **Fase 2 Motor de Distribuição** — Instagram @backfindroficial publicando automaticamente
+- ✅ Cloudflare R2 configurado (base64 → URL pública)
+- ✅ Filtro nicho `protect` no Instagram (nó If — false vai para Facebook, true vai para Instagram)
+- ✅ Prompt `protect` corrigido — conteúdo de prevenção/QR code preventivo
+- ✅ Nicho `geral` agora inclui carga roubada
+- ✅ Token de longa duração gerado (expira ~30/07/2026)
 
 ### Resolvidos (21/06/2026)
-- ✅ P2 — Tela de sucesso WhatsApp já funcional (era info desatualizada)
-- ✅ P3 — BarcodeDetector reclassificado: feature nova, não bug
-- ✅ Matching automático — já implementado no POST /objects
+- ✅ Tela de sucesso WhatsApp já funcional
+- ✅ BarcodeDetector reclassificado: feature nova, não bug
+- ✅ Matching automático já implementado no POST /objects
 - ✅ 6 índices de performance executados no Supabase
-- ✅ Boost conectado ao checkout MercadoPago — já implementado
-
-### Ciclos incompletos por produto
-- **P1 Core:** BarcodeDetector portaria, social posts automático, moderação
-- **P2 B2B:** onboarding do parceiro, plano e cobrança
-- **P3 Condomínios:** histórico encomendas, achados internos, relatório síndico
-- **P4 Delivery:** dashboard remetente, interface entregador
+- ✅ Boost conectado ao checkout MercadoPago já implementado
 
 ---
 
