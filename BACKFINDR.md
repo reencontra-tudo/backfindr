@@ -447,3 +447,30 @@ git add BACKFINDR.md
 git commit -m "docs: atualizar BACKFINDR.md"
 git push origin main
 ```
+
+---
+
+## SESSÃO 23/06/2026 — SEO Content Engine + Google Business
+
+### SEO Content Engine (n8n + Supabase)
+- Tabela `seo_content_seeds` criada com 46 seeds em 5 clusters: achei_objeto (10), perdi_objeto (10), qr_protecao (10), pets (8), b2b (8)
+- Workflow n8n "Backfindr SEO Content — Daily Post" publicado e ativo — cron diário às 9h
+- Pipeline: Cron 9h → Buscar seed (Supabase) → Gerar post (OpenAI gpt-4o-mini) → Processar post (Code JS) → Inserir em community_posts → Marcar seed como usado
+- Credenciais n8n: Bearer Auth account (OpenAI), Postgres account (Supabase pooler aws-1-us-east-1, porta 6543)
+- `category` sempre minúsculo — `.toLowerCase()` aplicado no node Processar post
+- 2 posts já em produção em backfindr.com/comunidade
+- Seeds se esgotam em ~46 dias — reabastecer antes disso
+
+### Google Business Profile
+- Perfil "Backfindr" (ex-Webjetos) atualizado: telefone (11) 2358-9416, site backfindr.com
+- Redes sociais cadastradas: YouTube @BackfindrPlataformaGlobal, TikTok @backfindr, Facebook /webjetos, Instagram @backfindroficial
+- Data de abertura ainda mostra 2010 (Webjetos) — pendente correção para 2026
+
+### Link Building
+- Diretórios priorizados: Google Business ✅, Bing Places ⏳, Capterra ⏳, Product Hunt ⏳, Alternativeto ⏳, Reclame Aqui ⏳
+- Descrições padrão geradas: curta (160 chars), média (300 chars), longa (500 chars)
+
+### Pendências adicionadas
+- Adicionar mais seeds ao banco seo_content_seeds (esgotam em ~46 dias)
+- Corrigir data de abertura no Google Business para 2026
+- Cadastrar Backfindr no Bing Places, Capterra, Product Hunt
