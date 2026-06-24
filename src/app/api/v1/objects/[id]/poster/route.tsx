@@ -32,13 +32,10 @@ function normalizeImages(value: unknown): string[] {
   } catch { return []; }
 }
 
-async function toDataUrl(imageUrl: string | null, timeoutMs = 4000): Promise<string | null> {
+async function toDataUrl(imageUrl: string | null): Promise<string | null> {
   if (!imageUrl) return null;
   try {
-    const controller = new AbortController();
-    const timer = setTimeout(() => controller.abort(), timeoutMs);
-    const res = await fetch(imageUrl, { cache: 'no-store', signal: controller.signal });
-    clearTimeout(timer);
+    const res = await fetch(imageUrl, { cache: 'no-store' });
     if (!res.ok) return null;
     const buffer = await res.arrayBuffer();
     const base64 = Buffer.from(buffer).toString('base64');
@@ -58,7 +55,6 @@ function latLngToTile(lat: number, lng: number, zoom: number) {
 }
 
 async function buildMapDataUrl(lat: number, lng: number, tileSize = 256): Promise<string | null> {
-  return null; // mapa temporariamente desabilitado — position:absolute nao suportado no next/og
   try {
     const zoom = 15;
     const { x, y } = latLngToTile(lat, lng, zoom);
@@ -70,7 +66,7 @@ async function buildMapDataUrl(lat: number, lng: number, tileSize = 256): Promis
       offsets.flatMap(dy =>
         offsets.map(async dx => {
           const url = `https://tile.openstreetmap.org/${zoom}/${x + dx}/${y + dy}.png`;
-          const data = await toDataUrl(url, 3000);
+          const data = await toDataUrl(url);
           if (data) tiles.push({ dx, dy, data });
         })
       )
