@@ -58,6 +58,7 @@ function latLngToTile(lat: number, lng: number, zoom: number) {
 }
 
 async function buildMapDataUrl(lat: number, lng: number, tileSize = 256): Promise<string | null> {
+  return null; // mapa temporariamente desabilitado — position:absolute nao suportado no next/og
   try {
     const zoom = 15;
     const { x, y } = latLngToTile(lat, lng, zoom);
