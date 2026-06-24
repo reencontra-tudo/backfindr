@@ -431,6 +431,7 @@ export async function GET(
     // Layout: foto hero grande (topo), conteúdo completo (baixo), mapa lateral
     // ─────────────────────────────────────────────────────────────────────────
     if (format === 'vertical') {
+      const qrSize = 260;
       const teal      = '#14B8A6';
       const pad       = 52;
       const headerH   = 100;
