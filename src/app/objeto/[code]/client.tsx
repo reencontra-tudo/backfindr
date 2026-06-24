@@ -147,7 +147,7 @@ function ShareButtons({ url, title, objectId, objectCode }: { url: string; title
 
         {/* Baixar Cartaz Quadrado */}
         <button
-          onClick={() => downloadPoster('square')}
+          onClick={() => downloadPoster('vertical')}
           className="flex items-center justify-center gap-2 bg-white/[0.05] border border-white/[0.1] hover:bg-white/[0.08] rounded-xl py-3 px-3 transition-all"
         >
           <Download className="w-4 h-4 text-white/60" />
