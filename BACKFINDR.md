@@ -530,3 +530,23 @@ RESOLVIDOS E CONFIRMADOS NO CODIGO — NAO REABRIR:
 - sitemap.ts e achados-perdidos/sitemap.ts: EXISTEM
 
 REGRA PERMANENTE: antes de incluir qualquer item como pendente, verificar no codigo se ja existe. Nunca reabrir itens resolvidos sem evidencia no codigo. Codigo esta em src/ nao em app/ diretamente.
+
+## SESSÃO 23/06/2026 PARTE 2 — Redesign do cartaz
+
+### Cartaz redesenhado (commit 8edc109)
+- Novo route.tsx: dark hero, foto ocupa zona superior como fundo com overlay
+- Mapa OSM via tiles internos (sem API externa, sem token) — lat/lng do banco
+- QR code proporcional (160px) — elemento funcional, nao dominante
+- Recompensa em destaque quando disponivel (box amarelo no A4, texto dourado nos outros)
+- Badge de status no canto superior direito
+- 3 formatos: square (1080x1080), vertical (1080x1920), a4 (2480x3508)
+- Query SQL atualizada para incluir latitude e longitude
+
+### Pendente (cartaz)
+- Padronizacao de imagens no momento do upload (sharp/resize) — sessao separada
+- Validar resultado em producao com objeto real que tenha latitude/longitude
+
+### Decisoes arquiteturais
+- Mapa: tiles OSM fetchados como data URL e compostos no JSX do next/og
+- Imagens: padronizacao deve acontecer no upload, nao na geracao do cartaz
+- QR code: elemento funcional discreto, nao a peca principal
