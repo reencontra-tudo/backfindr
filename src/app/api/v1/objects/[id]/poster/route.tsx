@@ -266,7 +266,7 @@ export async function GET(
               background: '#111827', overflow: 'hidden',
             }}>
               {photo
-                ? <img src={photo} style={{ width: '100%', height: '100%', objectFit: 'cover', objectPosition: 'center' }} />
+                ? <img src={photo} style={{ width: '100%', height: '100%' }} />
                 : <span style={{ fontSize: '200px' }}>📦</span>
               }
               {/* Gradiente sobre foto */}
@@ -475,7 +475,7 @@ export async function GET(
               position: 'relative',
             }}>
               {photo
-                ? <img src={photo} style={{ width: '100%', height: '100%', objectFit: 'cover', objectPosition: 'center' }} />
+                ? <img src={photo} style={{ width: '100%', height: '100%' }} />
                 : <span style={{ fontSize: '200px' }}>📦</span>
               }
               {/* Overlay gradiente inferior */}
