@@ -35,7 +35,10 @@ function normalizeImages(value: unknown): string[] {
 async function toDataUrl(imageUrl: string | null, timeoutMs = 4000): Promise<string | null> {
   if (!imageUrl) return null;
   try {
-    const controller = new AbortController(); const timer = setTimeout(() => controller.abort(), timeoutMs); const res = await fetch(imageUrl, { cache: 'no-store', signal: controller.signal }); clearTimeout(timer);
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), timeoutMs);
+    const res = await fetch(imageUrl, { cache: 'no-store', signal: controller.signal });
+    clearTimeout(timer);
     if (!res.ok) return null;
     const buffer = await res.arrayBuffer();
     const base64 = Buffer.from(buffer).toString('base64');
