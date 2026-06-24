@@ -327,7 +327,7 @@ export default function SucessoPage() {
           <p className="text-white/40 text-xs font-semibold uppercase tracking-wider mb-3">Baixar cartaz</p>
           <div className="flex gap-2">
             <button
-              onClick={() => downloadPoster('square')}
+              onClick={() => downloadPoster('vertical')}
               className="flex-1 flex items-center justify-center gap-2 bg-blue-500/10 hover:bg-blue-500/20 border border-blue-500/20 text-blue-400 hover:text-blue-300 text-xs font-medium py-2.5 rounded-lg transition-all"
             >
               <Download className="w-4 h-4" />
