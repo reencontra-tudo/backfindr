@@ -431,10 +431,17 @@ export async function GET(
     // Layout: foto hero grande (topo), conteúdo completo (baixo), mapa lateral
     // ─────────────────────────────────────────────────────────────────────────
     if (format === 'vertical') {
-      const accent = pd.statusColor;
-      const teal   = '#14B8A6';
-      const pad    = 52;
-      const photoH = 820;
+      const teal      = '#14B8A6';
+      const pad       = 52;
+      const headerH   = 100;
+      const divH      = 3;
+      const headlineH = 200;
+      const subtitleH = 80;
+      const descH     = 110;
+      const metaH     = 120;
+      const footerH   = 220;
+      const gaps      = pad * 2 + 24 + 20 + 20 + 24 + 24;
+      const photoH    = height - headerH - divH - headlineH - subtitleH - descH - metaH - footerH - gaps;
 
       const imageResponse = new ImageResponse(
         (
@@ -444,168 +451,122 @@ export async function GET(
             display: 'flex', flexDirection: 'column',
             fontFamily: 'sans-serif', overflow: 'hidden',
           }}>
-            {/* ── Header ── */}
             <div style={{
               display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-              padding: `${pad}px ${pad}px 28px`, flexShrink: 0,
+              padding: `${pad}px ${pad}px 24px`,
+              height: `${headerH + pad}px`, flexShrink: 0,
             }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
-                <div style={{
-                  width: '52px', height: '52px', background: teal,
-                  borderRadius: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center',
-                }}>
-                  <span style={{ color: '#fff', fontSize: '28px', fontWeight: 900 }}>B</span>
-                </div>
-                <span style={{ color: 'rgba(255,255,255,0.9)', fontSize: '34px', fontWeight: 800, display: 'flex' }}>Backfindr</span>
+                <span style={{ color: '#14B8A6', fontSize: '36px', fontWeight: 900 }}>Backfindr</span>
               </div>
-              <div style={{ background: accent, borderRadius: '8px', padding: '12px 32px', display: 'flex' }}>
-                <span style={{ color: '#fff', fontSize: '26px', fontWeight: 900, letterSpacing: '2px', display: 'flex' }}>
+              <div style={{
+                background: pd.statusColor, borderRadius: '100px',
+                padding: '12px 32px', display: 'flex',
+              }}>
+                <span style={{ color: '#ffffff', fontSize: '28px', fontWeight: 800, letterSpacing: '1px' }}>
                   {pd.statusLabel}
                 </span>
               </div>
             </div>
-
-            {/* ── Foto hero ── */}
             <div style={{
               margin: `0 ${pad}px`,
               height: `${photoH}px`,
+              border: `3px solid ${teal}`,
               borderRadius: '20px', overflow: 'hidden',
               display: 'flex', alignItems: 'center', justifyContent: 'center',
-              background: '#111827', flexShrink: 0,
-              position: 'relative',
+              background: '#1a2030', flexShrink: 0,
             }}>
               {photo
                 ? <img src={photo} style={{ width: '100%', height: '100%' }} />
-                : <span style={{ fontSize: '200px' }}>📦</span>
+                : <span style={{ fontSize: '180px' }}>📦</span>
               }
-              {/* Overlay gradiente inferior */}
-              <div style={{
-                position: 'absolute', bottom: 0, left: 0, right: 0, height: '200px',
-                background: 'linear-gradient(to top, rgba(13,17,23,0.85), transparent)',
-                display: 'flex',
-              }} />
             </div>
-
-            {/* ── Linha de urgência ── */}
             <div style={{
-              height: '4px', background: accent,
-              margin: `28px ${pad}px 0`, flexShrink: 0,
+              margin: `24px ${pad}px 0`,
+              height: `${divH}px`, background: pd.statusColor, display: 'flex', flexShrink: 0,
             }} />
-
-            {/* ── Headline ── */}
-            <div style={{ padding: `20px ${pad}px 0`, flexShrink: 0 }}>
+            <div style={{
+              padding: `20px ${pad}px 0`,
+              display: 'flex', flexDirection: 'column',
+              height: `${headlineH}px`, flexShrink: 0,
+            }}>
               <span style={{
-                color: accent, fontSize: '46px', fontWeight: 900,
-                letterSpacing: '2px', display: 'flex', marginBottom: '6px',
+                color: pd.statusColor, fontSize: '52px', fontWeight: 900,
+                letterSpacing: '-1px', lineHeight: 1.0, display: 'flex',
               }}>{pd.eyebrow}</span>
               <span style={{
-                color: '#ffffff', fontSize: '84px', fontWeight: 900,
-                letterSpacing: '-3px', lineHeight: 0.88, display: 'flex', flexWrap: 'wrap',
+                color: '#ffffff', fontSize: '80px', fontWeight: 900,
+                letterSpacing: '-3px', lineHeight: 0.92, display: 'flex', flexWrap: 'wrap',
               }}>{pd.headline}</span>
             </div>
-
-            {/* ── Subtítulo ── */}
-            <div style={{ padding: `14px ${pad}px 0`, flexShrink: 0 }}>
+            <div style={{
+              padding: `0 ${pad}px`,
+              height: `${subtitleH}px`, flexShrink: 0,
+              display: 'flex', alignItems: 'center',
+            }}>
               <span style={{
                 color: 'rgba(255,255,255,0.87)', fontSize: '38px', fontWeight: 700,
-                lineHeight: 1.2, display: 'flex', flexWrap: 'wrap',
+                lineHeight: 1.1, display: 'flex', flexWrap: 'wrap',
               }}>{pd.subtitle}</span>
             </div>
-
-            {/* ── Descrição ── */}
             {pd.description && (
-              <div style={{ padding: `10px ${pad}px 0`, flexShrink: 0 }}>
+              <div style={{
+                padding: `0 ${pad}px`,
+                height: `${descH}px`, flexShrink: 0,
+                display: 'flex', alignItems: 'flex-start',
+              }}>
                 <span style={{
-                  color: 'rgba(255,255,255,0.6)', fontSize: '28px', lineHeight: 1.5,
+                  color: 'rgba(255,255,255,0.6)', fontSize: '30px', lineHeight: 1.5,
                   display: 'flex', flexWrap: 'wrap',
                 }}>{pd.description}</span>
               </div>
             )}
-
-            {/* ── Meta + Mapa ── */}
             <div style={{
-              display: 'flex', flexDirection: 'row', gap: '24px',
-              padding: `20px ${pad}px 0`, flexShrink: 0, alignItems: 'flex-start',
+              padding: `20px ${pad}px 0`,
+              display: 'flex', flexDirection: 'column', gap: '12px',
+              height: `${metaH}px`, flexShrink: 0,
             }}>
-              {/* Dados */}
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '14px', flex: 1 }}>
-                {pd.date && (
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                    <span style={{ fontSize: '26px' }}>📅</span>
-                    <span style={{ color: 'rgba(255,255,255,0.65)', fontSize: '26px', fontWeight: 600, display: 'flex' }}>{pd.date}</span>
-                  </div>
-                )}
-                {pd.locationShort && (
-                  <div style={{ display: 'flex', alignItems: 'flex-start', gap: '12px' }}>
-                    <span style={{ fontSize: '26px', flexShrink: 0 }}>📍</span>
-                    <span style={{ color: 'rgba(255,255,255,0.65)', fontSize: '26px', fontWeight: 600, display: 'flex', flexWrap: 'wrap' }}>{pd.locationShort}</span>
-                  </div>
-                )}
-                {pd.reward && (
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                    <span style={{ fontSize: '26px' }}>💰</span>
-                    <span style={{ color: '#fbbf24', fontSize: '30px', fontWeight: 900, display: 'flex' }}>
-                      RECOMPENSA: {pd.reward}
-                    </span>
-                  </div>
-                )}
-              </div>
-
-              {/* Mini mapa */}
-              {mapTiles.length > 0 && (
-                <div style={{
-                  width: '280px', height: '180px',
-                  overflow: 'hidden', borderRadius: '12px',
-                  position: 'relative', flexShrink: 0, display: 'flex',
-                  border: '1.5px solid rgba(255,255,255,0.15)',
-                }}>
-                  {mapTiles.map(t => (
-                    <img
-                      key={`vt-${t.dx}-${t.dy}`}
-                      src={t.data}
-                      style={{
-                        position: 'absolute',
-                        left: `${((t.dx + 1) * TILE / (TILE * 3)) * 280}px`,
-                        top: `${((t.dy + 1) * TILE / (TILE * 3)) * 180}px`,
-                        width: `${(TILE / (TILE * 3)) * 280}px`,
-                        height: `${(TILE / (TILE * 3)) * 180}px`,
-                      }}
-                    />
-                  ))}
-                  <div style={{
-                    position: 'absolute', left: '126px', top: '70px',
-                    width: '16px', height: '16px',
-                    background: '#ef4444', borderRadius: '50% 50% 50% 0',
-                    transform: 'rotate(-45deg)', border: '2px solid #fff',
-                    display: 'flex',
-                  }} />
+              {pd.date && (
+                <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                  <span style={{ fontSize: '26px' }}>📅</span>
+                  <span style={{ color: 'rgba(255,255,255,0.67)', fontSize: '28px', fontWeight: 600 }}>{pd.date}</span>
+                </div>
+              )}
+              {pd.locationShort && (
+                <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                  <span style={{ fontSize: '26px', flexShrink: 0 }}>📍</span>
+                  <span style={{ color: 'rgba(255,255,255,0.67)', fontSize: '28px', fontWeight: 600, display: 'flex', flexWrap: 'wrap' }}>{pd.locationShort}</span>
+                </div>
+              )}
+              {pd.reward && (
+                <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                  <span style={{ fontSize: '26px' }}>💰</span>
+                  <span style={{ color: '#fbbf24', fontSize: '28px', fontWeight: 900, display: 'flex' }}>{pd.reward}</span>
                 </div>
               )}
             </div>
-
-            {/* ── Rodapé QR ── */}
             <div style={{
-              margin: `auto ${pad}px ${pad}px`,
+              margin: `24px ${pad}px ${pad}px`,
               background: 'rgba(20,184,166,0.10)',
-              border: '1.5px solid rgba(20,184,166,0.35)',
+              border: '2px solid rgba(20,184,166,0.33)',
               borderRadius: '20px', padding: '24px 28px',
               display: 'flex', flexDirection: 'row', alignItems: 'center', gap: '24px',
-              flexShrink: 0,
+              height: `${footerH}px`, flexShrink: 0,
             }}>
               {qr && (
-                <div style={{ background: '#ffffff', borderRadius: '10px', padding: '10px', display: 'flex', flexShrink: 0 }}>
-                  <img src={qr} style={{ width: `${qrSmall}px`, height: `${qrSmall}px` }} />
+                <div style={{ background: '#ffffff', borderRadius: '12px', padding: '10px', display: 'flex', flexShrink: 0 }}>
+                  <img src={qr} style={{ width: `${qrSize}px`, height: `${qrSize}px` }} />
                 </div>
               )}
               <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', flex: 1 }}>
-                <span style={{ color: teal, fontSize: '32px', fontWeight: 900, display: 'flex', flexWrap: 'wrap' }}>
-                  VOCÊ VIU? ESCANEIE
+                <span style={{ color: teal, fontSize: '34px', fontWeight: 900, display: 'flex', flexWrap: 'wrap' }}>
+                  AJUDE A ENCONTRAR
                 </span>
-                <span style={{ color: 'rgba(255,255,255,0.7)', fontSize: '24px', lineHeight: 1.4, display: 'flex', flexWrap: 'wrap' }}>
-                  Avise o dono — ele recebe um alerta imediato
+                <span style={{ color: 'rgba(255,255,255,0.8)', fontSize: '26px', lineHeight: 1.4, display: 'flex', flexWrap: 'wrap' }}>
+                  Você viu? Escaneie e avise o dono!
                 </span>
-                <span style={{ color: teal, fontSize: '20px', display: 'flex' }}>
-                  backfindr.com
+                <span style={{ color: teal, fontSize: '22px', display: 'flex' }}>
+                  {appUrl.replace('https://', '')}
                 </span>
               </div>
             </div>
