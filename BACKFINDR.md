@@ -474,3 +474,28 @@ git push origin main
 - Adicionar mais seeds ao banco seo_content_seeds (esgotam em ~46 dias)
 - Corrigir data de abertura no Google Business para 2026
 - Cadastrar Backfindr no Bing Places, Capterra, Product Hunt
+
+---
+
+## SESSÃO 23/06/2026 — Diagnóstico geral + decisão de monetização
+
+### Protocolo de sessão
+- Caminho canônico do BACKFINDR.md confirmado: ~/Downloads/backfindr-local/backfindr-main/BACKFINDR.md
+- Código está em src/ (não em app/ diretamente) — corrigir buscas futuras
+
+### Diagnóstico do código (confirmado hoje)
+- Estrutura de monetização existente: pricing/client.tsx, billing/page.tsx, checkout/* — tudo funcional
+- Preços atuais desatualizados: Boost R$9,90/24,90/14,90 → precisam virar R$9,90/39,90/89,90
+- Planos Pro R$29 / Business R$149 → não refletem o modelo do negócio
+- Tela /sucesso já tem loop WhatsApp excelente — NÃO mexer
+- Tela /sucesso NÃO oferece boost pós-cadastro — maior oportunidade de conversão
+
+### Decisão tomada
+- Próxima sessão dedicada 100% à monetização
+- Processo: estratégia → copy → design conceitual → aprovação → código
+- Nada de código antes de aprovar estratégia completa
+
+### Google Business
+- Problema: jackchicken.com.br aparece no perfil (cadastrado pelo próprio Marcos em outro contexto)
+- Edições feitas mas travadas há +1 mês sem aprovação do Google
+- Ação: aguardar ou acionar suporte do Google Business
