@@ -66,7 +66,7 @@ async function buildMapDataUrl(lat: number, lng: number, tileSize = 256): Promis
       offsets.flatMap(dy =>
         offsets.map(async dx => {
           const url = `https://tile.openstreetmap.org/${zoom}/${x + dx}/${y + dy}.png`;
-          const data = await toDataUrl(url);
+          const data = await toDataUrl(url, 3000);
           if (data) tiles.push({ dx, dy, data });
         })
       )
