@@ -499,3 +499,34 @@ git push origin main
 - Problema: jackchicken.com.br aparece no perfil (cadastrado pelo próprio Marcos em outro contexto)
 - Edições feitas mas travadas há +1 mês sem aprovação do Google
 - Ação: aguardar ou acionar suporte do Google Business
+
+## 12. PRIORIDADES ABERTAS — ATUALIZADO 23/06/2026
+
+PENDENTES:
+- P1 ALTO: Monetizacao — sessao dedicada (estrategia + design + copy + codigo)
+- P2 MEDIO: n8n Content Engine — fila de aprovacao post_queue + painel admin
+- P3 MEDIO: Enriquecer 434 paginas SEO com eventos anuais locais
+- P4 MEDIO: GSC — verificar canonicals achados-perdidos e indexacao
+- P5 MEDIO: Seeds seo_content_seeds esgotam em 46 dias — reabastecer
+- P6 MEDIO: Google Business — data de abertura travada em 2010 ha mais de 1 mes
+- P7 BAIXO: BarcodeDetector portaria — feature nunca implementada
+- P8 BAIXO: B2B — onboarding do parceiro, plano e cobranca
+- P9 BAIXO: Condominios — historico encomendas, achados internos, relatorio sindico
+- P10 BAIXO: Delivery — dashboard remetente, interface entregador
+
+RESOLVIDOS E CONFIRMADOS NO CODIGO — NAO REABRIR:
+- moderation_blocked n8n: JA RESOLVIDO
+- paginas antigas Facebook: contexto errado, nao se aplica
+- robots.ts: existe e correto em src/app/robots.ts
+- objeto/[code] como SEO: JA IMPLEMENTADO com metadata canonical OpenGraph
+- Tela sucesso WhatsApp: JA FUNCIONAL com loop de compartilhamento
+- Matching automatico: JA IMPLEMENTADO no POST /objects
+- Boost conectado ao checkout MercadoPago: JA IMPLEMENTADO
+- 6 indices de performance Supabase: JA EXECUTADOS
+- Instagram backfindroficial: FUNCIONANDO 5 nichos protect filtrado
+- Cloudflare R2: CONFIGURADO
+- Token Meta longa duracao: GERADO expira 30/07/2026
+- 434 paginas SEO: PUBLICADAS em producao
+- sitemap.ts e achados-perdidos/sitemap.ts: EXISTEM
+
+REGRA PERMANENTE: antes de incluir qualquer item como pendente, verificar no codigo se ja existe. Nunca reabrir itens resolvidos sem evidencia no codigo. Codigo esta em src/ nao em app/ diretamente.
