@@ -41,7 +41,7 @@ export async function generateMetadata({ params }: { params: { code: string } })
       url: canonicalUrl,
       images: [
         {
-          url: `${APP_URL}/api/v1/objects/${obj.unique_code}/poster?format=square`,
+          url: `${APP_URL}/api/v1/objects/${obj.unique_code}/poster?format=vertical`,
           width: 1080,
           height: 1080,
           alt: `Cartaz de ${obj.title} - Backfindr`,
@@ -55,7 +55,7 @@ export async function generateMetadata({ params }: { params: { code: string } })
       card: 'summary_large_image',
       title: `${obj.title} | Backfindr`,
       description: descriptionFull,
-      images: [`${APP_URL}/api/v1/objects/${obj.unique_code}/poster?format=square`],
+      images: [`${APP_URL}/api/v1/objects/${obj.unique_code}/poster?format=vertical`],
     },
   };
 }

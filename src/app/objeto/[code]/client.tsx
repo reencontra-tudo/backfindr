@@ -86,7 +86,7 @@ function ShareButtons({ url, title, objectId, objectCode }: { url: string; title
     link.href = posterUrl;
     link.download = `cartaz-${objectCode}-${format}.png`;
     link.click();
-    toast.success(`Cartaz ${format === 'square' ? 'quadrado' : 'vertical'} baixado!`);
+    toast.success(`Cartaz ${format === 'square' ? 'vertical' : 'quadrado'} baixado!`);
   };
 
   return (
