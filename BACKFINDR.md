@@ -550,3 +550,16 @@ REGRA PERMANENTE: antes de incluir qualquer item como pendente, verificar no cod
 - Mapa: tiles OSM fetchados como data URL e compostos no JSX do next/og
 - Imagens: padronizacao deve acontecer no upload, nao na geracao do cartaz
 - QR code: elemento funcional discreto, nao a peca principal
+
+### Fix objectFit (commit b85b58b)
+- Removido objectFit cover + objectPosition center do quadrado e vertical
+- Quadrado: FUNCIONANDO com dark hero
+- A4: FUNCIONANDO
+- Vertical: ainda 500 — problema no template novo (nao e objectFit, nao e position:absolute)
+- Hipotese: algo no JSX do vertical especifico que next/og nao suporta
+- Proxima sessao: isolar elemento por elemento no vertical ate encontrar o culpado
+
+### Decisao arquitetural
+- next/og suporta position:absolute normalmente (quadrado prova isso)
+- objectFit cover nao era o problema primario
+- Investigacao deve comecar removendo o overlay gradiente do vertical (inset:0)
