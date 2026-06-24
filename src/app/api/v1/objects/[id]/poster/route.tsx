@@ -478,7 +478,7 @@ export async function GET(
               background: '#1a2030', flexShrink: 0,
             }}>
               {photo
-                ? <img src={photo} style={{ width: '100%', height: '100%' }} />
+                ? <img src={photo} style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
                 : <span style={{ fontSize: '180px' }}>📦</span>
               }
             </div>
