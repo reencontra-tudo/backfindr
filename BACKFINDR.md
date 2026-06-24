@@ -563,3 +563,12 @@ REGRA PERMANENTE: antes de incluir qualquer item como pendente, verificar no cod
 - next/og suporta position:absolute normalmente (quadrado prova isso)
 - objectFit cover nao era o problema primario
 - Investigacao deve comecar removendo o overlay gradiente do vertical (inset:0)
+
+### Cartaz — STATUS FINAL (23/06/2026)
+- Vertical ✅ — commit 7147701 (fix: qrSize não definido no escopo)
+- Quadrado ✅ — commit b85b58b (fix: objectFit removido)
+- A4 ✅ — funcionava desde o início
+- Causa raiz do vertical: qrSize usado mas não declarado no bloco substituído
+- Mapa OSM: desabilitado (position:absolute causa failed to pipe no next/og)
+- Imagem padrão por categoria: pendente sessão dedicada
+- Notificações (foto, boost, engajamento): pendente sessão dedicada
