@@ -773,6 +773,6 @@ export async function GET(
 
   } catch (err) {
     console.error('[poster]', err);
-    return new Response('Erro ao gerar pôster', { status: 500 });
+    return new Response(`Erro: ${err instanceof Error ? err.message : String(err)}`, { status: 500 });
   }
 }
