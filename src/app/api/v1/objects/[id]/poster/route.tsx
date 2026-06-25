@@ -294,6 +294,12 @@ export async function GET(
                 ? <img src={photoCropped ?? photo!} style={{ width: '1080px', height: '500px' }} />
                 : <span style={{ fontSize: '200px' }}>📦</span>
               }
+              {/* Gradiente escuro sobre a foto */}
+              <div style={{
+                position: 'absolute', top: 0, left: 0, right: 0, height: '500px',
+                background: 'linear-gradient(to bottom, rgba(13,17,23,0.55) 0%, transparent 35%, transparent 50%, rgba(13,17,23,0.95) 100%)',
+                display: 'flex',
+              }} />
               {/* Gradiente sobre foto */}
               <div style={{
                 position: 'absolute', inset: 0,
