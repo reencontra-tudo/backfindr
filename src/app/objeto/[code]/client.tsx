@@ -80,13 +80,14 @@ function ShareButtons({ url, title, objectId, objectCode }: { url: string; title
     }
   };
 
-  const downloadPoster = (format: 'square' | 'vertical') => {
+  const downloadPoster = (format: 'square' | 'vertical' | 'a4') => {
     const posterUrl = `/api/v1/objects/${objectId}/poster?format=${format}`;
     const link = document.createElement('a');
     link.href = posterUrl;
     link.download = `cartaz-${objectCode}-${format}.png`;
     link.click();
-    toast.success(`Cartaz ${format === 'square' ? 'vertical' : 'quadrado'} baixado!`);
+    const label = format === 'a4' ? 'A4 (imprimível)' : format === 'vertical' ? 'vertical' : 'quadrado';
+    toast.success(`Cartaz ${label} baixado!`);
   };
 
   return (
@@ -147,7 +148,7 @@ function ShareButtons({ url, title, objectId, objectCode }: { url: string; title
 
         {/* Baixar Cartaz Quadrado */}
         <button
-          onClick={() => downloadPoster('vertical')}
+          onClick={() => downloadPoster('a4')}
           className="flex items-center justify-center gap-2 bg-white/[0.05] border border-white/[0.1] hover:bg-white/[0.08] rounded-xl py-3 px-3 transition-all"
         >
           <Download className="w-4 h-4 text-white/60" />
