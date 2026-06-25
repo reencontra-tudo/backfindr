@@ -263,10 +263,10 @@ export async function GET(
             <div style={{
               position: 'absolute', top: 0, left: 0, right: 0, height: '620px',
               display: 'flex', alignItems: 'center', justifyContent: 'center',
-              background: '#111827', overflow: 'hidden',
+              background: '#111827',
             }}>
               {photo
-                ? <img src={photo} style={{ minWidth: '100%', minHeight: '100%', maxWidth: 'none', maxHeight: 'none' }} />
+                ? <img src={photo} style={{ maxHeight: '620px', maxWidth: '1080px' }} />
                 : <span style={{ fontSize: '200px' }}>📦</span>
               }
               {/* Gradiente sobre foto */}
