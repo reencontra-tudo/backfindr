@@ -612,3 +612,22 @@ REGRA PERMANENTE: antes de incluir qualquer item como pendente, verificar no cod
 - Imagem padrão por categoria quando sem foto — pendente sessão dedicada
 - Notificações (foto, boost, engajamento) — pendente sessão dedicada
 - Mapa OSM no cartaz — pendente sessão dedicada (position:absolute não funciona no next/og)
+
+## SESSÃO 25/06/2026 — Cartaz quadrado + botões área pública
+
+### O que foi feito
+- Botão "Baixar Cartaz" área pública → formato A4 ✅ (ce6f02f)
+- Cartaz quadrado redesenhado do zero ✅
+  - Sharp 0.35.2 instalado — resize com fit:'contain', fundo #111827
+  - Layout: duas zonas separadas por linha teal (foto 580px / conteúdo 500px)
+  - Sem sobreposição de texto, sem distorção, objeto visível inteiro
+  - Deploy via npx vercel --prod ✅
+- Solução definitiva next/og: usar Sharp ANTES do Satori
+  - objectFit, backgroundImage, minWidth/minHeight NÃO funcionam no Satori
+  - fit:'contain' com background escuro funciona para qualquer proporção de objeto
+
+### Pendente
+- Imagem padrão por categoria quando sem foto
+- Notificações (foto, boost, engajamento)
+- Monetização — sessão dedicada (prioridade máxima para lançamento)
+- Canonicals GSC + seeds SEO esgotam em ~46 dias
