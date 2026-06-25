@@ -592,3 +592,23 @@ REGRA PERMANENTE: antes de incluir qualquer item como pendente, verificar no cod
 - Imagem padrão por categoria quando sem foto — pendente sessão dedicada
 - Notificações (foto, boost, engajamento) — pendente sessão dedicada
 - Mapa OSM no cartaz — pendente sessão dedicada (position:absolute não funciona no next/og)
+
+## SESSÃO 24/06/2026 — Cartaz e botões
+
+### O que foi feito
+- Vertical ✅ funcionando (dark, foto proporcional com maxHeight)
+- Quadrado ✅ funcionando (dark hero)
+- A4 ✅ funcionando (branco, imprimível — é o melhor para imprimir)
+- Botão "Baixar PNG" no dashboard → A4 ✅ funcionando corretamente
+- Commits: b85b58b, 7147701, 96a4b31, dec7951, 2377d43
+
+### Pendente — PRÓXIMA SESSÃO
+- Botão "Baixar Cartaz" na área pública (/objeto/[code]):
+  - Nome errado: deveria ser algo como "Imprimir Cartaz" ou "Baixar Cartaz"
+  - Formato errado: deve gerar A4 (igual ao Baixar PNG do dashboard)
+  - Lógica: downloadPoster('a4') — o vertical dark é para redes sociais, não para cartaz imprimível
+- Os botões WhatsApp/Facebook/Instagram Stories já existem na área pública para compartilhar
+- O vertical dark pode ser usado futuramente para compartilhar nas redes com um botão específico
+- Imagem padrão por categoria quando sem foto — pendente sessão dedicada
+- Notificações (foto, boost, engajamento) — pendente sessão dedicada
+- Mapa OSM no cartaz — pendente sessão dedicada (position:absolute não funciona no next/og)
