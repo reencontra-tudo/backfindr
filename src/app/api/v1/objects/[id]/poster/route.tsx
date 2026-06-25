@@ -59,7 +59,7 @@ async function cropToDataUrl(imageUrl: string | null, w: number, h: number): Pro
       buffer = Buffer.from(await res.arrayBuffer());
     }
     const cropped = await sharp(buffer)
-      .resize(w, h, { fit: 'cover', position: 'top' })
+      .resize(w, h, { fit: 'contain', background: { r: 17, g: 24, b: 39, alpha: 1 } })
       .jpeg({ quality: 85 })
       .toBuffer();
     return `data:image/jpeg;base64,${cropped.toString('base64')}`;
@@ -180,7 +180,7 @@ export async function GET(
     const qrApiUrl = `https://api.qrserver.com/v1/create-qr-code/?size=${qrSmall}x${qrSmall}&data=${encodeURIComponent(pd.qrUrl)}&bgcolor=ffffff&color=0d1117&margin=6`;
 
     // Para o quadrado, preparar versão cropada
-    const photoCropped = format === 'square' ? await cropToDataUrl(pd.photoUrl, 1080, 420) : null;
+    const photoCropped = format === 'square' ? await cropToDataUrl(pd.photoUrl, 1080, 580) : null;
 
     const [photo, qr, mapRaw] = await Promise.all([
       toDataUrl(pd.photoUrl),
@@ -272,181 +272,144 @@ export async function GET(
     // Layout: foto hero de fundo (60%), conteúdo sobre overlay escuro (40% inferior)
     // ─────────────────────────────────────────────────────────────────────────
     if (format === 'square') {
+      const teal = '#14B8A6';
       const accent = pd.statusColor;
-      const teal   = '#14B8A6';
 
       const imageResponse = new ImageResponse(
         (
           <div style={{
-            width: `${width}px`, height: `${height}px`,
+            width: '1080px', height: '1080px',
             background: '#0d1117',
             display: 'flex', flexDirection: 'column',
-            fontFamily: 'sans-serif', overflow: 'hidden',
-            position: 'relative',
+            fontFamily: 'sans-serif',
           }}>
-            {/* ── Foto hero ocupa zona superior ── */}
+
+            {/* ZONA 1 — FOTO (580px) */}
             <div style={{
-              position: 'absolute', top: 0, left: 0, right: 0, height: '420px',
+              width: '1080px', height: '580px',
               display: 'flex', alignItems: 'center', justifyContent: 'center',
-              background: '#111827',
+              background: '#111827', flexShrink: 0, position: 'relative',
             }}>
               {(photoCropped || photo)
-                ? <img src={photoCropped ?? photo!} style={{ width: '1080px', height: '420px' }} />
-                : <span style={{ fontSize: '200px' }}>📦</span>
+                ? <img src={photoCropped ?? photo!} style={{ width: '1080px', height: '580px' }} />
+                : <span style={{ fontSize: '180px' }}>📦</span>
               }
-              {/* Gradiente escuro sobre a foto */}
+              {/* Badge status — canto superior direito */}
               <div style={{
-                position: 'absolute', top: 0, left: 0, right: 0, height: '420px',
-                background: 'linear-gradient(to bottom, rgba(13,17,23,0.55) 0%, transparent 35%, transparent 50%, rgba(13,17,23,0.95) 100%)',
-                display: 'flex',
-              }} />
-              {/* Gradiente sobre foto */}
-              <div style={{
-                position: 'absolute', inset: 0,
-                background: 'linear-gradient(to bottom, rgba(13,17,23,0.55) 0%, transparent 35%, transparent 50%, rgba(13,17,23,0.92) 100%)',
-                display: 'flex',
-              }} />
-            </div>
-
-            {/* ── Topo: Logo + Badge ── */}
-            <div style={{
-              position: 'absolute', top: 0, left: 0, right: 0,
-              display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-              padding: '36px 44px', zIndex: 10,
-            }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                <div style={{
-                  width: '44px', height: '44px', background: teal,
-                  borderRadius: '10px', display: 'flex', alignItems: 'center', justifyContent: 'center',
-                }}>
-                  <span style={{ color: '#fff', fontSize: '24px', fontWeight: 900 }}>B</span>
-                </div>
-                <span style={{ color: 'rgba(255,255,255,0.9)', fontSize: '28px', fontWeight: 800, display: 'flex' }}>Backfindr</span>
-              </div>
-              <div style={{
+                position: 'absolute', top: '28px', right: '32px',
                 background: accent, borderRadius: '8px',
                 padding: '10px 28px', display: 'flex',
               }}>
-                <span style={{ color: '#fff', fontSize: '22px', fontWeight: 900, letterSpacing: '2px', display: 'flex' }}>
+                <span style={{ color: '#fff', fontSize: '24px', fontWeight: 900, letterSpacing: '2px' }}>
                   {pd.statusLabel}
                 </span>
               </div>
+              {/* Logo — canto superior esquerdo */}
+              <div style={{
+                position: 'absolute', top: '28px', left: '32px',
+                display: 'flex', alignItems: 'center', gap: '10px',
+              }}>
+                <div style={{
+                  width: '40px', height: '40px', background: teal,
+                  borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center',
+                }}>
+                  <span style={{ color: '#fff', fontSize: '22px', fontWeight: 900 }}>B</span>
+                </div>
+                <span style={{ color: 'rgba(255,255,255,0.9)', fontSize: '24px', fontWeight: 800, display: 'flex' }}>Backfindr</span>
+              </div>
             </div>
 
-            {/* ── Zona inferior: conteúdo sobre overlay ── */}
+            {/* DIVISÓRIA TEAL */}
+            <div style={{ width: '1080px', height: '4px', background: teal, flexShrink: 0 }} />
+
+            {/* ZONA 2 — CONTEÚDO (496px) */}
             <div style={{
-              position: 'absolute', bottom: 0, left: 0, right: 0,
-              display: 'flex', flexDirection: 'column',
-              padding: '0 44px 40px', zIndex: 10,
+              flex: 1, display: 'flex', flexDirection: 'column',
+              padding: '28px 48px 24px',
+              background: '#0d1117',
             }}>
-              {/* Eyebrow + Headline */}
-              <div style={{ display: 'flex', flexDirection: 'column', marginBottom: '20px' }}>
-                <span style={{
-                  color: accent, fontSize: '28px', fontWeight: 900,
-                  letterSpacing: '3px', display: 'flex', marginBottom: '4px',
-                }}>{pd.eyebrow}</span>
-                <span style={{
-                  color: '#ffffff', fontSize: '92px', fontWeight: 900,
-                  letterSpacing: '-3px', lineHeight: 0.88, display: 'flex', flexWrap: 'wrap',
-                }}>{pd.headline}</span>
-              </div>
+              {/* Eyebrow */}
+              <span style={{
+                color: accent, fontSize: '24px', fontWeight: 800,
+                letterSpacing: '3px', display: 'flex', marginBottom: '6px',
+              }}>{pd.eyebrow}</span>
+
+              {/* Título principal */}
+              <span style={{
+                color: '#ffffff', fontSize: '68px', fontWeight: 900,
+                letterSpacing: '-2px', lineHeight: 0.92,
+                display: 'flex', flexWrap: 'wrap', marginBottom: '12px',
+              }}>{pd.headline}</span>
 
               {/* Subtítulo */}
               <span style={{
-                color: 'rgba(255,255,255,0.85)', fontSize: '36px', fontWeight: 700,
-                lineHeight: 1.2, display: 'flex', flexWrap: 'wrap', marginBottom: '16px',
+                color: 'rgba(255,255,255,0.8)', fontSize: '28px', fontWeight: 600,
+                display: 'flex', flexWrap: 'wrap', marginBottom: '6px',
               }}>{pd.subtitle}</span>
 
               {/* Descrição */}
               {pd.description && (
                 <span style={{
-                  color: 'rgba(255,255,255,0.6)', fontSize: '26px', lineHeight: 1.4,
-                  display: 'flex', flexWrap: 'wrap', marginBottom: '20px',
+                  color: 'rgba(255,255,255,0.5)', fontSize: '22px',
+                  display: 'flex', flexWrap: 'wrap', marginBottom: '12px',
                 }}>{pd.description}</span>
               )}
 
-              {/* Meta: data, local, recompensa */}
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', marginBottom: '28px' }}>
+              {/* Meta */}
+              <div style={{ display: 'flex', gap: '28px', marginBottom: '16px' }}>
                 {pd.date && (
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                    <span style={{ fontSize: '22px' }}>📅</span>
-                    <span style={{ color: 'rgba(255,255,255,0.65)', fontSize: '24px', fontWeight: 600, display: 'flex' }}>{pd.date}</span>
-                  </div>
+                  <span style={{ color: 'rgba(255,255,255,0.5)', fontSize: '22px', display: 'flex' }}>
+                    📅 {pd.date}
+                  </span>
                 )}
                 {pd.locationShort && (
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                    <span style={{ fontSize: '22px', flexShrink: 0 }}>📍</span>
-                    <span style={{ color: 'rgba(255,255,255,0.65)', fontSize: '24px', fontWeight: 600, display: 'flex', flexWrap: 'wrap' }}>{pd.locationShort}</span>
-                  </div>
-                )}
-                {pd.reward && (
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                    <span style={{ fontSize: '22px' }}>💰</span>
-                    <span style={{ color: '#fbbf24', fontSize: '28px', fontWeight: 900, display: 'flex' }}>
-                      RECOMPENSA: {pd.reward}
-                    </span>
-                  </div>
+                  <span style={{ color: 'rgba(255,255,255,0.5)', fontSize: '22px', display: 'flex' }}>
+                    📍 {pd.locationShort}
+                  </span>
                 )}
               </div>
 
-              {/* Rodapé: QR + CTA + Mapa */}
+              {/* Recompensa */}
+              {pd.reward && (
+                <div style={{
+                  background: 'rgba(251,191,36,0.12)', border: '1.5px solid rgba(251,191,36,0.4)',
+                  borderRadius: '10px', padding: '10px 20px',
+                  display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '16px',
+                }}>
+                  <span style={{ fontSize: '24px' }}>💰</span>
+                  <span style={{ color: '#fbbf24', fontSize: '26px', fontWeight: 900, display: 'flex' }}>
+                    RECOMPENSA: {pd.reward}
+                  </span>
+                </div>
+              )}
+
+              {/* QR + CTA */}
               <div style={{
-                display: 'flex', flexDirection: 'row', alignItems: 'center', gap: '20px',
-                background: 'rgba(20,184,166,0.12)',
-                border: '1.5px solid rgba(20,184,166,0.35)',
-                borderRadius: '16px', padding: '18px 22px',
+                display: 'flex', alignItems: 'center', gap: '20px',
+                background: 'rgba(20,184,166,0.08)',
+                border: '1.5px solid rgba(20,184,166,0.3)',
+                borderRadius: '14px', padding: '14px 20px',
+                marginTop: 'auto',
               }}>
-                {/* QR menor */}
                 {qr && (
                   <div style={{
                     background: '#fff', borderRadius: '8px',
-                    padding: '8px', display: 'flex', flexShrink: 0,
+                    padding: '6px', display: 'flex', flexShrink: 0,
                   }}>
-                    <img src={qr} style={{ width: `${qrSmall}px`, height: `${qrSmall}px` }} />
+                    <img src={qr} style={{ width: '100px', height: '100px' }} />
                   </div>
                 )}
-                {/* CTA */}
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', flex: 1 }}>
-                  <span style={{ color: teal, fontSize: '30px', fontWeight: 900, display: 'flex', flexWrap: 'wrap' }}>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                  <span style={{ color: teal, fontSize: '26px', fontWeight: 900, display: 'flex' }}>
                     VOCÊ VIU? ESCANEIE
                   </span>
-                  <span style={{ color: 'rgba(255,255,255,0.7)', fontSize: '20px', display: 'flex', flexWrap: 'wrap' }}>
+                  <span style={{ color: 'rgba(255,255,255,0.6)', fontSize: '20px', display: 'flex' }}>
                     Avise o dono — backfindr.com
                   </span>
                 </div>
-                {/* Mini mapa */}
-                {mapTiles.length > 0 && (
-                  <div style={{
-                    width: '140px', height: '100px',
-                    overflow: 'hidden', borderRadius: '10px',
-                    position: 'relative', flexShrink: 0, display: 'flex',
-                    border: '1.5px solid rgba(255,255,255,0.15)',
-                  }}>
-                    {mapTiles.map(t => (
-                      <img
-                        key={`sq-${t.dx}-${t.dy}`}
-                        src={t.data}
-                        style={{
-                          position: 'absolute',
-                          left: `${((t.dx + 1) * TILE / (TILE * 3)) * 140}px`,
-                          top: `${((t.dy + 1) * TILE / (TILE * 3)) * 100}px`,
-                          width: `${(TILE / (TILE * 3)) * 140}px`,
-                          height: `${(TILE / (TILE * 3)) * 100}px`,
-                        }}
-                      />
-                    ))}
-                    {/* Pin */}
-                    <div style={{
-                      position: 'absolute', left: '63px', top: '32px',
-                      width: '14px', height: '14px',
-                      background: '#ef4444', borderRadius: '50% 50% 50% 0',
-                      transform: 'rotate(-45deg)', border: '2px solid #fff',
-                      display: 'flex',
-                    }} />
-                  </div>
-                )}
               </div>
             </div>
+
           </div>
         ),
         { width, height }
