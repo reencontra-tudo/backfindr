@@ -59,7 +59,7 @@ async function cropToDataUrl(imageUrl: string | null, w: number, h: number): Pro
       buffer = Buffer.from(await res.arrayBuffer());
     }
     const cropped = await sharp(buffer)
-      .resize(w, h, { fit: 'cover', position: 'centre' })
+      .resize(w, h, { fit: 'cover', position: 'top' })
       .jpeg({ quality: 85 })
       .toBuffer();
     return `data:image/jpeg;base64,${cropped.toString('base64')}`;
@@ -180,7 +180,7 @@ export async function GET(
     const qrApiUrl = `https://api.qrserver.com/v1/create-qr-code/?size=${qrSmall}x${qrSmall}&data=${encodeURIComponent(pd.qrUrl)}&bgcolor=ffffff&color=0d1117&margin=6`;
 
     // Para o quadrado, preparar versão cropada
-    const photoCropped = format === 'square' ? await cropToDataUrl(pd.photoUrl, 1080, 500) : null;
+    const photoCropped = format === 'square' ? await cropToDataUrl(pd.photoUrl, 1080, 420) : null;
 
     const [photo, qr, mapRaw] = await Promise.all([
       toDataUrl(pd.photoUrl),
@@ -286,17 +286,17 @@ export async function GET(
           }}>
             {/* ── Foto hero ocupa zona superior ── */}
             <div style={{
-              position: 'absolute', top: 0, left: 0, right: 0, height: '500px',
+              position: 'absolute', top: 0, left: 0, right: 0, height: '420px',
               display: 'flex', alignItems: 'center', justifyContent: 'center',
               background: '#111827',
             }}>
               {(photoCropped || photo)
-                ? <img src={photoCropped ?? photo!} style={{ width: '1080px', height: '500px' }} />
+                ? <img src={photoCropped ?? photo!} style={{ width: '1080px', height: '420px' }} />
                 : <span style={{ fontSize: '200px' }}>📦</span>
               }
               {/* Gradiente escuro sobre a foto */}
               <div style={{
-                position: 'absolute', top: 0, left: 0, right: 0, height: '500px',
+                position: 'absolute', top: 0, left: 0, right: 0, height: '420px',
                 background: 'linear-gradient(to bottom, rgba(13,17,23,0.55) 0%, transparent 35%, transparent 50%, rgba(13,17,23,0.95) 100%)',
                 display: 'flex',
               }} />
