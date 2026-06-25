@@ -266,7 +266,7 @@ export async function GET(
               background: '#111827', overflow: 'hidden',
             }}>
               {photo
-                ? <img src={photo} style={{ width: '100%', height: '100%' }} />
+                ? <img src={photo} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                 : <span style={{ fontSize: '200px' }}>📦</span>
               }
               {/* Gradiente sobre foto */}
@@ -478,7 +478,7 @@ export async function GET(
               background: '#1a2030', flexShrink: 0,
             }}>
               {photo
-                ? <img src={photo} style={{ maxWidth: '100%', maxHeight: '100%' }} />
+                ? <img src={photo} style={{ maxHeight: '100%' }} />
                 : <span style={{ fontSize: '180px' }}>📦</span>
               }
             </div>
