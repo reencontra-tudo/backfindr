@@ -293,6 +293,15 @@ export default function SucessoPage() {
           <p className="text-white/40 text-xs font-semibold uppercase tracking-wider mb-3">Próximos passos</p>
           <div className="space-y-3">
             <div className="flex items-start gap-3">
+              <div className="w-7 h-7 rounded-lg bg-green-500/15 flex items-center justify-center flex-shrink-0 mt-0.5">
+                <MessageCircle className="w-3.5 h-3.5 text-green-400" />
+              </div>
+              <div>
+                <p className="text-white text-sm font-medium">Compartilhe em grupos do WhatsApp</p>
+                <p className="text-white/40 text-xs">Esta é a ação que normalmente aumenta mais rapidamente as chances de alguém reconhecer seu objeto.</p>
+              </div>
+            </div>
+            <div className="flex items-start gap-3">
               <div className="w-7 h-7 rounded-lg bg-teal-500/15 flex items-center justify-center flex-shrink-0 mt-0.5">
                 <Bell className="w-3.5 h-3.5 text-teal-400" />
               </div>
@@ -327,7 +336,7 @@ export default function SucessoPage() {
           <p className="text-white/40 text-xs font-semibold uppercase tracking-wider mb-3">Baixar cartaz</p>
           <div className="flex gap-2">
             <button
-              onClick={() => downloadPoster('vertical')}
+              onClick={() => downloadPoster('square')}
               className="flex-1 flex items-center justify-center gap-2 bg-blue-500/10 hover:bg-blue-500/20 border border-blue-500/20 text-blue-400 hover:text-blue-300 text-xs font-medium py-2.5 rounded-lg transition-all"
             >
               <Download className="w-4 h-4" />
@@ -342,6 +351,48 @@ export default function SucessoPage() {
             </button>
           </div>
         </div>
+
+        {/* ── Boost — oferta contextual pós-cadastro ── */}
+        {(obj.status === 'lost' || obj.status === 'stolen') && (
+          <div className="bg-amber-500/[0.06] border border-amber-500/20 rounded-2xl p-5 mb-4 text-left">
+            <div className="flex items-start gap-3 mb-3">
+              <div className="text-2xl">⚡</div>
+              <div>
+                <p className="text-amber-300 text-sm font-bold mb-0.5">Quer aumentar as chances?</p>
+                <p className="text-white/40 text-xs leading-relaxed">
+                  Objetos com impulso aparecem para mais pessoas na região. A decisão é sua — mas quanto antes, melhor.
+                </p>
+              </div>
+            </div>
+            <Link
+              href={`/dashboard/objects/${id}#boost`}
+              className="w-full flex items-center justify-center gap-2 bg-amber-500/15 hover:bg-amber-500/25 border border-amber-500/30 text-amber-300 text-sm font-semibold py-3 rounded-xl transition-all"
+            >
+              Ver opções de alcance — a partir de R$ 9,90
+              <ArrowRight className="w-4 h-4" />
+            </Link>
+          </div>
+        )}
+
+        {/* ── Monetização — só para lost/stolen ── */}
+        {(obj.status === 'lost' || obj.status === 'stolen') && (
+          <div className="bg-gradient-to-br from-amber-500/10 to-orange-500/10 border border-amber-500/20 rounded-2xl p-5 mb-6">
+            <div className="flex items-center gap-2 mb-2">
+              <Sparkles className="w-5 h-5 text-amber-400" />
+              <h3 className="text-white font-semibold">Quer ampliar ainda mais suas chances?</h3>
+            </div>
+            <p className="text-white/60 text-sm leading-relaxed mb-4">
+              Seu cadastro já está publicado gratuitamente. Se desejar alcançar ainda mais pessoas próximas, você pode aumentar a exposição da ocorrência.
+            </p>
+            <Link
+              href={`/dashboard/objects/${id}`}
+              className="w-full flex items-center justify-center gap-2 bg-amber-500 hover:bg-amber-400 text-black font-bold py-3 rounded-xl transition-all"
+            >
+              Ampliar alcance da ocorrência
+              <ArrowRight className="w-4 h-4" />
+            </Link>
+          </div>
+        )}
 
         {/* ── Navegação ── */}
         <div className="flex flex-col gap-3">
