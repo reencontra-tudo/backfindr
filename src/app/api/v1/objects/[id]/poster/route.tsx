@@ -266,7 +266,7 @@ export async function GET(
               background: '#111827', overflow: 'hidden',
             }}>
               {photo
-                ? <img src={photo} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                ? <img src={photo} style={{ width: '1080px', height: '620px', objectFit: 'cover' }} />
                 : <span style={{ fontSize: '200px' }}>📦</span>
               }
               {/* Gradiente sobre foto */}
