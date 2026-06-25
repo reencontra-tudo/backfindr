@@ -180,7 +180,7 @@ export async function GET(
     const qrApiUrl = `https://api.qrserver.com/v1/create-qr-code/?size=${qrSmall}x${qrSmall}&data=${encodeURIComponent(pd.qrUrl)}&bgcolor=ffffff&color=0d1117&margin=6`;
 
     // Para o quadrado, preparar versão cropada
-    const photoCropped = format === 'square' ? await cropToDataUrl(pd.photoUrl, 1080, 620) : null;
+    const photoCropped = format === 'square' ? await cropToDataUrl(pd.photoUrl, 1080, 500) : null;
 
     const [photo, qr, mapRaw] = await Promise.all([
       toDataUrl(pd.photoUrl),
@@ -286,12 +286,12 @@ export async function GET(
           }}>
             {/* ── Foto hero ocupa zona superior ── */}
             <div style={{
-              position: 'absolute', top: 0, left: 0, right: 0, height: '620px',
+              position: 'absolute', top: 0, left: 0, right: 0, height: '500px',
               display: 'flex', alignItems: 'center', justifyContent: 'center',
               background: '#111827',
             }}>
               {(photoCropped || photo)
-                ? <img src={photoCropped ?? photo!} style={{ width: '1080px', height: '620px' }} />
+                ? <img src={photoCropped ?? photo!} style={{ width: '1080px', height: '500px' }} />
                 : <span style={{ fontSize: '200px' }}>📦</span>
               }
               {/* Gradiente sobre foto */}
