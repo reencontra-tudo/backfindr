@@ -2,6 +2,7 @@ import { ImageResponse } from 'next/og';
 import { NextRequest } from 'next/server';
 import { query } from '@/lib/db';
 import { buildPosterData } from '@/lib/posterFormatter';
+import sharp from 'sharp';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -41,6 +42,27 @@ async function toDataUrl(imageUrl: string | null): Promise<string | null> {
     const base64 = Buffer.from(buffer).toString('base64');
     const ct = res.headers.get('content-type') || 'image/png';
     return `data:${ct};base64,${base64}`;
+  } catch { return null; }
+}
+
+// ── Crop de imagem com Sharp (cover 1080×620 para o quadrado) ────────────────
+async function cropToDataUrl(imageUrl: string | null, w: number, h: number): Promise<string | null> {
+  if (!imageUrl) return null;
+  try {
+    let buffer: Buffer;
+    if (imageUrl.startsWith('data:')) {
+      const base64 = imageUrl.split(',')[1];
+      buffer = Buffer.from(base64, 'base64');
+    } else {
+      const res = await fetch(imageUrl, { cache: 'no-store' });
+      if (!res.ok) return null;
+      buffer = Buffer.from(await res.arrayBuffer());
+    }
+    const cropped = await sharp(buffer)
+      .resize(w, h, { fit: 'cover', position: 'centre' })
+      .jpeg({ quality: 85 })
+      .toBuffer();
+    return `data:image/jpeg;base64,${cropped.toString('base64')}`;
   } catch { return null; }
 }
 
@@ -157,6 +179,9 @@ export async function GET(
     const qrSmall = 160; // QR menor — elemento funcional, não estrela
     const qrApiUrl = `https://api.qrserver.com/v1/create-qr-code/?size=${qrSmall}x${qrSmall}&data=${encodeURIComponent(pd.qrUrl)}&bgcolor=ffffff&color=0d1117&margin=6`;
 
+    // Para o quadrado, preparar versão cropada
+    const photoCropped = format === 'square' ? await cropToDataUrl(pd.photoUrl, 1080, 620) : null;
+
     const [photo, qr, mapRaw] = await Promise.all([
       toDataUrl(pd.photoUrl),
       toDataUrl(qrApiUrl),
@@ -265,8 +290,8 @@ export async function GET(
               display: 'flex', alignItems: 'center', justifyContent: 'center',
               background: '#111827',
             }}>
-              {photo
-                ? <img src={photo} style={{ maxHeight: '620px', maxWidth: '1080px' }} />
+              {(photoCropped || photo)
+                ? <img src={photoCropped ?? photo!} style={{ width: '1080px', height: '620px' }} />
                 : <span style={{ fontSize: '200px' }}>📦</span>
               }
               {/* Gradiente sobre foto */}
