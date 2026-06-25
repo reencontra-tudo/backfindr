@@ -341,6 +341,31 @@ export default function ObjectDetailPage() {
   const hasPhoto = obj.photos?.length > 0;
   const mainPhoto = hasPhoto ? obj.photos[0] : null;
 
+  const getBoostCopy = () => {
+    if (obj.category === 'pet' || obj.category === 'animal') {
+      return {
+        title: 'Ampliar busca pelo pet',
+        desc: 'Seu pet pode estar circulando pela região. Aumente o alcance da ocorrência para que mais pessoas próximas vejam e possam ajudar.',
+      };
+    }
+    if (obj.category === 'vehicle') {
+      return {
+        title: 'Aumentar alerta do veículo',
+        desc: 'Veículos roubados precisam de divulgação rápida. Destaque a ocorrência para ampliar a visibilidade regional.',
+      };
+    }
+    if (obj.status === 'stolen') {
+      return {
+        title: 'Aumentar alerta de roubo',
+        desc: 'Quanto mais pessoas souberem, maiores são as chances de alguém reconhecer ou informar algo útil.',
+      };
+    }
+    return {
+      title: 'Aumentar alcance da ocorrência',
+      desc: 'Destaque sua ocorrência para que mais pessoas vejam no mapa e no feed.',
+    };
+  };
+
   return (
     <>
       {lightbox && <ImageLightbox images={lightbox.images} initialIndex={lightbox.index} onClose={closeLightbox} />}
@@ -835,7 +860,9 @@ export default function ObjectDetailPage() {
                       <div className="p-1.5 bg-gradient-to-br from-amber-500 to-orange-600 rounded-lg flex-shrink-0">
                         <Zap className="w-3.5 h-3.5 text-white" />
                       </div>
-                      <h3 className="font-display font-bold text-white text-sm">Impulsionar Visibilidade</h3>
+                      <h3 className="font-display font-bold text-white text-sm">
+                    {getBoostCopy().title}
+                  </h3>
                     </div>
                     <p className="text-slate-400 text-xs mb-4 leading-relaxed">
                       Destaque seu objeto no mapa e no feed para que mais pessoas o vejam.
@@ -856,11 +883,19 @@ export default function ObjectDetailPage() {
                       </div>
                     )}
 
+                    <div className="mb-3 rounded-xl border border-amber-500/20 bg-black/20 p-3">
+                      <p className="text-amber-300 text-xs font-semibold mb-1">
+                        Quanto antes mais pessoas souberem, melhor.
+                      </p>
+                      <p className="text-slate-400 text-[11px] leading-relaxed">
+                        O Backfindr não promete recuperação, mas pode ampliar a exposição da sua ocorrência para aumentar as oportunidades de alguém reconhecer, localizar ou informar.
+                      </p>
+                    </div>
                     <div className="space-y-2">
                       {([
-                        { type: '7d'    as const, label: '⚡ Boost 7 dias',   price: 'R$ 9,90',  desc: 'Destaque total por uma semana' },
-                        { type: '30d'   as const, label: '⭐ Boost 30 dias',  price: 'R$ 24,90', desc: 'Destaque mensal + notificações' },
-                        { type: 'alert' as const, label: '🔔 Alerta de Área', price: 'R$ 14,90', desc: 'Notificação para usuários próximos' },
+                        { type: '7d'    as const, label: '⚡ Alcance Essencial', price: 'R$ 9,90',  desc: 'Mais destaque por 7 dias' },
+                        { type: 'alert' as const, label: '🔔 Alerta Regional',   price: 'R$ 14,90', desc: 'Aumenta o alerta para pessoas próximas' },
+                        { type: '30d'   as const, label: '⭐ Busca Intensiva',   price: 'R$ 24,90', desc: 'Maior exposição por 30 dias' },
                       ]).map(b => (
                         <button
                           key={b.type}
