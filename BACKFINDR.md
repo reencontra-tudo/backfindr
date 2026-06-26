@@ -922,3 +922,70 @@ Documento docs/SISTEMA_VIVO.md - commitar (usar Python, nao heredoc).
 
 Depois: ir direto para src/app/api/v1/matching/run/route.ts e plugar eventos de matching.
 
+
+---
+
+## Sessao 27/06/2026 - Sprints 2 e 4: Motor de Atividade Completo
+
+### O que foi feito
+
+SPRINT 2 - EVENTOS DE MATCHING (CONCLUIDA)
+  Arquivo: src/app/api/v1/matching/run/route.ts
+  Plugados 4 eventos fire-and-forget:
+  - Events.matchingStarted(objectId) — antes do loop de candidatos
+  - Events.matchingCompleted(objectId, candidatesResult.rows.length) — apos Promise.allSettled
+  - Events.matchFound(objectId, newMatch.id, score) — dentro de processMatch, apos INSERT
+  - Events.ownerNotified(lostObj.id, owner.id) — apos sendPushToUser, quando owner existe
+  Commit: 3c32cc1
+
+SPRINT 4 - ENDPOINT + ACTIVITYCENTERCARD REAL (CONCLUIDA)
+  Arquivo criado: src/app/api/v1/objects/[id]/events/route.ts
+  - GET autenticado, verifica ownership, retorna events[] + summary{}
+  - Query principal: SELECT type, title, description, source, metadata, created_at ORDER BY created_at DESC LIMIT 20
+  - Summary: total_scans, total_matches, total_ai_runs, last_activity
+  Arquivo atualizado: src/components/object-detail/ActivityCenterCard.tsx
+  - Consome dados reais via fetch /api/v1/objects/[id]/events
+  - Usa Cookies.get('access_token') de js-cookie (padrao do projeto)
+  - Summary em 3 cards: comparacoes IA / scans QR / correspondencias
+  - Timeline real com icones por tipo de evento
+  - Fallback gracioso para objetos sem eventos (estado inicial)
+  - "Proxima comparacao automatica em andamento..." para objetos ativos
+  Commit: 950f515
+
+### Estado atual do Sistema Vivo
+
+Sprint A: Centro de Atividade card visivel no dashboard ✅
+Sprint B1: Tabela object_events + events.ts + eventos criacao/QR ✅
+Sprint 2: Eventos matching plugados ✅
+Sprint 4: Endpoint leitura + ActivityCenterCard dados reais ✅
+
+Fluxo completo funcionando em producao:
+  Cadastro objeto -> 3 eventos (created, published, indexed)
+  Scan QR -> 1 evento (qr_scanned)
+  Matching run -> matchingStarted + matchingCompleted(count) + matchFound(N) + ownerNotified
+  Dashboard /objects/[id] -> card mostra timeline real + summary
+
+### Pendentes desta sessao
+
+Sprint 3 (proxima prioridade):
+  Events.boostStarted no webhook Mercado Pago
+  Events.statusChanged no PATCH de objeto
+  Events.objectReturned quando status vai para returned
+
+### Pendencias anteriores mantidas
+
+- GSC: indexation report, robots.txt, canonicals /achados-perdidos
+- Seeds SEO esgotam ~46 dias a partir de 25/06 - repor antes do vencimento
+- Google Business: data abertura 2010 -> 2026
+- Bing Places, Capterra, Product Hunt
+- Email reativacao para 14 usuarios reais de 2026
+- MarketplaceOS: R$ NaN pricing, broken ML URLs, Novo anuncio redirect
+- Monetizacao — sessao dedicada (estrategia + design + copy + codigo)
+
+### Proxima sessao - inicio obrigatorio
+
+  cd ~/Downloads/backfindr-local/backfindr-main
+  cat BACKFINDR.md
+  git log --oneline -10
+
+Depois: Sprint 3 — Events.boostStarted no webhook MP, Events.statusChanged no PATCH.
