@@ -1058,3 +1058,61 @@ CINCO PAPEIS ATIVOS:
   git log --oneline -10
 
 Depois: adicionar CRON_SECRET no Vercel, depois sessao de monetizacao.
+
+---
+
+## SESSÃO 27/06/2026 — Sistema Vivo concluído
+
+### Marco estratégico
+O Sistema Vivo do Backfindr foi concluído.
+O usuário que acessa `/dashboard/objects/[id]` agora vê:
+- o que aconteceu;
+- o que o sistema fez;
+- quais eventos reais foram registrados;
+- quando a próxima comparação automática será executada.
+
+Isso muda a percepção central do produto.
+O Backfindr deixa de parecer um cadastro estático e passa a parecer um sistema que continua trabalhando pelo usuário.
+
+---
+
+### Sprints concluídas
+- Sprint A ✅ — ActivityCenterCard visível no dashboard.
+- Sprint B1 ✅ — object_events + events.ts + eventos de criação/QR.
+- Sprint 2 ✅ — matching_started, matching_completed, match_found, owner_notified.
+- Sprint 3 ✅ — boost_started, status_changed, object_returned.
+- Sprint 4 ✅ — GET /api/v1/objects/[id]/events + ActivityCenterCard com dados reais.
+- Sprint 5 ✅ — cron de matching a cada 15 minutos + next_matching_at + countdown na UI.
+
+---
+
+### Decisão estratégica validada
+O diferencial não é o cron, nem o endpoint, nem o countdown.
+Tudo isso é copiável.
+O diferencial é a decisão de produto:
+> O sistema não deve mostrar apenas histórico. Ele deve comunicar expectativas futuras.
+
+Essa decisão nasceu da pergunta:
+> Por que o usuário sente abandono depois de cadastrar?
+
+A arquitetura eventos → summary → countdown é consequência dessa pergunta.
+Um concorrente pode copiar a implementação.
+Não copia facilmente a cadeia de raciocínio que produziu essa experiência.
+
+---
+
+### Pendência crítica antes da próxima sessão
+CRON_SECRET: adicionar no Vercel (Settings → Environment Variables).
+Sem essa variável, o cron de matching roda a cada 15 minutos e recebe 401 em silêncio.
+O matching não executa. Nenhum erro visível.
+
+---
+
+### Próxima fase
+Com o Sistema Vivo completo, a próxima fase deve ser escolhida entre:
+1. Monetização contextual baseada nos eventos.
+2. Programa de grupos/parceiros com attribution e comissão.
+3. Retenção/reengajamento automático baseado em silêncio da timeline.
+4. Métricas reais de visualização e alcance.
+
+Recomendação estratégica: iniciar pela monetização contextual baseada nos eventos, pois agora existe confiança suficiente para a oferta parecer consequência natural, não propaganda.
