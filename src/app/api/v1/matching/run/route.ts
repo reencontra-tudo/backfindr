@@ -5,6 +5,7 @@ import { verifyToken, extractTokenFromHeader } from '@/lib/jwt';
 import { successResponse, unauthorizedResponse, internalErrorResponse } from '@/lib/response';
 import { sendMatchAlertEmail } from '@/lib/email';
 import { sendPushToUser, matchPayload } from '@/lib/pushNotification';
+import { Events } from '@/lib/events';
 
 const MAX_RADIUS_KM = 50;
 
@@ -220,6 +221,9 @@ export async function POST(request: NextRequest) {
       return successResponse({ detail: 'Protected objects do not participate in matching', matches: 0 });
     }
 
+    // ── Evento: matching iniciado ─────────────────────────────────────────
+    Events.matchingStarted(objectId).catch(() => {});
+
     const oppositeStatus = object.status === 'lost' ? 'found' : 'lost';
     const lat = parseFloat(object.latitude);
     const lon = parseFloat(object.longitude);
@@ -300,6 +304,9 @@ export async function POST(request: NextRequest) {
     // Aguarda todas as validações semânticas
     await Promise.allSettled(semanticChecks);
 
+    // ── Evento: matching concluído ────────────────────────────────────────
+    Events.matchingCompleted(objectId, candidatesResult.rows.length).catch(() => {});
+
     return successResponse({
       message: `Matching concluído. ${matches.length} match(es) encontrado(s).`,
       matches,
@@ -343,6 +350,9 @@ async function processMatch(
   const newMatch = matchResult.rows[0];
   matches.push(newMatch);
 
+  // ── Evento: match encontrado ──────────────────────────────────────────
+  Events.matchFound(objectId, newMatch.id as string, score).catch(() => {});
+
   // Notificações (fire-and-forget)
   try {
     const lostObj = object.status === 'lost' ? object : candidate;
@@ -370,6 +380,9 @@ async function processMatch(
         owner.id as string ?? (userId as string),
         matchPayload(newMatch.id as string, lostObj.title as string, score)
       ).catch(err => console.error('[push] match push failed:', err));
+
+      // ── Evento: dono notificado ─────────────────────────────────────────
+      Events.ownerNotified(lostObj.id as string, owner.id as string).catch(() => {});
     }
   } catch (emailErr) {
     console.error('[matching] Erro ao buscar dono para notificação:', emailErr);
