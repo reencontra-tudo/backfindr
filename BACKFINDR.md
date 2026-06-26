@@ -1116,3 +1116,68 @@ Com o Sistema Vivo completo, a próxima fase deve ser escolhida entre:
 4. Métricas reais de visualização e alcance.
 
 Recomendação estratégica: iniciar pela monetização contextual baseada nos eventos, pois agora existe confiança suficiente para a oferta parecer consequência natural, não propaganda.
+
+---
+
+## PRINCIPIOS PERMANENTES DE PRODUTO — MONETIZACAO
+
+### O usuario nunca compra antes de acreditar.
+
+Essa frase e uma decisao oficial de produto do Backfindr.
+Descoberta em 27/06/2026. Orienta todas as decisoes de monetizacao daqui para frente.
+
+### Os tres momentos psicologicos de conversao
+
+MOMENTO 1 — ANSIEDADE
+Estado: "Meu objeto sumiu. Preciso fazer algo."
+O usuario nao acredita no Backfindr ainda. Aceita oferta por desespero, nao por confianca.
+Oferta correta: leve, sem pressao. "Se desejar ampliar as oportunidades..."
+Conversao estimada: 20-30% do potencial maximo.
+Localizacao atual: tela de sucesso (/sucesso).
+
+MOMENTO 2 — CRENCA
+Estado: "Caramba... isso realmente existe."
+Gatilho: usuario ve matching_completed na timeline com contagem real de objetos comparados.
+Ele nao compra esperanca. Compra aceleracao de algo que ja acredita existir.
+Conversao estimada: 2-4x maior que o Momento 1.
+Localizacao: ActivityCenterCard apos primeiro matching_completed (total_ai_runs >= 1).
+Oferta correta: "Quer aumentar ainda mais as oportunidades de reencontro?"
+STATUS: a implementar.
+
+MOMENTO 3 — FRUSTRACAO PRODUTIVA
+Estado: "O sistema esta funcionando... mas ainda nao aconteceu."
+Gatilho: dias sem resultado, multiplas comparacoes executadas, visualizacoes crescendo.
+Proxy no banco: total_ai_runs >= 5 + days_since_created >= 3 + total_matches = 0.
+Oferta correta: "Sua ocorrencia continua ativa. Um impulso pode ampliar significativamente
+o alcance enquanto a IA continua monitorando."
+E outra conversa — nao e pressao, e reengajamento contextual.
+STATUS: a implementar (apos Momento 2).
+
+### A escada de monetizacao
+
+Cadastro → Oferta leve (Momento 1) → Sistema Vivo → Primeiro matching → 
+Oferta principal (Momento 2) → Dias sem resultado → Oferta de reengajamento (Momento 3)
+
+Nao sao tres propagandas. E uma escada.
+
+### Curva de Confianca — novo conceito de medicao
+
+O Backfindr nao medira apenas cadastros, compartilhamentos e vendas.
+Medira tambem: em que momento o usuario comecou a acreditar no sistema?
+
+Esse e o principal indicador antecedente das vendas.
+
+Proxy atual disponivel no banco (object_events):
+- total_ai_runs >= 1: usuario passou pelo Momento 2
+- total_ai_runs >= 5 + days_since_created >= 3 + total_matches = 0: Momento 3
+
+### O produto real que o Backfindr vende antes do Boost
+
+Nao e esperanca.
+E confianca operacional.
+
+O usuario precisa acreditar que existe uma maquina trabalhando continuamente por ele.
+O Boost nao cria essa maquina. Ele acelera uma maquina que o usuario ja percebe funcionando.
+
+Essa inversao e o diferencial mais dificil de reproduzir.
+Um concorrente pode copiar o algoritmo. Nao copia a arquitetura de confianca.
