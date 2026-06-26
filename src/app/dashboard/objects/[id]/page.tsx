@@ -11,6 +11,7 @@ import {
 import RecoveredCelebration from '@/components/RecoveredCelebration';
 import LocationMap from '@/components/LocationMap';
 import BoostRenewalSuggestion from '@/components/BoostRenewalSuggestion';
+import ActivityCenterCard from '@/components/object-detail/ActivityCenterCard';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
@@ -486,6 +487,14 @@ export default function ObjectDetailPage() {
 
         {/* ── ZONA 2 + 3: CORPO ────────────────────────────────────────────── */}
         <div className="p-4 sm:p-6 lg:p-8">
+
+          {/* ── Centro de Atividade — visível antes do grid ── */}
+          {(obj.status === 'lost' || obj.status === 'stolen') && (
+            <div className="mb-5">
+              <ActivityCenterCard object={obj} matchCount={0} scanCount={0} shareCount={0} />
+            </div>
+          )}
+
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
 
             {/* ── Coluna esquerda — conteúdo ── */}
