@@ -50,13 +50,29 @@ export async function GET(
 
     const summary = summaryResult.rows[0] || {};
 
+    // Calcular próxima execução do matching (cron a cada 15 min)
+    const CRON_INTERVAL_MS = 15 * 60 * 1000;
+    let nextMatchingAt: string | null = null;
+    if (summary.last_activity) {
+      const lastRun = new Date(summary.last_activity).getTime();
+      const next = new Date(lastRun + CRON_INTERVAL_MS);
+      // Se já passou, próxima é agora + tempo restante do ciclo atual
+      if (next.getTime() < Date.now()) {
+        const elapsed = (Date.now() - lastRun) % CRON_INTERVAL_MS;
+        nextMatchingAt = new Date(Date.now() + (CRON_INTERVAL_MS - elapsed)).toISOString();
+      } else {
+        nextMatchingAt = next.toISOString();
+      }
+    }
+
     return successResponse({
       events: eventsResult.rows,
       summary: {
-        total_scans:   Number(summary.total_scans   || 0),
-        total_matches: Number(summary.total_matches || 0),
-        total_ai_runs: Number(summary.total_ai_runs || 0),
-        last_activity: summary.last_activity || null,
+        total_scans:      Number(summary.total_scans   || 0),
+        total_matches:    Number(summary.total_matches || 0),
+        total_ai_runs:    Number(summary.total_ai_runs || 0),
+        last_activity:    summary.last_activity || null,
+        next_matching_at: nextMatchingAt,
       },
     });
   } catch (error) {

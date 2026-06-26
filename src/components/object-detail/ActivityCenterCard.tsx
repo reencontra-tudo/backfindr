@@ -32,6 +32,7 @@ interface EventSummary {
   total_matches: number;
   total_ai_runs: number;
   last_activity: string | null;
+  next_matching_at: string | null;
 }
 
 // Ícone e cor por tipo de evento
@@ -150,7 +151,7 @@ export default function ActivityCenterCard({
           {isActive && (
             <div className="flex items-start gap-3">
               <Loader2 className="w-4 h-4 text-amber-400 animate-spin flex-shrink-0 mt-0.5" />
-              <span className="text-xs font-medium text-amber-300">IA comparando objetos semelhantes...</span>
+              <span className="text-xs font-medium text-amber-300">IA monitorando continuamente...</span>
             </div>
           )}
         </div>
@@ -179,7 +180,17 @@ export default function ActivityCenterCard({
           {isActive && (
             <div className="flex items-start gap-3">
               <Loader2 className="w-4 h-4 text-amber-400 animate-spin flex-shrink-0 mt-0.5" />
-              <span className="text-xs font-medium text-amber-300">Próxima comparação automática em andamento...</span>
+              <span className="text-xs font-medium text-amber-300">
+                {summary?.next_matching_at
+                  ? (() => {
+                      const diff = Math.max(0, new Date(summary.next_matching_at).getTime() - Date.now());
+                      const mins = Math.ceil(diff / 60000);
+                      return mins <= 1
+                        ? 'Nova comparação automática iniciando...'
+                        : `Próxima comparação automática em ${mins} minutos`;
+                    })()
+                  : 'IA monitorando continuamente...'}
+              </span>
             </div>
           )}
         </div>
