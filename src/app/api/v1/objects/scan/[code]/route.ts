@@ -3,6 +3,7 @@ import { NextRequest } from 'next/server';
 import { query } from '@/lib/db';
 import { successResponse, notFoundResponse, internalErrorResponse } from '@/lib/response';
 import { sendPushToUser, scanPayload } from '@/lib/pushNotification';
+import { Events } from '@/lib/events';
 
 export async function GET(
   request: NextRequest,
@@ -36,6 +37,9 @@ export async function GET(
       if (Array.isArray(row.images)) photos = row.images as string[];
       else if (typeof row.images === 'string') photos = JSON.parse(row.images as string);
     } catch { photos = []; }
+
+    // ── Registrar scan no Sistema Vivo (fire-and-forget) ────────────────
+    Events.qrScanned(row.id as string).catch(() => {});
 
     return successResponse({
       id: row.id, title: row.title, description: row.description || '',
