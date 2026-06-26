@@ -631,3 +631,294 @@ REGRA PERMANENTE: antes de incluir qualquer item como pendente, verificar no cod
 - Notificações (foto, boost, engajamento)
 - Monetização — sessão dedicada (prioridade máxima para lançamento)
 - Canonicals GSC + seeds SEO esgotam em ~46 dias
+
+
+---
+
+## Sessao 26/06/2026 - Sistema Vivo: Fundacao Completa
+
+### Contexto estrategico desta sessao
+
+Esta foi a sessao mais importante desde o lancamento do Backfindr em 2026. Nao pelo que foi codificado, mas pelo que foi descoberto e decidido. A mudanca nao foi tecnica - foi filosofica, e vai orientar todas as decisoes de produto daqui para frente.
+
+Descoberta central: O Backfindr ja nao e mais um MVP. Possui centenas de rotas, dezenas de modulos, matching com IA, QR Code, mapa, notificacoes, analytics, comunidade, boost, billing, SEO programatico, condominio, delivery, etc. O problema nao e a falta de features. O problema e que o usuario enxerga talvez 10% do valor que ja existe.
+
+A pergunta que mudou tudo: "Como fazemos o usuario sentir que existe uma maquina inteira trabalhando por ele?"
+
+Essa pergunta redefiniu completamente a direcao do produto.
+
+---
+
+### Decisoes estrategicas permanentes
+
+FILOSOFIA OFICIAL DO PRODUTO:
+"O Backfindr existe para aumentar as oportunidades de reencontro."
+
+Esta frase passa a orientar TODAS as decisoes de produto, UX, monetizacao e comunicacao. Ela resolve tres problemas simultaneamente:
+1. Promessa honesta: nao prometemos encontrar, prometemos aumentar as chances.
+2. Escopo ilimitado: QR Code aumenta oportunidades. Cartaz aumenta. WhatsApp aumenta. IA aumenta. Boost aumenta. Tudo cabe.
+3. Posicionamento unico: nenhum concorrente pode copiar isso porque e uma filosofia, nao uma feature.
+
+SISTEMA VIVO VS LOG DE EVENTOS (distincao fundamental e permanente):
+Nao vamos construir um log de eventos. Vamos construir um motor de atividade.
+- Log passivo: registra o que aconteceu para auditoria.
+- Motor de atividade: comunica ao usuario que o sistema continua trabalhando por ele, mesmo quando ele esta dormindo.
+Esta distincao deve orientar todas as decisoes de arquitetura, UX e copy.
+
+POSICIONAMENTO EVOLUIDO:
+De "plataforma de perdidos e achados" para "sistema vivo de recuperacao patrimonial".
+Isso nao e semantica. Muda todas as decisoes futuras de UX, monetizacao e posicionamento.
+
+IDEIA MAIS IMPORTANTE DESTA SESSAO - EXPECTATIVAS FUTURAS:
+Nao registrar apenas eventos passados. Registrar expectativas futuras.
+Apos matching_completed, o sistema deve comunicar: "Nova comparacao automatica em aproximadamente 14 minutos."
+Isso elimina a sensacao de abandono. O usuario nao pensa "acabou" - pensa "o sistema continua trabalhando."
+Essa diferenca psicologica e enorme e transforma retencao passiva em engajamento ativo.
+
+MODELO DE UI DEFINITIVO - ESTADO ATUAL + HISTORICO:
+A UI nao deve mostrar apenas historico. Deve mostrar:
+
+  Sistema ativo
+  - Publicada
+  - IA monitorando
+  - Visivel no mapa
+
+  Hoje 20:14 - Ocorrencia publicada
+  Hoje 20:15 - IA iniciou comparacao
+  Hoje 20:15 - 842 objetos comparados
+  Hoje 20:17 - Nenhuma correspondencia encontrada
+
+O usuario olha 2 segundos e entende: "Meu objeto continua sendo monitorado." Sem precisar interpretar.
+
+JORNADA PSICOLOGICA DO USUARIO (mapeada):
+- Cadastro publicado -> Alivio -> Compartilhar
+- IA iniciou comparacao -> Esperanca -> Aguardar
+- QR Code escaneado -> Excitacao -> Verificar detalhes
+- N pessoas visualizaram -> Confianca -> Permanecer
+- Match encontrado -> Urgencia -> Confirmar match
+- N dias sem novidade -> Ansiedade -> Ativar boost
+- Boost ativado -> Controle -> Persistir
+- Objeto recuperado -> Celebracao -> Indicar o Backfindr
+
+SPRINTS REDEFINIDAS POR OBJETIVO MENSURAVEL:
+- Sprint A: Usuario sente que o sistema esta trabalhando por ele (CONCLUIDA esta sessao)
+- Sprint B: Usuario ve dados reais, nao zeros (proxima sessao)
+- Sprint C: Usuario volta amanha (retencao)
+- Sprint D: Usuario faz o primeiro pagamento (conversao natural)
+Nota: "Pagamento" nao aparece explicitamente na jornada. Acontece naturalmente durante "Maior alcance" quando o usuario ja confia no sistema.
+
+ORDEM DAS PROXIMAS SPRINTS:
+Sprint 2 (PROXIMA SESSAO - PRIORIDADE MAXIMA):
+  Plugar eventos no /matching/run:
+  - matchingStarted (quando a IA inicia)
+  - matchingCompleted com count de objetos comparados
+  - matchFound para cada match encontrado (0..N)
+  - ownerNotified quando o dono e avisado
+  Esta sprint completa o "coracao" do Sistema Vivo. Sem ela, a timeline mostra apenas criacao.
+
+Sprint 4 (IMEDIATAMENTE APOS Sprint 2 - PONTO DE INFLEXAO):
+  Criar GET /api/v1/objects/[id]/events e conectar ActivityCenterCard para dados reais.
+  Este e o momento em que tudo muda. O usuario finalmente ve o sistema trabalhando.
+  Query principal:
+    SELECT type, title, description, source, metadata, created_at
+    FROM object_events WHERE object_id = $1
+    ORDER BY created_at DESC LIMIT 20;
+  Summary agregado:
+    SELECT
+      COUNT(*) FILTER (WHERE type = 'qr_scanned') as total_scans,
+      COUNT(*) FILTER (WHERE type = 'match_found') as total_matches,
+      COUNT(*) FILTER (WHERE type IN ('matching_started','matching_completed')) as total_ai_runs
+    FROM object_events WHERE object_id = $1;
+
+Sprint 3 (DEPOIS das sprints 2 e 4):
+  Boost comprado, status changed, objeto recuperado.
+  Sao eventos eventuais - enriquecem a timeline mas nao sao o coracao.
+
+Sprint 5 (visao futura):
+  Timeline visual completa com timestamps reais, estado atual + historico, expectativas futuras.
+
+---
+
+### O que foi construido nesta sessao
+
+SPRINT A - CENTRO DE ATIVIDADE DA OCORRENCIA (CONCLUIDA)
+
+Arquivo criado: src/components/object-detail/ActivityCenterCard.tsx
+
+Componente proprio, desacoplado da pagina, inserido na coluna esquerda de /dashboard/objects/[id] ANTES do grid de conteudo - visivel sem nenhum clique. Condicional apenas para lost e stolen.
+
+Decisao arquitetural: Nao virou aba. Card visivel. Motivo: o Centro de Atividade precisa ser visto sem clique. Se virar aba, escondemos justamente a prova de que o sistema esta trabalhando.
+
+Commit: a76e841
+
+---
+
+SPRINT B1 - FUNDACAO DO SISTEMA VIVO (CONCLUIDA)
+
+1. Tabela object_events criada no Supabase
+
+Migration executada em producao. Arquivo: docs/migrations/object_events.sql
+
+Estrutura final:
+  id          UUID PRIMARY KEY DEFAULT gen_random_uuid()
+  object_id   UUID NOT NULL REFERENCES objects(id) ON DELETE CASCADE
+  user_id     UUID NULL REFERENCES users(id) ON DELETE SET NULL
+  type        TEXT NOT NULL
+  title       TEXT NOT NULL
+  description TEXT NULL
+  source      TEXT NOT NULL DEFAULT 'system'  -- system|owner|community|partner|admin|api|ai
+  actor_type  TEXT NULL                        -- user|anonymous|b2b_partner|ai|admin
+  actor_id    UUID NULL                        -- aponta para quem gerou a acao
+  metadata    JSONB NOT NULL DEFAULT '{}'
+  created_at  TIMESTAMPTZ NOT NULL DEFAULT NOW()
+
+Tres indices criados:
+  idx_object_events_object_id_created_at  -- leitura por objeto (mais comum)
+  idx_object_events_type_created_at       -- filtro por tipo de evento
+  idx_object_events_actor (parcial WHERE actor_id IS NOT NULL) -- filtro por ator
+
+Por que actor_type + actor_id: custo zero agora, evita migracao cara quando parceiros,
+grupos Facebook, condominios e integracoes B2B chegarem. Um evento podera ser registrado
+por system, owner, community, partner, admin, api ou ai, com rastreabilidade completa.
+
+Classificacao de eventos por persistencia:
+  Banco direto (MVP): object_created, object_published, object_indexed, matching_started,
+    matching_completed, match_found, qr_scanned, owner_notified, boost_started,
+    boost_expired, object_returned, status_changed.
+  Buffer futuro (escala): public_view, map_impression, feed_impression, card_seen,
+    hover, scroll, repeated_view.
+
+Commit: 2412beb
+
+2. src/lib/events.ts - helper fire-and-forget
+
+Principio central: eventos sao inseridos de forma assincrona e nao-bloqueante.
+A experiencia do usuario NUNCA espera pelo registro do evento.
+Falha silenciosa - nunca bloqueia o fluxo principal.
+
+Helpers semanticos implementados (12 total):
+  Events.objectCreated(object_id, user_id)
+  Events.objectPublished(object_id)
+  Events.objectIndexed(object_id)
+  Events.matchingStarted(object_id)
+  Events.matchingCompleted(object_id, count)
+  Events.matchFound(object_id, match_id, score)
+  Events.qrScanned(object_id, metadata?)
+  Events.ownerNotified(object_id, user_id)
+  Events.boostStarted(object_id, user_id, boost_type, amount)
+  Events.boostExpired(object_id)
+  Events.objectReturned(object_id, user_id)
+  Events.statusChanged(object_id, from, to, user_id?)
+
+Commit: 20e5e10
+
+3. Eventos plugados na criacao de objeto
+   Arquivo: src/app/api/v1/objects/route.ts
+   Apos normalizeObject, antes de enqueueSocialPosts:
+     Events.objectCreated(newObject.id, payload.sub).catch(() => {});
+     Events.objectPublished(newObject.id).catch(() => {});
+     Events.objectIndexed(newObject.id).catch(() => {});
+   A partir deste commit, cada novo objeto gera 3 eventos reais no banco.
+   Commit: 2816749
+
+4. Evento qrScanned plugado no scan de QR
+   Arquivo: src/app/api/v1/objects/scan/[code]/route.ts
+   Inserido no GET antes do return successResponse, fire-and-forget:
+     Events.qrScanned(row.id as string).catch(() => {});
+   A partir deste commit, cada scan de QR gera 1 evento real no banco.
+   Commit: 308188c
+
+---
+
+OUTRAS ENTREGAS DESTA SESSAO
+
+Sprint 002 - Tela de sucesso (/dashboard/objects/[id]/sucesso/page.tsx):
+  - Bug cartaz: botao "Quadrado" chamava 'vertical' -> corrigido para 'square'
+  - Reordenacao proximos passos: 1) WhatsApp, 2) Notificacoes, 3) Cartaz, 4) Mapa
+  - Bloco monetizacao contextual (so lost/stolen): gradiente amber, CTA "Ampliar alcance"
+  - WhatsApp loop progressivo: contador de grupos, nudge dinamico, feedback visual
+  - Commit: b878124
+
+Boost - copy contextual (/dashboard/objects/[id]/page.tsx):
+  - Funcao getBoostCopy() com copy diferente por categoria:
+    pet -> "Ampliar busca pelo pet"
+    vehicle -> "Aumentar alerta do veiculo"
+    stolen -> "Aumentar alerta de roubo"
+    default -> "Aumentar alcance da ocorrencia"
+  - Planos renomeados para linguagem de beneficio:
+    "Alcance Essencial" R$9,90 | "Alerta Regional" R$14,90 | "Busca Intensiva" R$24,90
+  - Microcopy: "Quanto antes mais pessoas souberem, melhor."
+  - Microcopy honesto: "O Backfindr nao promete recuperacao, mas pode ampliar a exposicao."
+  - Commit: bf5a257
+
+---
+
+### Estado do banco apos esta sessao
+
+Tabela object_events criada e operacional em producao.
+Cada novo cadastro gera automaticamente 3 eventos (created, published, indexed).
+Cada scan de QR gera 1 evento (qr_scanned).
+
+Para verificar dados reais:
+  SELECT type, title, source, created_at
+  FROM object_events
+  ORDER BY created_at DESC
+  LIMIT 20;
+
+---
+
+### Commits desta sessao (em ordem cronologica)
+
+bf5a257 - feat: boost copy contextual por categoria
+b878124 - feat: otimiza sucesso com proximos passos e oferta contextual
+a76e841 - feat: Centro de Atividade da Ocorrencia - Sprint A
+2412beb - feat: tabela object_events - motor de atividade do Sistema Vivo
+20e5e10 - feat: events.ts - helper fire-and-forget para object_events
+2816749 - feat: eventos objectCreated/Published/Indexed na criacao de objeto
+308188c - feat: Events.qrScanned plugado no scan de QR
+
+---
+
+### Pendencias imediatas (proxima sessao)
+
+CRITICO - Sprint 2 - Matching:
+  Arquivo: src/app/api/v1/matching/run/route.ts
+  Plugar: Events.matchingStarted, Events.matchingCompleted(count),
+          Events.matchFound(match_id, score) para cada match.
+  Sem esses eventos, a timeline mostra apenas criacao - nao o coracao do produto.
+
+CRITICO - Sprint 4 - Endpoint leitura + ActivityCenterCard real:
+  Criar: src/app/api/v1/objects/[id]/events/route.ts
+  Atualizar ActivityCenterCard para consumir dados reais.
+  ESTE E O PONTO DE INFLEXAO - quando o usuario ve o sistema trabalhando.
+
+Sprint 3 - Eventos restantes (depois das sprints 2 e 4):
+  Events.boostStarted no webhook Mercado Pago
+  Events.statusChanged no PATCH de objeto
+  Events.objectReturned quando status vai para returned
+
+Documento docs/SISTEMA_VIVO.md - commitar (usar Python, nao heredoc).
+
+---
+
+### Pendencias anteriores mantidas
+
+- Supabase analytics indexes (script 03/06/26)
+- GSC: indexation report, robots.txt, canonicals /achados-perdidos
+- tips_content enrichment com eventos locais (Festa Pessego/Mogi, Hanami/Suzano, etc)
+- Seeds SEO esgotam ~46 dias a partir de 25/06 - repor antes do vencimento
+- Google Business: data abertura 2010 -> 2026
+- Bing Places, Capterra, Product Hunt
+- Email reativacao para 14 usuarios reais de 2026 (todos cadastraram e nao voltaram)
+- MarketplaceOS: R$ NaN pricing, broken ML URLs, Novo anuncio redirect
+
+---
+
+### Proxima sessao - inicio obrigatorio
+
+  cd ~/Downloads/backfindr-local/backfindr-main
+  cat BACKFINDR.md
+  git log --oneline -10
+
+Depois: ir direto para src/app/api/v1/matching/run/route.ts e plugar eventos de matching.
+
