@@ -3,6 +3,7 @@ import { NextRequest } from 'next/server';
 import { query } from '@/lib/db';
 import { verifyToken, extractTokenFromHeader } from '@/lib/jwt';
 import { successResponse, unauthorizedResponse, notFoundResponse, internalErrorResponse } from '@/lib/response';
+import { Events } from '@/lib/events';
 
 function normalizeObject(row: Record<string, unknown>) {
   const lat = row.latitude ? parseFloat(String(row.latitude)) : null;
@@ -77,6 +78,14 @@ export async function PATCH(
     if (!payload) return unauthorizedResponse();
     const body = await request.json();
     const { title, description, status, category, type, location, latitude, longitude, images, reward_amount, reward_description } = body;
+
+    // Buscar status atual antes do update (para evento statusChanged)
+    const currentResult = await query(
+      'SELECT status FROM objects WHERE id = $1 AND user_id = $2',
+      [params.id, payload.sub]
+    );
+    const previousStatus = currentResult.rows[0]?.status as string | undefined;
+
     const result = await query(
       `UPDATE objects
        SET title = COALESCE($1, title),
@@ -102,6 +111,15 @@ export async function PATCH(
        params.id, payload.sub]
     );
     if (result.rows.length === 0) return notFoundResponse();
+
+    // ── Eventos de status ──────────────────────────────────────────────
+    if (status && previousStatus && status !== previousStatus) {
+      Events.statusChanged(params.id, previousStatus, status, payload.sub as string).catch(() => {});
+      if (status === 'returned') {
+        Events.objectReturned(params.id, payload.sub as string).catch(() => {});
+      }
+    }
+
     return successResponse(normalizeObject(result.rows[0] as Record<string, unknown>));
   } catch (error) {
     return internalErrorResponse(error);

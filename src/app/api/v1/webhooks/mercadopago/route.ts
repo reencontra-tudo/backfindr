@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { MercadoPagoConfig, Payment } from "mercadopago";
 import { query } from "@/lib/db";
+import { Events } from "@/lib/events";
 
 const getMP = () => {
   const token = process.env.MP_ACCESS_TOKEN;
@@ -118,6 +119,14 @@ export async function POST(req: NextRequest) {
       );
 
       console.log(`✅ Boost ${boostType} ativado para objeto ${objectId}`);
+
+      // ── Evento: boost iniciado ────────────────────────────────────────
+      Events.boostStarted(
+        objectId,
+        userId,
+        boostType,
+        payment.transaction_amount || 0
+      ).catch(() => {});
     }
 
     return NextResponse.json({ status: "processed" });
