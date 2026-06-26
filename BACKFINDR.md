@@ -989,3 +989,72 @@ Sprint 3 (proxima prioridade):
   git log --oneline -10
 
 Depois: Sprint 3 — Events.boostStarted no webhook MP, Events.statusChanged no PATCH.
+
+---
+
+## Sessao 27/06/2026 - Sistema Vivo: Completo
+
+### Sprint 3 — Eventos restantes (CONCLUIDA)
+  Events.boostStarted no webhook MP — commit 1516491
+  Events.statusChanged + Events.objectReturned no PATCH de objeto — commit 1516491
+  Logica: SELECT status anterior antes do UPDATE para ter o from corretamente
+
+### Sprint 5 — Cron + Expectativa Futura (CONCLUIDA)
+  cron/matching/route.ts criado — roda a cada 15 minutos via Vercel Cron
+  vercel.json atualizado com "crons": [{"path": "/api/v1/cron/matching", "schedule": "*/15 * * * *"}]
+  endpoint /objects/[id]/events retorna next_matching_at calculado a partir do last_activity
+  ActivityCenterCard exibe countdown dinamico: "Proxima comparacao automatica em X minutos"
+  commit: 59dbcbc
+
+### Estado final do Sistema Vivo
+
+Sprint A: Centro de Atividade visivel no dashboard ✅
+Sprint B1: Tabela object_events + events.ts + eventos criacao/QR ✅
+Sprint 2: Eventos matching plugados ✅
+Sprint 3: boost, status, returned ✅
+Sprint 4: Endpoint leitura + card dados reais ✅
+Sprint 5: Cron 15min + next_matching_at + countdown ✅
+
+O usuario que abre /dashboard/objects/[id] ve:
+- O que aconteceu (timeline real do banco)
+- O que o sistema fez (matching, QR, boost)
+- Quando vai agir de novo (countdown real baseado no cron)
+
+### Decisoes estrategicas consolidadas nesta fase
+
+REGRA DE PRODUTO (protocolo permanente a partir de agora):
+Antes de qualquer nova feature, responder as 4 perguntas:
+1. Qual comportamento do usuario queremos gerar?
+2. Qual evento sera gravado?
+3. Como isso aumenta as oportunidades de reencontro?
+4. Como isso aumenta o valor da empresa no longo prazo?
+
+AUDITORIA PERMANENTE:
+Ao final de cada Sprint: "O que um concorrente copiaria daqui?"
+Se a resposta for "tudo", o diferencial esta no codigo, nao na arquitetura mental.
+O diferencial real deve estar na cadeia de raciocinio que chegou ao codigo.
+
+CINCO PAPEIS ATIVOS:
+1. CTO: arquitetura, escalabilidade, banco, eventos
+2. CRO: conversao, funil, monetizacao, valor percebido
+3. Product Designer: experiencia emocional, jornada, retencao
+4. Cofundador: questionar decisoes, evitar atalhos, pensar em 5 anos
+5. Auditor permanente: o que um concorrente copiaria?
+
+### Pendencias abertas
+
+- CRON_SECRET: adicionar variavel de ambiente no Vercel para o cron de matching
+- Monetizacao: sessao dedicada (estrategia + design + copy + codigo)
+- Seeds SEO esgotam ~46 dias a partir de 25/06
+- Google Business: data abertura 2010 -> 2026
+- GSC: canonicals, indexacao
+- Email reativacao para 14 usuarios reais de 2026
+- MarketplaceOS: R$ NaN pricing, broken ML URLs
+
+### Proxima sessao - inicio obrigatorio
+
+  cd ~/Downloads/backfindr-local/backfindr-main
+  cat BACKFINDR.md
+  git log --oneline -10
+
+Depois: adicionar CRON_SECRET no Vercel, depois sessao de monetizacao.
