@@ -1,9 +1,10 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { formatDistanceToNow } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
-import { CheckCircle2, Circle, Loader2, Zap } from 'lucide-react';
+import { CheckCircle2, Circle, Loader2, Zap, Activity, QrCode, GitMerge } from 'lucide-react';
+import Cookies from 'js-cookie';
 
 interface ActivityCenterCardProps {
   object: {
@@ -15,59 +16,82 @@ interface ActivityCenterCardProps {
     is_boosted?: boolean;
   };
   matchCount?: number;
-  scanCount?: number;
-  shareCount?: number;
 }
 
-interface ActivityItem {
-  id: string;
-  label: string;
-  sublabel?: string;
-  status: 'done' | 'loading' | 'pending' | 'count';
-  value?: string | number;
-  timestamp?: string;
+interface ObjectEvent {
+  type: string;
+  title: string;
+  description?: string;
+  source: string;
+  metadata: Record<string, unknown>;
+  created_at: string;
+}
+
+interface EventSummary {
+  total_scans: number;
+  total_matches: number;
+  total_ai_runs: number;
+  last_activity: string | null;
+}
+
+// Ícone e cor por tipo de evento
+function eventIcon(type: string) {
+  if (type.startsWith('matching')) return <Activity className="w-4 h-4 text-amber-400" />;
+  if (type === 'match_found')      return <GitMerge className="w-4 h-4 text-brand-400" />;
+  if (type === 'qr_scanned')       return <QrCode className="w-4 h-4 text-teal-400" />;
+  if (type === 'owner_notified')   return <CheckCircle2 className="w-4 h-4 text-green-400" />;
+  return <CheckCircle2 className="w-4 h-4 text-brand-400" />;
+}
+
+function eventColor(type: string) {
+  if (type.startsWith('matching')) return 'text-amber-300';
+  if (type === 'match_found')      return 'text-brand-300';
+  if (type === 'qr_scanned')       return 'text-teal-300';
+  return 'text-slate-200';
 }
 
 export default function ActivityCenterCard({
   object,
   matchCount = 0,
-  scanCount = 0,
-  shareCount = 0,
 }: ActivityCenterCardProps) {
-  const [items, setItems] = useState<ActivityItem[]>([]);
+  const [events, setEvents] = useState<ObjectEvent[]>([]);
+  const [summary, setSummary] = useState<EventSummary | null>(null);
+  const [loading, setLoading] = useState(true);
+
   const isActive = object.status === 'lost' || object.status === 'stolen';
 
+  const fetchEvents = useCallback(async () => {
+    try {
+      const token = Cookies.get('access_token');
+      if (!token) return;
+
+      const res = await fetch(`/api/v1/objects/${object.id}/events`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+
+      if (!res.ok) return;
+      const data = await res.json();
+      setEvents(data.events || []);
+      setSummary(data.summary || null);
+    } catch {
+      // silencioso — não bloqueia a UI
+    } finally {
+      setLoading(false);
+    }
+  }, [object.id]);
+
   useEffect(() => {
-    const createdAt = object.created_at;
-    const updatedAt = object.updated_at;
+    fetchEvents();
+  }, [fetchEvents]);
 
-    const baseItems: ActivityItem[] = [
-      { id: 'published', label: 'Publicada na rede Backfindr', status: 'done', timestamp: createdAt },
-      { id: 'indexed',   label: 'Indexada para busca',         status: 'done', timestamp: createdAt },
-      { id: 'map',       label: 'Disponível no mapa público',  status: 'done', timestamp: createdAt },
-    ];
-
-    if (isActive) {
-      baseItems.push({ id: 'ai', label: 'IA comparando objetos semelhantes', sublabel: 'em andamento...', status: 'loading' });
-    }
-
-    baseItems.push(
-      { id: 'shares',  label: 'Compartilhamentos',              status: 'count', value: shareCount },
-      { id: 'scans',   label: 'Avistamentos (QR escaneado)',     status: 'count', value: scanCount },
-      { id: 'matches', label: 'Possíveis correspondências',      status: 'count', value: matchCount },
-    );
-
-    if (object.is_boosted) {
-      baseItems.push({ id: 'boost', label: 'Boost ativo — alcance ampliado', status: 'done', timestamp: updatedAt });
-    }
-
-    setItems(baseItems);
-  }, [object, matchCount, scanCount, shareCount, isActive]);
-
-  const lastUpdate = formatDistanceToNow(new Date(object.updated_at), { addSuffix: true, locale: ptBR });
+  const lastUpdate = formatDistanceToNow(
+    new Date(summary?.last_activity || object.updated_at),
+    { addSuffix: true, locale: ptBR }
+  );
 
   return (
     <div className="glass rounded-2xl p-4 sm:p-5 border border-brand-500/20 bg-brand-500/[0.03]">
+      {/* Header */}
       <div className="flex items-center justify-between mb-4">
         <div className="flex items-center gap-2">
           <div className="relative flex h-2.5 w-2.5 flex-shrink-0">
@@ -79,37 +103,89 @@ export default function ActivityCenterCard({
         <span className="text-slate-500 text-[10px]">atualizado {lastUpdate}</span>
       </div>
 
-      <div className="space-y-3">
-        {items.map((item) => (
-          <div key={item.id} className="flex items-start gap-3">
-            <div className="flex-shrink-0 mt-0.5">
-              {item.status === 'done'    && <CheckCircle2 className="w-4 h-4 text-brand-400" />}
-              {item.status === 'loading' && <Loader2 className="w-4 h-4 text-amber-400 animate-spin" />}
-              {item.status === 'pending' && <Circle className="w-4 h-4 text-slate-600" />}
-              {item.status === 'count'   && <Circle className={`w-4 h-4 ${Number(item.value) > 0 ? 'text-brand-400' : 'text-slate-600'}`} />}
+      {/* Summary counters */}
+      {summary && (
+        <div className="grid grid-cols-3 gap-2 mb-4">
+          <div className="bg-surface-card rounded-lg p-2 text-center">
+            <div className="text-lg font-bold text-brand-400">{summary.total_ai_runs}</div>
+            <div className="text-[10px] text-slate-500 leading-tight">comparações IA</div>
+          </div>
+          <div className="bg-surface-card rounded-lg p-2 text-center">
+            <div className="text-lg font-bold text-teal-400">{summary.total_scans}</div>
+            <div className="text-[10px] text-slate-500 leading-tight">scans QR</div>
+          </div>
+          <div className="bg-surface-card rounded-lg p-2 text-center">
+            <div className={`text-lg font-bold ${summary.total_matches > 0 ? 'text-amber-400' : 'text-slate-600'}`}>
+              {summary.total_matches || matchCount}
             </div>
-            <div className="flex-1 min-w-0">
-              <div className="flex items-center justify-between gap-2">
-                <span className={`text-xs font-medium leading-tight ${
-                  item.status === 'done' ? 'text-slate-200' :
-                  item.status === 'loading' ? 'text-amber-300' :
-                  item.status === 'count' && Number(item.value) > 0 ? 'text-slate-200' : 'text-slate-500'
-                }`}>{item.label}</span>
-                {item.status === 'count' && (
-                  <span className={`text-xs font-bold flex-shrink-0 ${Number(item.value) > 0 ? 'text-brand-400' : 'text-slate-600'}`}>{item.value}</span>
-                )}
-                {item.status === 'done' && item.timestamp && (
-                  <span className="text-slate-600 text-[10px] flex-shrink-0">
-                    {formatDistanceToNow(new Date(item.timestamp), { addSuffix: true, locale: ptBR })}
+            <div className="text-[10px] text-slate-500 leading-tight">correspondências</div>
+          </div>
+        </div>
+      )}
+
+      {/* Timeline */}
+      {loading ? (
+        <div className="flex items-center gap-2 py-2">
+          <Loader2 className="w-4 h-4 text-brand-400 animate-spin" />
+          <span className="text-slate-500 text-xs">Carregando atividade...</span>
+        </div>
+      ) : events.length === 0 ? (
+        /* Sem eventos ainda — estado inicial (objetos antes da Sprint 2) */
+        <div className="space-y-3">
+          {[
+            { label: 'Publicada na rede Backfindr', ts: object.created_at },
+            { label: 'Indexada para busca',         ts: object.created_at },
+            { label: 'Disponível no mapa público',  ts: object.created_at },
+          ].map((item) => (
+            <div key={item.label} className="flex items-start gap-3">
+              <CheckCircle2 className="w-4 h-4 text-brand-400 flex-shrink-0 mt-0.5" />
+              <div className="flex-1 flex items-center justify-between gap-2">
+                <span className="text-xs font-medium text-slate-200">{item.label}</span>
+                <span className="text-slate-600 text-[10px] flex-shrink-0">
+                  {formatDistanceToNow(new Date(item.ts), { addSuffix: true, locale: ptBR })}
+                </span>
+              </div>
+            </div>
+          ))}
+          {isActive && (
+            <div className="flex items-start gap-3">
+              <Loader2 className="w-4 h-4 text-amber-400 animate-spin flex-shrink-0 mt-0.5" />
+              <span className="text-xs font-medium text-amber-300">IA comparando objetos semelhantes...</span>
+            </div>
+          )}
+        </div>
+      ) : (
+        /* Timeline com dados reais */
+        <div className="space-y-3">
+          {events.map((ev, i) => (
+            <div key={i} className="flex items-start gap-3">
+              <div className="flex-shrink-0 mt-0.5">{eventIcon(ev.type)}</div>
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center justify-between gap-2">
+                  <span className={`text-xs font-medium leading-tight ${eventColor(ev.type)}`}>
+                    {ev.title}
                   </span>
+                  <span className="text-slate-600 text-[10px] flex-shrink-0">
+                    {formatDistanceToNow(new Date(ev.created_at), { addSuffix: true, locale: ptBR })}
+                  </span>
+                </div>
+                {ev.description && (
+                  <span className="text-[10px] text-slate-500 mt-0.5 block">{ev.description}</span>
                 )}
               </div>
-              {item.sublabel && <span className="text-[10px] text-slate-500 mt-0.5 block">{item.sublabel}</span>}
             </div>
-          </div>
-        ))}
-      </div>
+          ))}
 
+          {isActive && (
+            <div className="flex items-start gap-3">
+              <Loader2 className="w-4 h-4 text-amber-400 animate-spin flex-shrink-0 mt-0.5" />
+              <span className="text-xs font-medium text-amber-300">Próxima comparação automática em andamento...</span>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Boost CTA */}
       {isActive && !object.is_boosted && (
         <div className="mt-4 pt-3 border-t border-surface-border flex items-center gap-2">
           <Zap className="w-3.5 h-3.5 text-amber-500 flex-shrink-0" />
