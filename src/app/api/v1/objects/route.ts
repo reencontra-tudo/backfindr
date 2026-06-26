@@ -4,6 +4,7 @@ import { query } from '@/lib/db';
 import { verifyToken, extractTokenFromHeader } from '@/lib/jwt';
 import { successResponse, unauthorizedResponse, internalErrorResponse } from '@/lib/response';
 import { enqueueSocialPosts } from '@/lib/socialPost';
+import { Events } from '@/lib/events';
 
 // Limites de objetos por plano
 const PLAN_MAX_OBJECTS: Record<string, number> = {
@@ -202,6 +203,11 @@ export async function POST(request: NextRequest) {
     );
 
     const newObject = normalizeObject(result.rows[0] as Record<string, unknown>);
+
+    // ── Registrar eventos no Sistema Vivo (fire-and-forget) ──────────────
+    Events.objectCreated(newObject.id as string, payload.sub).catch(() => {});
+    Events.objectPublished(newObject.id as string).catch(() => {});
+    Events.objectIndexed(newObject.id as string).catch(() => {});
 
     // ── Enfileirar posts sociais automáticos (fire-and-forget) ────────────
     enqueueSocialPosts({
