@@ -358,9 +358,9 @@ export default function SucessoPage() {
             <div className="flex items-start gap-3 mb-3">
               <div className="text-2xl">⚡</div>
               <div>
-                <p className="text-amber-300 text-sm font-bold mb-0.5">Quer aumentar as chances?</p>
-                <p className="text-white/40 text-xs leading-relaxed">
-                  Objetos com impulso aparecem para mais pessoas na região. A decisão é sua — mas quanto antes, melhor.
+                <p className="text-amber-300 text-sm font-bold mb-0.5">Aumentar as oportunidades de reencontro</p>
+                <p className="text-white/50 text-xs leading-relaxed">
+                  Sua ocorrência já está publicada e a IA já começou a comparar. Com impulso, ela aparece para mais pessoas na região — quanto antes, maior a chance.
                 </p>
               </div>
             </div>
@@ -368,31 +368,12 @@ export default function SucessoPage() {
               href={`/dashboard/objects/${id}#boost`}
               className="w-full flex items-center justify-center gap-2 bg-amber-500/15 hover:bg-amber-500/25 border border-amber-500/30 text-amber-300 text-sm font-semibold py-3 rounded-xl transition-all"
             >
-              Ver opções de alcance — a partir de R$ 9,90
+              Ver planos de impulso — a partir de R$ 9,90
               <ArrowRight className="w-4 h-4" />
             </Link>
           </div>
         )}
 
-        {/* ── Monetização — só para lost/stolen ── */}
-        {(obj.status === 'lost' || obj.status === 'stolen') && (
-          <div className="bg-gradient-to-br from-amber-500/10 to-orange-500/10 border border-amber-500/20 rounded-2xl p-5 mb-6">
-            <div className="flex items-center gap-2 mb-2">
-              <Sparkles className="w-5 h-5 text-amber-400" />
-              <h3 className="text-white font-semibold">Quer ampliar ainda mais suas chances?</h3>
-            </div>
-            <p className="text-white/60 text-sm leading-relaxed mb-4">
-              Seu cadastro já está publicado gratuitamente. Se desejar alcançar ainda mais pessoas próximas, você pode aumentar a exposição da ocorrência.
-            </p>
-            <Link
-              href={`/dashboard/objects/${id}`}
-              className="w-full flex items-center justify-center gap-2 bg-amber-500 hover:bg-amber-400 text-black font-bold py-3 rounded-xl transition-all"
-            >
-              Ampliar alcance da ocorrência
-              <ArrowRight className="w-4 h-4" />
-            </Link>
-          </div>
-        )}
 
         {/* ── Navegação ── */}
         <div className="flex flex-col gap-3">
