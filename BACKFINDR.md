@@ -1181,3 +1181,60 @@ O Boost nao cria essa maquina. Ele acelera uma maquina que o usuario ja percebe 
 
 Essa inversao e o diferencial mais dificil de reproduzir.
 Um concorrente pode copiar o algoritmo. Nao copia a arquitetura de confianca.
+
+---
+
+## SESSÃO 27/06/2026 (tarde) — Momento 2 + fix deploy
+
+### O que foi feito
+
+MOMENTO 2 (CRENÇA) — ActivityCenterCard (CONCLUÍDO)
+  Arquivo: src/components/object-detail/ActivityCenterCard.tsx
+  Lógica implementada:
+  - total_ai_runs = 0 → CTA cinza discreto (Momento 1 — sem pressão)
+  - total_ai_runs >= 1 → Bloco âmbar com número real de comparações + CTA de Boost
+  Copy do Momento 2: "A IA já fez N comparação(ões) por você"
+  "A máquina está funcionando. Com Impulso, ela alcança mais pessoas na região."
+  Commits: cc167ce (feat), 2ad10c9 (fix <a faltando)
+
+CRON vercel.json (CORRIGIDO)
+  Problema: Vercel Hobby não aceita cron com frequência > 1x/dia.
+  Solução: removido o cron do vercel.json — matching gerenciado exclusivamente pelo n8n no Railway.
+  Commit: 296a764
+
+FIX SINTAXE ActivityCenterCard
+  Tag <a faltando no bloco Momento 2 causava syntax error no build.
+  Corrigido via sed -i.
+  Commit: 2ad10c9 — deploy OK ✅ (backfindr.io)
+
+### Estado do Sistema Vivo após esta sessão
+
+- Momento 1 (Ansiedade) ✅ — CTA discreto na tela de sucesso e no card
+- Momento 2 (Crença) ✅ — Oferta âmbar aparece após primeiro ai_run
+- Momento 3 (Frustração Produtiva) — a implementar (total_ai_runs >= 5 + days >= 3 + matches = 0)
+
+### Pendências abertas (atualizado 27/06/2026 tarde)
+
+CRÍTICO:
+- CRON_SECRET: adicionar no Vercel (Settings → Environment Variables) — sem isso o cron recebe 401 silencioso
+- Momento 3 (Frustração Produtiva): oferta de reengajamento contextual
+- objects POST não chama matching/run após salvar — matching não roda automaticamente no cadastro
+
+MÉDIO:
+- Loop de compartilhamento WhatsApp — sucesso/page.tsx + ShareModal.tsx
+- Seeds SEO esgotam ~46 dias a partir de 25/06
+- GSC: canonicals, indexação
+- Google Business: data abertura 2010 → 2026
+
+BAIXO:
+- Email reativação para 14 usuários reais de 2026
+- MarketplaceOS: R$ NaN pricing, broken ML URLs
+- 6 índices analytics Supabase (script 03/06/26)
+
+### Próxima sessão — início obrigatório
+
+  cd ~/Downloads/backfindr-local/backfindr-main
+  cat BACKFINDR.md
+  git log --oneline -10
+
+Depois: CRON_SECRET no Vercel, depois Momento 3 ou matching/run POST.
