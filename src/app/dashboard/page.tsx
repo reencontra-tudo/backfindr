@@ -18,6 +18,7 @@ import OnboardingChecklist from '@/components/ui/OnboardingChecklist';
 import WelcomeModal from '@/components/ui/WelcomeModal';
 import OnboardingTour, { TourStep } from '@/components/ui/OnboardingTour';
 import CondominioContextBanner from '@/components/CondominioContextBanner';
+import ActivitySummary from '@/components/activity/ActivitySummary';
 
 const EMOJI: Record<string, string> = {
   phone:'📱',wallet:'👛',keys:'🔑',bag:'🎒',pet:'🐾',
@@ -255,6 +256,16 @@ export default function DashboardPage() {
             </div>
             <ArrowRight className="w-4 h-4 text-teal-400 flex-shrink-0" />
           </Link>
+        )}
+
+        {/* ── Activity Summary — Sistema Vivo no dashboard ── */}
+        {!loading && objects.length > 0 && (
+          <ActivitySummary
+            objectsCount={objects.length}
+            activeCount={objects.filter(o => o.status === 'lost' || o.status === 'stolen').length}
+            pendingMatches={pending}
+            loading={loading}
+          />
         )}
 
         {/* ── Onboarding checklist (colapsável) ── */}
