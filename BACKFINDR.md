@@ -168,7 +168,7 @@ Todas as sprints concluídas em 26–27/06/2026:
 |---------|---------|-------|--------|
 | 1 — Ansiedade | Cadastro feito | Tela /sucesso | ✅ implementado |
 | 2 — Crença | total_ai_runs >= 1 | ActivityCenterCard | ✅ implementado (commit 2ad10c9) |
-| 3 — Frustração Produtiva | ai_runs>=5 + days>=3 + matches=0 | ActivityCenterCard | ⏳ a implementar |
+| 3 — Frustração Produtiva | ai_runs>=5 + days>=3 + matches=0 | ActivityCenterCard | ✅ implementado (commit c08d3c5) |
 
 ---
 
