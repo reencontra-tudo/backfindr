@@ -273,26 +273,27 @@ function SuccessContent() {
                 <CheckCircle className="w-4 h-4" />
                 Boost confirmado no sistema
               </div>
-            {planConfirmed && (
-              <div className="mt-4 rounded-xl border border-teal-500/20 bg-teal-500/5 p-4 text-left">
-                <p className="text-teal-300 text-sm font-semibold mb-2">
-                  O Backfindr continua trabalhando por você.
-                </p>
-                <div className="space-y-2 text-xs text-slate-300">
-                  <div>✓ Sua ocorrência recebeu prioridade de divulgação.</div>
-                  <div>✓ A IA continuará comparando novos registros automaticamente.</div>
-                  <div>✓ Novas atividades aparecerão no Centro de Atividade do objeto.</div>
-                </div>
-                <p className="mt-3 text-[11px] text-slate-500">
-                  Você poderá acompanhar todas as novas comparações, eventos e atualizações diretamente na página do objeto.
-                </p>
-              </div>
-            )}
             ) : (
               <p className="text-sm text-gray-400">
                 Processando seu pagamento...
               </p>
             )}
+          </div>
+        )}
+
+        {type === "boost" && planConfirmed && (
+          <div className="mt-2 rounded-xl border border-teal-500/20 bg-teal-500/5 p-4 text-left">
+            <p className="text-teal-300 text-sm font-semibold mb-2">
+              O Backfindr continua trabalhando por você.
+            </p>
+            <div className="space-y-2 text-xs text-slate-300">
+              <div>✓ Sua ocorrência recebeu prioridade de divulgação.</div>
+              <div>✓ A IA continuará comparando novos registros automaticamente.</div>
+              <div>✓ Novas atividades aparecerão no Centro de Atividade do objeto.</div>
+            </div>
+            <p className="mt-3 text-[11px] text-slate-500">
+              Você poderá acompanhar todas as novas comparações, eventos e atualizações diretamente na página do objeto.
+            </p>
           </div>
         )}
 
