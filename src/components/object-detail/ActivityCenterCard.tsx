@@ -185,25 +185,31 @@ export default function ActivityCenterCard({
         </div>
       )}
 
-      {isActive && !object.is_boosted && summary && summary.total_ai_runs >= 1 && (
+      {isActive && !object.is_boosted && summary && (() => {
+        const daysSince = Math.floor((Date.now() - new Date(object.created_at).getTime()) / 86400000);
+        const momento3 = summary.total_ai_runs >= 5 && daysSince >= 3 && summary.total_matches === 0;
+        const momento2 = summary.total_ai_runs >= 1;
+        if (!momento2 && !momento3) return null;
+        return (
         <div className="mt-4 pt-4 border-t border-surface-border">
-          <div className="bg-amber-500/[0.07] border border-amber-500/25 rounded-xl p-3.5">
-            <p className="text-amber-300 text-xs font-bold mb-1">
-              A IA já fez {summary.total_ai_runs} comparação{summary.total_ai_runs > 1 ? 'ões' : ''} por você
+          <div className={`border rounded-xl p-3.5 ${momento3 ? 'bg-orange-500/[0.07] border-orange-500/25' : 'bg-amber-500/[0.07] border-amber-500/25'}`}>
+            <p className={`text-xs font-bold mb-1 ${momento3 ? "text-orange-300" : "text-amber-300"}`}>
+              {momento3 ? `${summary.total_ai_runs} comparações feitas. Ainda nenhuma correspondência.` : `A IA já fez ${summary.total_ai_runs} comparação${summary.total_ai_runs > 1 ? 'ões' : ''} por você`}
             </p>
             <p className="text-white/45 text-[11px] leading-relaxed mb-3">
-              A máquina está funcionando. Com Impulso, ela alcança mais pessoas na região — e roda com prioridade.
+              {momento3 ? 'A ocorrência continua ativa. Um impulso amplia o alcance enquanto a IA segue monitorando.' : 'A máquina está funcionando. Com Impulso, ela alcança mais pessoas na região — e roda com prioridade.'}
             </p>
             <a
               href={`/dashboard/objects/${object.id}#boost`}
-              className="flex items-center justify-center gap-1.5 bg-amber-500/15 hover:bg-amber-500/25 border border-amber-500/30 text-amber-300 text-xs font-semibold py-2.5 rounded-lg transition-all"
+              className={`flex items-center justify-center gap-1.5 border text-xs font-semibold py-2.5 rounded-lg transition-all ${momento3 ? "bg-orange-500/15 hover:bg-orange-500/25 border-orange-500/30 text-orange-300" : "bg-amber-500/15 hover:bg-amber-500/25 border-amber-500/30 text-amber-300"}`}
             >
               <Zap className="w-3.5 h-3.5" />
-              Ampliar alcance — a partir de R$ 9,90
+              {momento3 ? 'Ampliar alcance agora' : 'Ampliar alcance — a partir de R$ 9,90'}
             </a>
           </div>
         </div>
-      )}
+        );
+      })()}
 
       {isActive && !object.is_boosted && summary && summary.total_ai_runs === 0 && (
         <div className="mt-4 pt-3 border-t border-surface-border flex items-center gap-2">
