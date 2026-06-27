@@ -3,11 +3,5 @@
     "src/app/api/v1/local-pages/generate/route.ts": {
       "maxDuration": 60
     }
-  },
-  "crons": [
-    {
-      "path": "/api/v1/cron/matching",
-      "schedule": "0 * * * *"
-    }
-  ]
+  }
 }
