@@ -158,10 +158,10 @@ export default function PricingPage() {
         <div className="text-center mb-14">
           <p className="text-teal-500 text-xs uppercase tracking-[0.15em] font-semibold mb-4">Planos</p>
           <h1 className="text-4xl font-bold tracking-tight mb-4">
-            Simples e transparente
+            Escolha como o Backfindr trabalha por você
           </h1>
           <p className="text-white/40 text-lg max-w-md mx-auto">
-            Comece grátis. Faça upgrade quando precisar de mais.
+            Planos para proteger seus objetos, manter a IA trabalhando e ampliar suas oportunidades de reencontro.
           </p>
 
           {testMode && (
@@ -284,18 +284,18 @@ export default function PricingPage() {
               <Zap className="w-5 h-5" />
             </div>
             <div>
-              <h2 className="text-xl font-bold mb-1">Boost — Destaque sua publicação</h2>
+              <h2 className="text-xl font-bold mb-1">Boost — Aumente as oportunidades de reencontro</h2>
               <p className="text-white/40 text-sm">
-                Seu item ainda não foi encontrado? Aumente as chances colocando sua publicação em destaque no mapa e no feed.
+                Seu item ainda não foi encontrado? O Boost amplia o alcance da ocorrência enquanto o Backfindr continua monitorando novas oportunidades.
               </p>
             </div>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             {[
-              { label: 'Boost 7 dias',   price: 'R$ 9,90',  desc: 'Aparece no topo do mapa e feed por 7 dias' },
-              { label: 'Boost 30 dias',  price: 'R$ 24,90', desc: 'Destaque por 30 dias + notificação para usuários próximos' },
-              { label: 'Alerta de Área', price: 'R$ 14,90', desc: 'Notificação push para usuários num raio de 5 km' },
+              { label: 'Alcance Essencial',   price: 'R$ 9,90',  desc: 'Mais exposição por 7 dias para acelerar a divulgação' },
+              { label: 'Busca Intensiva',  price: 'R$ 24,90', desc: 'Maior exposição por 30 dias enquanto a IA continua monitorando' },
+              { label: 'Alerta Regional', price: 'R$ 14,90', desc: 'Amplia o alerta para pessoas próximas da região' },
             ].map(boost => (
               <div key={boost.label} className="border border-white/[0.08] rounded-xl p-4 bg-white/[0.03]">
                 <div className="flex items-center justify-between mb-2">
@@ -309,7 +309,7 @@ export default function PricingPage() {
 
           <p className="text-white/25 text-xs mt-4 flex items-center gap-1.5">
             <Clock className="w-3.5 h-3.5" />
-            O Boost pode ser ativado diretamente na página do seu objeto no dashboard.
+            O Boost é ativado na página do objeto, no momento em que fizer sentido ampliar o alcance.
           </p>
         </div>
 

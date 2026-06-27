@@ -10,11 +10,11 @@ import Cookies from "js-cookie";
 
 const PLAN_NAMES: Record<string, string> = { pro: "Pro", business: "Business" };
 const BOOST_NAMES: Record<string, string> = {
-  "7d":         "Boost 7 dias",
-  "30d":        "Boost 30 dias",
-  boost_7:      "Boost 7 dias",
-  boost_30:     "Boost 30 dias",
-  alert_area:   "Alerta de Área",
+  "7d":         "Alcance Essencial",
+  "30d":        "Busca Intensiva",
+  boost_7:      "Alcance Essencial",
+  boost_30:     "Busca Intensiva",
+  alert_area:   "Alerta Regional",
 };
 
 function SuccessContent() {
