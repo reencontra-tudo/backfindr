@@ -194,7 +194,7 @@ export default function ActivityCenterCard({
             <p className="text-white/45 text-[11px] leading-relaxed mb-3">
               A máquina está funcionando. Com Impulso, ela alcança mais pessoas na região — e roda com prioridade.
             </p>
-            
+            <a
               href={`/dashboard/objects/${object.id}#boost`}
               className="flex items-center justify-center gap-1.5 bg-amber-500/15 hover:bg-amber-500/25 border border-amber-500/30 text-amber-300 text-xs font-semibold py-2.5 rounded-lg transition-all"
             >
