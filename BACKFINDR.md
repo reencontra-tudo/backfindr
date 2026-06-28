@@ -1,7 +1,7 @@
 # BACKFINDR — Documento Mestre
 > Arquivo único de referência. Toda sessão deve começar lendo este arquivo COMPLETO.
 > Localização canônica: `~/Downloads/backfindr-local/backfindr-main/BACKFINDR.md`
-> Última atualização: 2026-06-27 (sessão tarde)
+> Última atualização: 2026-06-27 (sessão noite)
 > **REGRA DE MANUTENÇÃO: nunca usar `cat >>`. Sempre reescrever via Python.**
 
 ---
@@ -207,8 +207,7 @@ SERPAPI_KEY, OPENAI_API_KEY, MP_ACCESS_TOKEN, CRON_SECRET ✅
 ## 15. PRIORIDADES ABERTAS (27/06/2026 — fonte única de verdade)
 
 ### 🔴 Alto
-- **Momento 3** (Frustração Produtiva): oferta reengajamento em ActivityCenterCard quando ai_runs>=5 + days>=3 + matches=0
-- **objects POST → matching/run**: cadastro novo não dispara matching automaticamente
+- (nenhuma pendência crítica no momento)
 
 ### 🟡 Médio
 - **Tokens Meta expiram ~30/07/2026**: renovar Facebook pages + Instagram user token
@@ -238,6 +237,11 @@ SERPAPI_KEY, OPENAI_API_KEY, MP_ACCESS_TOKEN, CRON_SECRET ✅
 - Instagram autopost 5 nichos ✅
 - Cloudflare R2 configurado ✅
 - moderation_blocked n8n: resolvido
+- Momento 3 (Frustração Produtiva): ActivityCenterCard commit c08d3c5
+- Checkout success: card Sistema Vivo + labels + BOOST_NAMES
+- Pricing copy: alinhado com filosofia do produto
+- ActivitySummary: estado honesto com horario cron
+- BACKFINDR_INTELLIGENCE.md: constituicao fundacional commit 83104aa
 
 ---
 
@@ -282,3 +286,4 @@ git push origin main
 | 26/06 | Sistema Vivo fundação: object_events, events.ts, ActivityCenterCard, Sprint A+B1 |
 | 27/06 manhã | Sprints 2+3+4+5: matching events, endpoint, countdown, cron |
 | 27/06 tarde | Momento 2 (Crença) implementado, fix sintaxe ActivityCenterCard, reorganização BACKFINDR.md |
+| 27/06 noite | Momento 3, checkout success Sistema Vivo, pricing copy, ActivitySummary, BACKFINDR_INTELLIGENCE.md fundacional |
