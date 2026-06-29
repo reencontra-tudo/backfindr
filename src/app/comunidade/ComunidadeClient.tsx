@@ -91,7 +91,7 @@ function PostCard({ post, featured = false }: { post: Post; featured?: boolean }
       className={`group block rounded-2xl overflow-hidden border border-gray-800 bg-gray-900 hover:border-teal-500/40 transition-all duration-200 hover:shadow-lg hover:shadow-teal-500/5 ${featured ? 'md:col-span-2' : ''}`}
     >
       {(() => {
-        const imgSrc = post.cover_url || getYoutubeThumbnail(post.video_url);
+        const imgSrc = (post.cover_url && post.cover_url.trim()) ? post.cover_url : getYoutubeThumbnail(post.video_url);
         return imgSrc ? (
           <div className={`overflow-hidden ${featured ? 'h-56' : 'h-40'}`}>
             {/* eslint-disable-next-line @next/next/no-img-element */}
