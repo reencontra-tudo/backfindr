@@ -90,14 +90,27 @@ function timeAgo(iso: string | null | undefined) {
   return formatDate(iso);
 }
 
-// Valida se uma URL é válida e segura para embed
-function isValidVideoUrl(url: string | null | undefined): boolean {
-  if (!url || !url.trim()) return false;
+// Converte URL do YouTube para formato embed e valida
+function getEmbedUrl(url: string | null | undefined): string | null {
+  if (!url || !url.trim()) return null;
   try {
     const parsed = new URL(url);
-    return parsed.protocol === 'https:' || parsed.protocol === 'http:';
+    // youtube.com/watch?v=ID
+    if (parsed.hostname.includes('youtube.com') && parsed.searchParams.get('v')) {
+      return `https://www.youtube.com/embed/${parsed.searchParams.get('v')}`;
+    }
+    // youtu.be/ID
+    if (parsed.hostname === 'youtu.be') {
+      const id = parsed.pathname.replace('/', '');
+      return `https://www.youtube.com/embed/${id}`;
+    }
+    // URL de embed direta ou outro player
+    if (parsed.protocol === 'https:' || parsed.protocol === 'http:') {
+      return url;
+    }
+    return null;
   } catch {
-    return false;
+    return null;
   }
 }
 
@@ -346,16 +359,20 @@ export default function PostClient({
         )}
 
         {/* ── Vídeo (somente se URL válida) ── */}
-        {isValidVideoUrl(post.video_url) && (
-          <div className="rounded-2xl overflow-hidden mb-10 aspect-video">
-            <iframe
-              src={post.video_url}
-              className="w-full h-full"
-              allowFullScreen
-              title={post.title}
-            />
-          </div>
-        )}
+        {(() => {
+          const embedUrl = getEmbedUrl(post.video_url);
+          return embedUrl ? (
+            <div className="rounded-2xl overflow-hidden mb-10 aspect-video">
+              <iframe
+                src={embedUrl}
+                className="w-full h-full"
+                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                allowFullScreen
+                title={post.title}
+              />
+            </div>
+          ) : null;
+        })()}
 
         {/* ── Conteúdo — Markdown renderizado ── */}
         <div className="min-w-0">
