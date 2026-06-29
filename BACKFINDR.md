@@ -287,3 +287,4 @@ git push origin main
 | 27/06 manhã | Sprints 2+3+4+5: matching events, endpoint, countdown, cron |
 | 27/06 tarde | Momento 2 (Crença) implementado, fix sintaxe ActivityCenterCard, reorganização BACKFINDR.md |
 | 27/06 noite | Momento 3, checkout success Sistema Vivo, pricing copy, ActivitySummary, BACKFINDR_INTELLIGENCE.md fundacional |
+| 28/06 | Comunidade: embed YouTube (getEmbedUrl), YouTube Shorts, HTML no body (rehype-raw) |
