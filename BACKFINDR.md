@@ -1,7 +1,7 @@
 # BACKFINDR — Documento Mestre
 > Arquivo único de referência. Toda sessão deve começar lendo este arquivo COMPLETO.
 > Localização canônica: `~/Downloads/backfindr-local/backfindr-main/BACKFINDR.md`
-> Última atualização: 2026-06-27 (sessão noite)
+> Última atualização: 2026-06-28 (sessão noite)
 > **REGRA DE MANUTENÇÃO: nunca usar `cat >>`. Sempre reescrever via Python.**
 
 ---
@@ -287,4 +287,5 @@ git push origin main
 | 27/06 manhã | Sprints 2+3+4+5: matching events, endpoint, countdown, cron |
 | 27/06 tarde | Momento 2 (Crença) implementado, fix sintaxe ActivityCenterCard, reorganização BACKFINDR.md |
 | 27/06 noite | Momento 3, checkout success Sistema Vivo, pricing copy, ActivitySummary, BACKFINDR_INTELLIGENCE.md fundacional |
+| 28/06 | Comunidade: embed YouTube (getEmbedUrl + Shorts), HTML no body (rehype-raw), thumbnail automático no card |
 | 28/06 | Comunidade: embed YouTube (getEmbedUrl), YouTube Shorts, HTML no body (rehype-raw) |
