@@ -14,6 +14,7 @@ interface Post {
   subtitle?: string;
   category: string;
   cover_url?: string;
+  video_url?: string;
   author_name: string;
   tags: string[];
   featured: boolean;
@@ -52,6 +53,34 @@ function timeAgo(iso: string) {
   return new Date(iso).toLocaleDateString('pt-BR', { day: '2-digit', month: 'short', year: 'numeric' });
 }
 
+function getYoutubeThumbnail(url: string | null | undefined): string | null {
+  if (!url) return null;
+  try {
+    const parsed = new URL(url);
+    // youtube.com/watch?v=ID
+    if (parsed.hostname.includes('youtube.com') && parsed.searchParams.get('v')) {
+      return `https://img.youtube.com/vi/${parsed.searchParams.get('v')}/hqdefault.jpg`;
+    }
+    // youtu.be/ID
+    if (parsed.hostname === 'youtu.be') {
+      return `https://img.youtube.com/vi/${parsed.pathname.replace('/', '')}/hqdefault.jpg`;
+    }
+    // youtube.com/shorts/ID
+    if (parsed.hostname.includes('youtube.com') && parsed.pathname.includes('/shorts/')) {
+      const id = parsed.pathname.split('/shorts/')[1].split('?')[0];
+      return `https://img.youtube.com/vi/${id}/hqdefault.jpg`;
+    }
+    // já é URL de embed: youtube.com/embed/ID
+    if (parsed.hostname.includes('youtube.com') && parsed.pathname.includes('/embed/')) {
+      const id = parsed.pathname.split('/embed/')[1].split('?')[0];
+      return `https://img.youtube.com/vi/${id}/hqdefault.jpg`;
+    }
+    return null;
+  } catch {
+    return null;
+  }
+}
+
 function PostCard({ post, featured = false }: { post: Post; featured?: boolean }) {
   const catColor = CATEGORY_COLORS[post.category] || 'bg-gray-500/20 text-gray-300 border-gray-500/30';
   const catLabel = CATEGORIES.find(c => c.key === post.category);
@@ -61,16 +90,19 @@ function PostCard({ post, featured = false }: { post: Post; featured?: boolean }
       href={`/comunidade/${post.slug}`}
       className={`group block rounded-2xl overflow-hidden border border-gray-800 bg-gray-900 hover:border-teal-500/40 transition-all duration-200 hover:shadow-lg hover:shadow-teal-500/5 ${featured ? 'md:col-span-2' : ''}`}
     >
-      {post.cover_url && (
-        <div className={`overflow-hidden ${featured ? 'h-56' : 'h-40'}`}>
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img
-            src={post.cover_url}
-            alt={post.title}
-            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-          />
-        </div>
-      )}
+      {(() => {
+        const imgSrc = post.cover_url || getYoutubeThumbnail(post.video_url);
+        return imgSrc ? (
+          <div className={`overflow-hidden ${featured ? 'h-56' : 'h-40'}`}>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src={imgSrc}
+              alt={post.title}
+              className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+            />
+          </div>
+        ) : null;
+      })()}
       <div className="p-5">
         <div className="flex items-center gap-2 mb-3">
           <span className={`text-xs font-semibold px-2 py-0.5 rounded-full border ${catColor}`}>

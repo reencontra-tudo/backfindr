@@ -28,7 +28,7 @@ export async function GET(req: NextRequest) {
 
     const [postsRes, countRes] = await Promise.all([
       query(
-        `SELECT id, slug, title, subtitle, category, cover_url, author_name, author_avatar,
+        `SELECT id, slug, title, subtitle, category, cover_url, video_url, author_name, author_avatar,
                 tags, featured, views, likes, published_at, created_at,
                 GREATEST(1, ROUND(LENGTH(REGEXP_REPLACE(body, '<[^>]+>', '', 'g')) / 5.0 / 200)) AS reading_time
          FROM community_posts
