@@ -4,6 +4,7 @@ import { useState } from 'react';
 import Link from 'next/link';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
+import rehypeRaw from 'rehype-raw';
 import {
   MapPin, Clock, Eye, Heart, Share2, ArrowLeft, Tag,
   MessageSquare, Send, Copy, Check, Twitter, Facebook,
@@ -376,7 +377,7 @@ export default function PostClient({
 
         {/* ── Conteúdo — Markdown renderizado ── */}
         <div className="min-w-0">
-          <ReactMarkdown remarkPlugins={[remarkGfm]} components={markdownComponents}>
+          <ReactMarkdown remarkPlugins={[remarkGfm]} rehypePlugins={[rehypeRaw]} components={markdownComponents}>
             {post.body}
           </ReactMarkdown>
         </div>
