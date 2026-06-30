@@ -1,7 +1,7 @@
 # BACKFINDR — Documento Mestre
 > Arquivo único de referência. Toda sessão deve começar lendo este arquivo COMPLETO.
 > Localização canônica: `~/Downloads/backfindr-local/backfindr-main/BACKFINDR.md`
-> Última atualização: 2026-06-28 (sessão noite)
+> Última atualização: 2026-06-29
 > **REGRA DE MANUTENÇÃO: nunca usar `cat >>`. Sempre reescrever via Python.**
 
 ---
@@ -47,6 +47,8 @@ Projeto anterior: Webjetos (2015) — migração planejada
 **Posicionamento:** sistema vivo de recuperação patrimonial (não plataforma de perdidos e achados)
 
 **Princípio de monetização:** "O usuário nunca compra antes de acreditar."
+
+**Pergunta que guia toda decisão:** "Isso aumenta a probabilidade de um objeto voltar para seu dono?"
 
 1. **Marketplace de Recompensas** — usuário paga probabilidade de recuperação, não mídia
 2. **Motor de Distribuição** — divulgação user-funded (redes sociais, push, grupos, ads)
@@ -204,7 +206,55 @@ SERPAPI_KEY, OPENAI_API_KEY, MP_ACCESS_TOKEN, CRON_SECRET ✅
 
 ---
 
-## 15. PRIORIDADES ABERTAS (27/06/2026 — fonte única de verdade)
+## 15. CONSELHO BACKFINDR
+
+Estrutura de governança do produto instituída em 29/06/2026.
+
+| Conselheiro | Papel | Responsabilidade |
+|---|---|---|
+| Marcos | Fundador e Presidente | Visão, decisão final, estratégia, mercado |
+| Gil | Estratégia de Produto e Narrativa | Filosofia, UX, psicologia, branding, negócios |
+| Claudio | Engenharia | Arquitetura, código, escalabilidade, antifraude |
+
+**Regra de ouro do Conselho:** nenhuma promessa entra na comunicação sem que o produto a entregue hoje, em produção, de forma estável.
+
+**Filtro permanente de coerência (Gil):**
+1. Isso fortalece ou enfraquece a missão do Backfindr?
+2. Isso aumenta as oportunidades de reencontro?
+3. Isso aumenta a confiança entre desconhecidos?
+4. Isso mantém a linguagem que estamos construindo?
+
+---
+
+## 16. IDENTIDADE DA MARCA — STATUS
+
+**Documentos fundadores** (commit 873bef5 — 29/06/2026):
+- `docs/brand/RECEPCAO.md` — arquitetura e textos da Recepção v1
+- `docs/brand/MANIFESTO.md` — princípios editoriais e filosofia
+- `docs/brand/JORNADA_DO_REENCONTRO.md` — narrativa institucional completa
+
+**A Recepção v1** — aprovada por unanimidade em 29/06/2026:
+- Substitui a landing tradicional como porta de entrada principal
+- Pergunta central: "O que aconteceu?"
+- Três jornadas: Perdi ou fui roubado / Encontrei alguma coisa / Quero proteger meus bens
+- Portal de acolhimento: "Conheça o Backfindr"
+- Rodapé: "Cada história é única. Vamos seguir esse caminho com você."
+- 5ª porta (verificar procedência — IMEI/QR/chassi): registrada para fase futura
+
+**A Jornada do Reencontro** — reposicionada como manifesto institucional:
+- Uso: investidores, prefeituras, imprensa, propostas comerciais, vídeo institucional
+- NÃO é mais a landing principal — é a narrativa da jornada "Conheça o Backfindr"
+
+**Fase atual da Recepção:**
+- Fase 1 ✅ — Recepção aprovada conceitualmente
+- Fase 2 — Jornada "Perdi ou fui roubado" (próxima)
+- Fase 3 — Jornada "Encontrei alguma coisa"
+- Fase 4 — Jornada "Quero proteger meus bens"
+- Fase 5 — Jornada "Conheça o Backfindr"
+
+---
+
+## 17. PRIORIDADES ABERTAS (29/06/2026 — fonte única de verdade)
 
 ### 🔴 Alto
 - (nenhuma pendência crítica no momento)
@@ -212,6 +262,7 @@ SERPAPI_KEY, OPENAI_API_KEY, MP_ACCESS_TOKEN, CRON_SECRET ✅
 ### 🟡 Médio
 - **Tokens Meta expiram ~30/07/2026**: renovar Facebook pages + Instagram user token
 - **Seeds SEO**: 46 seeds esgotam ~11/08/2026 — reabastecer antes
+- **Recepção v1**: implementar em React no produto real (próxima sessão)
 - **GSC**: verificar canonicals /achados-perdidos, relatório indexação
 - **Google Business**: data abertura travada em 2010 → corrigir para 2026
 - **Loop WhatsApp**: revisar sucesso/page.tsx + ShareModal.tsx
@@ -242,10 +293,11 @@ SERPAPI_KEY, OPENAI_API_KEY, MP_ACCESS_TOKEN, CRON_SECRET ✅
 - Pricing copy: alinhado com filosofia do produto
 - ActivitySummary: estado honesto com horario cron
 - BACKFINDR_INTELLIGENCE.md: constituicao fundacional commit 83104aa
+- Recepção v1: aprovada por unanimidade, documentos fundadores commit 873bef5
 
 ---
 
-## 16. PROTOCOLO DE SESSÃO
+## 18. PROTOCOLO DE SESSÃO
 
 ### Início obrigatório
 ```bash
@@ -274,7 +326,7 @@ git push origin main
 
 ---
 
-## 17. HISTÓRICO DE SESSÕES (resumo)
+## 19. HISTÓRICO DE SESSÕES (resumo)
 
 | Data | Principais entregas |
 |------|-------------------|
@@ -288,4 +340,4 @@ git push origin main
 | 27/06 tarde | Momento 2 (Crença) implementado, fix sintaxe ActivityCenterCard, reorganização BACKFINDR.md |
 | 27/06 noite | Momento 3, checkout success Sistema Vivo, pricing copy, ActivitySummary, BACKFINDR_INTELLIGENCE.md fundacional |
 | 28/06 | Comunidade: embed YouTube (getEmbedUrl + Shorts), HTML no body (rehype-raw), thumbnail automático no card |
-| 28/06 | Comunidade: embed YouTube (getEmbedUrl), YouTube Shorts, HTML no body (rehype-raw) |
+| 29/06 | Conselho instituído (Marcos/Gil/Claudio), Recepção v1 aprovada, docs/brand criado (commit 873bef5) |
