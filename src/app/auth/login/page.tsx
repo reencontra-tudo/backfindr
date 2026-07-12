@@ -11,6 +11,7 @@ import { Eye, EyeOff, ArrowRight, Loader2, Mail } from 'lucide-react';
 import { useAuthStore } from '@/hooks/useAuth';
 import Cookies from 'js-cookie';
 import { getPostLoginRedirect } from '@/lib/redirectByRole';
+import { analytics } from '@/providers/PostHogProvider';
 
 const schema = z.object({
   email: z.string().email('E-mail inválido'),
@@ -58,6 +59,11 @@ function LoginForm() {
     setLoginError('');
     try {
       await login(data.email, data.password);
+      const { user: loggedUser } = useAuthStore.getState();
+      if (loggedUser) {
+        analytics.identify(loggedUser.id, { email: loggedUser.email, name: loggedUser.name });
+      }
+      analytics.login('email');
       toast.success('Bem-vindo de volta!');
       // Usuários que fazem login com e-mail/senha já são existentes
       // — marcar WelcomeModal como visto para não interromper o acesso

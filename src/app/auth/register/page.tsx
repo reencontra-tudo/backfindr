@@ -10,6 +10,7 @@ import { toast } from 'sonner';
 import { Eye, EyeOff, ArrowRight, Loader2, Check, Zap, Building2 } from 'lucide-react';
 import { useAuthStore } from '@/hooks/useAuth';
 import Cookies from 'js-cookie';
+import { analytics } from '@/providers/PostHogProvider';
 
 const schema = z.object({
   name: z.string().min(2, 'Nome muito curto'),
@@ -98,6 +99,11 @@ function RegisterForm() {
   const onSubmit = async (data: FormData) => {
     try {
       const result = await registerUser({ name: data.name, email: data.email, password: data.password, phone: data.phone });
+      const { user: newUser } = useAuthStore.getState();
+      if (newUser) {
+        analytics.identify(newUser.id, { email: newUser.email, name: newUser.name });
+      }
+      analytics.signUp('email');
       toast.success('Conta criada com sucesso!');
 
       // Se veio de um plano pago, redirecionar para checkout
