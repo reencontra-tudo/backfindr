@@ -83,6 +83,10 @@ export async function GET(req: NextRequest) {
       // ── Heatmap horário (últimos 30d) ────────────────────────────────────────
       activityByHour,
 
+      // ── Origem de aquisição — últimos cadastros com UTM/referrer ────────────
+      recentSignupSources,
+      utmSourceBreakdown,
+
     ] = await Promise.all([
       // Totais gerais
       query(`SELECT COUNT(*)::int AS count FROM users`),
@@ -189,6 +193,23 @@ export async function GET(req: NextRequest) {
         GROUP BY EXTRACT(HOUR FROM created_at)
         ORDER BY hour
       `),
+
+      // Últimos 50 cadastros com origem de aquisição
+      query(`
+        SELECT name, email, utm_source, utm_medium, utm_campaign, referrer, landing_page, created_at
+        FROM users
+        ORDER BY created_at DESC
+        LIMIT 50
+      `),
+
+      // Agregado: cadastros por utm_source (últimos 90 dias, incluindo "direto/desconhecido")
+      query(`
+        SELECT COALESCE(NULLIF(utm_source, ''), 'direto/desconhecido') AS source, COUNT(*)::int AS count
+        FROM users
+        WHERE created_at >= NOW() - INTERVAL '90 days'
+        GROUP BY COALESCE(NULLIF(utm_source, ''), 'direto/desconhecido')
+        ORDER BY count DESC
+      `),
     ]);
 
     // ── Calcular métricas derivadas ───────────────────────────────────────────
@@ -282,6 +303,19 @@ export async function GET(req: NextRequest) {
       activity: {
         by_dow:  (activityByDow.rows  as { dow: string; count: number }[]).map(r => ({ label: r.dow, value: r.count })),
         by_hour: (activityByHour.rows as { hour: number; count: number }[]).map(r => ({ hour: r.hour, value: r.count })),
+      },
+      acquisition: {
+        recent_signups: (recentSignupSources.rows as {
+          name: string; email: string; utm_source: string | null; utm_medium: string | null;
+          utm_campaign: string | null; referrer: string | null; landing_page: string | null; created_at: string;
+        }[]).map(r => ({
+          name: r.name, email: r.email,
+          utm_source: r.utm_source, utm_medium: r.utm_medium, utm_campaign: r.utm_campaign,
+          referrer: r.referrer, landing_page: r.landing_page, created_at: r.created_at,
+        })),
+        by_source: (utmSourceBreakdown.rows as { source: string; count: number }[]).map(r => ({
+          label: r.source, value: r.count,
+        })),
       },
     });
   } catch (err) {

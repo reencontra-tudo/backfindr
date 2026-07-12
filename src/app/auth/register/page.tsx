@@ -16,7 +16,7 @@ const schema = z.object({
   name: z.string().min(2, 'Nome muito curto'),
   email: z.string().email('E-mail inválido'),
   phone: z.string().optional(),
-  password: z.string().min(8, 'Mínimo 8 caracteres').regex(/[A-Z]/, 'Uma letra maiúscula').regex(/[0-9]/, 'Um número'),
+  password: z.string().min(8, 'Mínimo 8 caracteres'),
   confirmPassword: z.string(),
 }).refine(d => d.password === d.confirmPassword, { message: 'Senhas não conferem', path: ['confirmPassword'] });
 

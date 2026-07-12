@@ -46,6 +46,14 @@ interface AnalyticsData {
     by_dow:  { label: string; value: number }[];
     by_hour: { hour: number; value: number }[];
   };
+  acquisition: {
+    recent_signups: {
+      name: string; email: string;
+      utm_source: string | null; utm_medium: string | null; utm_campaign: string | null;
+      referrer: string | null; landing_page: string | null; created_at: string;
+    }[];
+    by_source: { label: string; value: number }[];
+  };
 }
 
 // ─── Paleta ───────────────────────────────────────────────────────────────────
@@ -272,6 +280,67 @@ export default function AnalyticsPage() {
             <Area type="monotone" dataKey={activeChart} stroke={activeColor} strokeWidth={2} fill="url(#grad)" dot={false} name={CHART_TABS.find(t => t.id === activeChart)?.label} />
           </AreaChart>
         </ResponsiveContainer>
+      </div>
+
+      {/* Origem dos Cadastros */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+        <div className="lg:col-span-2 p-5 bg-white/[0.02] border border-white/[0.07] rounded-xl overflow-x-auto">
+          <h2 className="text-white font-semibold text-sm mb-4">Últimos cadastros — origem</h2>
+          <table className="w-full text-xs">
+            <thead>
+              <tr className="text-white/30 text-left border-b border-white/[0.06]">
+                <th className="pb-2 pr-3 font-medium">Nome</th>
+                <th className="pb-2 pr-3 font-medium">E-mail</th>
+                <th className="pb-2 pr-3 font-medium">Origem</th>
+                <th className="pb-2 pr-3 font-medium">Campanha</th>
+                <th className="pb-2 pr-3 font-medium">Referrer</th>
+                <th className="pb-2 font-medium">Data</th>
+              </tr>
+            </thead>
+            <tbody>
+              {(data?.acquisition?.recent_signups ?? []).map((s, i) => (
+                <tr key={i} className="border-b border-white/[0.03] text-white/70">
+                  <td className="py-2 pr-3 whitespace-nowrap">{s.name}</td>
+                  <td className="py-2 pr-3 whitespace-nowrap text-white/40">{s.email}</td>
+                  <td className="py-2 pr-3 whitespace-nowrap">
+                    {s.utm_source ? (
+                      <span className="px-1.5 py-0.5 rounded bg-teal-500/10 text-teal-400">{s.utm_source}{s.utm_medium ? ` / ${s.utm_medium}` : ''}</span>
+                    ) : (
+                      <span className="text-white/20">direto</span>
+                    )}
+                  </td>
+                  <td className="py-2 pr-3 whitespace-nowrap text-white/40">{s.utm_campaign ?? '—'}</td>
+                  <td className="py-2 pr-3 max-w-[180px] truncate text-white/40" title={s.referrer ?? ''}>{s.referrer ?? '—'}</td>
+                  <td className="py-2 whitespace-nowrap text-white/40">{new Date(s.created_at).toLocaleDateString('pt-BR')}</td>
+                </tr>
+              ))}
+              {(!data?.acquisition?.recent_signups || data.acquisition.recent_signups.length === 0) && (
+                <tr><td colSpan={6} className="py-4 text-center text-white/20">Nenhum cadastro com dados de origem ainda</td></tr>
+              )}
+            </tbody>
+          </table>
+        </div>
+
+        <div className="p-5 bg-white/[0.02] border border-white/[0.07] rounded-xl">
+          <h2 className="text-white font-semibold text-sm mb-4">Cadastros por fonte (90 dias)</h2>
+          <div className="space-y-3">
+            {(data?.acquisition?.by_source ?? []).map((s, i) => {
+              const total = (data?.acquisition?.by_source ?? []).reduce((acc, x) => acc + x.value, 0) || 1;
+              const pct = Math.round((s.value / total) * 100);
+              return (
+                <div key={i}>
+                  <div className="flex justify-between text-xs mb-1">
+                    <span className="text-white/60">{s.label}</span>
+                    <span className="text-white/40">{s.value} ({pct}%)</span>
+                  </div>
+                  <div className="h-1.5 bg-white/[0.05] rounded-full overflow-hidden">
+                    <div className="h-full bg-teal-500 rounded-full" style={{ width: `${pct}%` }} />
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
       </div>
 
       {/* Linha: Funil + Distribuição por plano */}
