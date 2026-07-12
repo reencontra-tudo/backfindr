@@ -33,12 +33,31 @@ export async function POST(request: NextRequest) {
     // Hash da senha
     const hashedPassword = await bcryptjs.hash(password, 10);
 
+    // Ler cookie de origem de aquisição (definido pelo middleware na primeira visita)
+    let acquisition: {
+      utm_source?: string | null; utm_medium?: string | null; utm_campaign?: string | null;
+      utm_content?: string | null; utm_term?: string | null; referrer?: string | null; landing_page?: string | null;
+    } = {};
+    try {
+      const cookieValue = request.cookies.get('bf_acquisition')?.value;
+      if (cookieValue) acquisition = JSON.parse(cookieValue);
+    } catch { /* cookie ausente ou inválido — segue sem atribuição */ }
+
     // Criar usuário
     const result = await query(
-      `INSERT INTO users (name, email, password, phone, created_at, updated_at)
-       VALUES ($1, $2, $3, $4, NOW(), NOW())
+      `INSERT INTO users (
+         name, email, password, phone,
+         utm_source, utm_medium, utm_campaign, utm_content, utm_term, referrer, landing_page,
+         created_at, updated_at
+       )
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, NOW(), NOW())
        RETURNING id, email, name`,
-      [name, email.toLowerCase(), hashedPassword, phone || null]
+      [
+        name, email.toLowerCase(), hashedPassword, phone || null,
+        acquisition.utm_source || null, acquisition.utm_medium || null, acquisition.utm_campaign || null,
+        acquisition.utm_content || null, acquisition.utm_term || null,
+        acquisition.referrer || null, acquisition.landing_page || null,
+      ]
     );
 
     const user = result.rows[0];
