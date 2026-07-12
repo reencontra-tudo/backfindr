@@ -29,7 +29,8 @@ api.interceptors.response.use(
   (r) => r,
   async (error) => {
     const original = error.config as InternalAxiosRequestConfig & { _retry?: boolean };
-    if (error.response?.status === 401 && !original._retry) {
+    const isAuthRoute = original?.url?.includes('/auth/login') || original?.url?.includes('/auth/refresh');
+    if (error.response?.status === 401 && !original._retry && !isAuthRoute) {
       if (isRefreshing) {
         return new Promise((resolve, reject) => queue.push({ resolve, reject }))
           .then((token) => { original.headers.Authorization = `Bearer ${token}`; return api(original); });
