@@ -1,7 +1,7 @@
 # BACKFINDR — Documento Mestre
 > Arquivo único de referência. Toda sessão deve começar lendo este arquivo COMPLETO.
 > Localização canônica: `~/Downloads/backfindr-local/backfindr-main/BACKFINDR.md`
-> Última atualização: 2026-06-29
+> Última atualização: 2026-07-12
 > **REGRA DE MANUTENÇÃO: nunca usar `cat >>`. Sempre reescrever via Python.**
 
 ---
@@ -294,6 +294,7 @@ Estrutura de governança do produto instituída em 29/06/2026.
 - ActivitySummary: estado honesto com horario cron
 - BACKFINDR_INTELLIGENCE.md: constituicao fundacional commit 83104aa
 - Recepção v1: aprovada por unanimidade, documentos fundadores commit 873bef5
+- Bug de login corrigido (11-12/07/2026): schema zod exigia mínimo 8 caracteres na senha do LOGIN (deveria valer só para cadastro/troca), travando usuários com senha antiga mais curta; interceptor axios forçava reload em qualquer 401, inclusive senha errada no login, apagando a mensagem de erro antes do usuário conseguir ler. Corrigido em `src/app/auth/login/page.tsx` e `src/lib/api.ts`. Validado local: senha antiga mostra erro fixo na tela, senha nova loga normalmente.
 
 ---
 
@@ -341,6 +342,7 @@ git push origin main
 | 27/06 noite | Momento 3, checkout success Sistema Vivo, pricing copy, ActivitySummary, BACKFINDR_INTELLIGENCE.md fundacional |
 | 28/06 | Comunidade: embed YouTube (getEmbedUrl + Shorts), HTML no body (rehype-raw), thumbnail automático no card |
 | 29/06 | Conselho instituído (Marcos/Gil/Claudio), Recepção v1 aprovada, docs/brand criado (commit 873bef5) |
+| 11-12/07 | Fix login: removido min(8) do schema de senha no login; interceptor axios não força mais reload em 401 de /auth/login e /auth/refresh |
 
 ### Sessão 08/07/2026 — Correção RLS (Security Advisor)
 
