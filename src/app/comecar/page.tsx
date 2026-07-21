@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import { useEffect, useRef, useState } from 'react';
 import { ArrowRight, MapPin } from 'lucide-react';
+declare global { interface Window { fbq?: (...args: unknown[]) => void } }
 
 function FadeIn({
   children,
@@ -47,6 +48,12 @@ function FadeIn({
 }
 
 export default function ComecarPage() {
+  useEffect(() => {
+    if (typeof window !== 'undefined' && window.fbq) {
+      window.fbq('track', 'ViewContent', { content_name: 'comecar_landing' });
+    }
+  }, []);
+
   return (
     <div className="min-h-screen sm:h-screen overflow-y-auto sm:overflow-hidden bg-[#07090e] text-white selection:bg-teal-500/30">
       <section className="relative flex min-h-screen sm:h-full flex-col items-center justify-center px-5 py-6 sm:py-8">

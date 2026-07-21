@@ -104,6 +104,9 @@ function RegisterForm() {
         analytics.identify(newUser.id, { email: newUser.email, name: newUser.name });
       }
       analytics.signUp('email');
+      if (typeof window !== 'undefined' && (window as any).fbq) {
+        (window as any).fbq('track', 'Lead');
+      }
       toast.success('Conta criada com sucesso!');
 
       // Se veio de um plano pago, redirecionar para checkout

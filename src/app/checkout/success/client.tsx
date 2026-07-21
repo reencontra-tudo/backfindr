@@ -50,6 +50,13 @@ function SuccessContent() {
               setBoostData(data.data.active_boost);
               setPlanConfirmed(true);
               setChecking(false);
+              if (typeof window !== 'undefined' && (window as any).fbq) {
+                (window as any).fbq('track', 'Purchase', {
+                  value: data.data.active_boost.amount_paid,
+                  currency: 'BRL',
+                  content_name: data.data.active_boost.type,
+                });
+              }
               return;
             }
           }
