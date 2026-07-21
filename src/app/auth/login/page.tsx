@@ -120,7 +120,7 @@ function LoginForm() {
 
       <div className="w-full max-w-sm relative z-10">
         <Link href="/" className="flex items-center gap-2 mb-10">
-          <img src="/icons/logo-backfindr.png" alt="Backfindr" width={28} height={28} style={{ borderRadius: 8 }} />
+          <img src="/icons/logo-backfindr-small.png" alt="Backfindr" width={28} height={28} style={{ borderRadius: 8 }} />
           <span className="text-white font-semibold text-[15px]">Backfindr</span>
         </Link>
 
