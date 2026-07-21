@@ -1,7 +1,7 @@
 # BACKFINDR — Documento Mestre
 > Arquivo único de referência. Toda sessão deve começar lendo este arquivo COMPLETO.
 > Localização canônica: `~/Downloads/backfindr-local/backfindr-main/BACKFINDR.md`
-> Última atualização: 2026-07-12 (sessão 2 — encerrada)
+> Última atualização: 2026-07-21
 > **REGRA DE MANUTENÇÃO: nunca usar `cat >>`. Sempre reescrever via Python.**
 
 ---
@@ -298,6 +298,10 @@ Estrutura de governança do produto instituída em 29/06/2026.
 - Rastreamento de origem de cadastro implementado (12/07/2026): PostHog estava capturando sessões anônimas mas nunca identificava usuários (0 persons), pois `analytics.identify()` nunca era chamado — corrigido em `login/page.tsx` e `register/page.tsx`, chamando identify + eventos `sign_up`/`login` logo após autenticação. Adicionalmente, criado `src/middleware.ts` que captura UTM (source/medium/campaign/content/term) e referrer na primeira visita, gravando em cookie `bf_acquisition` (90 dias, first-touch); `register/route.ts` lê o cookie e grava em novas colunas na tabela `users` (migration `005_user_acquisition_source.sql`, já aplicada em produção via Supabase SQL Editor). Validado ponta a ponta: PostHog mostrando pessoa identificada com geolocalização/dispositivo, e banco gravando utm_source/utm_medium/utm_campaign corretamente.
 - Dashboard de origem dos cadastros implementado direto no `/admin/analytics` (12/07/2026): nova seção "Últimos cadastros — origem" (tabela com nome, e-mail, utm_source/medium, campanha, referrer, data) e "Cadastros por fonte (90 dias)" (barra de proporção por utm_source). API `route.ts` ganhou queries `recentSignupSources` e `utmSourceBreakdown`, expostas em `acquisition.recent_signups` e `acquisition.by_source`. Objetivo: Marcos conseguir ver origem de cadastros sem sair do sistema nem logar em Supabase/PostHog. Validado em produção — 190 cadastros históricos aparecem como "direto/desconhecido" (esperado, pré-tracking), 1 teste com UTM simulado (instagram/social) aparece corretamente.
 - Regra de senha padronizada entre cadastro e reset (12/07/2026): cadastro exigia mínimo 8 caracteres + 1 maiúscula + 1 número; reset exigia só 8 caracteres — inconsistência identificada por Marcos após confusão de login. Ambos agora exigem apenas 8 caracteres (plataforma não lida com ativos de valor, fricção extra não se justifica). Alterado em `register/page.tsx`.
+- Workflow n8n "Backfindr SEO Content — Daily Post" corrigido (21/07/2026): parado desde 28/06 por erro de SQL no node "Inserir post" — expressões separadas por vírgula em `queryReplacement` quebravam sempre que o corpo do post (texto em português) continha vírgulas, desalinhando os parâmetros $1-$11. Corrigido trocando para uma única expressão que retorna array JS (`{{ [$json.slug, $json.title, ...] }}`), eliminando a dependência de split por vírgula. Corrigido e publicado via conector n8n MCP (não mais só pela interface visual). Validado com execução de produção real (post inserido com sucesso).
+- Conector n8n MCP configurado no Claude (21/07/2026): permite buscar workflows, ver execuções, editar parâmetros de nodes e publicar direto pelo chat, sem precisar da interface visual do n8n. Requer habilitar "Enable MCP access" em cada workflow individualmente (Editor → menu do workflow). Testado com sucesso nos workflows de Comunidade e AutoPost.
+- Workflow n8n "Backfindr AutoPost — Facebook" ajustado (21/07/2026): reduzida frequência de 3x/dia (a cada 8h, apesar do node se chamar "Cron 4h") para 2x/dia (a cada 12h), a pedido de Marcos devido a baixo engajamento e sensação de posts repetitivos. Prompt de geração de imagem (node HTTP Request → gpt-image-1) ganhou variação aleatória de enquadramento (6 opções: close-up, plano aberto, ângulo de cima, altura dos olhos, através de vidro, contraluz) e iluminação (4 opções), além do clima que já existia — reduz a sensação de imagens repetitivas mesmo com temas parecidos. Publicado; efeito só visível a partir do próximo ciclo do cron.
+- Landing page `/comecar` criada (21/07/2026): página dedicada para tráfego pago (anúncios/reels), sem menu nem scroll — reaproveita visual exato do hero da home (título, 4 cards Perdi/Encontrei/Roubado/Prevenir, gradiente, grid pattern). Título alterado para "O que aconteceu?" (neutro para os 4 casos, ao invés de "Perdeu algo?" que só falava para quem perdeu) — mesma lógica da Recepção v1 aprovada anteriormente. Inclui link "Ver mapa ao vivo" (prova social). Responsividade reforçada para telas baixas (iPhone SE) com `min-h-screen` + scroll de segurança em mobile, `h-screen` sem scroll em telas maiores. Arquivo: `src/app/comecar/page.tsx`. Publicado em produção: `backfindr.com/comecar`.
 
 ---
 
@@ -348,6 +352,7 @@ git push origin main
 | 11-12/07 | Fix login: removido min(8) do schema de senha no login; interceptor axios não força mais reload em 401 de /auth/login e /auth/refresh |
 | 12/07 | PostHog identify no login/cadastro (analytics.identify + sign_up/login); middleware de captura UTM/referrer first-touch; migration 005 (colunas de origem em users) aplicada em produção |
 | 12/07 (cont.) | Seção "Origem dos Cadastros" no /admin/analytics (tabela + breakdown por fonte); regra de senha padronizada (min 8 chars) entre cadastro e reset |
+| 21/07 | Fix definitivo do workflow Comunidade (parâmetros SQL via array JS); conector n8n MCP configurado no Claude; AutoPost reduzido para 2x/dia com prompt de imagem variado; landing /comecar criada para tráfego pago |
 
 ### Sessão 08/07/2026 — Correção RLS (Security Advisor)
 
