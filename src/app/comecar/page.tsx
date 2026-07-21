@@ -99,7 +99,7 @@ export default function ComecarPage() {
               Cada cadastro aumenta uma oportunidade de reencontro.
             </p>
 
-            <p className="mx-auto mb-6 sm:mb-8 max-w-xl text-sm text-white/45">
+            <p className="mx-auto mb-6 sm:mb-8 max-w-xl text-base text-white/55">
               Escolha uma opção para começar.
             </p>
 
@@ -112,7 +112,7 @@ export default function ComecarPage() {
                 <span className="text-[1.7rem]">😟</span>
                 <div>
                   <p className="text-[0.9rem] font-bold text-white leading-tight">Perdi alguma coisa</p>
-                  <p className="text-xs text-white/45 mt-1 leading-tight">Cadastre agora (leva menos de 30 segundos)</p>
+                  <p className="text-xs text-white/60 mt-1 leading-tight">Cadastre agora. Leva menos de 30 segundos.</p>
                 </div>
                 <ArrowRight className="h-4 w-4 text-red-400 opacity-0 group-hover:opacity-100 transition-opacity" />
               </Link>
@@ -125,7 +125,7 @@ export default function ComecarPage() {
                 <span className="text-[1.7rem]">🙌</span>
                 <div>
                   <p className="text-[0.9rem] font-bold text-white leading-tight">Encontrei alguma coisa</p>
-                  <p className="text-xs text-white/45 mt-1 leading-tight">Ajude a encontrar o dono</p>
+                  <p className="text-xs text-white/60 mt-1 leading-tight">Ajude a encontrar o dono</p>
                 </div>
                 <ArrowRight className="h-4 w-4 text-teal-400 opacity-0 group-hover:opacity-100 transition-opacity" />
               </Link>
@@ -138,7 +138,7 @@ export default function ComecarPage() {
                 <span className="text-[1.7rem]">🚨</span>
                 <div>
                   <p className="text-[0.9rem] font-bold text-white leading-tight">Foi roubado</p>
-                  <p className="text-xs text-white/45 mt-1 leading-tight">Cadastre e aumente as oportunidades de recuperação</p>
+                  <p className="text-xs text-white/60 mt-1 leading-tight">Cadastre e aumente as oportunidades de recuperação</p>
                 </div>
                 <ArrowRight className="h-4 w-4 text-orange-400 opacity-0 group-hover:opacity-100 transition-opacity" />
               </Link>
@@ -151,7 +151,7 @@ export default function ComecarPage() {
                 <span className="text-[1.7rem]">🔒</span>
                 <div>
                   <p className="text-[0.9rem] font-bold text-white leading-tight">Quero me prevenir</p>
-                  <p className="text-xs text-white/45 mt-1 leading-tight">Proteja seus bens antes de perder</p>
+                  <p className="text-xs text-white/60 mt-1 leading-tight">Proteja seus bens antes de perder</p>
                 </div>
                 <ArrowRight className="h-4 w-4 text-blue-400 opacity-0 group-hover:opacity-100 transition-opacity" />
               </Link>
@@ -165,7 +165,7 @@ export default function ComecarPage() {
                 <MapPin className="h-4 w-4 text-teal-400" />
                 Ver ocorrências próximas
               </Link>
-              <p className="text-xs text-white/28">+4.300 pessoas já utilizam o Backfindr</p>
+              <p className="text-xs text-white/28">Junte-se a mais de 4.300 pessoas que já aumentam as oportunidades de reencontro.</p>
             </div>
           </FadeIn>
         </div>
