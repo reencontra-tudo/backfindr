@@ -76,7 +76,7 @@ export default function ComecarPage() {
         <div className="relative mx-auto w-full max-w-3xl text-center">
           <FadeIn>
             <Link href="/" className="mb-4 sm:mb-6 inline-flex items-center gap-2">
-              <img src="/icons/logo-backfindr.png" alt="Backfindr" width={26} height={26} style={{ borderRadius: 7 }} />
+              <img src="/icons/logo-backfindr-small.png" alt="Backfindr" width={26} height={26} style={{ borderRadius: 7 }} />
               <span className="text-sm font-semibold text-white/80">Backfindr</span>
             </Link>
 

@@ -126,7 +126,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       {/* Brand */}
       <div className="px-5 py-4 border-b border-white/[0.06] flex items-center justify-between">
         <Link href="/" className="flex items-center gap-2.5">
-          <img src="/icons/logo-backfindr.png" alt="Backfindr" width={28} height={28} style={{ borderRadius: 8, flexShrink: 0 }} />
+          <img src="/icons/logo-backfindr-small.png" alt="Backfindr" width={28} height={28} style={{ borderRadius: 8, flexShrink: 0 }} />
           <span className="font-semibold text-white text-[15px]">Backfindr</span>
         </Link>
         <button onClick={() => setSidebarOpen(false)} className="md:hidden text-white/40 hover:text-white transition-colors">
@@ -282,7 +282,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             <Menu className="w-5 h-5" />
           </button>
           <Link href="/" className="flex items-center gap-2">
-            <img src="/icons/logo-backfindr.png" alt="Backfindr" width={24} height={24} style={{ borderRadius: 6, flexShrink: 0 }} />
+            <img src="/icons/logo-backfindr-small.png" alt="Backfindr" width={24} height={24} style={{ borderRadius: 6, flexShrink: 0 }} />
             <span className="text-white font-semibold text-sm">Backfindr</span>
           </Link>
           <Link
