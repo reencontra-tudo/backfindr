@@ -21,7 +21,7 @@ async function getObject(code: string) {
 
 export async function generateMetadata({ params }: { params: { code: string } }): Promise<Metadata> {
   const obj = await getObject(params.code);
-  if (!obj) return { title: 'Objeto não encontrado | Backfindr' };
+  if (!obj) return { title: 'Objeto não encontrado' };
 
   const statusLabel: Record<string, string> = {
     lost: 'Perdido', found: 'Achado', returned: 'Recuperado', stolen: 'Roubado',
@@ -32,7 +32,7 @@ export async function generateMetadata({ params }: { params: { code: string } })
   const canonicalUrl = `${process.env.NEXT_PUBLIC_APP_URL ?? 'https://backfindr.com.br'}/objeto/${obj.unique_code}`;
 
   return {
-    title: `${obj.title} — ${statusLabel[obj.status] ?? 'Objeto'} | Backfindr`,
+    title: `${obj.title} — ${statusLabel[obj.status] ?? 'Objeto'}`,
     description: descriptionFull,
     alternates: { canonical: canonicalUrl },
     openGraph: {
