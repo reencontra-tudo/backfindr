@@ -1,19 +1,12 @@
-'use client';
-
 import Link from 'next/link';
-import { useEffect } from 'react';
 import { ArrowRight, MapPin } from 'lucide-react';
-declare global { interface Window { fbq?: (...args: unknown[]) => void } }
+import TrackViewContent from './TrackViewContent';
 
 export default function ComecarPage() {
-  useEffect(() => {
-    if (typeof window !== 'undefined' && window.fbq) {
-      window.fbq('track', 'ViewContent', { content_name: 'comecar_landing' });
-    }
-  }, []);
-
   return (
-    <div className="min-h-screen sm:h-screen overflow-y-auto sm:overflow-hidden bg-[#07090e] text-white selection:bg-teal-500/30">
+    <>
+      <TrackViewContent />
+      <div className="min-h-screen sm:h-screen overflow-y-auto sm:overflow-hidden bg-[#07090e] text-white selection:bg-teal-500/30">
       <section className="relative flex min-h-screen sm:h-full flex-col items-center justify-center px-5 py-6 sm:py-8">
         <div
           className="pointer-events-none absolute inset-0"
@@ -135,6 +128,7 @@ export default function ComecarPage() {
           </>
         </div>
       </section>
-    </div>
+      </div>
+    </>
   );
 }
