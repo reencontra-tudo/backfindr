@@ -1,51 +1,9 @@
 'use client';
 
 import Link from 'next/link';
-import { useEffect, useRef, useState } from 'react';
+import { useEffect } from 'react';
 import { ArrowRight, MapPin } from 'lucide-react';
 declare global { interface Window { fbq?: (...args: unknown[]) => void } }
-
-function FadeIn({
-  children,
-  delay = 0,
-  className = '',
-}: {
-  children: React.ReactNode;
-  delay?: number;
-  className?: string;
-}) {
-  const [visible, setVisible] = useState(false);
-  const ref = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    const node = ref.current;
-    if (!node) return;
-
-    const observer = new IntersectionObserver(([entry]) => {
-      if (entry.isIntersecting) {
-        setVisible(true);
-        observer.disconnect();
-      }
-    });
-
-    observer.observe(node);
-    return () => observer.disconnect();
-  }, []);
-
-  return (
-    <div
-      ref={ref}
-      className={className}
-      style={{
-        opacity: visible ? 1 : 0,
-        transform: visible ? 'translateY(0)' : 'translateY(22px)',
-        transition: `opacity 0.7s ease ${delay}ms, transform 0.7s ease ${delay}ms`,
-      }}
-    >
-      {children}
-    </div>
-  );
-}
 
 export default function ComecarPage() {
   useEffect(() => {
@@ -74,7 +32,7 @@ export default function ComecarPage() {
         />
 
         <div className="relative mx-auto w-full max-w-3xl text-center">
-          <FadeIn>
+          <>
             <Link href="/" className="mb-4 sm:mb-6 inline-flex items-center gap-2">
               <img src="/icons/logo-backfindr-small.png" alt="Backfindr" width={26} height={26} style={{ borderRadius: 7 }} />
               <span className="text-sm font-semibold text-white/80">Backfindr</span>
@@ -174,7 +132,7 @@ export default function ComecarPage() {
               </Link>
               <p className="text-xs text-white/28">Junte-se a mais de 4.300 pessoas que já aumentam as oportunidades de reencontro.</p>
             </div>
-          </FadeIn>
+          </>
         </div>
       </section>
     </div>
