@@ -422,7 +422,10 @@ export default function HomePage() {
             {/* Headline de intenção — sem narrativa institucional */}
             <h1
               className="mb-4 font-extrabold leading-[0.96] tracking-[-0.04em] text-white"
-              style={{ fontSize: 'clamp(36px, 5.5vw, 64px)' }}
+              style={{
+                fontSize: 'clamp(36px, 5.5vw, 64px)',
+                fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif',
+              }}
             >
               Perdeu algo?
               <br />
