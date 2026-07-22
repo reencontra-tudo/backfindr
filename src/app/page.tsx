@@ -4,6 +4,9 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { useState, useEffect, useRef } from 'react';
 import DeferredHomeLiveMap from '@/components/DeferredHomeLiveMap';
+import Navbar from '@/components/home/Navbar';
+import LiveTicker from '@/components/home/LiveTicker';
+import { FadeIn } from '@/components/home/FadeIn';
 import {
   ArrowRight,
   Bell,
@@ -87,7 +90,7 @@ const CATEGORY_EMOJI: Record<string, string> = {
   other: '📦',
 };
 
-function Counter({ target, suffix = '' }: { target: number; suffix?: string }) {
+export function Counter({ target, suffix = '' }: { target: number; suffix?: string }) {
   const [count, setCount] = useState(0);
   const ref = useRef<HTMLSpanElement>(null);
 
@@ -124,134 +127,6 @@ function Counter({ target, suffix = '' }: { target: number; suffix?: string }) {
   );
 }
 
-function FadeIn({
-  children,
-  delay = 0,
-  className = '',
-}: {
-  children: React.ReactNode;
-  delay?: number;
-  className?: string;
-}) {
-  const [visible, setVisible] = useState(false);
-  const ref = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    const node = ref.current;
-    if (!node) return;
-
-    const observer = new IntersectionObserver(([entry]) => {
-      if (entry.isIntersecting) {
-        setVisible(true);
-        observer.disconnect();
-      }
-    });
-
-    observer.observe(node);
-    return () => observer.disconnect();
-  }, []);
-
-  return (
-    <div
-      ref={ref}
-      className={className}
-      style={{
-        opacity: visible ? 1 : 0,
-        transform: visible ? 'translateY(0)' : 'translateY(22px)',
-        transition: `opacity 0.7s ease ${delay}ms, transform 0.7s ease ${delay}ms`,
-      }}
-    >
-      {children}
-    </div>
-  );
-}
-
-function Navbar() {
-  const [scrolled, setScrolled] = useState(false);
-
-  useEffect(() => {
-    const onScroll = () => setScrolled(window.scrollY > 12);
-    window.addEventListener('scroll', onScroll);
-    return () => window.removeEventListener('scroll', onScroll);
-  }, []);
-
-  return (
-    <nav
-      className={`fixed inset-x-0 top-0 z-50 transition-all duration-300 ${
-        scrolled ? 'border-b border-white/[0.08] bg-[#07090e]/88 backdrop-blur-xl' : ''
-      }`}
-    >
-      <div className="mx-auto flex w-full max-w-6xl items-center justify-between px-5 py-4">
-        <Link href="/" className="flex items-center gap-3">
-          <Image
-            src="/branding/logo-backfindr.jpeg"
-            alt="Logo Backfindr"
-            width={40}
-            height={40}
-            className="h-10 w-10 rounded-xl object-cover shadow-lg"
-            priority
-          />
-          <p className="text-sm font-bold tracking-tight text-white">Backfindr</p>
-        </Link>
-
-        <div className="hidden items-center gap-7 md:flex">
-          <Link href="#ao-vivo" className="text-sm text-white/45 transition-colors hover:text-white">Ao vivo</Link>
-          <Link href="#como-funciona" className="text-sm text-white/45 transition-colors hover:text-white">Como funciona</Link>
-          <Link href="#pets" className="text-sm text-white/45 transition-colors hover:text-white">Pets</Link>
-          <Link href="/map" className="text-sm text-white/45 transition-colors hover:text-white">Mapa</Link>
-        </div>
-
-        <div className="flex items-center gap-3">
-          <Link href="/auth/login" className="text-sm text-white/50 transition-colors hover:text-white">
-            Entrar
-          </Link>
-          <Link
-            href="/auth/register"
-            className="rounded-xl bg-teal-500 px-4 py-2 text-sm font-semibold text-white transition-all hover:bg-teal-400"
-            style={{ boxShadow: '0 8px 24px rgba(20,184,166,0.22)' }}
-          >
-            Criar QR grátis
-          </Link>
-        </div>
-      </div>
-    </nav>
-  );
-}
-
-function LiveTicker({ items }: { items: ActivityItem[] }) {
-  const typeColor: Record<ActivityType, string> = {
-    lost: 'text-red-400',
-    found: 'text-teal-400',
-    match: 'text-amber-400',
-  };
-
-  const typeLabel: Record<ActivityType, string> = {
-    lost: 'Perdido',
-    found: 'Achado',
-    match: 'Match IA',
-  };
-
-  const doubled = [...items, ...items];
-
-  return (
-    <div className="overflow-hidden border-y border-white/[0.06] bg-white/[0.02] py-3">
-      <div className="flex w-max gap-6" style={{ animation: 'ticker 30s linear infinite' }}>
-        {doubled.map((item, index) => (
-          <div
-            key={`${item.id}-${index}`}
-            className="flex flex-shrink-0 items-center gap-2 rounded-full border border-white/[0.08] bg-white/[0.03] px-3 py-1"
-          >
-            <span className="text-sm">{item.emoji}</span>
-            <span className={`text-xs font-semibold ${typeColor[item.type]}`}>{typeLabel[item.type]}</span>
-            <span className="max-w-[170px] truncate text-xs text-white/55">{item.text}</span>
-            <span className="text-[10px] text-white/28">{item.city}</span>
-          </div>
-        ))}
-      </div>
-    </div>
-  );
-}
-
 const STATS_FALLBACK = {
   total_objects: 12847,
   returned_objects: 3291,
@@ -264,6 +139,8 @@ const STATS_FALLBACK = {
     { title: 'Mochila escolar', emoji: '🎒', city: 'Fortaleza, CE',      hours_ago: 24 },
   ],
 };
+
+
 
 export default function HomePage() {
   const [activities, setActivities] = useState<ActivityItem[]>(FALLBACK_ACTIVITIES);
@@ -399,13 +276,7 @@ export default function HomePage() {
 
       {/* ─── DOBRA 1: DECISÃO OU SAÍDA ─── */}
       <section className="relative overflow-hidden px-5 pb-16 pt-28">
-        <div
-          className="pointer-events-none absolute inset-0"
-          style={{
-            background:
-              'radial-gradient(ellipse 85% 65% at 50% -10%, rgba(19,85,190,.45) 0%, rgba(8,12,20,0) 60%), radial-gradient(ellipse 80% 60% at 70% 25%, rgba(20,184,166,.12) 0%, rgba(7,9,14,0) 55%)',
-          }}
-        />
+        <div className="pointer-events-none absolute inset-0 bg-[#0b1220]" />
         <div className="pointer-events-none absolute inset-0 opacity-[0.035]" style={{
           backgroundImage:
             'linear-gradient(rgba(255,255,255,1) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,1) 1px, transparent 1px)',
