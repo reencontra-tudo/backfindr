@@ -157,7 +157,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           <>
             <Script
               src={`https://www.googletagmanager.com/gtag/js?id=${process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID}`}
-              strategy="afterInteractive"
+              strategy="lazyOnload"
             />
             <Script id="google-analytics" strategy="afterInteractive">
               {`
@@ -175,7 +175,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
 
         {/* Microsoft Clarity — gravação de sessão + mapa de calor */}
         {process.env.NEXT_PUBLIC_CLARITY_PROJECT_ID && (
-          <Script id="microsoft-clarity" strategy="afterInteractive">
+          <Script id="microsoft-clarity" strategy="lazyOnload">
             {`
               (function(c,l,a,r,i,t,y){
                 c[a]=c[a]||function(){(c[a].q=c[a].q||[]).push(arguments)};
