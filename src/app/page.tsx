@@ -262,7 +262,13 @@ export default function HomePage() {
   }, []);
 
   // Sorteio ponderado: boosted têm 4× mais chance de aparecer e sobem ao topo
-  const liveCards = weightedSample(activities, 6);
+  const [liveCards, setLiveCards] = useState<ActivityItem[]>(() =>
+    activities.slice(0, 6)
+  );
+
+  useEffect(() => {
+    setLiveCards(weightedSample(activities, 6));
+  }, [activities]);
 
   return (
     <div className="min-h-screen bg-[#07090e] text-white selection:bg-teal-500/30">
