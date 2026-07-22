@@ -325,6 +325,15 @@ cat BACKFINDR.md
 git log --oneline -10
 ```
 
+### Princípios obrigatórios
+
+- O repositório oficial é `~/Downloads/backfindr-oficial`.
+- Antes de qualquer alteração estrutural, consultar o `BACKFINDR.md`.
+- Nenhuma alteração pode ser realizada sem avaliar risco de regressão.
+- Nunca sobrescrever arquivos existentes sem inspecionar seu conteúdo.
+- Alterações devem ser pequenas, verificáveis e preferencialmente isoladas por commit.
+- Toda decisão arquitetural aprovada deve ser registrada no `BACKFINDR.md`.
+
 ### Durante
 - `cat` do arquivo antes de editar qualquer coisa
 - `pnpm` sempre, nunca `npm`
