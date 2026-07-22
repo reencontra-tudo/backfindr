@@ -311,6 +311,11 @@ Estrutura de governança do produto instituída em 29/06/2026.
 
 ---
 
+
+- Otimização de performance da Home (21/07/2026): iniciada com Lighthouse Mobile em aproximadamente Performance 48, LCP 14,4 s, FCP 3,3 s e TBT 480 ms. Principais ações: redução anterior do logo (~4,2 MB → ~20 KB), simplificação da primeira dobra, remoção de efeitos de renderização pesados, carregamento sob demanda do mapa (`DeferredHomeLiveMap`), refatoração da Home em componentes (`Navbar`, `LiveTicker` e `FadeIn`), adiamento do Microsoft Clarity (`strategy="lazyOnload"`) e do bootstrap do Google Analytics (`strategy="lazyOnload"`). Bundle inicial da Home mantido em ~111 kB. Melhor medição obtida durante a sessão: Performance 87, LCP 2,5 s, FCP 2,5 s, TBT ~330 ms e CLS 0. Conclusão registrada: ganhos adicionais passam a depender principalmente dos scripts analíticos (GA/PostHog); prioridade futura passa a ser SEO, páginas locais, Search Console, conversão da Home, IA de matching e monetização (Boost).
+
+---
+
 ## 18. PROTOCOLO DE SESSÃO
 
 ### Início obrigatório
@@ -362,6 +367,7 @@ git push origin main
 | 21/07 (cont.) | Landing /comecar refinada: copy alinhada aos vídeos de anúncio, proposta de valor, prova social, área de toque expandida (UX mobile) |
 | 21/07 (cont. 2) | Segundo round de polimento na /comecar (contraste, tamanho de fonte, prova social refinada); pendências de A/B test e landings segmentadas registradas para decisão futura por dados |
 | 21/07 (cont. 3) | Instalação de Microsoft Clarity (gravação de sessão + heatmap) e Meta Pixel (PageView, ViewContent, Lead, Purchase) em todo o site |
+| 21/07 (cont. 4) | Grande otimização da Home: Performance Mobile 48→87, LCP 14,4 s→2,5 s, Home refatorada em componentes, DeferredHomeLiveMap, Clarity e GA em `lazyOnload`; etapa de performance considerada concluída |
 
 ### Sessão 08/07/2026 — Correção RLS (Security Advisor)
 
