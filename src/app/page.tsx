@@ -413,7 +413,7 @@ export default function HomePage() {
         }} />
 
         <div className="relative mx-auto max-w-3xl text-center">
-          <FadeIn>
+          <>
             {/* Eyebrow — ancora o contexto antes do título */}
             <p className="mb-5 inline-flex items-center gap-2 rounded-full border border-blue-400/25 bg-blue-400/[0.08] px-4 py-1.5 text-[11px] font-semibold uppercase tracking-[0.18em] text-blue-200/70">
               Achados, perdidos, roubados e prevenção em um só lugar
@@ -512,7 +512,7 @@ export default function HomePage() {
               </Link>
               <p className="text-xs text-white/28">Leva menos de 30 segundos para agir.</p>
             </div>
-          </FadeIn>
+          </>
         </div>
       </section>
 
