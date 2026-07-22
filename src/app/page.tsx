@@ -2,9 +2,8 @@
 
 import Link from 'next/link';
 import Image from 'next/image';
-import dynamic from 'next/dynamic';
-const HomeLiveMap = dynamic(() => import('@/components/HomeLiveMap'), { ssr: false });
 import { useState, useEffect, useRef } from 'react';
+import DeferredHomeLiveMap from '@/components/DeferredHomeLiveMap';
 import {
   ArrowRight,
   Bell,
@@ -550,7 +549,7 @@ export default function HomePage() {
             {/* Mini mapa — só aparece em regiões com densidade suficiente */}
             {isDenseRegion !== false && (
               <FadeIn delay={40}>
-                <HomeLiveMap />
+                <DeferredHomeLiveMap />
               </FadeIn>
             )}
 
