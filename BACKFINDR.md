@@ -259,6 +259,9 @@ Estrutura de governança do produto instituída em 29/06/2026.
 - `docs/brand/MANIFESTO.md` — princípios editoriais e filosofia
 - `docs/brand/JORNADA_DO_REENCONTRO.md` — narrativa institucional completa
 
+**Auditoria estratégica de produto** (adicionado em 29/07/2026):
+- `docs/PRODUCT_AUDIT_V1.md` — missão, visão, filosofia de produto, critérios de avaliação de novas funcionalidades, auditoria da jornada do usuário (landing, fluxo Perdi, cadastro, cadastro de objeto)
+
 **A Recepção v1** — aprovada por unanimidade em 29/06/2026:
 - Substitui a landing tradicional como porta de entrada principal
 - Pergunta central: "O que aconteceu?"
@@ -292,6 +295,7 @@ Estrutura de governança do produto instituída em 29/06/2026.
 - **police_contact — 6 estados ainda sem contato confirmável**: RR (nível A, site institucional inacessível a sessão toda) e PA, MS, AP, PE, ES (nível B, sem telefone verificável via fonte oficial direta — PE e ES têm unidade de turismo confirmada existir, mas sem telefone). AM (nível C) fica pra decisão separada. Resto do nível A (7/8) e nível B (11/16) já está gravado — ver seção 13.
 - **Amostragem/revisão fina do conteúdo já gravado** (`police_contact`, `emergency_contacts_local`, `municipality_events`): fica para quando houver tempo de olhar com calma — não é bloqueio, é conferência posterior do que já foi commitado.
 - **Ciclo "Encontrei" — cron agendado no n8n, falta colar o `CRON_SECRET` real**: workflow "Backfindr Found Pending — Lembretes e Timeout" (id `hDJeRz5YpWi673u1`) criado e **ativado** em 26/08/2026 via API REST do n8n (canvas visual estava com falha intermitente de clique sintético na sessão) — Schedule Trigger diário às 2am → `GET https://backfindr.com/api/v1/cron/found-pending-reminders` com header `Authorization`. O valor do header ficou como placeholder (`Bearer COLOQUE_O_CRON_SECRET_AQUI`) porque `CRON_SECRET` é uma env var tipo Secret no Vercel — write-only, não dá pra revelar o valor salvo pela UI. **Pendência real**: abrir o node "HTTP Request" no n8n e colar o valor verdadeiro de `CRON_SECRET` (mesmo já usado em `cron/lifecycle`) no lugar do placeholder — até lá, a execução diária das 2am vai falhar com 401, sem risco (só não faz nada).
+- **GSC**: canonical inconsistente entre www/non-www (mistura backfindr.com, www.backfindr.com, e fallback backfindr.com.br em /objeto) — padronizar para um único domínio canônico antes de reportar resolvido no GSC. Robots.txt já libera /objeto/, essa suspeita foi descartada.
 - **Google Business**: data abertura travada em 2010 → corrigir para 2026
 - **Loop WhatsApp**: revisar sucesso/page.tsx + ShareModal.tsx
 - **Public Signals — bug `stripHtml()` em `src/app/api/v1/news/route.ts`**: ordem de operações erra (decodifica entidades HTML depois de tentar remover as tags), então descrições com HTML escapado do Google News passam sem strip. O mesmo padrão foi copiado (e corrigido) em `src/lib/publicSignals/sources.ts` para o pipeline novo — a rota `news/route.ts` original continua com o bug, fora de escopo da rodada. Registrado como task separada (spawn_task).
@@ -300,6 +304,7 @@ Estrutura de governança do produto instituída em 29/06/2026.
 - **Public Signals — Seções 4 e 5 do prompt master**: outreach institucional automatizado e triagem de mensagens de terceiros ("Encontrei") — não iniciados, fora do escopo da Fase 1.
 
 ### 🟢 Baixo
+- Enriquecer as 434 páginas SEO local com eventos anuais regionais (ex.: Festa do Pêssego em Mogi, Festa da Uva em Ribeirão Pires) via UPDATE em tips_content
 - Email reativação para 14 usuários reais de 2026
 - MarketplaceOS: R$ NaN pricing, broken ML URLs, botão Novo anúncio redirect
 - P2 B2B: onboarding parceiro, mensalidade
@@ -414,6 +419,8 @@ Entre 08 e 11/04/2026 o backend FastAPI (código gerado pelo Manus) foi tentado 
 
 | Data | Principais entregas |
 |------|-------------------|
+| 19/06 | Navegação de retorno (botão "← Voltar") nas páginas SEO local de cidade e categoria (commit 262d6f0) |
+| 20–23/06 | SEO local das 7 capitais publicado — Salvador, Fortaleza, BH, Curitiba, Recife, Porto Alegre, Brasília (7 páginas cada; janela estimada por evidência indireta — sem commit git, confirmado via consulta ao banco de produção, não é a data exata de execução) |
 | 21/06 | Diagnóstico geral, modelo receita, índices Supabase |
 | 22/06 | Instagram autopost, R2, token Meta longa duração |
 | 23/06 | SEO Content Engine (n8n + seeds), Google Business, cartaz dark hero |
