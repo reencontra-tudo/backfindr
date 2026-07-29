@@ -332,7 +332,7 @@ Estrutura de governança do produto instituída em 29/06/2026.
 - 434 páginas SEO publicadas
 - Cartaz 3 formatos funcionando
 - Matching automático no POST /objects ✅
-- 6 índices Supabase executados ✅
+- 6 índices Supabase executados ✅ (idx_users_created_at, idx_objects_created_at, idx_objects_status, idx_objects_user_id, idx_matches_created_at, idx_notifications_type — reconfirmados via pg_indexes em 29/07/2026)
 - Instagram autopost 5 nichos ✅
 - Cloudflare R2 configurado ✅
 - moderation_blocked n8n: resolvido
@@ -444,6 +444,7 @@ Entre 08 e 11/04/2026 o backend FastAPI (código gerado pelo Manus) foi tentado 
 | 20-21/08 | SEO local (itens A/B/C) — sessão completa: `police_contact` 37/37 SP + Nível A 7/8 + Nível B 11/16 das capitais (RJ corrigido pro DEAT real); nova tabela `state_emergency_contacts` (11/27 estados); `emergency_contacts_local` em `municipalities` (16/63 cidades, pausado por baixo retorno); reordenação do "Mapa interativo ao vivo" da Home (boost mantém prioridade, resto por proximidade real, sem requisição extra); correção de escopo — Porto Velho/RO adicionado à base (omissão da lista original de 62 cidades), 7 páginas de SEO publicadas; nova tabela `municipality_events` (migration 013) — **fechada 63/63 cidades, 107 eventos**. Ver histórico detalhado abaixo. |
 | 21-22/08 | Item D (renderização SEO local) concluído — bloco estrutural + regeneração com grounding aplicados nas 441/441 páginas publicadas; sitemap `/achados-perdidos` submetido ao Google Search Console (505 páginas, "Processado"). Auditoria + implementação do fechamento do ciclo "Encontrei" (clique anônimo → dono descobrir): bug real de clique achado e corrigido (`data-widget-safe-zone` faltando em `objeto/[code]`), mais 5 lacunas fechadas (métrica `found` no dashboard, badge de não-lidas, e-mail ao dono, card de push próprio do produto, som+toast em tempo real). Ver histórico detalhado abaixo. |
 | 31/08 | Auditoria do motor n8n do AutoPost (pra proposta de Central de Mídia em outro repo) revelou incidente de segurança: credenciais R2 vazadas em `storage.ts`, corrigidas e investigadas a fundo (PR #29) — token vazado confirmado como não sendo o realmente usado em produção, deletado sem impacto; a chave real verificada limpa no histórico de todos os repos da org, não rotacionada por precaução. Achado novo, não corrigido: 5 tokens Meta hardcoded no n8n (seção 17, 🔴 Alto). Cadência real do AutoPost confirmada e documentação corrigida (a cada 5 dias, 6 nichos — não "4 posts/dia, 7 nichos"/"2x/dia" como estava escrito). Ver histórico detalhado abaixo. |
+| 29/07 | Confirmados os 6 índices de performance Supabase — idx_users_created_at (users), idx_objects_created_at/idx_objects_status/idx_objects_user_id (objects), idx_matches_created_at (matches), idx_notifications_type (notifications) — via query direta pg_indexes no banco de produção; sem commit/migration rastreável mostrando a data real de criação (mesmo padrão de outras mudanças de schema aplicadas direto no SQL Editor) |
 
 ### Sessão 08/07/2026 — Correção RLS (Security Advisor)
 
