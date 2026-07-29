@@ -288,7 +288,7 @@ Estrutura de governança do produto instituída em 29/06/2026.
 - 434 páginas SEO publicadas
 - Cartaz 3 formatos funcionando
 - Matching automático no POST /objects ✅
-- 6 índices Supabase executados ✅
+- 6 índices Supabase executados ✅ (idx_users_created_at, idx_objects_created_at, idx_objects_status, idx_objects_user_id, idx_matches_created_at, idx_notifications_type — reconfirmados via pg_indexes em 29/07/2026)
 - Instagram autopost 5 nichos ✅
 - Cloudflare R2 configurado ✅
 - moderation_blocked n8n: resolvido
@@ -368,6 +368,7 @@ git push origin main
 | 21/07 (cont.) | Landing /comecar refinada: copy alinhada aos vídeos de anúncio, proposta de valor, prova social, área de toque expandida (UX mobile) |
 | 21/07 (cont. 2) | Segundo round de polimento na /comecar (contraste, tamanho de fonte, prova social refinada); pendências de A/B test e landings segmentadas registradas para decisão futura por dados |
 | 21/07 (cont. 3) | Instalação de Microsoft Clarity (gravação de sessão + heatmap) e Meta Pixel (PageView, ViewContent, Lead, Purchase) em todo o site |
+| 29/07 | Confirmados os 6 índices de performance Supabase — idx_users_created_at (users), idx_objects_created_at/idx_objects_status/idx_objects_user_id (objects), idx_matches_created_at (matches), idx_notifications_type (notifications) — via query direta pg_indexes no banco de produção; sem commit/migration rastreável mostrando a data real de criação (mesmo padrão de outras mudanças de schema aplicadas direto no SQL Editor) |
 
 ### Sessão 08/07/2026 — Correção RLS (Security Advisor)
 
