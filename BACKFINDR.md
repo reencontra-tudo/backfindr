@@ -233,6 +233,9 @@ Estrutura de governança do produto instituída em 29/06/2026.
 - `docs/brand/MANIFESTO.md` — princípios editoriais e filosofia
 - `docs/brand/JORNADA_DO_REENCONTRO.md` — narrativa institucional completa
 
+**Auditoria estratégica de produto** (adicionado em 29/07/2026):
+- `docs/PRODUCT_AUDIT_V1.md` — missão, visão, filosofia de produto, critérios de avaliação de novas funcionalidades, auditoria da jornada do usuário (landing, fluxo Perdi, cadastro, cadastro de objeto)
+
 **A Recepção v1** — aprovada por unanimidade em 29/06/2026:
 - Substitui a landing tradicional como porta de entrada principal
 - Pergunta central: "O que aconteceu?"
@@ -263,11 +266,12 @@ Estrutura de governança do produto instituída em 29/06/2026.
 - **Tokens Meta expiram ~30/07/2026**: renovar Facebook pages + Instagram user token
 - **Seeds SEO**: 46 seeds esgotam ~11/08/2026 — reabastecer antes
 - **Recepção v1**: implementar em React no produto real (próxima sessão)
-- **GSC**: verificar canonicals /achados-perdidos, relatório indexação
+- **GSC**: canonical inconsistente entre www/non-www (mistura backfindr.com, www.backfindr.com, e fallback backfindr.com.br em /objeto) — padronizar para um único domínio canônico antes de reportar resolvido no GSC. Robots.txt já libera /objeto/, essa suspeita foi descartada.
 - **Google Business**: data abertura travada em 2010 → corrigir para 2026
 - **Loop WhatsApp**: revisar sucesso/page.tsx + ShareModal.tsx
 
 ### 🟢 Baixo
+- Enriquecer as 434 páginas SEO local com eventos anuais regionais (ex.: Festa do Pêssego em Mogi, Festa da Uva em Ribeirão Pires) via UPDATE em tips_content
 - Email reativação para 14 usuários reais de 2026
 - MarketplaceOS: R$ NaN pricing, broken ML URLs, botão Novo anúncio redirect
 - P2 B2B: onboarding parceiro, mensalidade
@@ -344,6 +348,8 @@ git push origin main
 
 | Data | Principais entregas |
 |------|-------------------|
+| 19/06 | Navegação de retorno (botão "← Voltar") nas páginas SEO local de cidade e categoria (commit 262d6f0) |
+| 20–23/06 | SEO local das 7 capitais publicado — Salvador, Fortaleza, BH, Curitiba, Recife, Porto Alegre, Brasília (7 páginas cada; janela estimada por evidência indireta — sem commit git, confirmado via consulta ao banco de produção, não é a data exata de execução) |
 | 21/06 | Diagnóstico geral, modelo receita, índices Supabase |
 | 22/06 | Instagram autopost, R2, token Meta longa duração |
 | 23/06 | SEO Content Engine (n8n + seeds), Google Business, cartaz dark hero |
