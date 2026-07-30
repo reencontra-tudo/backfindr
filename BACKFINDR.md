@@ -109,6 +109,13 @@ cd ~/Downloads/backfindr-local/backfindr-main && pnpm dev  # porta 3003
 
 `backfindr.com` ✅ principal | `backfindr.io` ✅ | `backfindr.app` ✅ | `backfindr.com.br` ✅
 
+**Redirects** (confirmado ao vivo via curl em 30/07/2026): `backfindr.com.br` → 308 → `backfindr.com` | `www.backfindr.com.br` → 308 → `backfindr.com` | `www.backfindr.com` → 307 → `backfindr.com`. Configurado no dashboard da Vercel (Project → Settings → Domains), fora do código.
+
+**E-mail em backfindr.com.br** (ImprovMX, plano free — confirmado via `dig` em 30/07/2026):
+- MX no apex: `mx1.improvmx.com` (prioridade 10), `mx2.improvmx.com` (prioridade 20)
+- Alias wildcard: `financeiro@`, `suporte@`, `contato@` (e qualquer prefixo) encaminham para o Gmail principal
+- Sem conflito com `send.backfindr.com.br` (SPF do Resend via Amazon SES) — nomes DNS distintos, verificado
+
 ---
 
 ## 8. BANCO DE DADOS
@@ -268,8 +275,6 @@ Estrutura de governança do produto instituída em 29/06/2026.
 - **Recepção v1**: implementar em React no produto real (próxima sessão)
 - **Google Business**: data abertura travada em 2010 → corrigir para 2026
 - **Loop WhatsApp**: revisar sucesso/page.tsx + ShareModal.tsx
-- **Domínio de e-mail remetente inconsistente**: `src/lib/email.ts` usa `noreply@backfindr.com`, mas `src/app/api/v1/auth/forgot-password/route.ts` e `src/app/api/auth/magic-link/route.ts` usam `noreply@backfindr.com.br` — precisa confirmar qual domínio está verificado (SPF/DKIM) no Resend antes de padronizar, risco de quebrar entrega de e-mail de reset de senha/magic link
-- **backfindr.com.br sem redirect para o domínio canônico**: confirmado ao vivo (29/07/2026) que `backfindr.com.br` → 307 → `www.backfindr.com.br` → 200 (serve o mesmo app diretamente, não redireciona para backfindr.com). `www.backfindr.com` já redireciona corretamente. Correção é configuração de domínio no dashboard da Vercel (Project → Settings → Domains), fora do código — precisa ser feita manualmente
 
 ### 🟢 Baixo
 - Enriquecer as 434 páginas SEO local com eventos anuais regionais (ex.: Festa do Pêssego em Mogi, Festa da Uva em Ribeirão Pires) via UPDATE em tips_content
@@ -290,6 +295,9 @@ Estrutura de governança do produto instituída em 29/06/2026.
 - Cartaz 3 formatos funcionando
 - Matching automático no POST /objects ✅
 - 6 índices Supabase executados ✅ (idx_users_created_at, idx_objects_created_at, idx_objects_status, idx_objects_user_id, idx_matches_created_at, idx_notifications_type — reconfirmados via pg_indexes em 29/07/2026)
+- Canonical tags padronizadas para backfindr.com em 26 arquivos (commit 22022cb, 29/07/2026)
+- Redirect de backfindr.com.br para backfindr.com configurado no Vercel e confirmado via curl (30/07/2026) — ver seção 7
+- Remetente de e-mail padronizado para noreply@backfindr.com.br em email.ts, boost-notifications/route.ts e admin/emails/route.ts (commit c969e27, 29/07/2026) — domínio verificado no Resend
 - Instagram autopost 5 nichos ✅
 - Cloudflare R2 configurado ✅
 - moderation_blocked n8n: resolvido
@@ -371,6 +379,8 @@ git push origin main
 | 21/07 (cont. 3) | Instalação de Microsoft Clarity (gravação de sessão + heatmap) e Meta Pixel (PageView, ViewContent, Lead, Purchase) em todo o site |
 | 29/07 | Confirmados os 6 índices de performance Supabase — idx_users_created_at (users), idx_objects_created_at/idx_objects_status/idx_objects_user_id (objects), idx_matches_created_at (matches), idx_notifications_type (notifications) — via query direta pg_indexes no banco de produção; sem commit/migration rastreável mostrando a data real de criação (mesmo padrão de outras mudanças de schema aplicadas direto no SQL Editor) |
 | 29/07 (cont.) | Corrigida inconsistência de canonical tags (causa provável do erro "página alternativa com tag canônica adequada" no GSC): 26 arquivos padronizados para o domínio único `https://backfindr.com`. 13 páginas de metadata (`/perdi`, `/achei`, `/roubado`, `/encontrei`, `/pet`, `/proteger`, `/faq`, `/terms`, `/map`, `/pricing`, `/buscar`, `/auth/login`, `/auth/register`) trocaram canonical/og:url de string absoluta `www.backfindr.com` para caminho relativo, herdando o `metadataBase` já correto do `layout.tsx` raiz. `objeto/[code]/page.tsx` tinha 3 constantes de URL redundantes, 2 com fallback errado para `backfindr.com.br` — consolidadas em 1. Criado `src/lib/constants.ts` (`APP_URL`) como fonte única para as demais URLs hardcoded (links de compartilhamento WhatsApp, QR Code de scan, fallbacks de rotas de API, 16 ocorrências em `src/lib/email.ts`). Validado: `tsc --noEmit` sem novos erros (14 pré-existentes idênticos antes/depois), `next build` compilou 106/106 páginas sem erro, 4 páginas testadas ao vivo localmente (faq/pricing/terms/buscar) com canonical correto, os 5 redirects (`/perdi` etc.) confirmados via curl, página de objeto real testada com canonical e JSON-LD apontando para backfindr.com, URLs geradas pelo QR/WhatsApp confirmadas HTTP 200 em produção, e as 8 funções de `email.ts` executadas de fato (Resend mockado, zero e-mail real enviado) confirmando HTML sem `www`/`.com.br`. Fora do escopo: domínio de e-mail remetente (`noreply@backfindr.com.br` em 2 arquivos) e redirect de `backfindr.com.br` no Vercel — registrados como pendências na seção 17 |
+| 29/07 (cont. 2) | Padronizado remetente de e-mail para `noreply@backfindr.com.br` (commit c969e27) em `email.ts` (1 constante `FROM`, reutilizada nas 8 funções — não 16 ocorrências como inicialmente estimado) e mais 2 arquivos achados no mesmo escopo (`boost-notifications/route.ts`, `admin/emails/route.ts`), após confirmação de Marcos no dashboard do Resend de que `backfindr.com.br` é o domínio verificado (SPF/DKIM); `backfindr.com` exigiria upgrade pago. Validado com `tsc --noEmit` (mesmos 14 erros pré-existentes, `.next` limpo para descartar ruído de build artifact), `next build` 106/106, e Resend mockado confirmando `from` correto nas 8 funções sem nenhum e-mail real disparado |
+| 30/07 | Fechadas as 2 pendências da seção 17 abertas na sessão anterior: (1) redirect de `backfindr.com.br` → `backfindr.com` confirmado ao vivo via curl (308, configurado no dashboard da Vercel, fora do código); (2) padronização do remetente de e-mail já registrada acima. Novo: e-mail de `backfindr.com.br` configurado via ImprovMX (plano free) — MX apex `mx1`/`mx2.improvmx.com` (prioridade 10/20) confirmados via `dig`, alias wildcard (`financeiro@`, `suporte@`, `contato@`, qualquer prefixo) encaminhando para o Gmail principal, sem conflito com o SPF do Resend em `send.backfindr.com.br` (nomes DNS distintos, confirmado). Teste de entrega real do forwarding reportado por Marcos, não verificado de forma independente nesta sessão |
 
 ### Sessão 08/07/2026 — Correção RLS (Security Advisor)
 
