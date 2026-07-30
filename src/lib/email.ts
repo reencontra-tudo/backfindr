@@ -4,7 +4,7 @@ function getResend() {
   return new Resend(process.env.RESEND_API_KEY ?? '');
 }
 
-const FROM = 'Backfindr <noreply@backfindr.com>';
+const FROM = 'Backfindr <noreply@backfindr.com.br>';
 
 // ─── E-mail de boas-vindas ────────────────────────────────────────────────────
 export async function sendWelcomeEmail(user: { name: string; email: string }) {
