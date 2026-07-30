@@ -77,7 +77,7 @@ export async function POST(req: NextRequest) {
                 'Content-Type': 'application/json',
               },
               body: JSON.stringify({
-                from: 'Backfindr <noreply@backfindr.com>',
+                from: 'Backfindr <noreply@backfindr.com.br>',
                 to: row.email,
                 subject: msg.subject,
                 text: `Olá, ${row.name}!\n\n${msg.body}`,
