@@ -3,6 +3,7 @@ import { MercadoPagoConfig, Preference } from 'mercadopago';
 import { query } from '@/lib/db';
 import { verifyToken, extractTokenFromHeader } from '@/lib/jwt';
 import { successResponse, errorResponse, internalErrorResponse } from '@/lib/response';
+import { APP_URL } from '@/lib/constants';
 
 export const dynamic = 'force-dynamic';
 
@@ -134,7 +135,7 @@ export async function POST(req: NextRequest) {
       return errorResponse('Pagamento não configurado', 503);
     }
 
-    const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://www.backfindr.com';
+    const appUrl = APP_URL;
     const mpClient = new MercadoPagoConfig({ accessToken: mpToken });
     const preference = new Preference(mpClient);
 

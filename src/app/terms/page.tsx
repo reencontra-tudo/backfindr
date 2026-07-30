@@ -5,11 +5,11 @@ import { MapPin } from 'lucide-react';
 export const metadata: Metadata = {
   title: 'Termos de Uso',
   description: 'Leia os Termos de Uso do Backfindr: regras de utilização da plataforma, direitos e responsabilidades dos usuários.',
-  alternates: { canonical: 'https://www.backfindr.com/terms' },
+  alternates: { canonical: '/terms' },
   openGraph: {
     title: 'Termos de Uso | Backfindr',
     description: 'Regras de utilização da plataforma Backfindr.',
-    url: 'https://www.backfindr.com/terms',
+    url: '/terms',
     type: 'website',
   },
   robots: { index: true, follow: false },

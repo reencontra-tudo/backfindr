@@ -16,6 +16,7 @@ import { toast } from 'sonner';
 import { format, formatDistanceToNow } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { objectsApi, parseApiError } from '@/lib/api';
+import { APP_URL } from '@/lib/constants';
 import { ImageLightbox, useLightbox } from '@/components/ImageLightbox';
 import { RegisteredObject, ObjectStatus } from '@/types';
 import Cookies from 'js-cookie';
@@ -51,7 +52,7 @@ const STATUS_CONFIG: Record<string, { label: string; icon: React.ReactNode; colo
 function QRCodeDisplay({ code, title, status }: { code: string; title: string; status: string }) {
   const isLost = status === 'lost' || status === 'stolen';
   const isProtected = status === 'protected';
-  const scanUrl = `${process.env.NEXT_PUBLIC_APP_URL ?? 'https://backfindr.com.br'}/scan/${code}`;
+  const scanUrl = `${APP_URL}/scan/${code}`;
   const [theme, setTheme] = useState<'dark'|'light'|'teal'>('dark');
   const [size, setSize] = useState<'85x55'|'50x50'|'a4'>('85x55');
   const [showPrintOptions, setShowPrintOptions] = useState(false);
