@@ -12,6 +12,11 @@ interface ShareModalProps {
   buttonLabel?: string;
   /** Classe extra para o botão de abertura */
   buttonClassName?: string;
+  /**
+   * Texto magnético para o canal WhatsApp (já deve incluir o link).
+   * Se omitido, usa o fallback genérico `${title}\n${url}`.
+   */
+  whatsappText?: string;
 }
 
 interface Channel {
@@ -89,6 +94,7 @@ export default function ShareModal({
   description = '',
   buttonLabel = 'Compartilhar',
   buttonClassName = '',
+  whatsappText,
 }: ShareModalProps) {
   const [open, setOpen] = useState(false);
   const [copied, setCopied] = useState(false);
@@ -117,7 +123,9 @@ export default function ShareModal({
   };
 
   const openChannel = (channel: Channel) => {
-    const shareUrl = channel.getUrl(url, title, description);
+    const shareUrl = channel.name === 'WhatsApp' && whatsappText
+      ? `https://wa.me/?text=${encodeURIComponent(whatsappText)}`
+      : channel.getUrl(url, title, description);
     window.open(shareUrl, '_blank', 'noopener,noreferrer,width=600,height=500');
   };
 
@@ -125,7 +133,7 @@ export default function ShareModal({
   const handleNativeShare = async () => {
     if (typeof navigator !== 'undefined' && navigator.share) {
       try {
-        await navigator.share({ title, text: description, url });
+        await navigator.share({ title, text: whatsappText ?? description, url });
         return;
       } catch {
         // Usuário cancelou ou não suportado — abre o modal

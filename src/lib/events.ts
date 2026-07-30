@@ -63,6 +63,9 @@ export const Events = {
   qrScanned: (object_id: string, metadata?: Record<string, unknown>) =>
     recordEvent({ object_id, type: 'qr_scanned', title: 'QR Code escaneado', source: 'community', actor_type: 'anonymous', metadata }),
 
+  sharedLinkOpened: (object_id: string, metadata?: Record<string, unknown>) =>
+    recordEvent({ object_id, type: 'shared_link_opened', title: 'Link compartilhado foi aberto', source: 'community', actor_type: 'anonymous', metadata }),
+
   ownerNotified: (object_id: string, user_id: string) =>
     recordEvent({ object_id, user_id, type: 'owner_notified', title: 'Dono notificado', source: 'system' }),
 

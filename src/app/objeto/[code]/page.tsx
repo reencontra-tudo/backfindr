@@ -2,6 +2,7 @@ import { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import PublicObjectClient from './client';
 import { APP_URL } from '@/lib/constants';
+import { Events } from '@/lib/events';
 
 async function getObject(code: string) {
   try {
@@ -93,10 +94,22 @@ function buildJsonLd(obj: Record<string, unknown>) {
   return base;
 }
 
-export default async function PublicObjectPage({ params }: { params: { code: string } }) {
+export default async function PublicObjectPage({
+  params,
+  searchParams,
+}: {
+  params: { code: string };
+  searchParams: { [key: string]: string | string[] | undefined };
+}) {
   const obj = await getObject(params.code);
   if (!obj) notFound();
   const jsonLd = buildJsonLd(obj);
+
+  const via = typeof searchParams.via === 'string' ? searchParams.via : undefined;
+  if (via) {
+    Events.sharedLinkOpened(obj.id as string, { via }).catch(() => {});
+  }
+
   return (
     <>
       <script

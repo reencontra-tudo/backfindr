@@ -12,6 +12,7 @@ import {
 import { toast } from 'sonner';
 import { objectsApi } from '@/lib/api';
 import { APP_URL } from '@/lib/constants';
+import { extractShareLocation, buildWhatsAppShareText } from '@/lib/shareText';
 
 interface ObjectData {
   id: string;
@@ -38,53 +39,15 @@ const STATUS_MESSAGES: Record<string, { headline: string; sub: string }> = {
   protected: { headline: 'Objeto protegido com QR Code!', sub: 'Cole o QR Code no objeto físico. Se alguém encontrar e escanear, você será notificado imediatamente.' },
 };
 
-// Extrai cidade/bairro do objeto para o texto magnético
-function extractLocation(obj: ObjectData): string {
-  if (obj.location_city) return obj.location_city;
-  if (obj.location) {
-    try {
-      const loc = typeof obj.location === 'string' ? JSON.parse(obj.location) : obj.location;
-      if (loc?.address) {
-        // Pega apenas a primeira parte do endereço (bairro ou rua)
-        const parts = loc.address.split(',');
-        return parts[0]?.trim() || '';
-      }
-    } catch { /* ignora */ }
-  }
-  return '';
-}
-
-// Gera o texto magnético para WhatsApp — soa humano, não como marketing
-function buildWhatsAppText(obj: ObjectData): string {
-  const location = extractLocation(obj);
-  const code = obj.unique_code || obj.qr_code || '';
-  const publicUrl = `${APP_URL}/objeto/${code}`;
-
-  if (obj.status === 'protected') {
-    return `Colei um QR Code do Backfindr no meu ${obj.title}. Se você encontrar, é só escanear — ele me avisa automaticamente: ${publicUrl}`;
-  }
-
-  if (obj.status === 'lost') {
-    if (location) {
-      return `Gente, perdi meu ${obj.title} perto de ${location}. Cadastrei no Backfindr — se alguém encontrar, o link já identifica o dono: ${publicUrl}`;
-    }
-    return `Gente, perdi meu ${obj.title}. Cadastrei no Backfindr — se alguém encontrar, o link já identifica o dono: ${publicUrl}`;
-  }
-
-  if (obj.status === 'stolen') {
-    if (location) {
-      return `Roubaram meu ${obj.title} perto de ${location}. Registrei o furto no Backfindr: ${publicUrl}`;
-    }
-    return `Roubaram meu ${obj.title}. Registrei o furto no Backfindr: ${publicUrl}`;
-  }
-
-  // found
-  return `Encontrei um objeto perdido${location ? ` perto de ${location}` : ''}. Se for seu, acesse: ${publicUrl}`;
+// Gera o texto magnético para WhatsApp — soa humano, não como marketing.
+// publicUrl já deve incluir ?via=whatsapp_share para rastreio de origem.
+function buildWhatsAppText(obj: ObjectData, publicUrl: string): string {
+  return buildWhatsAppShareText(obj, publicUrl);
 }
 
 // Texto curto para Instagram Stories (máx ~80 chars)
 function buildStoriesText(obj: ObjectData): string {
-  const location = extractLocation(obj);
+  const location = extractShareLocation(obj);
   if (obj.status === 'protected') {
     return `Protegi meu ${obj.title} com QR Code 🛡️ ${location ? `em ${location}` : ''}`.trim();
   }
@@ -130,7 +93,7 @@ export default function SucessoPage() {
   const emoji = CATEGORY_EMOJI[obj.category] ?? '📦';
   const code = obj.unique_code || obj.qr_code || '';
   const publicUrl = `${APP_URL}/objeto/${code}`;
-  const whatsappText = buildWhatsAppText(obj);
+  const whatsappText = buildWhatsAppText(obj, `${publicUrl}?via=whatsapp_share`);
   const storiesText = buildStoriesText(obj);
   const whatsappUrl = `https://wa.me/?text=${encodeURIComponent(whatsappText)}`;
 
@@ -166,7 +129,7 @@ export default function SucessoPage() {
     toast.success(`Cartaz ${format === 'square' ? 'quadrado' : 'vertical'} baixado!`);
   };
 
-  const location = extractLocation(obj);
+  const location = extractShareLocation(obj);
 
 
   const SHARE_NUDGES = [
