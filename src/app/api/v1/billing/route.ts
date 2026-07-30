@@ -3,6 +3,7 @@ import { NextRequest } from 'next/server';
 import { query } from '@/lib/db';
 import { verifyToken } from '@/lib/jwt';
 import { successResponse, errorResponse, internalErrorResponse } from '@/lib/response';
+import { APP_URL } from '@/lib/constants';
 
 // GET /api/v1/billing — status do plano atual + histórico de pagamentos
 export async function GET(request: NextRequest) {
@@ -102,7 +103,7 @@ export async function POST(request: NextRequest) {
     }
 
     const user = result.rows[0];
-    const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://www.backfindr.com';
+    const appUrl = APP_URL;
 
     if (action === 'upgrade') {
       // Redirecionar para checkout do Mercado Pago

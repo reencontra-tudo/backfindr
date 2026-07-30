@@ -11,6 +11,7 @@ import {
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { objectsApi } from '@/lib/api';
+import { APP_URL } from '@/lib/constants';
 
 interface ObjectData {
   id: string;
@@ -57,7 +58,7 @@ function extractLocation(obj: ObjectData): string {
 function buildWhatsAppText(obj: ObjectData): string {
   const location = extractLocation(obj);
   const code = obj.unique_code || obj.qr_code || '';
-  const publicUrl = `https://www.backfindr.com/objeto/${code}`;
+  const publicUrl = `${APP_URL}/objeto/${code}`;
 
   if (obj.status === 'protected') {
     return `Colei um QR Code do Backfindr no meu ${obj.title}. Se você encontrar, é só escanear — ele me avisa automaticamente: ${publicUrl}`;
@@ -128,7 +129,7 @@ export default function SucessoPage() {
   const msg = STATUS_MESSAGES[obj.status] ?? STATUS_MESSAGES.lost;
   const emoji = CATEGORY_EMOJI[obj.category] ?? '📦';
   const code = obj.unique_code || obj.qr_code || '';
-  const publicUrl = `https://www.backfindr.com/objeto/${code}`;
+  const publicUrl = `${APP_URL}/objeto/${code}`;
   const whatsappText = buildWhatsAppText(obj);
   const storiesText = buildStoriesText(obj);
   const whatsappUrl = `https://wa.me/?text=${encodeURIComponent(whatsappText)}`;

@@ -3,12 +3,13 @@ import { NextRequest, NextResponse } from 'next/server';
 import { query } from '@/lib/db';
 import { verifyToken } from '@/lib/jwt';
 import jwt from 'jsonwebtoken';
+import { APP_URL } from '@/lib/constants';
 
 export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url);
   const code = searchParams.get('code');
   const error = searchParams.get('error');
-  const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://www.backfindr.com';
+  const appUrl = APP_URL;
 
   if (error || !code) {
     return NextResponse.redirect(`${appUrl}/admin/sistema?analytics_error=oauth_denied`);
