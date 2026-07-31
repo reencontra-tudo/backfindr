@@ -13,7 +13,6 @@ import { ptBR } from 'date-fns/locale';
 import { objectsApi, parseApiError } from '@/lib/api';
 import { RegisteredObject, ObjectStatus, ObjectCategory } from '@/types';
 import { APP_URL } from '@/lib/constants';
-import { buildWhatsAppShareText } from '@/lib/shareText';
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
@@ -56,7 +55,6 @@ const STATUS_LABEL: Record<string, string> = {
 
 function ObjectCard({ obj, view }: { obj: RegisteredObject; view: 'grid' | 'list' }) {
   const shareUrl = `${APP_URL}/objeto/${obj.unique_code}`;
-  const whatsappText = buildWhatsAppShareText(obj, `${shareUrl}?via=whatsapp_share`);
 
   if (view === 'list') {
     return (
@@ -87,7 +85,8 @@ function ObjectCard({ obj, view }: { obj: RegisteredObject; view: 'grid' | 'list
             imageUrl={obj.photos?.[0]}
             buttonLabel=""
             buttonClassName="p-1.5 rounded-lg hover:bg-white/[0.06] text-slate-500 hover:text-slate-300 transition-colors"
-            whatsappText={whatsappText}
+            status={obj.status}
+            location={obj.location}
           />
           <Link href={`/dashboard/objects/${obj.id}`}>
             <ChevronRight className="w-4 h-4 text-slate-600 group-hover:text-brand-400 transition-colors" />
@@ -136,7 +135,8 @@ function ObjectCard({ obj, view }: { obj: RegisteredObject; view: 'grid' | 'list
             imageUrl={obj.photos?.[0]}
             buttonLabel=""
             buttonClassName="p-1 rounded-lg hover:bg-white/[0.06] text-slate-600 hover:text-slate-300 transition-colors"
-            whatsappText={whatsappText}
+            status={obj.status}
+            location={obj.location}
           />
           <Link href={`/dashboard/objects/${obj.id}`} onClick={(e) => e.stopPropagation()} className="p-1 rounded-lg hover:bg-white/[0.06] text-slate-600 hover:text-brand-400 transition-colors">
             <ChevronRight className="w-3.5 h-3.5" />

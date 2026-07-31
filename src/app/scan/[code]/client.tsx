@@ -11,7 +11,6 @@ import {
 import { api, parseApiError } from '@/lib/api';
 import { RegisteredObject } from '@/types';
 import { APP_URL } from '@/lib/constants';
-import { buildWhatsAppShareText } from '@/lib/shareText';
 import ShareModal from '@/components/ShareModal';
 import { ImageLightbox, useLightbox } from '@/components/ImageLightbox';
 import RecoveredCelebration from '@/components/RecoveredCelebration';
@@ -251,12 +250,14 @@ export default function ScanPage() {
           </Link>
           <ShareModal
             url={typeof window !== 'undefined' ? window.location.href : `${APP_URL}/scan/${code}`}
+            shareUrl={`${APP_URL}/objeto/${obj.unique_code}`}
             title={obj.title}
             description={obj.description ?? ''}
             imageUrl={obj.photos?.[0]}
             buttonLabel=""
             buttonClassName="w-9 h-9 rounded-full bg-black/40 backdrop-blur-sm border border-white/10 flex items-center justify-center text-white hover:bg-black/60 transition-all"
-            whatsappText={buildWhatsAppShareText(obj, `${APP_URL}/objeto/${obj.unique_code}?via=whatsapp_share`)}
+            status={obj.status}
+            location={obj.location}
           />
         </div>
 

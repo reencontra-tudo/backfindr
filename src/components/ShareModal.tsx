@@ -1,9 +1,11 @@
 'use client';
 import { useState } from 'react';
-import { X, Copy, Check, Share2 } from 'lucide-react';
+import { X, Copy, Check, Share2, MessageSquareQuote } from 'lucide-react';
 import { toast } from 'sonner';
+import { buildWhatsAppShareText } from '@/lib/shareText';
 
 interface ShareModalProps {
+  /** URL usada pelos canais genéricos (Facebook, X, Telegram, LinkedIn, Email, Copiar link) */
   url: string;
   title: string;
   description?: string;
@@ -12,11 +14,15 @@ interface ShareModalProps {
   buttonLabel?: string;
   /** Classe extra para o botão de abertura */
   buttonClassName?: string;
+  /** URL canônica do objeto para o texto magnético (WhatsApp direto / Web Share API). Default: `url`. */
+  shareUrl?: string;
   /**
-   * Texto magnético para o canal WhatsApp (já deve incluir o link).
-   * Se omitido, usa o fallback genérico `${title}\n${url}`.
+   * Status do objeto (lost/stolen/found/protected) — habilita o texto magnético
+   * gerado por shareText.ts. Sem isso, usa um fallback genérico com título + link.
    */
-  whatsappText?: string;
+  status?: string;
+  location?: { address?: string } | string | null | undefined;
+  location_city?: string;
 }
 
 interface Channel {
@@ -88,17 +94,43 @@ const COPY_CHANNELS = [
   },
 ];
 
+// Facebook bloqueia preenchimento automático de legenda via URL desde 2018
+// (limitação anti-spam da própria Meta) — copiamos a legenda pro usuário
+// colar manualmente, em vez de fingir que dá pra automatizar.
+const FACEBOOK_NO_CAPTION_HINT = 'Legenda copiada — o Facebook não permite preencher automaticamente, é só colar na publicação';
+
+function appendVia(url: string, via: string): string {
+  return `${url}${url.includes('?') ? '&' : '?'}via=${via}`;
+}
+
 export default function ShareModal({
   url,
   title,
   description = '',
   buttonLabel = 'Compartilhar',
   buttonClassName = '',
-  whatsappText,
+  shareUrl,
+  status,
+  location,
+  location_city,
 }: ShareModalProps) {
   const [open, setOpen] = useState(false);
   const [copied, setCopied] = useState(false);
+  const [legendCopied, setLegendCopied] = useState(false);
   const [copiedChannel, setCopiedChannel] = useState<string | null>(null);
+
+  const baseShareUrl = shareUrl ?? url;
+
+  // Texto magnético por canal — cada um carrega seu próprio ?via= para
+  // diferenciar a origem no Events.sharedLinkOpened.
+  const buildText = (via: string) => {
+    const urlWithVia = appendVia(baseShareUrl, via);
+    return status
+      ? buildWhatsAppShareText({ title, status, location, location_city }, urlWithVia)
+      : `${title}\n${urlWithVia}`;
+  };
+  const whatsappText = buildText('whatsapp_share');
+  const nativeShareText = buildText('native_share');
 
   const copyLink = async () => {
     try {
@@ -108,6 +140,17 @@ export default function ShareModal({
       setTimeout(() => setCopied(false), 2000);
     } catch {
       toast.error('Não foi possível copiar o link.');
+    }
+  };
+
+  const copyLegend = async () => {
+    try {
+      await navigator.clipboard.writeText(nativeShareText);
+      setLegendCopied(true);
+      toast.success('Legenda copiada! Cole onde quiser compartilhar.');
+      setTimeout(() => setLegendCopied(false), 2500);
+    } catch {
+      toast.error('Não foi possível copiar a legenda.');
     }
   };
 
@@ -122,18 +165,36 @@ export default function ShareModal({
     }
   };
 
-  const openChannel = (channel: Channel) => {
-    const shareUrl = channel.name === 'WhatsApp' && whatsappText
-      ? `https://wa.me/?text=${encodeURIComponent(whatsappText)}`
-      : channel.getUrl(url, title, description);
-    window.open(shareUrl, '_blank', 'noopener,noreferrer,width=600,height=500');
+  const openChannel = async (channel: Channel) => {
+    if (channel.name === 'WhatsApp') {
+      window.open(`https://wa.me/?text=${encodeURIComponent(whatsappText)}`, '_blank', 'noopener,noreferrer,width=600,height=500');
+      return;
+    }
+    if (channel.name === 'Facebook') {
+      // Copia a legenda antes de abrir — Meta bloqueia preenchimento automático
+      try {
+        await navigator.clipboard.writeText(nativeShareText);
+        toast.info(FACEBOOK_NO_CAPTION_HINT, { duration: 5000 });
+      } catch {
+        // Segue mesmo se a cópia falhar — o compartilhamento em si não depende disso
+      }
+    }
+    const shareUrlForChannel = channel.getUrl(url, title, description);
+    window.open(shareUrlForChannel, '_blank', 'noopener,noreferrer,width=600,height=500');
   };
 
   // Usa Web Share API nativa no mobile se disponível
   const handleNativeShare = async () => {
     if (typeof navigator !== 'undefined' && navigator.share) {
       try {
-        await navigator.share({ title, text: whatsappText ?? description, url });
+        // Quando há texto magnético, o link já vai embutido em `text` —
+        // não repassar `url` separadamente evita o link aparecer duplicado
+        // nos apps que concatenam text+url (comum no Android).
+        if (status) {
+          await navigator.share({ title, text: nativeShareText });
+        } else {
+          await navigator.share({ title, text: description, url: appendVia(baseShareUrl, 'native_share') });
+        }
         return;
       } catch {
         // Usuário cancelou ou não suportado — abre o modal
@@ -144,7 +205,7 @@ export default function ShareModal({
 
   return (
     <>
-      {/* Botão de abertura */}
+      {/* Botão de abertura — dispara Web Share API nativa quando disponível */}
       <button
         onClick={handleNativeShare}
         className={buttonClassName || 'flex items-center gap-2 text-white/50 hover:text-white text-sm transition-colors'}
@@ -153,7 +214,8 @@ export default function ShareModal({
         {buttonLabel}
       </button>
 
-      {/* Modal overlay */}
+      {/* Modal overlay — fallback para quando a Web Share API não está disponível
+          (a maioria dos navegadores desktop) ou o usuário cancelou o menu nativo */}
       {open && (
         <div
           className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/70 backdrop-blur-sm px-4 pb-4 sm:pb-0"
@@ -174,6 +236,26 @@ export default function ShareModal({
               </button>
             </div>
 
+            {/* Copiar legenda — texto pronto pra colar em qualquer app */}
+            <div className="px-5 pt-4">
+              <button
+                onClick={copyLegend}
+                className="w-full flex items-center gap-2.5 p-3 rounded-xl bg-teal-500/10 hover:bg-teal-500/15 border border-teal-500/20 transition-all active:scale-[0.99] text-left"
+              >
+                {legendCopied ? (
+                  <Check className="w-4 h-4 text-teal-400 flex-shrink-0" />
+                ) : (
+                  <MessageSquareQuote className="w-4 h-4 text-teal-400 flex-shrink-0" />
+                )}
+                <div className="min-w-0">
+                  <p className="text-teal-300 text-[13px] font-medium">
+                    {legendCopied ? 'Legenda copiada!' : 'Copiar legenda'}
+                  </p>
+                  <p className="text-white/30 text-[11px] truncate">Texto pronto pra colar em qualquer app</p>
+                </div>
+              </button>
+            </div>
+
             {/* Canais com API web */}
             <div className="px-5 pt-4 pb-2">
               <p className="text-white/30 text-[11px] uppercase tracking-wider mb-3">Compartilhar via</p>
@@ -189,6 +271,9 @@ export default function ShareModal({
                   </button>
                 ))}
               </div>
+              <p className="text-white/20 text-[10px] mt-2.5 leading-relaxed">
+                No Facebook, a legenda é copiada automaticamente — o Facebook não permite preenchimento automático.
+              </p>
             </div>
 
             {/* Canais que precisam de cópia manual (Instagram, TikTok) */}
