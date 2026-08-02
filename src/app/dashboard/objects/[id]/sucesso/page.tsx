@@ -1,7 +1,7 @@
 'use client';
 // src/app/dashboard/objects/[id]/sucesso/page.tsx
 
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import {
@@ -12,6 +12,12 @@ import {
 import { toast } from 'sonner';
 import { objectsApi } from '@/lib/api';
 import PushPromptCard from '@/components/PushPromptCard';
+
+declare global {
+  interface Window {
+    gtag?: (...args: unknown[]) => void;
+  }
+}
 
 interface ObjectData {
   id: string;
@@ -108,6 +114,7 @@ export default function SucessoPage() {
   const [linkCopied, setLinkCopied] = useState(false);
   const [shareCount, setShareCount] = useState(0);
   const [justShared, setJustShared] = useState(false);
+  const gtagFiredRef = useRef(false);
 
   useEffect(() => {
     objectsApi.get(id)
@@ -115,6 +122,37 @@ export default function SucessoPage() {
       .catch(() => router.push(`/dashboard/objects/${id}`))
       .finally(() => setLoading(false));
   }, [id, router]);
+
+  // Evento de conversão GA4/Google Ads — dispara uma única vez por carregamento,
+  // em paralelo aos demais eventos de analytics já existentes (PostHog, Events.*).
+  // gtag.js carrega com strategy="afterInteractive" no layout raiz; em navegações
+  // diretas para /sucesso (refresh, link externo) ele pode ainda não estar pronto
+  // no primeiro render, daí o retry curto.
+  useEffect(() => {
+    if (!obj || gtagFiredRef.current) return;
+
+    let attempts = 0;
+    const maxAttempts = 5;
+    let timeoutId: ReturnType<typeof setTimeout>;
+
+    const tryFireEvent = () => {
+      if (typeof window !== 'undefined' && window.gtag) {
+        window.gtag('event', 'ocorrencia_publicada', {
+          object_type: obj.category,
+          send_to: process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID,
+        });
+        gtagFiredRef.current = true;
+        return;
+      }
+      attempts++;
+      if (attempts < maxAttempts) {
+        timeoutId = setTimeout(tryFireEvent, 300);
+      }
+    };
+
+    tryFireEvent();
+    return () => clearTimeout(timeoutId);
+  }, [obj]);
 
   if (loading) {
     return (
