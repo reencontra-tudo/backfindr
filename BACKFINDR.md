@@ -276,6 +276,12 @@ Estrutura de governança do produto instituída em 29/06/2026.
 - **Recepção v1**: implementar em React no produto real (próxima sessão)
 - **Google Business**: data abertura travada em 2010 → corrigir para 2026
 - **Decisão pendente: ativar sistema de reativação?** Cron `/api/v1/cron/reactivation` existe e envia dicas personalizadas por categoria (v2), mas a tabela `reactivation_emails` que ele grava **nunca foi criada em produção** — parece ter sido escrito mas nunca ligado (sem cron do Vercel, sem workflow n8n disparando). Antes de estender esse fluxo (ex.: lembrete de compartilhar de novo após 3 dias sem match, cogitado na sessão do Loop WhatsApp), decidir: ativar o cron como um todo (criar a tabela, plugar disparo) ou descartar essa peça do sistema
+- **Google Ads API — automação de campanhas (investigada em 02/08/2026, não implementada)**: campanha "SBF | Pesquisa | Objetos Perdidos | BR" (conta Google Ads `468-452-7429`) travada em "Qualificada (limitada)", zero impressões — configuração manual via UI lenta e propensa a erro. Pesquisa concluída, plano abaixo aguardando decisão de prosseguir. Ver detalhes completos na seção "Google Ads API" (histórico técnico, mesma data) — resumo:
+  - **Achado principal**: existe um tier "Explorer Access" (Google, início 2026) que dá acesso de produção **sem aprovação formal** (auto-concedido na maioria dos casos), 2.880 operações/dia, cobre leitura de diagnóstico + mutate de budget/datas de campanha (não cobre criação de conta, billing, ferramentas de planejamento). Isso muda a estimativa de "dias de aprovação" do pedido original para potencialmente **horas ou nem isso**
+  - Sem biblioteca Node.js oficial (só Python/Java/PHP/.NET/Ruby/Perl) — proposta é consumir a REST API direto via `fetch`, mesmo padrão já usado no projeto pra outras APIs externas (Resend), num novo `src/lib/googleAds.ts`
+  - Backfindr e M2RMenu usam a mesma conta Google Ads (`468-452-7429`) — não é "duas contas", é uma só, então **um único developer token + uma única credencial OAuth resolve os dois projetos**
+  - Passos que só o Marcos pode fazer (login/aprovação em conta Google real, fora do alcance do Claude Code): aplicar developer token no API Center, criar OAuth Client ID (Desktop app) no Google Cloud Console, gerar refresh token
+  - Depois disso: leitura de diagnóstico (~1-2h), mutate de budget/datas (~1-2h) — ambos plausíveis sob Explorer Access, a confirmar na prática
 
 ### 🟢 Baixo
 - Enriquecer as 434 páginas SEO local com eventos anuais regionais (ex.: Festa do Pêssego em Mogi, Festa da Uva em Ribeirão Pires) via UPDATE em tips_content
@@ -300,6 +306,7 @@ Estrutura de governança do produto instituída em 29/06/2026.
 - Redirect de backfindr.com.br para backfindr.com configurado no Vercel e confirmado via curl (30/07/2026) — ver seção 7
 - Remetente de e-mail padronizado para noreply@backfindr.com.br em email.ts, boost-notifications/route.ts e admin/emails/route.ts (commit c969e27, 29/07/2026) — domínio verificado no Resend
 - Loop WhatsApp — copy magnética (não genérica) no ShareModal.tsx + rastreamento de origem via ?via=whatsapp_share (commit 7f4b683, 30/07/2026); evoluído com Web Share API nativa como método principal + fallback com "Copiar legenda" e tratamento correto do Facebook (commit e661b93, 31/07/2026). Parte 3 (lembrete de reforço) ficou de fora, ver decisão pendente sobre sistema de reativação acima
+- Evento de conversão GA4 `ocorrencia_publicada` na tela de sucesso (commit 4a3b439, 01/08/2026) — base pra marcar conversão no GA4 e importar pro Google Ads
 - Instagram autopost 5 nichos ✅
 - Cloudflare R2 configurado ✅
 - moderation_blocked n8n: resolvido
@@ -386,6 +393,8 @@ git push origin main
 | 30/07 (cont.) | Loop de compartilhamento WhatsApp (commit 7f4b683): copy do `ShareModal.tsx` trocada de genérica (`${title}\n${url}`) para texto magnético por status (lost/stolen/found/protected), extraído para `src/lib/shareText.ts` a partir da lógica que já existia isolada em `sucesso/page.tsx`; todo link de WhatsApp passou a carregar `?via=whatsapp_share`, capturado em `objeto/[code]/page.tsx` e gravado como novo evento `Events.sharedLinkOpened`. De bônus, corrigido `https://backfindr.app/...` hardcoded (domínio fora do canônico) para `APP_URL` em 2 arquivos. Descoberta em paralelo: a tabela `reactivation_emails` usada pelo cron `/api/v1/cron/reactivation` nunca foi criada em produção — decisão de reaproveitar esse cron para o lembrete de reforço (Parte 3, não implementada) fica pendente de uma decisão maior sobre ativar ou não o sistema de reativação como um todo. Validado: tsc/build limpos, evento `shared_link_opened` confirmado gravado em produção (objeto real JDZ4BQFO) via teste ao vivo, texto magnético testado isoladamente em 5 cenários de status |
 | 31/07 | ShareModal.tsx evoluído para Web Share API nativa como método principal (commit e661b93): diferenciação de origem entre `?via=native_share` (Web Share API genérica) e `?via=whatsapp_share` (botão WhatsApp direto no modal); novo botão "Copiar legenda" no fallback desktop; Facebook passou a copiar a legenda automaticamente pro clipboard antes de abrir o sharer (Meta bloqueia preenchimento via URL desde 2018) em vez de fingir suporte. Bônus: corrigido bug pré-existente onde `navigator.share` recebia `url` duplicado além do link já embutido em `text`. Incidente durante o teste: um clique com referência de elemento desatualizada (após scroll) acertou por engano o botão real "Avisar o dono que encontrei" no objeto de produção JDZ4BQFO, criando uma notificação in-app falsa pra um usuário real — confirmado que nenhum push/e-mail/SMS foi enviado (VAPID não configurado localmente + usuário sem inscrição push), só a linha no banco; notificação de correção enviada pelo mesmo canal, aprovada por Marcos antes do envio. Validado: tsc/build limpos, testado ao vivo em desktop (modal, "Copiar legenda" com toast confirmado, Facebook) e mobile (viewport 375x812, navigator.share mockado, chamada real capturada) |
 | 31/07 (cont.) | Adicionado registro TXT SPF no apex de `backfindr.com.br` (`v=spf1 include:spf.improvmx.com ~all`) para suportar o e-mail forwarding do ImprovMX (financeiro@/suporte@/contato@) configurado na sessão anterior — confirmado via `dig` que não conflita com o SPF do Resend em `send.backfindr.com.br` (hosts DNS diferentes, cada um com registro próprio). Testado e funcionando |
+| 01/08 | Evento de conversão GA4 `ocorrencia_publicada` implementado na tela de sucesso (commit 4a3b439) — `object_type` (categoria real do objeto) + `send_to` (via env var, não hardcoded). Testado criando usuário/objeto descartáveis via SQL + JWT de teste assinado localmente (sem tocar em conta real), confirmado via `window.dataLayer` disparando uma única vez. Dados de teste apagados após validação |
+| 02/08 | Google Ads API — pesquisa e plano de automação (não implementado, ver seção "Google Ads API" abaixo para detalhes completos) |
 
 ### Sessão 08/07/2026 — Correção RLS (Security Advisor)
 
@@ -396,3 +405,44 @@ git push origin main
   - `seo_content_seeds_select_public`: leitura pública (`USING (true)`) — conteúdo de SEO sem dono.
   - `object_events_select_own`: usuário só lê eventos de objetos que possui, via join com `public.objects.user_id = auth.uid()`.
 - **Pendente para próxima sessão:** confirmar no Security Advisor que os 2 erros somem ("0 errors"), testar páginas de SEO local e Activity Center em produção para garantir que a leitura pública não foi afetada.
+
+### Google Ads API — Investigação e Plano (02/08/2026, não implementado)
+
+**Motivação:** campanha "SBF | Pesquisa | Objetos Perdidos | BR" (conta Google Ads `468-452-7429`, ocid `27174836`) travada em "Qualificada (limitada)", zero impressões/cliques, apesar de horas de configuração manual pela UI. Suspeita: janela de datas curta (termina 05/08/2026) e/ou orçamento insuficiente. A conversão `ocorrencia_publicada` já está configurada e vinculada (GA4 propriedade Backfindr, ID `539806265`) — ver evento implementado no commit `4a3b439` acima.
+
+**1. O que a Google exige (pesquisado nesta sessão, fontes ao final):**
+- **Developer token**: obtido via API Center (`ads.google.com/aw/apicenter`) da conta Google Ads manager. Aceitar Termos, ter site da empresa funcionando, e-mail de contato monitorado (Google pode entrar em contato durante revisão).
+- **Níveis de acesso**: Test Account (só contas de teste) → **Explorer Access** (novo em 2026 — ver abaixo) → Basic Access → Standard Access (sem limite de operações/dia).
+- **🎯 Achado principal — Explorer Access**: tier intermediário lançado em 2026, **concedido automaticamente na maioria dos casos, sem aprovação formal**. Dá acesso de produção com 2.880 operações/dia. Exclui explicitamente: criação de conta (`CustomerService.CreateCustomerClient`), gerenciamento de usuários, ferramentas de planejamento (keyword planner, audience insights) e billing. **Não exclui** mutate de campanha/orçamento nem leitura de diagnóstico/recomendações — ambos parecem cobertos, a confirmar na prática assim que tivermos o token. Isso muda a expectativa de "dias de aprovação" (Basic/Standard, oficialmente até 5 dias úteis, com histórico de fila/atraso reportado em fev/2026) para **potencialmente horas**, já que Explorer costuma ser concedido de forma automática.
+- **OAuth2**: criar OAuth Client ID tipo "Desktop app" no Google Cloud Console (mesmo projeto/conta), gerar refresh token com `access_type=offline` (via OAuth Playground ou script local, uma vez só).
+- **Bibliotecas oficiais**: Python, Java, PHP, .NET, Ruby, Perl. **Não existe biblioteca Node.js/JavaScript oficial** — só um pacote comunitário não-oficial (`google-ads-api` no npm). Como o Backfindr é Next.js/TypeScript, a proposta é consumir a **REST API diretamente via `fetch`** (a API tem interface REST/JSON além do gRPC dos clients oficiais), mesmo padrão já usado no projeto para outras APIs externas (ex.: chamada direta à API do Resend em `forgot-password/route.ts`). Versão atual da API: v24.x (major versions saem a cada ~3 meses, cada uma com endpoint REST próprio e sunset em ~1 ano — vai exigir atualização periódica).
+
+**2. Viabilidade — uma conta, um token:** Backfindr e M2RMenu **não são duas contas Google Ads distintas** — ambos usam a mesma conta `468-452-7429`. Logo, não há necessidade de tokens/OAuth separados por projeto: **um único developer token + uma única credencial OAuth (client ID/secret + refresh token) cobre os dois**. Developer token é como uma "licença" da empresa/conta manager — uma vez aprovado, funciona contra qualquer conta acessível pelo mesmo login Google, bastando trocar o `customer_id` (e `login_customer_id` se houver hierarquia MCC) em cada chamada.
+
+**3. Plano de implementação (3 fases, nada implementado ainda):**
+- **Fase 0 — só o Marcos pode fazer** (login real em conta Google, fora do alcance do Claude Code): (a) aplicar o developer token no API Center; (b) criar o OAuth Client ID (Desktop app) no Google Cloud Console; (c) gerar o refresh token (rodar um script simples uma única vez, localmente, que abre o fluxo OAuth no navegador).
+- **Fase 1 — leitura de diagnóstico** (~1-2h de implementação, depois de ter as credenciais): novo `src/lib/googleAds.ts` com um client REST fino (token refresh automático) + uma rota admin que consulta `GoogleAdsService.Search` com os campos de `campaign`, `campaign_budget` e `recommendation` — resolve o "não precisar mais navegar manualmente pra ver problemas detectados".
+- **Fase 2 — edição de orçamento e datas** (~1-2h): endpoint de mutate em `CampaignBudgetService`/`CampaignService` (update de `amount_micros`, `start_date`/`end_date`). Precisa de confirmação prática de que Explorer Access permite mutate (não está explicitamente proibido na doc, mas não está 100% documentado também).
+- **Fase 3 — conversão**: como a conversão `ocorrencia_publicada` já está configurada e vinculada no GA4/Google Ads pela UI, aqui é só leitura/verificação via `ConversionActionService` — reaproveita o client da Fase 1.
+
+**4. Variáveis de ambiente necessárias (a definir após Fase 0):**
+```
+GOOGLE_ADS_DEVELOPER_TOKEN=
+GOOGLE_ADS_CLIENT_ID=
+GOOGLE_ADS_CLIENT_SECRET=
+GOOGLE_ADS_REFRESH_TOKEN=
+GOOGLE_ADS_LOGIN_CUSTOMER_ID=   # conta manager, se houver hierarquia MCC
+GOOGLE_ADS_CUSTOMER_ID=4684527429
+```
+
+**5. Estimativa de esforço:** Fase 0 é a Marcos (tempo variável — pode ser minutos se Explorer Access for auto-concedido, ou até 5 dias úteis se cair em revisão manual de Basic/Standard). Fases 1-3, depois de credenciais em mãos: 3-5h de trabalho de código no total.
+
+**Fontes consultadas (pesquisa web, 02/08/2026):**
+- [Developer Token | Google Ads API](https://developers.google.com/google-ads/api/docs/api-policy/developer-token)
+- [Access Levels and Permissible Use | Google Ads API](https://developers.google.com/google-ads/api/docs/api-policy/access-levels)
+- [Google faces developer token application backlog as new API tier debuts](https://ppc.land/google-faces-developer-token-application-backlog-as-new-api-tier-debuts/)
+- [Developers Get Instant Production Access with Google Ads API's Explorer Tier](https://ppcnewsfeed.com/ppc-news/developers-get-instant-production-access-with-google-ads-apis-explorer-tier/)
+- [Client Libraries | Google Ads API](https://developers.google.com/google-ads/api/docs/client-libs)
+- [GitHub - googleads/google-ads-python](https://github.com/googleads/google-ads-python)
+- [The REST interface overview | Google Ads API](https://developers.google.com/google-ads/api/rest/overview)
+- [Announcing v23 of the Google Ads API](https://ads-developers.googleblog.com/2026/01/announcing-v23-of-google-ads-api.html)
