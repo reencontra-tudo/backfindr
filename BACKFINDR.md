@@ -276,13 +276,6 @@ Estrutura de governança do produto instituída em 29/06/2026.
 - **Recepção v1**: implementar em React no produto real (próxima sessão)
 - **Google Business**: data abertura travada em 2010 → corrigir para 2026
 - **Decisão pendente: ativar sistema de reativação?** Cron `/api/v1/cron/reactivation` existe e envia dicas personalizadas por categoria (v2), mas a tabela `reactivation_emails` que ele grava **nunca foi criada em produção** — parece ter sido escrito mas nunca ligado (sem cron do Vercel, sem workflow n8n disparando). Antes de estender esse fluxo (ex.: lembrete de compartilhar de novo após 3 dias sem match, cogitado na sessão do Loop WhatsApp), decidir: ativar o cron como um todo (criar a tabela, plugar disparo) ou descartar essa peça do sistema
-- **Google Ads API — automação de campanhas (investigada em 02/08/2026, não implementada)**: campanha "SBF | Pesquisa | Objetos Perdidos | BR" (conta Google Ads `468-452-7429`) travada em "Qualificada (limitada)", zero impressões — configuração manual via UI lenta e propensa a erro. Pesquisa concluída, plano abaixo aguardando decisão de prosseguir. Ver detalhes completos na seção "Google Ads API" (histórico técnico, mesma data) — resumo:
-  - **Achado principal**: existe um tier "Explorer Access" (Google, início 2026) que dá acesso de produção **sem aprovação formal** (auto-concedido na maioria dos casos), 2.880 operações/dia, cobre leitura de diagnóstico + mutate de budget/datas de campanha (não cobre criação de conta, billing, ferramentas de planejamento). Isso muda a estimativa de "dias de aprovação" do pedido original para potencialmente **horas ou nem isso**
-  - Sem biblioteca Node.js oficial (só Python/Java/PHP/.NET/Ruby/Perl) — proposta é consumir a REST API direto via `fetch`, mesmo padrão já usado no projeto pra outras APIs externas (Resend), num novo `src/lib/googleAds.ts`
-  - Backfindr e M2RMenu usam a mesma conta Google Ads (`468-452-7429`) — não é "duas contas", é uma só, então **um único developer token + uma única credencial OAuth resolve os dois projetos**
-  - Passos que só o Marcos pode fazer (login/aprovação em conta Google real, fora do alcance do Claude Code): aplicar developer token no API Center, criar OAuth Client ID (Desktop app) no Google Cloud Console, gerar refresh token
-  - Depois disso: leitura de diagnóstico (~1-2h), mutate de budget/datas (~1-2h) — ambos plausíveis sob Explorer Access, a confirmar na prática
-
 ### 🟢 Baixo
 - Enriquecer as 434 páginas SEO local com eventos anuais regionais (ex.: Festa do Pêssego em Mogi, Festa da Uva em Ribeirão Pires) via UPDATE em tips_content
 - Email reativação para 14 usuários reais de 2026
@@ -307,6 +300,7 @@ Estrutura de governança do produto instituída em 29/06/2026.
 - Remetente de e-mail padronizado para noreply@backfindr.com.br em email.ts, boost-notifications/route.ts e admin/emails/route.ts (commit c969e27, 29/07/2026) — domínio verificado no Resend
 - Loop WhatsApp — copy magnética (não genérica) no ShareModal.tsx + rastreamento de origem via ?via=whatsapp_share (commit 7f4b683, 30/07/2026); evoluído com Web Share API nativa como método principal + fallback com "Copiar legenda" e tratamento correto do Facebook (commit e661b93, 31/07/2026). Parte 3 (lembrete de reforço) ficou de fora, ver decisão pendente sobre sistema de reativação acima
 - Evento de conversão GA4 `ocorrencia_publicada` na tela de sucesso (commit 4a3b439, 01/08/2026) — base pra marcar conversão no GA4 e importar pro Google Ads
+- Google Ads API — Fase 1 concluída (commit 7a00975, 02/08/2026): client REST + rota de diagnóstico funcionando. Campanha "SBF | Pesquisa | Objetos Perdidos | BR" diagnosticada — LIMITED por fase de aprendizado normal (BIDDING_STRATEGY_LEARNING) + janela curta de datas, não configuração quebrada. Fase 2 (mutações) não é necessária por ora — ver seção "Google Ads API" para detalhes técnicos e achados não-óbvios da API
 - Instagram autopost 5 nichos ✅
 - Cloudflare R2 configurado ✅
 - moderation_blocked n8n: resolvido
@@ -394,7 +388,8 @@ git push origin main
 | 31/07 | ShareModal.tsx evoluído para Web Share API nativa como método principal (commit e661b93): diferenciação de origem entre `?via=native_share` (Web Share API genérica) e `?via=whatsapp_share` (botão WhatsApp direto no modal); novo botão "Copiar legenda" no fallback desktop; Facebook passou a copiar a legenda automaticamente pro clipboard antes de abrir o sharer (Meta bloqueia preenchimento via URL desde 2018) em vez de fingir suporte. Bônus: corrigido bug pré-existente onde `navigator.share` recebia `url` duplicado além do link já embutido em `text`. Incidente durante o teste: um clique com referência de elemento desatualizada (após scroll) acertou por engano o botão real "Avisar o dono que encontrei" no objeto de produção JDZ4BQFO, criando uma notificação in-app falsa pra um usuário real — confirmado que nenhum push/e-mail/SMS foi enviado (VAPID não configurado localmente + usuário sem inscrição push), só a linha no banco; notificação de correção enviada pelo mesmo canal, aprovada por Marcos antes do envio. Validado: tsc/build limpos, testado ao vivo em desktop (modal, "Copiar legenda" com toast confirmado, Facebook) e mobile (viewport 375x812, navigator.share mockado, chamada real capturada) |
 | 31/07 (cont.) | Adicionado registro TXT SPF no apex de `backfindr.com.br` (`v=spf1 include:spf.improvmx.com ~all`) para suportar o e-mail forwarding do ImprovMX (financeiro@/suporte@/contato@) configurado na sessão anterior — confirmado via `dig` que não conflita com o SPF do Resend em `send.backfindr.com.br` (hosts DNS diferentes, cada um com registro próprio). Testado e funcionando |
 | 01/08 | Evento de conversão GA4 `ocorrencia_publicada` implementado na tela de sucesso (commit 4a3b439) — `object_type` (categoria real do objeto) + `send_to` (via env var, não hardcoded). Testado criando usuário/objeto descartáveis via SQL + JWT de teste assinado localmente (sem tocar em conta real), confirmado via `window.dataLayer` disparando uma única vez. Dados de teste apagados após validação |
-| 02/08 | Google Ads API — pesquisa e plano de automação (não implementado, ver seção "Google Ads API" abaixo para detalhes completos) |
+| 02/08 | Google Ads API — pesquisa e plano de automação (Fase 0-1, ver seção "Google Ads API" abaixo para detalhes completos) |
+| 02/08 (cont.) | Google Ads API Fase 1 concluída (commit 7a00975): client REST + rota de diagnóstico da campanha SBF funcionando de ponta a ponta. Achado técnico: campaign_budget.amount_micros só existe para period=DAILY; orçamentos CUSTOM_PERIOD usam total_amount_micros — inicialmente pareceu bug (campo ausente), não era. Diagnóstico real: campanha em LIMITED por BIDDING_STRATEGY_LEARNING (fase de aprendizado normal) + janela curta de datas, orçamento R$100 total (R$20/dia × 5 dias) confirmado correto. Decisão do Marcos: não prosseguir para Fase 2 (mutações) — campanha não está quebrada, só aguardando a fase de aprendizado terminar |
 
 ### Sessão 08/07/2026 — Correção RLS (Security Advisor)
 
@@ -406,7 +401,7 @@ git push origin main
   - `object_events_select_own`: usuário só lê eventos de objetos que possui, via join com `public.objects.user_id = auth.uid()`.
 - **Pendente para próxima sessão:** confirmar no Security Advisor que os 2 erros somem ("0 errors"), testar páginas de SEO local e Activity Center em produção para garantir que a leitura pública não foi afetada.
 
-### Google Ads API — Investigação e Plano (02/08/2026, não implementado)
+### Google Ads API — Investigação, Plano e Fase 1 (02/08/2026)
 
 **Motivação:** campanha "SBF | Pesquisa | Objetos Perdidos | BR" (conta Google Ads `468-452-7429`, ocid `27174836`) travada em "Qualificada (limitada)", zero impressões/cliques, apesar de horas de configuração manual pela UI. Suspeita: janela de datas curta (termina 05/08/2026) e/ou orçamento insuficiente. A conversão `ocorrencia_publicada` já está configurada e vinculada (GA4 propriedade Backfindr, ID `539806265`) — ver evento implementado no commit `4a3b439` acima.
 
@@ -436,6 +431,19 @@ GOOGLE_ADS_CUSTOMER_ID=4684527429
 ```
 
 **5. Estimativa de esforço:** Fase 0 é a Marcos (tempo variável — pode ser minutos se Explorer Access for auto-concedido, ou até 5 dias úteis se cair em revisão manual de Basic/Standard). Fases 1-3, depois de credenciais em mãos: 3-5h de trabalho de código no total.
+
+**6. Fase 0 concluída (mesma sessão):** Marcos aplicou o developer token, criou o OAuth Client ID e gerou o refresh token — 4 credenciais entregues via chat (nunca coladas no histórico), gravadas em `.env.local`/`.env.example`. `GOOGLE_ADS_LOGIN_CUSTOMER_ID=7631795941` (MCC "Marcos Makarara"), `GOOGLE_ADS_CUSTOMER_ID=4684527429`.
+
+**7. Fase 1 concluída (commit `7a00975`) — implementado, testado, funcionando:**
+- `src/lib/googleAds.ts`: client REST (token OAuth com cache, `listAccessibleCustomers`, `gaqlSearch`). API real: **v25** (não v24 como estimado na pesquisa inicial — Google lança versão nova a cada ~3 meses).
+- `src/app/api/v1/admin/google-ads/diagnostics/route.ts`: rota `GET` protegida por `requireSuperAdmin`, `?campaign=<nome>`.
+- **Achado técnico #1**: `login-customer-id` **não deve ser enviado** quando o OAuth acessa a conta-alvo diretamente (não via delegação de MCC) — mesmo a MCC aparecendo em `listAccessibleCustomers`, enviá-la nesse header gera `403 USER_PERMISSION_DENIED`. Confirmado empiricamente testando as 3 variantes (sem header / MCC / própria conta).
+- **Achado técnico #2**: em v25, `campaign.start_date`/`campaign.end_date` viraram `campaign.start_date_time`/`campaign.end_date_time` (breaking change da versão). Nomes de campo corretos confirmados via `GoogleAdsFieldService` (`googleAdsFields:search`), não só pela doc pública (que se mostrou desatualizada/incompleta nessa consulta específica).
+- **Achado técnico #3**: `campaign_budget.amount_micros` só é populado quando `period=DAILY`. Para `period=CUSTOM_PERIOD` (ex.: R$/dia por N dias fixos), o campo fica **ausente da resposta mesmo selecionado corretamente na query** — pareceu bug de field mask, não era. O valor real está em `campaign_budget.total_amount_micros`. Vale lembrar disso em qualquer integração futura com orçamentos de período customizado.
+- **Diagnóstico real da campanha "SBF | Pesquisa | Objetos Perdidos | BR"**: `primaryStatus: LIMITED`, `primaryStatusReasons: [BIDDING_STRATEGY_LEARNING, UNKNOWN]`, `startDateTime: 2026-07-31 23:06:30` → `endDateTime: 2026-08-05 23:59:59` (~5 dias), orçamento `totalAmountMicros: 100000000` (R$100 = R$20/dia × 5 dias, confirmado correto por Marcos), 0 cliques/impressões.
+- **Conclusão e decisão**: campanha em fase de aprendizado normal (bidding strategy automatizada + janela curta), não configuração quebrada. Marcos decidiu **não prosseguir para Fase 2** (mutações de orçamento/data) por ora — nada pra corrigir. Revisitar em alguns dias pra ver se sai de LIMITED sozinha.
+- **Nível de acesso do developer token (Basic/Standard/Explorer)**: não foi possível confirmar de forma conclusiva — não existe endpoint que retorne isso diretamente. Um teste `validate_only: true` num mutate (zero mudança real, mecanismo oficial do Google pra validação) resolveria isso, mas foi propositalmente adiado a pedido do Marcos já que Fase 2 não é necessária agora.
+- Testado 2x via HTTP real no servidor local, autenticado com `super_admin` descartável criado e apagado só para o teste (mesmo padrão de cautela desde o incidente da sessão do ShareModal).
 
 **Fontes consultadas (pesquisa web, 02/08/2026):**
 - [Developer Token | Google Ads API](https://developers.google.com/google-ads/api/docs/api-policy/developer-token)
