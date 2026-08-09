@@ -212,7 +212,7 @@ export default function ScanPage() {
   return (
     <>
       {lightbox && <ImageLightbox images={lightbox.images} initialIndex={lightbox.index} onClose={closeLightbox} />}
-    <div className="min-h-screen bg-[#0a0a0f] flex flex-col" style={{ paddingBottom: '100px' }}>
+    <div className="min-h-screen bg-[#0a0a0f] flex flex-col" style={{ paddingBottom: 'calc(100px + env(safe-area-inset-bottom))' }}>
 
       {/* ── HERO: Foto fullscreen com gradiente dramático ── */}
       <div className="relative w-full" style={{ height: hasPhoto ? '65vw' : '220px', minHeight: '240px', maxHeight: '380px' }}>
@@ -368,11 +368,15 @@ export default function ScanPage() {
       </div>
 
       {/* ── CTA FIXO NA BASE ── */}
-      <div className="fixed bottom-0 inset-x-0 z-50 px-5 pb-8 pt-4"
-        style={{ background: 'linear-gradient(to top, #0a0a0f 60%, transparent)' }}>
+      <div className="fixed bottom-0 inset-x-0 z-50 px-5 pt-4"
+        style={{
+          background: 'linear-gradient(to top, #0a0a0f 60%, transparent)',
+          paddingBottom: 'calc(2rem + env(safe-area-inset-bottom))',
+        }}>
         <button
           onClick={notifyOwner}
           disabled={sending}
+          data-widget-safe-zone
           className="w-full flex items-center justify-center gap-3 text-black font-extrabold py-4.5 rounded-2xl text-base transition-all active:scale-95 disabled:opacity-70 shadow-2xl shadow-[#00d4aa]/30"
           style={{
             background: sending ? '#00b894' : 'linear-gradient(135deg, #00d4aa 0%, #00b894 100%)',

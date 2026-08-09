@@ -689,6 +689,12 @@ export default function AssistantWidget() {
   const isMap = pathname === '/map';
 
   const [open, setOpen] = useState(false);
+  // Sobreposição do botão flutuante com o CTA principal da página (ex.: "Continuar" no
+  // cadastro, "Encontrei este objeto!" no scan) — páginas de fluxo pago marcam seu
+  // botão de ação com `data-widget-safe-zone`. Enquanto colidir, o toggle vira
+  // pointer-events-none pra nunca roubar o toque de um botão de conversão.
+  const [ctaCollision, setCtaCollision] = useState(false);
+  const fabRef = useRef<HTMLButtonElement>(null);
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
@@ -719,6 +725,43 @@ export default function AssistantWidget() {
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open]);
+
+  // Anti mis-tap: enquanto o toggle (fechado) sobrepõe um CTA marcado com
+  // data-widget-safe-zone — botões de "Continuar"/"Gerar QR"/"Encontrei este
+  // objeto!" nos fluxos de cadastro e scan — o botão vira pointer-events-none,
+  // deixando o toque passar direto pro CTA de verdade por baixo. Reavalia em
+  // scroll/resize (o CTA se move) e em mudança de DOM (troca de passo do
+  // wizard, sem troca de rota).
+  useEffect(() => {
+    if (open) { setCtaCollision(false); return; }
+
+    function checkCollision() {
+      const fab = fabRef.current;
+      if (!fab) return;
+      const fabRect = fab.getBoundingClientRect();
+      const zones = document.querySelectorAll<HTMLElement>('[data-widget-safe-zone]');
+      let collides = false;
+      zones.forEach((el) => {
+        const r = el.getBoundingClientRect();
+        const overlapX = Math.min(fabRect.right, r.right) - Math.max(fabRect.left, r.left);
+        const overlapY = Math.min(fabRect.bottom, r.bottom) - Math.max(fabRect.top, r.top);
+        if (overlapX > 0 && overlapY > 0) collides = true;
+      });
+      setCtaCollision(collides);
+    }
+
+    checkCollision();
+    window.addEventListener('scroll', checkCollision, { passive: true, capture: true });
+    window.addEventListener('resize', checkCollision);
+    const observer = new MutationObserver(checkCollision);
+    observer.observe(document.body, { childList: true, subtree: true, attributes: true });
+
+    return () => {
+      window.removeEventListener('scroll', checkCollision, true);
+      window.removeEventListener('resize', checkCollision);
+      observer.disconnect();
+    };
+  }, [open, pathname]);
 
   // Follow-up desativado — o bot responde apenas quando o usuário interage
 
@@ -911,10 +954,15 @@ export default function AssistantWidget() {
     }
   };
 
-  // Posicionamento: esquerda no mapa, direita nas demais páginas
-  const positionClass = isMap
+  // Posicionamento: esquerda no mapa, direita nas demais páginas.
+  // Em colisão com um CTA, o wrapper (não só o botão) precisa ficar
+  // pointer-events-none — um <div> comum intercepta clique na própria área
+  // mesmo com o filho invisível a eventos, então só desativar o botão não
+  // bastava pro toque atravessar até o CTA de verdade.
+  const positionClass = `${isMap
     ? 'fixed bottom-6 left-6 z-50 flex flex-col items-start gap-3'
-    : 'fixed bottom-6 right-6 z-50 flex flex-col items-end gap-3';
+    : 'fixed bottom-6 right-6 z-50 flex flex-col items-end gap-3'
+  } ${ctaCollision ? 'pointer-events-none' : ''}`;
 
   const windowAlignClass = isMap ? 'origin-bottom-left' : 'origin-bottom-right';
 
@@ -1029,9 +1077,14 @@ export default function AssistantWidget() {
 
         {/* Toggle button */}
         <button
+          ref={fabRef}
           onClick={() => setOpen(prev => !prev)}
-          className="relative w-14 h-14 rounded-2xl gradient-brand shadow-lg hover:scale-105 active:scale-95 transition-all flex items-center justify-center glow-teal"
+          className={`relative w-14 h-14 rounded-2xl gradient-brand shadow-lg hover:scale-105 active:scale-95 transition-all flex items-center justify-center glow-teal ${
+            ctaCollision ? 'opacity-40 pointer-events-none' : ''
+          }`}
           aria-label="Abrir assistente"
+          aria-hidden={ctaCollision || undefined}
+          tabIndex={ctaCollision ? -1 : undefined}
         >
           {open ? (
             <X className="w-6 h-6 text-white" />

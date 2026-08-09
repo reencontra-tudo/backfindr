@@ -247,7 +247,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   );
 
   return (
-    <div className="min-h-screen bg-[#080b0f] flex">
+    <div className="h-dvh bg-[#080b0f] flex">
       <ImpersonationBanner />
 
       {/* ── Desktop sidebar ───────────────────────────────────────────── */}

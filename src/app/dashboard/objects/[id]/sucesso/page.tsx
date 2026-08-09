@@ -256,7 +256,7 @@ export default function SucessoPage() {
           {/* Preview do texto que vai ser enviado */}
           <div className="bg-white/[0.03] border border-white/[0.07] rounded-xl p-4 mb-3 text-left">
             <div className="flex items-start justify-between gap-3">
-              <p className="text-white/50 text-xs leading-relaxed flex-1 italic">
+              <p className="text-white/50 text-xs leading-relaxed flex-1 min-w-0 break-words italic">
                 &ldquo;{whatsappText}&rdquo;
               </p>
               <button

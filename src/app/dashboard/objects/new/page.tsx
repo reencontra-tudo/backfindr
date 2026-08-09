@@ -753,6 +753,7 @@ function NewObjectForm() {
             <button
               type="button"
               onClick={nextStep}
+              data-widget-safe-zone
               className={`flex items-center gap-2 px-6 py-2.5 text-white font-semibold rounded-xl transition-all text-sm ${
                 mode === 'protect'
                   ? 'bg-blue-500 hover:bg-blue-400'
@@ -766,6 +767,7 @@ function NewObjectForm() {
             <button
               type="submit"
               disabled={submitting}
+              data-widget-safe-zone
               className={`flex items-center gap-2 px-6 py-2.5 disabled:opacity-60 disabled:cursor-not-allowed text-white font-semibold rounded-xl transition-all text-sm ${
                 mode === 'protect'
                   ? 'bg-blue-500 hover:bg-blue-400'
