@@ -3,6 +3,13 @@ import { useEffect, useState, useRef, useCallback, useMemo } from 'react';
 import Link from 'next/link';
 import { MapPin, Search, X, ChevronRight, SlidersHorizontal, LocateFixed, Gift, Newspaper, ExternalLink, Navigation, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
+import { useAuthStore } from '@/hooks/useAuth';
+
+// Abaixo desse número de casos reais, o botão "Recuperado" fica oculto pra
+// usuário comum — com volume muito baixo (hoje é 1), o filtro só passa
+// sensação de plataforma vazia. Equipe interna (admin/super_admin) sempre
+// vê o botão, independente do volume.
+const MIN_RETURNED_TO_SHOW = 10;
 
 const EMOJI: Record<string, string> = {
   phone: '📱', wallet: '👛', keys: '🔑', bag: '🎒', pet: '🐾',
@@ -32,7 +39,6 @@ interface MapPin {
   status: string;
   category: string;
   location: { lat: number; lng: number };
-  is_legacy?: boolean;
 }
 
 // Detail: dados completos para o bottom sheet (carregados sob demanda)
@@ -62,9 +68,6 @@ interface Filters {
   category: string;
   radiusKm: number;
   daysAgo: number;
-  // true = mostra tudo (Backfindr + histórico Webjetos, ~1500 registros de 2012-2021).
-  // false = só ocorrências reais da plataforma atual.
-  includeLegacy: boolean;
 }
 
 // Haversine distance in km
@@ -109,7 +112,7 @@ export default function MapPage() {
 
   const [loading, setLoading] = useState(true);
   const [filters, setFilters] = useState<Filters>({
-    search: '', status: '', category: '', radiusKm: 0, daysAgo: 0, includeLegacy: true,
+    search: '', status: '', category: '', radiusKm: 0, daysAgo: 0,
   });
   const [showFilters, setShowFilters] = useState(false);
   const [showList, setShowList] = useState(false);
@@ -122,17 +125,30 @@ export default function MapPage() {
   const [news, setNews] = useState<NewsItem[]>([]);
   const [newsLoading, setNewsLoading] = useState(false);
   const [newsLoaded, setNewsLoaded] = useState(false);
+  // Total real de objetos "Recuperado" — não vem da lista de pins (esse
+  // status nem entra na busca de pins), vem à parte no mesmo payload.
+  const [returnedTotal, setReturnedTotal] = useState(0);
 
   const mapContainer = useRef<HTMLDivElement>(null);
   const mapRef = useRef<unknown>(null);
 
   const debouncedSearch = useDebounce(filters.search, 300);
 
+  // ─── Sessão do visitante — só pra saber se é equipe interna ───────────────
+  // Página pública: a maioria de quem acessa não está logada, e fetchMe()
+  // já trata isso silenciosamente (limpa o estado sem erro visível).
+  const { user, fetchMe } = useAuthStore();
+  useEffect(() => { fetchMe(); }, [fetchMe]);
+  const isStaff = user?.role === 'super_admin' || user?.role === 'admin';
+
   // ─── Carregar pins (endpoint slim, cache 2min no CDN) ─────────────────────
   useEffect(() => {
     fetch('/api/v1/objects/map')
       .then(r => r.json())
-      .then((d: { items?: MapPin[] }) => setPins(d.items ?? []))
+      .then((d: { items?: MapPin[]; returned_total?: number }) => {
+        setPins(d.items ?? []);
+        setReturnedTotal(d.returned_total ?? 0);
+      })
       .catch(() => toast.error('Erro ao carregar o mapa'))
       .finally(() => setLoading(false));
   }, []);
@@ -245,10 +261,7 @@ export default function MapPage() {
               'lost', '#ef4444', 'found', '#14b8a6',
               'returned', '#22c55e', '#f97316'],
             'circle-radius': 8,
-            // Histórico Webjetos (legacy) fica mais apagado — distingue visualmente
-            // dado herdado (2010-2021) de ocorrência real da plataforma atual.
-            'circle-opacity': ['case', ['==', ['get', 'legacy'], true], 0.45, 0.95],
-            'circle-stroke-width': ['case', ['==', ['get', 'legacy'], true], 1, 2],
+            'circle-stroke-width': 2,
             'circle-stroke-color': '#080b0f',
           },
         });
@@ -294,7 +307,6 @@ export default function MapPage() {
   const filtered = useMemo(() => {
     const searchLower = debouncedSearch.toLowerCase();
     return pins.filter(o => {
-      if (!filters.includeLegacy && o.is_legacy) return false;
       if (searchLower && !o.title.toLowerCase().includes(searchLower)) return false;
       if (filters.status && o.status !== filters.status) return false;
       if (filters.category && o.category !== filters.category) return false;
@@ -304,21 +316,7 @@ export default function MapPage() {
       }
       return true;
     });
-  }, [pins, debouncedSearch, filters.status, filters.category, filters.radiusKm, filters.includeLegacy, userLocation]);
-
-  // ─── Contagem real por status, calculada sobre TODOS os pins carregados ──
-  // (não mais uma amostra truncada) — respeita o toggle de histórico, mas
-  // ignora os demais filtros (busca/categoria/raio) pra servir de contexto
-  // fixo nos botões de filtro, independente do que está selecionado.
-  const statusCounts = useMemo(() => {
-    const base = filters.includeLegacy ? pins : pins.filter(p => !p.is_legacy);
-    return base.reduce<Record<string, number>>((acc, o) => {
-      acc[o.status] = (acc[o.status] ?? 0) + 1;
-      return acc;
-    }, {});
-  }, [pins, filters.includeLegacy]);
-
-  const legacyCount = useMemo(() => pins.filter(p => p.is_legacy).length, [pins]);
+  }, [pins, debouncedSearch, filters.status, filters.category, filters.radiusKm, userLocation]);
 
   // ─── Atualizar pontos no mapa (throttled via requestAnimationFrame) ────────
   const rafRef = useRef<number | null>(null);
@@ -334,7 +332,7 @@ export default function MapPage() {
         .map(o => ({
           type: 'Feature' as const,
           geometry: { type: 'Point' as const, coordinates: [o.location.lng, o.location.lat] },
-          properties: { id: o.id, title: o.title, status: o.status, legacy: o.is_legacy === true },
+          properties: { id: o.id, title: o.title, status: o.status },
         }));
       source.setData({ type: 'FeatureCollection', features });
     });
@@ -400,8 +398,8 @@ export default function MapPage() {
   // ─── Resetar página da lista ao mudar filtros ─────────────────────────────
   useEffect(() => { setListPage(1); }, [filtered]);
 
-  const hasActiveFilters = !!(filters.status || filters.category || filters.radiusKm > 0 || filters.daysAgo > 0 || !filters.includeLegacy);
-  const clearFilters = () => setFilters({ search: '', status: '', category: '', radiusKm: 0, daysAgo: 0, includeLegacy: true });
+  const hasActiveFilters = filters.status || filters.category || filters.radiusKm > 0 || filters.daysAgo > 0;
+  const clearFilters = () => setFilters({ search: '', status: '', category: '', radiusKm: 0, daysAgo: 0 });
 
   const listItems = useMemo(() => filtered.slice(0, listPage * LIST_PAGE_SIZE), [filtered, listPage]);
 
@@ -550,13 +548,17 @@ export default function MapPage() {
             {/* Status */}
             <div className="flex flex-col gap-1">
               <label className="text-white/40 text-[11px] font-medium uppercase tracking-wide">Status</label>
-              <div className="flex gap-1.5 flex-wrap">
+              <div className="flex gap-1.5">
                 {[
-                  { value: '', label: 'Todos', count: Object.values(statusCounts).reduce((a, b) => a + b, 0) },
-                  { value: 'lost', label: '🔴 Perdido', count: statusCounts.lost ?? 0 },
-                  { value: 'found', label: '🟢 Achado', count: statusCounts.found ?? 0 },
-                  { value: 'stolen', label: '🟠 Roubado', count: statusCounts.stolen ?? 0 },
-                  { value: 'returned', label: '✅ Recuperado', count: statusCounts.returned ?? 0 },
+                  { value: '', label: 'Todos' },
+                  { value: 'lost', label: '🔴 Perdido' },
+                  { value: 'found', label: '🟢 Achado' },
+                  { value: 'stolen', label: '🟠 Roubado' },
+                  // Some pra usuário comum enquanto o volume real for baixo —
+                  // equipe interna sempre vê, pra poder acompanhar o crescimento.
+                  ...(isStaff || returnedTotal >= MIN_RETURNED_TO_SHOW
+                    ? [{ value: 'returned', label: '✅ Recuperado' }]
+                    : []),
                 ].map(f => (
                   <button
                     key={f.value}
@@ -567,27 +569,10 @@ export default function MapPage() {
                         : 'bg-white/[0.04] text-white/40 border border-white/[0.07] hover:border-white/20'
                     }`}
                   >
-                    {f.label} <span className="opacity-60">({f.count})</span>
+                    {f.label}
                   </button>
                 ))}
               </div>
-            </div>
-
-            {/* Histórico Webjetos */}
-            <div className="flex flex-col gap-1">
-              <label className="text-white/40 text-[11px] font-medium uppercase tracking-wide">Origem</label>
-              <button
-                onClick={() => setFilters(prev => ({ ...prev, includeLegacy: !prev.includeLegacy }))}
-                title="O Backfindr nasceu do Webjetos (2010-2021). Esse histórico continua no mapa por padrão, marcado à parte da atividade atual."
-                className={`px-2.5 py-1 rounded-lg text-xs font-medium transition-all ${
-                  filters.includeLegacy
-                    ? 'bg-yellow-500/10 text-yellow-400 border border-yellow-500/25'
-                    : 'bg-white/[0.04] text-white/40 border border-white/[0.07] hover:border-white/20'
-                }`}
-              >
-                {filters.includeLegacy ? '🕘 Incluindo histórico' : '🕘 Só atividade atual'}
-                <span className="opacity-60"> ({filters.includeLegacy ? legacyCount : 0})</span>
-              </button>
             </div>
 
             {/* Categoria */}
@@ -874,12 +859,6 @@ export default function MapPage() {
                           <p className={`text-xs ${STATUS_COLOR[obj.status].split(' ')[0]}`}>{STATUS_LABEL[obj.status]}</p>
                           <span className="text-white/20 text-xs">·</span>
                           <p className="text-white/30 text-xs truncate">{CATEGORY_LABEL[obj.category] ?? 'Outro'}</p>
-                          {obj.is_legacy && (
-                            <>
-                              <span className="text-white/20 text-xs">·</span>
-                              <span className="text-yellow-400/70 text-xs flex-shrink-0">🕘 histórico</span>
-                            </>
-                          )}
                         </div>
                       </div>
                       <ChevronRight className="w-3.5 h-3.5 text-white/20 flex-shrink-0" />

@@ -15,29 +15,36 @@ export async function GET() {
     // "lost" sempre que uma migração em lote tocava o updated_at de um monte
     // de registro "stolen" de uma vez, distorcendo os contadores por status
     // do mapa (que são calculados a partir desta mesma lista, no cliente).
-    const result = await query(
-      `SELECT
-         id,
-         title,
-         status,
-         COALESCE(category, type, 'other') AS category,
-         latitude,
-         longitude,
-         location,
-         is_legacy
-       FROM objects
-       WHERE is_public = true
-         AND status IN ('lost', 'found', 'stolen')
-         AND (
-           (latitude IS NOT NULL AND longitude IS NOT NULL)
-           OR (location IS NOT NULL AND location != '' AND location != 'null')
-         )
-       ORDER BY
-         CASE WHEN is_boosted = true THEN 0 ELSE 1 END ASC,
-         updated_at DESC NULLS LAST
-       LIMIT 5000`,
-      []
-    );
+    const [result, returnedCountResult] = await Promise.all([
+      query(
+        `SELECT
+           id,
+           title,
+           status,
+           COALESCE(category, type, 'other') AS category,
+           latitude,
+           longitude,
+           location
+         FROM objects
+         WHERE is_public = true
+           AND status IN ('lost', 'found', 'stolen')
+           AND (
+             (latitude IS NOT NULL AND longitude IS NOT NULL)
+             OR (location IS NOT NULL AND location != '' AND location != 'null')
+           )
+         ORDER BY
+           CASE WHEN is_boosted = true THEN 0 ELSE 1 END ASC,
+           updated_at DESC NULLS LAST
+         LIMIT 5000`,
+        []
+      ),
+      // Total real de objetos recuperados — não vem da lista de pins acima
+      // porque "returned" nem entra no filtro de status dela (item já
+      // recuperado não precisa de pin pedindo ajuda). O front usa esse
+      // número pra decidir se mostra o botão "Recuperado" pra quem não é
+      // admin, evitando exibir um filtro que hoje sempre daria 0 resultado.
+      query(`SELECT COUNT(*)::int AS count FROM objects WHERE is_public = true AND status = 'returned'`, []),
+    ]);
 
     const items = result.rows.map((row: Record<string, unknown>) => {
       // Resolver coordenadas
@@ -62,12 +69,13 @@ export async function GET() {
         status: row.status,
         category: row.category || 'other',
         location: { lat, lng },
-        is_legacy: row.is_legacy === true,
       };
     }).filter(Boolean);
 
+    const returnedTotal = (returnedCountResult.rows[0]?.count as number) ?? 0;
+
     return NextResponse.json(
-      { items, count: items.length },
+      { items, count: items.length, returned_total: returnedTotal },
       {
         headers: {
           // Cache de 2 minutos no Vercel Edge CDN + stale-while-revalidate de 30s
