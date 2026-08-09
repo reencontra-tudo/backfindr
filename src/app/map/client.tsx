@@ -32,6 +32,7 @@ interface MapPin {
   status: string;
   category: string;
   location: { lat: number; lng: number };
+  is_legacy?: boolean;
 }
 
 // Detail: dados completos para o bottom sheet (carregados sob demanda)
@@ -61,6 +62,9 @@ interface Filters {
   category: string;
   radiusKm: number;
   daysAgo: number;
+  // true = mostra tudo (Backfindr + histórico Webjetos, ~1500 registros de 2012-2021).
+  // false = só ocorrências reais da plataforma atual.
+  includeLegacy: boolean;
 }
 
 // Haversine distance in km
@@ -105,7 +109,7 @@ export default function MapPage() {
 
   const [loading, setLoading] = useState(true);
   const [filters, setFilters] = useState<Filters>({
-    search: '', status: '', category: '', radiusKm: 0, daysAgo: 0,
+    search: '', status: '', category: '', radiusKm: 0, daysAgo: 0, includeLegacy: true,
   });
   const [showFilters, setShowFilters] = useState(false);
   const [showList, setShowList] = useState(false);
@@ -241,7 +245,10 @@ export default function MapPage() {
               'lost', '#ef4444', 'found', '#14b8a6',
               'returned', '#22c55e', '#f97316'],
             'circle-radius': 8,
-            'circle-stroke-width': 2,
+            // Histórico Webjetos (legacy) fica mais apagado — distingue visualmente
+            // dado herdado (2010-2021) de ocorrência real da plataforma atual.
+            'circle-opacity': ['case', ['==', ['get', 'legacy'], true], 0.45, 0.95],
+            'circle-stroke-width': ['case', ['==', ['get', 'legacy'], true], 1, 2],
             'circle-stroke-color': '#080b0f',
           },
         });
@@ -287,6 +294,7 @@ export default function MapPage() {
   const filtered = useMemo(() => {
     const searchLower = debouncedSearch.toLowerCase();
     return pins.filter(o => {
+      if (!filters.includeLegacy && o.is_legacy) return false;
       if (searchLower && !o.title.toLowerCase().includes(searchLower)) return false;
       if (filters.status && o.status !== filters.status) return false;
       if (filters.category && o.category !== filters.category) return false;
@@ -296,7 +304,21 @@ export default function MapPage() {
       }
       return true;
     });
-  }, [pins, debouncedSearch, filters.status, filters.category, filters.radiusKm, userLocation]);
+  }, [pins, debouncedSearch, filters.status, filters.category, filters.radiusKm, filters.includeLegacy, userLocation]);
+
+  // ─── Contagem real por status, calculada sobre TODOS os pins carregados ──
+  // (não mais uma amostra truncada) — respeita o toggle de histórico, mas
+  // ignora os demais filtros (busca/categoria/raio) pra servir de contexto
+  // fixo nos botões de filtro, independente do que está selecionado.
+  const statusCounts = useMemo(() => {
+    const base = filters.includeLegacy ? pins : pins.filter(p => !p.is_legacy);
+    return base.reduce<Record<string, number>>((acc, o) => {
+      acc[o.status] = (acc[o.status] ?? 0) + 1;
+      return acc;
+    }, {});
+  }, [pins, filters.includeLegacy]);
+
+  const legacyCount = useMemo(() => pins.filter(p => p.is_legacy).length, [pins]);
 
   // ─── Atualizar pontos no mapa (throttled via requestAnimationFrame) ────────
   const rafRef = useRef<number | null>(null);
@@ -312,7 +334,7 @@ export default function MapPage() {
         .map(o => ({
           type: 'Feature' as const,
           geometry: { type: 'Point' as const, coordinates: [o.location.lng, o.location.lat] },
-          properties: { id: o.id, title: o.title, status: o.status },
+          properties: { id: o.id, title: o.title, status: o.status, legacy: o.is_legacy === true },
         }));
       source.setData({ type: 'FeatureCollection', features });
     });
@@ -378,8 +400,8 @@ export default function MapPage() {
   // ─── Resetar página da lista ao mudar filtros ─────────────────────────────
   useEffect(() => { setListPage(1); }, [filtered]);
 
-  const hasActiveFilters = filters.status || filters.category || filters.radiusKm > 0 || filters.daysAgo > 0;
-  const clearFilters = () => setFilters({ search: '', status: '', category: '', radiusKm: 0, daysAgo: 0 });
+  const hasActiveFilters = !!(filters.status || filters.category || filters.radiusKm > 0 || filters.daysAgo > 0 || !filters.includeLegacy);
+  const clearFilters = () => setFilters({ search: '', status: '', category: '', radiusKm: 0, daysAgo: 0, includeLegacy: true });
 
   const listItems = useMemo(() => filtered.slice(0, listPage * LIST_PAGE_SIZE), [filtered, listPage]);
 
@@ -528,13 +550,13 @@ export default function MapPage() {
             {/* Status */}
             <div className="flex flex-col gap-1">
               <label className="text-white/40 text-[11px] font-medium uppercase tracking-wide">Status</label>
-              <div className="flex gap-1.5">
+              <div className="flex gap-1.5 flex-wrap">
                 {[
-                  { value: '', label: 'Todos' },
-                  { value: 'lost', label: '🔴 Perdido' },
-                  { value: 'found', label: '🟢 Achado' },
-                  { value: 'stolen', label: '🟠 Roubado' },
-                  { value: 'returned', label: '✅ Recuperado' },
+                  { value: '', label: 'Todos', count: Object.values(statusCounts).reduce((a, b) => a + b, 0) },
+                  { value: 'lost', label: '🔴 Perdido', count: statusCounts.lost ?? 0 },
+                  { value: 'found', label: '🟢 Achado', count: statusCounts.found ?? 0 },
+                  { value: 'stolen', label: '🟠 Roubado', count: statusCounts.stolen ?? 0 },
+                  { value: 'returned', label: '✅ Recuperado', count: statusCounts.returned ?? 0 },
                 ].map(f => (
                   <button
                     key={f.value}
@@ -545,10 +567,27 @@ export default function MapPage() {
                         : 'bg-white/[0.04] text-white/40 border border-white/[0.07] hover:border-white/20'
                     }`}
                   >
-                    {f.label}
+                    {f.label} <span className="opacity-60">({f.count})</span>
                   </button>
                 ))}
               </div>
+            </div>
+
+            {/* Histórico Webjetos */}
+            <div className="flex flex-col gap-1">
+              <label className="text-white/40 text-[11px] font-medium uppercase tracking-wide">Origem</label>
+              <button
+                onClick={() => setFilters(prev => ({ ...prev, includeLegacy: !prev.includeLegacy }))}
+                title="O Backfindr nasceu do Webjetos (2010-2021). Esse histórico continua no mapa por padrão, marcado à parte da atividade atual."
+                className={`px-2.5 py-1 rounded-lg text-xs font-medium transition-all ${
+                  filters.includeLegacy
+                    ? 'bg-yellow-500/10 text-yellow-400 border border-yellow-500/25'
+                    : 'bg-white/[0.04] text-white/40 border border-white/[0.07] hover:border-white/20'
+                }`}
+              >
+                {filters.includeLegacy ? '🕘 Incluindo histórico' : '🕘 Só atividade atual'}
+                <span className="opacity-60"> ({filters.includeLegacy ? legacyCount : 0})</span>
+              </button>
             </div>
 
             {/* Categoria */}
@@ -835,6 +874,12 @@ export default function MapPage() {
                           <p className={`text-xs ${STATUS_COLOR[obj.status].split(' ')[0]}`}>{STATUS_LABEL[obj.status]}</p>
                           <span className="text-white/20 text-xs">·</span>
                           <p className="text-white/30 text-xs truncate">{CATEGORY_LABEL[obj.category] ?? 'Outro'}</p>
+                          {obj.is_legacy && (
+                            <>
+                              <span className="text-white/20 text-xs">·</span>
+                              <span className="text-yellow-400/70 text-xs flex-shrink-0">🕘 histórico</span>
+                            </>
+                          )}
                         </div>
                       </div>
                       <ChevronRight className="w-3.5 h-3.5 text-white/20 flex-shrink-0" />

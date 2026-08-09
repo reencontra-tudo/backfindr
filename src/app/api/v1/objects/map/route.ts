@@ -8,6 +8,13 @@ export const dynamic = 'force-dynamic';
 
 export async function GET() {
   try {
+    // LIMIT alto o suficiente pra cobrir todo o universo elegível atual (~1525
+    // em ago/2026, a maioria dado histórico legado do Webjetos) com folga pra
+    // crescimento — não é mais um corte amostral. Antes disso, um LIMIT 1000
+    // ordenado só por updated_at DESC deixava de fora quase todo o status
+    // "lost" sempre que uma migração em lote tocava o updated_at de um monte
+    // de registro "stolen" de uma vez, distorcendo os contadores por status
+    // do mapa (que são calculados a partir desta mesma lista, no cliente).
     const result = await query(
       `SELECT
          id,
@@ -16,7 +23,8 @@ export async function GET() {
          COALESCE(category, type, 'other') AS category,
          latitude,
          longitude,
-         location
+         location,
+         is_legacy
        FROM objects
        WHERE is_public = true
          AND status IN ('lost', 'found', 'stolen')
@@ -27,7 +35,7 @@ export async function GET() {
        ORDER BY
          CASE WHEN is_boosted = true THEN 0 ELSE 1 END ASC,
          updated_at DESC NULLS LAST
-       LIMIT 1000`,
+       LIMIT 5000`,
       []
     );
 
@@ -54,6 +62,7 @@ export async function GET() {
         status: row.status,
         category: row.category || 'other',
         location: { lat, lng },
+        is_legacy: row.is_legacy === true,
       };
     }).filter(Boolean);
 
