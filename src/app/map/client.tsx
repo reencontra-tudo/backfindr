@@ -135,10 +135,14 @@ export default function MapPage() {
   const debouncedSearch = useDebounce(filters.search, 300);
 
   // ─── Sessão do visitante — só pra saber se é equipe interna ───────────────
-  // Página pública: a maioria de quem acessa não está logada, e fetchMe()
-  // já trata isso silenciosamente (limpa o estado sem erro visível).
-  const { user, fetchMe } = useAuthStore();
-  useEffect(() => { fetchMe(); }, [fetchMe]);
+  // NÃO chama fetchMe() aqui: essa página é pública, a maioria de quem
+  // acessa não está logada, e fetchMe() passa pelo cliente HTTP
+  // compartilhado (src/lib/api.ts) — que em qualquer 401 sem refresh_token
+  // redireciona a página inteira pra /auth/login. Isso quebraria o mapa
+  // público pra todo visitante deslogado. Em vez disso, só lê o estado já
+  // persistido pelo zustand (localStorage) de um login anterior em outra
+  // parte do app — sem fazer nenhuma chamada de rede nova.
+  const user = useAuthStore((s) => s.user);
   const isStaff = user?.role === 'super_admin' || user?.role === 'admin';
 
   // ─── Carregar pins (endpoint slim, cache 2min no CDN) ─────────────────────
