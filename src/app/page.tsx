@@ -776,10 +776,10 @@ export default function HomePage() {
                   sumir hoje.
                 </h2>
                 <p className="mb-2 text-sm text-white/45">
-                  Um QR na coleira pode mudar o desfecho.
+                  Perdeu, achou ou quer proteger — a rede Backfindr ajuda nos três casos.
                 </p>
                 <p className="mb-7 max-w-md text-sm leading-relaxed text-white/40 md:text-base">
-                  Cole um QR na coleira e aumente a chance de retorno com um gesto simples e imediato.
+                  Cole um QR na coleira antes que aconteça, ou aja agora se o desaparecimento já é real.
                 </p>
 
                 <div className="mb-8 grid grid-cols-2 gap-3">
@@ -796,15 +796,27 @@ export default function HomePage() {
                   ))}
                 </div>
 
-                <Link
-                  href="/auth/register"
-                  className="inline-flex items-center gap-2 rounded-2xl bg-amber-500 px-7 py-4 text-sm font-bold text-white transition-colors hover:bg-amber-400"
-                  style={{ boxShadow: '0 12px 34px rgba(245,158,11,.24)' }}
-                >
-                  Criar QR para meu pet
-                  <ArrowRight className="h-4 w-4" />
-                </Link>
-                <p className="mt-2 text-xs text-white/25">Leva menos de 30 segundos</p>
+                {/* Três situações, mesmo peso visual — nenhuma domina as outras. */}
+                <div className="grid grid-cols-1 gap-2.5 sm:grid-cols-3">
+                  <Link
+                    href="/auth/register"
+                    className="inline-flex items-center justify-center gap-2 rounded-2xl border border-amber-500/25 bg-amber-500/10 px-4 py-3.5 text-center text-sm font-bold text-amber-300 transition-all hover:bg-amber-500/15"
+                  >
+                    🛡️ Proteger meu pet
+                  </Link>
+                  <Link
+                    href="/flow/pet"
+                    className="inline-flex items-center justify-center gap-2 rounded-2xl border border-red-500/25 bg-red-500/10 px-4 py-3.5 text-center text-sm font-bold text-red-300 transition-all hover:bg-red-500/15"
+                  >
+                    🐾 Meu pet sumiu
+                  </Link>
+                  <Link
+                    href="/flow/found"
+                    className="inline-flex items-center justify-center gap-2 rounded-2xl border border-teal-500/25 bg-teal-500/10 px-4 py-3.5 text-center text-sm font-bold text-teal-300 transition-all hover:bg-teal-500/15"
+                  >
+                    🙌 Encontrei um pet
+                  </Link>
+                </div>
               </FadeIn>
             </div>
 
