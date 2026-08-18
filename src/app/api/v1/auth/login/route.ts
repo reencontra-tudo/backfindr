@@ -16,8 +16,13 @@ export async function POST(request: NextRequest) {
     }
 
     // Buscar usuário
+    // is_system_account = false: a conta-âncora de Public Signals (ver
+    // src/lib/systemAccount.ts) nunca deve autenticar, mesmo que a senha por
+    // algum motivo conferisse — reforço em código além da constraint de
+    // schema (ver src/db/migrations/006_public_signals.sql).
     const result = await query(
-      'SELECT id, email, password, name FROM users WHERE email = $1',
+      `SELECT id, email, password, name FROM users
+       WHERE email = $1 AND is_system_account = false`,
       [username.toLowerCase()]
     );
 
