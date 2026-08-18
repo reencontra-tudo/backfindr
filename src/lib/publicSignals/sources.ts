@@ -89,18 +89,24 @@ const pressRssSource: Source = {
 };
 
 // ─── institution: feeds próprios de aeroportos, metrô, universidades etc. ──
-// Vazio de propósito — cada URL precisa ser curada e verificada (ToS/RSS
-// oficial) antes de entrar aqui, não é algo pra inventar. Formato esperado:
-// { id: 'aeroporto-guarulhos', type: 'institution', fetchItems: () => fetchGoogleNewsRSS-style ou parser específico }
+// Vazio nesta rodada — decisão explícita (não é falta de URL a preencher):
+// em vez de manter uma lista fixa de feeds institucionais curados um a um,
+// a direção definida é adicionar um componente de busca geral via SERP API
+// (ex: Brave Search API / SerpAPI) que cobre instituições e imprensa sem
+// depender de lista manual. Ainda NÃO implementado — fica registrado aqui
+// como próximo passo, pra não travar o teste do pipeline de imprensa que já
+// está pronto. Quando implementado, o formato de Source continua o mesmo:
+// { id: '...', type: 'institution', fetchItems: () => ... }
 const institutionSources: Source[] = [];
 
-// ─── google_alert_corroboration: RSS nativo de alertas já configurados ─────
-// Vazio de propósito, mesma razão — cole aqui a URL de RSS gerada pelo
-// Google Alerts (google.com/alerts) quando tiver alertas configurados.
-// Importante: itens desta fonte NUNCA criam evidência nova sozinhos — o
-// endpoint de ingestão só os mantém se baterem no dedup_hash de um item já
-// visto por outra fonte (ver comentário no route.ts). Isso implementa
-// "nunca fonte primária isolada" sem precisar de lógica extra.
+// ─── google_alert_corroboration: mesma decisão acima ───────────────────────
+// Vazio nesta rodada pelo mesmo motivo — URL fixa de RSS do Google Alerts
+// foi descartada em favor do componente de busca via SERP API (ainda não
+// implementado). Quando essa fonte existir (SERP API ou Alerts), a regra já
+// implementada no route.ts continua valendo: itens daqui NUNCA criam
+// evidência nova sozinhos, só sobrevivem se baterem no dedup_hash de algo
+// que outra fonte já reportou — isso é o que garante "nunca fonte primária
+// isolada", sem precisar de lógica extra quando a fonte for plugada.
 const googleAlertSources: Source[] = [];
 
 export const SOURCES: Source[] = [pressRssSource, ...institutionSources, ...googleAlertSources];
