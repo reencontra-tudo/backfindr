@@ -1,8 +1,13 @@
 export const dynamic = 'force-dynamic';
+// Máximo permitido no plano Hobby da Vercel — dá o teto de tempo real que
+// existe, mas a defesa de verdade contra estourar isso é a paralelização +
+// o MAX_ITEMS_PER_RUN abaixo, não esse número sozinho.
+export const maxDuration = 60;
+
 import { NextRequest, NextResponse } from 'next/server';
 import { query } from '@/lib/db';
 import { SOURCES } from '@/lib/publicSignals/sources';
-import { extractSignal } from '@/lib/publicSignals/extract';
+import { extractSignal, type RawSignalItem } from '@/lib/publicSignals/extract';
 import { computeContentHash } from '@/lib/publicSignals/dedup';
 
 // ─── POST /api/v1/admin/public-signals/ingest ──────────────────────────────
@@ -19,14 +24,135 @@ import { computeContentHash } from '@/lib/publicSignals/dedup';
 //
 // Não roda matching, não gera objeto, não notifica ninguém. Fail-safe:
 // sem SIGNALS_CRON_SECRET configurado, o endpoint recusa qualquer chamada.
+//
+// ── Histórico: por que existe paralelização + teto aqui ────────────────────
+// Primeiro teste real (18/08/2026) processou os itens em sequência (um por
+// vez, esperando a extração via LLM terminar antes do próximo) — com ~90
+// candidatos vindos de 4 buscas RSS, isso passou de 60s reais e a função foi
+// encerrada pela Vercel antes de conseguir responder, mesmo com todo o
+// trabalho já commitado no banco (67 linhas inseridas certinho, resposta
+// HTTP nunca chegou). Corrigido com lotes concorrentes (CONCURRENCY) + um
+// teto explícito de itens por rodada (MAX_ITEMS_PER_RUN) como rede de
+// segurança adicional — se um dia tiver pico de notícia e vier muito mais
+// candidato que o normal, melhor processar em duas rodadas (o resto fica
+// pra amanhã, sem problema — RSS renova todo dia) do que estourar de novo.
 
 const CONTACT_RETENTION_MONTHS = 12;
+const MAX_ITEMS_PER_RUN = 40;
+const CONCURRENCY = 8;
 
 const SOURCE_CONFIDENCE: Record<string, number> = {
   institution: 80,
   press_rss: 50,
   google_alert_corroboration: 30,
 };
+
+interface Stats {
+  sources: number;
+  itemsSeen: number;
+  itemsSkippedCapReached: number;
+  skippedExistingUrl: number;
+  skippedNotRelevant: number;
+  skippedDuplicateContent: number;
+  inserted: number;
+  errors: number;
+}
+
+async function processItem(
+  raw: Omit<RawSignalItem, 'sourceType'>,
+  sourceType: RawSignalItem['sourceType'],
+  stats: Stats,
+  seenHashesThisRun: Set<string>
+): Promise<void> {
+  try {
+    // ── Dedup grosso: source_url exata já vista antes (banco) ────────────
+    const existing = await query(
+      `SELECT 1 FROM public_signal_evidence WHERE source_url = $1 LIMIT 1`,
+      [raw.link]
+    );
+    if (existing.rows.length > 0) {
+      stats.skippedExistingUrl++;
+      return;
+    }
+
+    // ── Extraction (a parte lenta — é por isso que roda em lote) ─────────
+    const extracted = await extractSignal({ ...raw, sourceType });
+    if (!extracted || !extracted.is_relevant) {
+      stats.skippedNotRelevant++;
+      return;
+    }
+
+    // ── Dedup fino: hash de conteúdo normalizado ──────────────────────────
+    const dedupHash = computeContentHash(extracted.title, extracted.category, extracted.location_text);
+
+    // Checagem em memória PRIMEIRO, síncrona, sem await entre checar e
+    // marcar — evita duas tarefas concorrentes do mesmo lote inserirem a
+    // mesma ocorrência (ambas passariam pela checagem no banco abaixo se
+    // rodassem ao mesmo tempo, já que nenhuma inseriu ainda).
+    if (seenHashesThisRun.has(dedupHash)) {
+      stats.skippedDuplicateContent++;
+      return;
+    }
+    seenHashesThisRun.add(dedupHash);
+
+    const dupCheck = await query(
+      `SELECT id FROM public_signal_evidence WHERE dedup_hash = $1 AND status IN ('pending','approved') LIMIT 1`,
+      [dedupHash]
+    );
+    if (dupCheck.rows.length > 0) {
+      // MVP: duplicata não vira linha nova (nem soma "corroboração" — fica
+      // pra depois se o volume justificar). Isso já implementa "Google
+      // Alert nunca é fonte primária isolada": se o único jeito dele bater
+      // aqui é confirmando algo que outra fonte já achou, ele nunca cria
+      // nada sozinho.
+      stats.skippedDuplicateContent++;
+      return;
+    }
+
+    // Google Alerts sem match de dedup = não tem corroboração de nenhuma
+    // outra fonte ainda → descarta (nunca é fonte primária).
+    if (sourceType === 'google_alert_corroboration') {
+      stats.skippedNotRelevant++;
+      return;
+    }
+
+    // ── Retenção de dado sensível (seção 3) ───────────────────────────────
+    const hasContact = extracted.has_contact_data === true;
+    const expiresAt = hasContact
+      ? new Date(Date.now() + CONTACT_RETENTION_MONTHS * 30 * 24 * 60 * 60 * 1000)
+      : null;
+
+    const confidence = SOURCE_CONFIDENCE[sourceType] ?? 30;
+
+    await query(
+      `INSERT INTO public_signal_evidence
+         (source_url, source_type, has_contact_data, contact_snapshot,
+          extracted_fields, dedup_hash, expires_at, status, captured_at)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, 'pending', NOW())`,
+      [
+        raw.link,
+        sourceType,
+        hasContact,
+        hasContact ? JSON.stringify({ text: extracted.contact_text }) : null,
+        JSON.stringify({
+          title: extracted.title,
+          category: extracted.category,
+          status_guess: extracted.status_guess,
+          location_text: extracted.location_text,
+          confidence_score: confidence,
+          raw_title: raw.title,
+          raw_description: raw.description,
+        }),
+        dedupHash,
+        expiresAt,
+      ]
+    );
+    stats.inserted++;
+  } catch (err) {
+    console.error('[public-signals/ingest] erro processando item', err);
+    stats.errors++;
+  }
+}
 
 export async function POST(request: NextRequest) {
   const secret = process.env.SIGNALS_CRON_SECRET;
@@ -41,107 +167,45 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ detail: 'Não autorizado' }, { status: 401 });
   }
 
-  const stats = {
+  const stats: Stats = {
     sources: 0,
     itemsSeen: 0,
+    itemsSkippedCapReached: 0,
     skippedExistingUrl: 0,
     skippedNotRelevant: 0,
     skippedDuplicateContent: 0,
     inserted: 0,
     errors: 0,
   };
+  const seenHashesThisRun = new Set<string>();
 
+  // ── Discovery: junta os itens de todas as fontes antes de processar ────
+  const allItems: { raw: Omit<RawSignalItem, 'sourceType'>; sourceType: RawSignalItem['sourceType'] }[] = [];
   for (const source of SOURCES) {
     stats.sources++;
-    let rawItems;
     try {
-      rawItems = await source.fetchItems();
+      const rawItems = await source.fetchItems();
+      for (const raw of rawItems) allItems.push({ raw, sourceType: source.type });
     } catch (err) {
       console.error(`[public-signals/ingest] falha ao buscar fonte ${source.id}`, err);
       stats.errors++;
-      continue;
     }
+  }
+  stats.itemsSeen = allItems.length;
 
-    for (const raw of rawItems) {
-      stats.itemsSeen++;
-      try {
-        // ── Dedup grosso: source_url exata já vista antes ──────────────
-        const existing = await query(
-          `SELECT 1 FROM public_signal_evidence WHERE source_url = $1 LIMIT 1`,
-          [raw.link]
-        );
-        if (existing.rows.length > 0) {
-          stats.skippedExistingUrl++;
-          continue;
-        }
+  // ── Teto de segurança: se vier muito mais candidato que o normal (pico
+  // de notícia), processa só os primeiros MAX_ITEMS_PER_RUN — o resto fica
+  // pra próxima rodada (RSS renova todo dia, não perde item de forma
+  // permanente, só adia).
+  const toProcess = allItems.slice(0, MAX_ITEMS_PER_RUN);
+  stats.itemsSkippedCapReached = allItems.length - toProcess.length;
 
-        // ── Extraction ──────────────────────────────────────────────────
-        const extracted = await extractSignal({ ...raw, sourceType: source.type });
-        if (!extracted || !extracted.is_relevant) {
-          stats.skippedNotRelevant++;
-          continue;
-        }
-
-        // ── Dedup fino: hash de conteúdo normalizado ────────────────────
-        const dedupHash = computeContentHash(extracted.title, extracted.category, extracted.location_text);
-        const dupCheck = await query(
-          `SELECT id FROM public_signal_evidence WHERE dedup_hash = $1 AND status IN ('pending','approved') LIMIT 1`,
-          [dedupHash]
-        );
-        if (dupCheck.rows.length > 0) {
-          // MVP: duplicata não vira linha nova (nem soma "corroboração" —
-          // fica pra depois se o volume justificar). Isso já implementa
-          // "Google Alert nunca é fonte primária isolada": se o único jeito
-          // dele bater aqui é confirmando algo que outra fonte já achou,
-          // ele nunca cria nada sozinho.
-          stats.skippedDuplicateContent++;
-          continue;
-        }
-
-        // Google Alerts sem match de dedup = não tem corroboração de
-        // nenhuma outra fonte ainda → descarta (nunca é fonte primária).
-        if (source.type === 'google_alert_corroboration') {
-          stats.skippedNotRelevant++;
-          continue;
-        }
-
-        // ── Retenção de dado sensível (seção 3) ─────────────────────────
-        const hasContact = extracted.has_contact_data === true;
-        const expiresAt = hasContact
-          ? new Date(Date.now() + CONTACT_RETENTION_MONTHS * 30 * 24 * 60 * 60 * 1000)
-          : null;
-
-        const confidence = SOURCE_CONFIDENCE[source.type] ?? 30;
-
-        await query(
-          `INSERT INTO public_signal_evidence
-             (source_url, source_type, has_contact_data, contact_snapshot,
-              extracted_fields, dedup_hash, expires_at, status, captured_at)
-           VALUES ($1, $2, $3, $4, $5, $6, $7, 'pending', NOW())`,
-          [
-            raw.link,
-            source.type,
-            hasContact,
-            hasContact ? JSON.stringify({ text: extracted.contact_text }) : null,
-            JSON.stringify({
-              title: extracted.title,
-              category: extracted.category,
-              status_guess: extracted.status_guess,
-              location_text: extracted.location_text,
-              confidence_score: confidence,
-              raw_title: raw.title,
-              raw_description: raw.description,
-            }),
-            dedupHash,
-            expiresAt,
-          ]
-        );
-        stats.inserted++;
-      } catch (err) {
-        console.error('[public-signals/ingest] erro processando item', err);
-        stats.errors++;
-      }
-    }
+  // ── Processa em lotes concorrentes — é isso que resolve o timeout ──────
+  for (let i = 0; i < toProcess.length; i += CONCURRENCY) {
+    const batch = toProcess.slice(i, i + CONCURRENCY);
+    await Promise.all(
+      batch.map(({ raw, sourceType }) => processItem(raw, sourceType, stats, seenHashesThisRun))
+    );
   }
 
   return NextResponse.json({ ok: true, stats });
