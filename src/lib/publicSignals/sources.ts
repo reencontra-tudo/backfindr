@@ -11,7 +11,12 @@ import type { RawSignalItem } from './extract';
 export interface Source {
   id: string;
   type: RawSignalItem['sourceType'];
-  fetchItems: () => Promise<Omit<RawSignalItem, 'sourceType'>[]>;
+  fetchItems: () => Promise<Omit<RawSignalItem, 'sourceType' | 'regionHint'>[]>;
+  // Cidade/estado que essa fonte cobre exclusivamente, se houver — repassado
+  // pro LLM em extract.ts pra desambiguar bairros com nome repetido em
+  // outras cidades (ex: "Morumbi" existe em Cascavel-PR E em São Paulo).
+  // Ver comentário completo em extract.ts::RawSignalItem.regionHint.
+  regionHint?: string;
 }
 
 // ── Filtro de idade (achado em 19/08/2026) ──────────────────────────────────
@@ -128,6 +133,10 @@ const institutionSources: Source[] = [
     id: 'cgn_achados_e_perdidos',
     type: 'institution',
     fetchItems: () => fetchAndParseRSS('https://cgn.inf.br/achados-e-perdidos/feed'),
+    // Achado em 19/08/2026: sem isso, "bairro Morumbi" geocodificava pro
+    // Morumbi de São Paulo em vez do de Cascavel-PR (única cobertura real
+    // deste feed). 1 objeto ao vivo corrigido manualmente; isto evita repetir.
+    regionHint: 'Cascavel, PR',
   },
 ];
 

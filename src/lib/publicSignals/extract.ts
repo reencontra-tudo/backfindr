@@ -8,6 +8,14 @@ export interface RawSignalItem {
   description: string;
   link: string;
   sourceType: 'press_rss' | 'institution' | 'google_alert_corroboration';
+  // Cidade/região conhecida da FONTE (não do texto) — ex: um feed de
+  // achados-e-perdidos hiperlocal de Cascavel-PR nunca precisa repetir
+  // "Cascavel" em cada notícia, mas sem esse contexto o location_text vira
+  // só "Morumbi" e a geocodificação na aprovação pode resolver pro bairro
+  // homônimo mais famoso do Brasil (São Paulo) em vez do certo. Achado ao
+  // vivo em 19/08/2026: aprovação publicou um objeto em SP quando era
+  // Cascavel-PR. Ver src/lib/publicSignals/sources.ts.
+  regionHint?: string;
 }
 
 export interface ExtractedSignal {
@@ -47,7 +55,10 @@ export async function extractSignal(item: RawSignalItem): Promise<ExtractedSigna
     return null;
   }
 
-  const userMessage = `Título: ${item.title}\nDescrição: ${item.description || '(sem descrição)'}\nFonte: ${item.link}`;
+  const regionLine = item.regionHint
+    ? `\nRegião da fonte: ${item.regionHint} (esta notícia vem de um veículo que cobre APENAS essa região — se o texto mencionar só um bairro/rua, sem cidade, assuma que é nessa região e complete "location_text" com ela, ex: "bairro X" vira "bairro X, ${item.regionHint}")`
+    : '';
+  const userMessage = `Título: ${item.title}\nDescrição: ${item.description || '(sem descrição)'}\nFonte: ${item.link}${regionLine}`;
 
   try {
     const response = await fetch('https://api.openai.com/v1/chat/completions', {
