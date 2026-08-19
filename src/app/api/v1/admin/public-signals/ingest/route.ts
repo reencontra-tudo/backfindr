@@ -59,10 +59,11 @@ interface Stats {
 }
 
 async function processItem(
-  raw: Omit<RawSignalItem, 'sourceType'>,
+  raw: Omit<RawSignalItem, 'sourceType' | 'regionHint'>,
   sourceType: RawSignalItem['sourceType'],
   stats: Stats,
-  seenHashesThisRun: Set<string>
+  seenHashesThisRun: Set<string>,
+  regionHint?: string
 ): Promise<void> {
   try {
     // ── Dedup grosso: source_url exata já vista antes (banco) ────────────
@@ -76,7 +77,7 @@ async function processItem(
     }
 
     // ── Extraction (a parte lenta — é por isso que roda em lote) ─────────
-    const extracted = await extractSignal({ ...raw, sourceType });
+    const extracted = await extractSignal({ ...raw, sourceType, regionHint });
     if (!extracted || !extracted.is_relevant) {
       stats.skippedNotRelevant++;
       return;
@@ -193,12 +194,12 @@ export async function POST(request: NextRequest) {
   const seenHashesThisRun = new Set<string>();
 
   // ── Discovery: junta os itens de todas as fontes antes de processar ────
-  const allItems: { raw: Omit<RawSignalItem, 'sourceType'>; sourceType: RawSignalItem['sourceType'] }[] = [];
+  const allItems: { raw: Omit<RawSignalItem, 'sourceType' | 'regionHint'>; sourceType: RawSignalItem['sourceType']; regionHint?: string }[] = [];
   for (const source of SOURCES) {
     stats.sources++;
     try {
       const rawItems = await source.fetchItems();
-      for (const raw of rawItems) allItems.push({ raw, sourceType: source.type });
+      for (const raw of rawItems) allItems.push({ raw, sourceType: source.type, regionHint: source.regionHint });
     } catch (err) {
       console.error(`[public-signals/ingest] falha ao buscar fonte ${source.id}`, err);
       stats.errors++;
@@ -226,7 +227,7 @@ export async function POST(request: NextRequest) {
   for (let i = 0; i < toProcess.length; i += CONCURRENCY) {
     const batch = toProcess.slice(i, i + CONCURRENCY);
     await Promise.all(
-      batch.map(({ raw, sourceType }) => processItem(raw, sourceType, stats, seenHashesThisRun))
+      batch.map(({ raw, sourceType, regionHint }) => processItem(raw, sourceType, stats, seenHashesThisRun, regionHint))
     );
   }
 
