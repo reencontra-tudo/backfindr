@@ -18,6 +18,8 @@ interface Stats {
   total_matches?: number;
   pending_matches?: number;
   pending_reports?: number;
+  map_eligible_objects?: number;
+  map_query_limit?: number;
   active_condominios?: number;
   total_condominios?: number;
   custody_items?: number;
@@ -207,7 +209,8 @@ export default function DashboardPage() {
       </div>
 
       {/* Alertas ativos */}
-      {((stats.pending_matches ?? 0) > 0 || (stats.pending_reports ?? 0) > 0) && (
+      {((stats.pending_matches ?? 0) > 0 || (stats.pending_reports ?? 0) > 0 ||
+        (stats.map_eligible_objects ?? 0) / (stats.map_query_limit || 1) > 0.7) && (
         <div className="flex flex-wrap gap-3">
           {(stats.pending_matches ?? 0) > 0 && (
             <Link href="/admin/matches"
@@ -224,6 +227,19 @@ export default function DashboardPage() {
               {stats.pending_reports} denúncia{(stats.pending_reports ?? 0) > 1 ? "s" : ""} aguardando moderação
               <ChevronRight className="w-3 h-3 opacity-50" />
             </Link>
+          )}
+          {/* Capacidade da query do mapa (/api/v1/objects/map) — só aparece
+              acima de 70% de uso. Objetivo é avisar com folga real antes do
+              LIMIT cortar objeto do mapa silenciosamente, não só quando já
+              estourou (ver comentário em objects/map/route.ts). */}
+          {(stats.map_eligible_objects ?? 0) / (stats.map_query_limit || 1) > 0.7 && (
+            <div
+              className="flex items-center gap-2 px-3.5 py-2 rounded-xl bg-amber-500/10 border border-amber-500/25 text-amber-300 text-xs"
+              title="Objetos elegíveis pro mapa se aproximando do teto da query — considere subir MAP_QUERY_LIMIT em objects/map/route.ts"
+            >
+              <AlertCircle className="w-3.5 h-3.5" />
+              Mapa: {stats.map_eligible_objects?.toLocaleString("pt-BR")} / {stats.map_query_limit?.toLocaleString("pt-BR")} objetos elegíveis ({Math.round(((stats.map_eligible_objects ?? 0) / (stats.map_query_limit || 1)) * 100)}%)
+            </div>
           )}
         </div>
       )}

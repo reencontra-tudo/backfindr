@@ -6,15 +6,23 @@ import { query } from '@/lib/db';
 
 export const dynamic = 'force-dynamic';
 
+// Teto da query principal. O mapa já cobre escala de renderização via
+// clustering nativo do Mapbox no cliente (`cluster: true` em
+// src/app/map/client.tsx) — não re-busca por viewport, manda o dataset
+// inteiro e deixa o Mapbox agrupar visualmente. Então o risco real aqui
+// nunca foi "o mapa não aguenta muito ponto", é este LIMIT cortar objetos
+// do resultado sem ninguém perceber. Subido de 5000 pra 20000 (~13x o
+// universo elegível de ago/2026, ~1525) e instrumentado abaixo pra nunca
+// mais ser silencioso — se algum dia isso disparar de verdade, o log e o
+// campo `truncated` no payload avisam antes que vire objeto sumindo do
+// mapa sem explicação. Reavaliar viewport pagination de verdade só se a
+// causa do crescimento for algo que o clustering não resolva (não é o
+// caso hoje: Public Signals cresce por aprovação manual, throughput
+// humano, não automação).
+const MAP_QUERY_LIMIT = 20000;
+
 export async function GET() {
   try {
-    // LIMIT alto o suficiente pra cobrir todo o universo elegível atual (~1525
-    // em ago/2026, a maioria dado histórico legado do Webjetos) com folga pra
-    // crescimento — não é mais um corte amostral. Antes disso, um LIMIT 1000
-    // ordenado só por updated_at DESC deixava de fora quase todo o status
-    // "lost" sempre que uma migração em lote tocava o updated_at de um monte
-    // de registro "stolen" de uma vez, distorcendo os contadores por status
-    // do mapa (que são calculados a partir desta mesma lista, no cliente).
     const [result, returnedCountResult] = await Promise.all([
       query(
         `SELECT
@@ -35,7 +43,7 @@ export async function GET() {
          ORDER BY
            CASE WHEN is_boosted = true THEN 0 ELSE 1 END ASC,
            updated_at DESC NULLS LAST
-         LIMIT 5000`,
+         LIMIT ${MAP_QUERY_LIMIT + 1}`,
         []
       ),
       // Total real de objetos recuperados — não vem da lista de pins acima
@@ -46,7 +54,18 @@ export async function GET() {
       query(`SELECT COUNT(*)::int AS count FROM objects WHERE is_public = true AND status = 'returned'`, []),
     ]);
 
-    const items = result.rows.map((row: Record<string, unknown>) => {
+    // Buscamos MAP_QUERY_LIMIT+1 de propósito: se essa linha extra veio, é
+    // sinal de que existem mais objetos elegíveis do que o teto — descarta
+    // ela do resultado, mas registra o estouro em vez de deixar sumir calado.
+    const truncated = result.rows.length > MAP_QUERY_LIMIT;
+    const rows = truncated ? result.rows.slice(0, MAP_QUERY_LIMIT) : result.rows;
+    if (truncated) {
+      console.error(
+        `[objects/map] LIMIT de ${MAP_QUERY_LIMIT} atingido — existem mais objetos públicos elegíveis do que o teto da query. Objetos estão sendo omitidos do mapa. Subir MAP_QUERY_LIMIT ou implementar paginação real.`
+      );
+    }
+
+    const items = rows.map((row: Record<string, unknown>) => {
       // Resolver coordenadas
       let lat: number | null = row.latitude ? parseFloat(String(row.latitude)) : null;
       let lng: number | null = row.longitude ? parseFloat(String(row.longitude)) : null;
@@ -75,7 +94,7 @@ export async function GET() {
     const returnedTotal = (returnedCountResult.rows[0]?.count as number) ?? 0;
 
     return NextResponse.json(
-      { items, count: items.length, returned_total: returnedTotal },
+      { items, count: items.length, returned_total: returnedTotal, truncated },
       {
         headers: {
           // Cache de 2 minutos no Vercel Edge CDN + stale-while-revalidate de 30s
