@@ -88,7 +88,7 @@ export async function GET(req: NextRequest) {
       totalUsers, newUsersToday, newUsersWeek, activeUsersWeek,
       totalObjects, lostObjects, foundObjects, returnedObjects,
       pendingMatches, confirmedMatches, rejectedMatches, scansToday,
-      pendingReports, proSubs, bizSubs, dailyGrowth, dailyObjects, pendingPublicSignals,
+      pendingReports, proSubs, bizSubs, dailyGrowth, dailyObjects, pendingPublicSignals, mapEligible,
     ] = await Promise.all([
       query('SELECT COUNT(*) FROM users'),
       query('SELECT COUNT(*) FROM users WHERE created_at >= $1', [startOfDay.toISOString()]),
@@ -108,6 +108,16 @@ export async function GET(req: NextRequest) {
       query(`SELECT TO_CHAR(DATE_TRUNC('day', created_at), 'DD/MM') AS day, COUNT(*)::int AS count FROM users WHERE created_at >= NOW() - INTERVAL '7 days' GROUP BY DATE_TRUNC('day', created_at) ORDER BY DATE_TRUNC('day', created_at)`),
       query(`SELECT TO_CHAR(DATE_TRUNC('day', created_at), 'DD/MM') AS day, COUNT(*)::int AS count FROM objects WHERE created_at >= NOW() - INTERVAL '7 days' GROUP BY DATE_TRUNC('day', created_at) ORDER BY DATE_TRUNC('day', created_at)`),
       query(`SELECT COUNT(*) FROM public_signal_evidence WHERE status = 'pending'`),
+      // Universo elegível real do /api/v1/objects/map (mesmo WHERE, sem o
+      // LIMIT) — dá um número proativo de quanto da capacidade da query do
+      // mapa está em uso, pra avisar antes de bater no teto (MAP_QUERY_LIMIT
+      // em objects/map/route.ts), não só depois que já cortou objeto.
+      query(
+        `SELECT COUNT(*)::int AS count FROM objects
+         WHERE is_public = true AND status IN ('lost', 'found', 'stolen')
+           AND ((latitude IS NOT NULL AND longitude IS NOT NULL)
+                OR (location IS NOT NULL AND location != '' AND location != 'null'))`
+      ),
     ]);
 
     const proCount  = parseInt(proSubs.rows[0].count, 10);
@@ -140,6 +150,8 @@ export async function GET(req: NextRequest) {
       total_scans_today:     parseInt(scansToday.rows[0].count, 10),
       pending_reports:       parseInt(pendingReports.rows[0].count, 10),
       pending_public_signals: parseInt(pendingPublicSignals.rows[0].count, 10),
+      map_eligible_objects: mapEligible.rows[0].count as number,
+      map_query_limit: 20000,
       mrr,
       arr:                   mrr * 12,
       total_subscribers:     totalSubs,
@@ -154,7 +166,7 @@ export async function GET(req: NextRequest) {
       total_users: 0, new_users_today: 0, new_users_week: 0, active_users_week: 0,
       total_objects: 0, lost_objects: 0, found_objects: 0, returned_objects: 0,
       pending_matches: 0, confirmed_matches: 0, rejected_matches: 0, total_scans_today: 0,
-      pending_reports: 0, pending_public_signals: 0, mrr: 0, arr: 0, total_subscribers: 0, churn_rate: 0, daily_growth: [],
+      pending_reports: 0, pending_public_signals: 0, map_eligible_objects: 0, map_query_limit: 20000, mrr: 0, arr: 0, total_subscribers: 0, churn_rate: 0, daily_growth: [],
     });
   }
 }
