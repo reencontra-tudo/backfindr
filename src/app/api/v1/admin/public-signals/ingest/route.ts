@@ -108,7 +108,7 @@ async function processItem(
   sourceType: RawSignalItem['sourceType'],
   stats: Stats,
   seenHashesThisRun: Set<string>,
-  regionHint?: string
+  regionHint: string | null
 ): Promise<void> {
   try {
     // ── Dedup grosso: source_url exata já vista antes (banco) ────────────
@@ -239,7 +239,7 @@ export async function POST(request: NextRequest) {
   const seenHashesThisRun = new Set<string>();
 
   // ── Discovery: junta os itens de todas as fontes antes de processar ────
-  const allItems: { raw: Omit<RawSignalItem, 'sourceType' | 'regionHint'>; sourceType: RawSignalItem['sourceType']; regionHint?: string }[] = [];
+  const allItems: { raw: Omit<RawSignalItem, 'sourceType' | 'regionHint'>; sourceType: RawSignalItem['sourceType']; regionHint: string | null }[] = [];
   for (const source of SOURCES) {
     stats.sources++;
     try {

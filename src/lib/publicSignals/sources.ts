@@ -12,11 +12,21 @@ export interface Source {
   id: string;
   type: RawSignalItem['sourceType'];
   fetchItems: () => Promise<Omit<RawSignalItem, 'sourceType' | 'regionHint'>[]>;
-  // Cidade/estado que essa fonte cobre exclusivamente, se houver — repassado
-  // pro LLM em extract.ts pra desambiguar bairros com nome repetido em
-  // outras cidades (ex: "Morumbi" existe em Cascavel-PR E em São Paulo).
-  // Ver comentário completo em extract.ts::RawSignalItem.regionHint.
-  regionHint?: string;
+  // OBRIGATÓRIO (não opcional) — cidade/estado que essa fonte cobre
+  // exclusivamente, ou `null` se a fonte é genuinamente nacional/sem viés
+  // geográfico. Repassado pro LLM em extract.ts pra desambiguar bairros com
+  // nome repetido em outras cidades.
+  //
+  // Era `regionHint?: string` até 19/08/2026 — 2 bugs reais foram publicados
+  // ao vivo com coordenada errada por ambiguidade de bairro (Morumbi:
+  // Cascavel-PR geocodificado como São Paulo; Coqueiral: Cascavel-PR
+  // geocodificado como Guarapari-ES), cada um só corrigido depois do fato,
+  // porque nada obrigava pensar nisso ao adicionar a fonte. Virou campo
+  // obrigatório (`string | null`, sem `?`) de propósito: toda fonte nova
+  // agora dá erro de compilação até alguém decidir explicitamente "esta
+  // fonte tem região fixa: X" ou "esta fonte é nacional, sem viés: null" —
+  // em vez de descobrir reativamente quando um bairro homônimo aparecer.
+  regionHint: string | null;
 }
 
 // ── Filtro de idade (achado em 19/08/2026) ──────────────────────────────────
@@ -102,10 +112,14 @@ const PRESS_QUERIES = [
 const pressRssSource: Source = {
   id: 'google_news_press',
   type: 'press_rss',
+  // Decisão explícita, não esquecimento: buscas no Google News cobrem o
+  // Brasil inteiro por palavra-chave, sem cidade fixa — não há região pra
+  // sugerir ao LLM aqui.
+  regionHint: null,
   async fetchItems() {
     const urls = PRESS_QUERIES.map(q => `https://news.google.com/rss/search?q=${encodeURIComponent(q)}&hl=pt-BR&gl=BR&ceid=BR:pt-419`);
     const results = await Promise.allSettled(urls.map(fetchAndParseRSS));
-    const items: Omit<RawSignalItem, 'sourceType'>[] = [];
+    const items: Omit<RawSignalItem, 'sourceType' | 'regionHint'>[] = [];
     const seenLinks = new Set<string>();
     for (const result of results) {
       if (result.status !== 'fulfilled') continue;
