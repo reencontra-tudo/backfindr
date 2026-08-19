@@ -8,14 +8,16 @@ export interface RawSignalItem {
   description: string;
   link: string;
   sourceType: 'press_rss' | 'institution' | 'google_alert_corroboration';
-  // Cidade/região conhecida da FONTE (não do texto) — ex: um feed de
-  // achados-e-perdidos hiperlocal de Cascavel-PR nunca precisa repetir
-  // "Cascavel" em cada notícia, mas sem esse contexto o location_text vira
-  // só "Morumbi" e a geocodificação na aprovação pode resolver pro bairro
-  // homônimo mais famoso do Brasil (São Paulo) em vez do certo. Achado ao
-  // vivo em 19/08/2026: aprovação publicou um objeto em SP quando era
-  // Cascavel-PR. Ver src/lib/publicSignals/sources.ts.
-  regionHint?: string;
+  // Cidade/região conhecida da FONTE (não do texto), ou `null` se a fonte é
+  // nacional/sem viés geográfico — ex: um feed de achados-e-perdidos
+  // hiperlocal de Cascavel-PR nunca precisa repetir "Cascavel" em cada
+  // notícia, mas sem esse contexto o location_text vira só "Morumbi"/
+  // "Coqueiral" e a geocodificação na aprovação pode resolver pro bairro
+  // homônimo mais famoso do Brasil (São Paulo, Guarapari-ES) em vez do
+  // certo. Dois casos reais em 19/08/2026. Campo obrigatório em
+  // Source.regionHint (src/lib/publicSignals/sources.ts) — ver comentário
+  // lá para o porquê de não ser opcional.
+  regionHint: string | null;
 }
 
 export interface ExtractedSignal {
