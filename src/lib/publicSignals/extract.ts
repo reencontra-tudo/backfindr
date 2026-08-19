@@ -7,7 +7,10 @@ export interface RawSignalItem {
   title: string;
   description: string;
   link: string;
-  sourceType: 'press_rss' | 'institution' | 'google_alert_corroboration';
+  // 'manual_other' — canal de entrada manual (submit/route.ts) quando o
+  // admin não classifica a URL como institution nem press; as outras 3 são
+  // do pipeline automático (sources.ts/ingest/route.ts).
+  sourceType: 'press_rss' | 'institution' | 'google_alert_corroboration' | 'manual_other';
   // Cidade/região conhecida da FONTE (não do texto), ou `null` se a fonte é
   // nacional/sem viés geográfico — ex: um feed de achados-e-perdidos
   // hiperlocal de Cascavel-PR nunca precisa repetir "Cascavel" em cada
