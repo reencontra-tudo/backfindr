@@ -92,6 +92,7 @@ Projeto anterior: Webjetos (2015) — migração planejada
 - **Código está em `src/`**, não em `app/` diretamente
 - **Vercel Hobby:** cron máximo 1x/dia — matching gerenciado pelo n8n no Railway
 - **Heredoc no zsh:** não usar para arquivos TSX/código com backticks — usar Python com strings
+- **Public Signals:** publicação em `objects` é SEMPRE por aprovação manual (`/admin/public-signals`) — pipeline nunca publica sozinho. Qualquer auto-aprovação futura precisa nascer atrás de um toggle explícito, desligado por padrão, desenhado junto com a lógica de automação (não construído antes dela — ver seção 17 e histórico 18-19/08)
 
 ---
 
@@ -115,7 +116,7 @@ cd ~/Downloads/backfindr-local/backfindr-main && pnpm dev  # porta 3003
 
 **Tabelas principais:** users, objects, matches, object_events, municipalities, local_pages,
 condominios, porteiros, unidades, encomendas, custodias, b2b_partners, entregas,
-estabelecimentos, entregadores, analytics_snapshots, boosts, payment_settings, seo_content_seeds, community_posts
+estabelecimentos, entregadores, analytics_snapshots, boosts, payment_settings, seo_content_seeds, community_posts, public_signal_evidence
 
 **Dados produção (27/06/2026):** 4.303 usuários | 2.019 objetos (58% veículos, 35% animais) | 1 boost vendido | 434 páginas SEO
 
@@ -130,6 +131,16 @@ actor_type, actor_id, metadata JSONB, created_at
 **Events helpers** (`src/lib/events.ts`): objectCreated, objectPublished, objectIndexed,
 matchingStarted, matchingCompleted, matchFound, qrScanned, ownerNotified,
 boostStarted, boostExpired, objectReturned, statusChanged
+
+**Tabela public_signal_evidence** (criada 18/08/2026 — migrations 006-008, ver seção 17 e histórico 18-19/08):
+```sql
+id, source_url, source_type (press_rss|institution|google_alert_corroboration),
+has_contact_data, contact_snapshot JSONB, extracted_fields JSONB,
+dedup_hash (UNIQUE), expires_at, status (pending|approved|rejected), captured_at
+```
+Evidência bruta da descoberta de ocorrências públicas (Public Signals) — nunca publica em `objects` sozinha, só após aprovação manual em `/admin/public-signals`.
+
+**Coluna `users.is_system_account`** (migration 006, 18/08/2026): identifica a conta-âncora que "possui" objetos publicados pelo Public Signals (`SYSTEM_ACCOUNT_ID` fixo em `src/lib/systemAccount.ts`). Protegida por 3 `CHECK` constraints no banco (não só aplicação): nunca plano pago, nunca role admin, e-mail sempre o reservado `public-signals@system.backfindr.internal`.
 
 ---
 
@@ -180,6 +191,7 @@ Todas as sprints concluídas em 26–27/06/2026:
 - Workflow AutoPost Facebook: 4 posts/dia, 7 nichos, gpt-image-1 → R2 → Facebook + Instagram
 - SEO Content Engine: cron 9h diário, tabela seo_content_seeds (46 seeds, esgotam ~11/08/2026)
 - Instagram @backfindroficial: 5 nichos (protect excluído pelo nó If) ✅
+- Workflow **"Backfindr Public Signals — Ingestão Diária"** (ativado 19/08/2026): Schedule Trigger 1x/dia à meia-noite → `POST /api/v1/admin/public-signals/ingest` (header `x-signals-cron-secret`, secret dedicado, não reaproveita `CRON_SECRET` do matching). Descobre ocorrências públicas (imprensa + institucional), nunca publica sozinho — alimenta fila de revisão manual em `/admin/public-signals`. Detalhes completos: seção 17 e histórico de sessão 18-19/08.
 - **Tokens expiram ~30/07/2026** — Facebook pages + Instagram user token
 
 **Facebook pages:** pet `1058341297366140` | celular `472039546624261` | bicicleta `301459970061606` | veículo `607774492681517` | geral+protect `229182413876628`
@@ -266,6 +278,11 @@ Estrutura de governança do produto instituída em 29/06/2026.
 - **GSC**: verificar canonicals /achados-perdidos, relatório indexação
 - **Google Business**: data abertura travada em 2010 → corrigir para 2026
 - **Loop WhatsApp**: revisar sucesso/page.tsx + ShareModal.tsx
+- **Public Signals — paginação do mapa**: `GET /api/v1/objects/map` usa `LIMIT 5000` sem paginação por viewport. Não é problema hoje, mas é pré-requisito antes de deixar o volume do Public Signals crescer sem controle — identificado na auditoria original (16-17/08), ainda não corrigido.
+- **Public Signals — bug `stripHtml()` em `src/app/api/v1/news/route.ts`**: ordem de operações erra (decodifica entidades HTML depois de tentar remover as tags), então descrições com HTML escapado do Google News passam sem strip. O mesmo padrão foi copiado (e corrigido) em `src/lib/publicSignals/sources.ts` para o pipeline novo — a rota `news/route.ts` original continua com o bug, fora de escopo da rodada. Registrado como task separada (spawn_task).
+- **Public Signals — área de notificações mais ampla**: proposta a Marcos em 19/08 (cobrir novo cadastro, objeto encontrado/match, além do alerta de ingestão que já existe) — aguardando confirmação de escopo antes de expandir além do que já está em produção.
+- **Public Signals — fonte `google_alert_corroboration`**: estrutura pronta em `src/lib/publicSignals/sources.ts`, array vazio de propósito. Direção definida é alimentar via busca SERP API (Brave Search/SerpAPI) em vez de lista fixa de alertas — ainda não implementado.
+- **Public Signals — Seções 4 e 5 do prompt master**: outreach institucional automatizado e triagem de mensagens de terceiros ("Encontrei") — não iniciados, fora do escopo da Fase 1.
 
 ### 🟢 Baixo
 - Email reativação para 14 usuários reais de 2026
@@ -308,6 +325,11 @@ Estrutura de governança do produto instituída em 29/06/2026.
 - Pendências registradas para decisão futura baseada em dados, não opinião (21/07/2026): (1) testar A/B remoção do botão "Ver ocorrências próximas" na /comecar — Marcos questionou se compete com os 4 CTAs principais para quem vem de anúncio; (2) considerar landings segmentadas por intenção (`/perdi` com título "Você perdeu alguma coisa?" mostrando só Perdi+Roubado; `/encontrei` só Encontrei; `/protect` só Protect) para manter a mensagem do anúncio consistente na landing — explicitamente adiado por Marcos até coletar dados reais da versão atual de /comecar; (3) página /map sem indicador de carregamento visível — pode parecer travada em conexões lentas ou primeira carga do Mapbox, ainda não investigado a fundo (só reproduzido em ambiente local, não confirmado como bug real em produção).
 - Auditoria de tracking + instalação de Microsoft Clarity e Meta Pixel (21/07/2026): confirmado que Backfindr tinha GA4 e PostHog, mas NÃO tinha Meta Pixel, GTM, Clarity nem Search Console. Instalado Microsoft Clarity (gravação de sessão + heatmap) — projeto criado em clarity.microsoft.com, Project ID `xpzich5od9`, script inserido em `layout.tsx`, variável `NEXT_PUBLIC_CLARITY_PROJECT_ID` configurada no Vercel (Production/Preview/Development, não-sensível). Instalado Meta Pixel com 4 eventos: `PageView` (automático em todo o site), `ViewContent` (na landing `/comecar`), `Lead` (ao concluir cadastro em `register/page.tsx`), `Purchase` (ao confirmar Boost em `checkout/success/client.tsx`, usando `amount_paid` real do banco). Pixel criado como conjunto de dados novo "Backfindr Site" (ID `882137184519436`) dentro do Business Manager "Backfindr" — decisão deliberada de não reaproveitar o pixel existente "Backfindr AutoPost" (ID `1286158296941920`), que é usado para outra finalidade. Variável `NEXT_PUBLIC_META_PIXEL_ID` configurada no Vercel. Processo de criação do pixel no Facebook foi instável (assistente "Conectar dados" travava repetidamente sem criar nada); caminho que funcionou: Configurações do Negócio → Fontes de dados → Conjuntos de dados e pixels → Adicionar → Criar novo conjunto de dados. Validado localmente: `typeof fbq` retorna `'function'`, sem erros no console.
 - Status atual de tracking do Backfindr: GA4 ✅, PostHog ✅, Microsoft Clarity ✅, Meta Pixel ✅ (4 eventos). Ainda sem: GTM, Search Console.
+- **Backfindr Public Signals — Fase 1 MVP em produção (18-19/08/2026)**: pipeline de descoberta de ocorrências públicas (imprensa via Google News RSS + institucional via feed CGN de Cascavel-PR) → extração estruturada via LLM (gpt-4o-mini) → dedup por hash de conteúdo (`UNIQUE` no banco + `ON CONFLICT DO NOTHING`, sem janela de corrida) → fila de revisão manual em `/admin/public-signals` (zero auto-publicação) → aprovação humana cria objeto real em `objects` com `source='public_signal'`, dono é a conta-âncora de sistema. Cron n8n "Backfindr Public Signals — Ingestão Diária" ativo, 1x/dia à meia-noite. Escrita completa na entrada de histórico de sessão 18-19/08, ao final desta seção.
+- **Filtro de idade nas notícias do Public Signals (19/08/2026)**: RSS do Google News não tem limite de data — duas notícias reais (dez/2022 e mai/2026) entravam na fila parecendo recentes porque só guardávamos a data de coleta, nunca a de publicação. Corrigido: extrai `pubDate`, descarta itens sem data parseável ou com mais de 7 dias.
+- **Fonte institucional CGN adicionada ao Public Signals (19/08/2026)**: feed RSS oficial de achados-e-perdidos de Cascavel-PR (`cgn.inf.br/achados-e-perdidos/feed`), maior confiança que imprensa genérica (`SOURCE_CONFIDENCE.institution = 80` vs `press_rss = 50`).
+- **Ambiguidade de geocodificação — bairro "Morumbi" (19/08/2026)**: um objeto real foi publicado com coordenada de São Paulo em vez de Cascavel-PR (a fonte CGN cobre exclusivamente Cascavel, mas o texto só citava o bairro). Coordenada ao vivo corrigida via SQL; código corrigido com `regionHint` na definição da fonte, repassado ao prompt de extração, pra não repetir com outros bairros homônimos.
+- **Alerta push pro admin no fim de cada ingestão do Public Signals (19/08/2026)**: reaproveita infraestrutura já existente (tabela `notifications`, VAPID push via `sendPushToUser`) — `admin/layout.tsx` passou a registrar push (não registrava antes disso), e o endpoint de ingest notifica admins globais não-B2B com o resumo da rodada (inseridos/fontes/erros).
 
 ---
 
@@ -377,6 +399,7 @@ git push origin main
 | 21/07 (cont. 2) | Segundo round de polimento na /comecar (contraste, tamanho de fonte, prova social refinada); pendências de A/B test e landings segmentadas registradas para decisão futura por dados |
 | 21/07 (cont. 3) | Instalação de Microsoft Clarity (gravação de sessão + heatmap) e Meta Pixel (PageView, ViewContent, Lead, Purchase) em todo o site |
 | 21/07 (cont. 4) | Grande otimização da Home: Performance Mobile 48→87, LCP 14,4 s→2,5 s, Home refatorada em componentes, DeferredHomeLiveMap, Clarity e GA em `lazyOnload`; etapa de performance considerada concluída |
+| 18-19/08 | Backfindr Public Signals Fase 1 (MVP completo): auditoria somente-leitura, conta-âncora + constraints no banco, pipeline de ingestão (descoberta→extração LLM→dedup→fila), fila de aprovação manual, cron n8n ativado e testado em produção, 3 bugs reais corrigidos (filtro de idade, geocoding regionHint, timeout de ingestão), fonte CGN adicionada, alerta push pro admin |
 
 ### Sessão 08/07/2026 — Correção RLS (Security Advisor)
 
@@ -387,3 +410,26 @@ git push origin main
   - `seo_content_seeds_select_public`: leitura pública (`USING (true)`) — conteúdo de SEO sem dono.
   - `object_events_select_own`: usuário só lê eventos de objetos que possui, via join com `public.objects.user_id = auth.uid()`.
 - **Pendente para próxima sessão:** confirmar no Security Advisor que os 2 erros somem ("0 errors"), testar páginas de SEO local e Activity Center em produção para garantir que a leitura pública não foi afetada.
+
+### Sessão 18-19/08/2026 — Backfindr Public Signals (Fase 1 MVP)
+
+**Objetivo:** descobrir ocorrências reais de objetos/animais perdidos-achados-roubados em fontes públicas (imprensa, feeds institucionais), extrair dado estruturado via LLM, deduplicar, e — só depois de revisão humana — publicar como objeto real no mapa público. Nunca auto-publicar.
+
+**Sequência seguida:** (1) auditoria somente-leitura do código existente (15 perguntas) antes de qualquer linha de código; (2) implementação da Fase 1 MVP a partir de um desenho consolidado (identidade, provenance, retenção, aprovação, dedup, exclusões explícitas); (3) Marcos pediu para seguir "até estar tudo pronto" — aplicação real do pipeline, teste da fila de aprovação, ativação do cron; (4) dois bugs reais encontrados por Marcos inspecionando o app ao vivo, corrigidos na hora.
+
+**Decisões de arquitetura registradas:**
+- **Identidade:** conta-âncora de sistema (`is_system_account`, `SYSTEM_ACCOUNT_ID` fixo em `src/lib/systemAccount.ts`), não um usuário comum — protegida por 3 `CHECK` constraints no banco (nunca plano pago, nunca role admin, e-mail sempre `public-signals@system.backfindr.internal`), não só validação de aplicação.
+- **Publicação é sempre manual.** Chegou a ser construído um toggle de auto-aprovação (`public_signals_settings.auto_approve_enabled`) preventivamente — Marcos revisou e pediu reversão: *"Se não tem a estrutura de automatização, o botão talvez não faça sentido, é como deixar uma quebra no processo."* Código todo revertido (`git checkout --` + `rm` das migrations/rotas novas), substituído por regra documentada na seção 17: auto-aprovação futura nasce atrás de toggle explícito desenhado **junto com** a automação, nunca antes dela.
+- **Dedup em duas camadas:** grosseiro por `source_url` exata, fino por hash de conteúdo normalizado (título tokenizado + categoria + primeira palavra da localização). `UNIQUE(dedup_hash)` no banco (migration 008) + `ON CONFLICT DO NOTHING` — sem essa constraint havia janela de corrida real (SELECT-then-INSERT não atômico) entre execuções sobrepostas do cron; confirmado zero duplicata histórica antes de aplicar.
+- **Retenção de dado sensível:** evidências com contato (telefone/e-mail) expiram em 12 meses (`expires_at`); dado nunca vaza para fora de `contact_text`/`contact_snapshot`.
+
+**Pipeline (`src/lib/publicSignals/`):** `sources.ts` (descoberta — Google News RSS 4 buscas + feed institucional CGN Cascavel-PR) → `extract.ts` (extração via gpt-4o-mini, `fetch` direto sem SDK, mesmo padrão de outras rotas) → `dedup.ts` (hash) → `POST /api/v1/admin/public-signals/ingest` (orquestração, chamado 1x/dia pelo n8n) → `/admin/public-signals` (fila, aprovar/rejeitar) → aprovação geocodifica via Mapbox e insere em `objects` com `source='public_signal'`.
+
+**Bugs reais encontrados e corrigidos nesta janela:**
+1. **Timeout do endpoint de ingest** apesar do trabalho ter completado (67 linhas inseridas, resposta HTTP nunca chegou) — processamento sequencial estourava os 60s do plano Hobby. Corrigido com `maxDuration=60` + lotes concorrentes (`CONCURRENCY=8`) + teto `MAX_ITEMS_PER_RUN=40` + embaralhamento Fisher-Yates antes do corte (sem isso os mesmos itens do início da fila sempre venciam o teto, os do fim nunca eram avaliados).
+2. **Notícias antigas entrando na fila parecendo recentes** (achado por Marcos: um caso de dez/2022, outro de mai/2026) — `pubDate` do RSS era extraído mas descartado, só a data de coleta era guardada. Corrigido: filtro de 7 dias com fail-safe (sem data parseável, descarta).
+3. **Bairro "Morumbi" geocodificado errado** (achado por Marcos: objeto real publicado em São Paulo, era Cascavel-PR — a fonte CGN cobre só Cascavel) — LLM e Mapbox não tinham contexto de cidade. Coordenada ao vivo corrigida via SQL; código corrigido com `regionHint` na fonte, repassado ao prompt de extração.
+
+**Resultado em produção (fim da janela):** cron n8n "Backfindr Public Signals — Ingestão Diária" ativo e testado (1x/dia, meia-noite), fonte CGN ligada, filtro de idade ativo, alerta push pro admin no fim de cada rodada (reaproveitando `notifications`+VAPID já existentes — `admin/layout.tsx` passou a registrar push, não registrava antes).
+
+**Pendências que ficaram em aberto** (ver seção 17 para lista viva): paginação do mapa (`LIMIT 5000`), bug `stripHtml()` em `news/route.ts` (não confundir com o mesmo bug já corrigido em `publicSignals/sources.ts`), fonte `google_alert_corroboration` (estrutura pronta, SERP API não implementada), área de notificações mais ampla (proposta, aguardando confirmação de escopo), Seções 4-5 do prompt master (outreach institucional, triagem "Encontrei") não iniciadas.
