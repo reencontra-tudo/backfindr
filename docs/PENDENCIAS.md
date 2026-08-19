@@ -21,6 +21,20 @@ Custo estimado: **menos de R$ 0,01 por conversa** (modelo `gpt-4o-mini`).
 
 ---
 
+## ⚠️ AÇÃO NECESSÁRIA — Constraint de dedup antes de ativar o cron do Public Signals
+
+O pipeline de ingestão (`/api/v1/admin/public-signals/ingest`, branch `feature/public-signals-ingestion`) faz dedup por hash de conteúdo com `SELECT` seguido de `INSERT` — não é atômico. Com o cron do n8n rodando 1x/dia isso é baixo risco, mas duas execuções sobrepostas (ex: reprocessamento manual disparado duas vezes sem querer) podem inserir a mesma ocorrência duas vezes.
+
+**Bloqueante antes do passo "ativar cron no n8n"** — não é opcional, não é "depois":
+
+1. Migration: `ALTER TABLE public_signal_evidence ADD CONSTRAINT uq_public_signal_evidence_dedup_hash UNIQUE (dedup_hash)` (permite `NULL` normalmente em Postgres — múltiplas linhas sem hash não conflitam entre si).
+2. Trocar o `INSERT` em `src/app/api/v1/admin/public-signals/ingest/route.ts` por `INSERT ... ON CONFLICT (dedup_hash) DO NOTHING`.
+3. Confirmar que não há duplicata histórica de `dedup_hash` já na tabela antes de aplicar a constraint (razoável já que é tabela nova, mas confirmar com `SELECT dedup_hash, COUNT(*) FROM public_signal_evidence WHERE dedup_hash IS NOT NULL GROUP BY 1 HAVING COUNT(*) > 1` antes de aplicar).
+
+Migration pequena, sem risco pro dado existente. Discutido e priorizado em 19/08/2026.
+
+---
+
 ## Melhorias de Alta Prioridade
 
 | # | Melhoria | Status | Descrição |
