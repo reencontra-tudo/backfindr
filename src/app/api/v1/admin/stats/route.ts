@@ -88,7 +88,7 @@ export async function GET(req: NextRequest) {
       totalUsers, newUsersToday, newUsersWeek, activeUsersWeek,
       totalObjects, lostObjects, foundObjects, returnedObjects,
       pendingMatches, confirmedMatches, rejectedMatches, scansToday,
-      pendingReports, proSubs, bizSubs, dailyGrowth, dailyObjects,
+      pendingReports, proSubs, bizSubs, dailyGrowth, dailyObjects, pendingPublicSignals,
     ] = await Promise.all([
       query('SELECT COUNT(*) FROM users'),
       query('SELECT COUNT(*) FROM users WHERE created_at >= $1', [startOfDay.toISOString()]),
@@ -107,6 +107,7 @@ export async function GET(req: NextRequest) {
       query("SELECT COUNT(*) FROM users WHERE plan = 'business'"),
       query(`SELECT TO_CHAR(DATE_TRUNC('day', created_at), 'DD/MM') AS day, COUNT(*)::int AS count FROM users WHERE created_at >= NOW() - INTERVAL '7 days' GROUP BY DATE_TRUNC('day', created_at) ORDER BY DATE_TRUNC('day', created_at)`),
       query(`SELECT TO_CHAR(DATE_TRUNC('day', created_at), 'DD/MM') AS day, COUNT(*)::int AS count FROM objects WHERE created_at >= NOW() - INTERVAL '7 days' GROUP BY DATE_TRUNC('day', created_at) ORDER BY DATE_TRUNC('day', created_at)`),
+      query(`SELECT COUNT(*) FROM public_signal_evidence WHERE status = 'pending'`),
     ]);
 
     const proCount  = parseInt(proSubs.rows[0].count, 10);
@@ -138,6 +139,7 @@ export async function GET(req: NextRequest) {
       rejected_matches:      parseInt(rejectedMatches.rows[0].count, 10),
       total_scans_today:     parseInt(scansToday.rows[0].count, 10),
       pending_reports:       parseInt(pendingReports.rows[0].count, 10),
+      pending_public_signals: parseInt(pendingPublicSignals.rows[0].count, 10),
       mrr,
       arr:                   mrr * 12,
       total_subscribers:     totalSubs,
@@ -152,7 +154,7 @@ export async function GET(req: NextRequest) {
       total_users: 0, new_users_today: 0, new_users_week: 0, active_users_week: 0,
       total_objects: 0, lost_objects: 0, found_objects: 0, returned_objects: 0,
       pending_matches: 0, confirmed_matches: 0, rejected_matches: 0, total_scans_today: 0,
-      pending_reports: 0, mrr: 0, arr: 0, total_subscribers: 0, churn_rate: 0, daily_growth: [],
+      pending_reports: 0, pending_public_signals: 0, mrr: 0, arr: 0, total_subscribers: 0, churn_rate: 0, daily_growth: [],
     });
   }
 }

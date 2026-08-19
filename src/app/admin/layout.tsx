@@ -8,7 +8,7 @@ import {
   Building2, Box, QrCode, Truck, Store, MapPin,
   CreditCard, TrendingUp, Mail, Send, Megaphone,
   FileBarChart, Server, Users2, LogOut, Menu, X,
-  ChevronRight, Bell, Activity, LayoutGrid, Palette, MessageSquare,
+  ChevronRight, Bell, Activity, LayoutGrid, Palette, MessageSquare, Radar,
 } from 'lucide-react';
 import { useAuthStore } from '@/hooks/useAuth';
 
@@ -17,6 +17,7 @@ import { useAuthStore } from '@/hooks/useAuth';
 interface AdminStats {
   pending_matches?: number;
   pending_reports?: number;
+  pending_public_signals?: number;
 }
 
 // ─── Navegação por produto ────────────────────────────────────────────────────
@@ -42,6 +43,7 @@ const NAV = [
       { href: '/admin/matches',     icon: Zap,      label: 'Matches IA',   badge: 'pending_matches', superOnly: false },
       { href: '/admin/publicacoes', icon: Megaphone,label: 'Publicações',  badge: null,              superOnly: false },
       { href: '/admin/moderacao',   icon: Shield,   label: 'Moderação',    badge: 'pending_reports', superOnly: false },
+      { href: '/admin/public-signals', icon: Radar, label: 'Public Signals', badge: 'pending_public_signals', superOnly: false },
     ],
   },
   {
@@ -285,7 +287,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
       .then(r => r.json())
       .then(d => {
         setStats(d);
-        setTotalAlerts((d.pending_matches ?? 0) + (d.pending_reports ?? 0));
+        setTotalAlerts((d.pending_matches ?? 0) + (d.pending_reports ?? 0) + (d.pending_public_signals ?? 0));
       })
       .catch(() => {});
   }, [pathname, user]);
