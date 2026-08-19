@@ -40,6 +40,15 @@ Não é bloqueante agora — é uma restrição de design para quando essa featu
 
 ---
 
+## ✅ Resolvido — LIMIT do mapa (`objects/map`) e `regionHint` obrigatório
+
+Duas correções em 19/08/2026, a pedido do usuário depois de revisar o relatório consolidado desta sessão:
+
+1. **`LIMIT 5000` sem paginação** — era o item mais urgente da auditoria original, ainda pendente com fontes do Public Signals já ativas. Investigação mostrou que o mapa já cobre escala de renderização via clustering nativo do Mapbox (`cluster: true`, `src/app/map/client.tsx`) — o risco real nunca foi o mapa não aguentar volume, era o `LIMIT` cortar objeto do resultado sem ninguém perceber. Resolvido com o fix certo pro risco real (não viewport pagination, que seria over-engineering dado o clustering): `LIMIT` subido pra 20000, detecção de estouro via busca `LIMIT+1`, campo `truncated` no payload, e alerta proativo em `/admin/dashboard` acima de 70% de uso (`map_eligible_objects`/`map_query_limit` em `/api/v1/admin/stats`).
+2. **`Source.regionHint` virou obrigatório** (`string | null`, não mais `regionHint?: string`) — depois de 2 bugs reais de geocoding (Morumbi→SP, Coqueiral→ES) pela mesma causa (bairro homônimo sem contexto de cidade), o campo passou a forçar decisão em tempo de compilação: toda fonte nova precisa declarar explicitamente sua região fixa ou `null` (nacional/sem viés), em vez de descobrir reativamente quando aparecer o próximo bairro homônimo.
+
+---
+
 ## Melhorias de Alta Prioridade
 
 | # | Melhoria | Status | Descrição |
