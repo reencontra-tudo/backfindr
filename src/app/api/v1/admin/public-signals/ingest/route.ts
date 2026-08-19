@@ -9,6 +9,7 @@ import { query } from '@/lib/db';
 import { SOURCES } from '@/lib/publicSignals/sources';
 import { extractSignal, type RawSignalItem } from '@/lib/publicSignals/extract';
 import { computeContentHash } from '@/lib/publicSignals/dedup';
+import { sendPushToUser } from '@/lib/pushNotification';
 
 // ─── POST /api/v1/admin/public-signals/ingest ──────────────────────────────
 // Chamado 1x/dia pelo n8n (Railway) — NÃO pelo cron da Vercel (Hobby só
@@ -56,6 +57,50 @@ interface Stats {
   skippedDuplicateContent: number;
   inserted: number;
   errors: number;
+}
+
+// ── Alerta pra admin (não-b2b) ao fim da rodada ─────────────────────────────
+// Pedido do usuário em 19/08/2026: quer saber quando o cron diário roda,
+// sem precisar abrir o painel pra conferir. Reaproveita o mesmo par
+// notifications+push já usado em src/lib/notifyModulos.ts (copiado aqui em
+// vez de importado — aquele módulo é sobre Portaria/Custody/Delivery,
+// import cruzado misturaria domínios sem necessidade real).
+async function notifyAdminsOfIngestResult(stats: Stats): Promise<void> {
+  try {
+    const admins = await query(
+      `SELECT id FROM users
+       WHERE role IN ('admin', 'super_admin')
+         AND is_system_account = false
+         AND b2b_partner_id IS NULL`
+    );
+    if (admins.rows.length === 0) return;
+
+    const title = stats.errors > 0
+      ? '⚠️ Public Signals: ingestão com erros'
+      : '📡 Public Signals: ingestão diária concluída';
+    const message = `${stats.inserted} nova(s) evidência(s) na fila, de ${stats.sources} fonte(s) — `
+      + `${stats.itemsSeen} itens vistos, ${stats.errors} erro(s).`;
+
+    await Promise.allSettled(
+      (admins.rows as { id: string }[]).map(async ({ id }) => {
+        await query(
+          `INSERT INTO notifications (user_id, title, message, type, created_at)
+           VALUES ($1, $2, $3, 'public_signals_ingest', NOW())`,
+          [id, title, message]
+        );
+        await sendPushToUser(id, {
+          title,
+          body: message,
+          url: '/admin/public-signals',
+          tag: 'public_signals_ingest',
+        });
+      })
+    );
+  } catch (err) {
+    // Nunca deixa o alerta quebrar a resposta do endpoint — o ingest em si
+    // já terminou e commitou no banco nesse ponto.
+    console.error('[public-signals/ingest] falha ao notificar admins', err);
+  }
 }
 
 async function processItem(
@@ -230,6 +275,8 @@ export async function POST(request: NextRequest) {
       batch.map(({ raw, sourceType, regionHint }) => processItem(raw, sourceType, stats, seenHashesThisRun, regionHint))
     );
   }
+
+  await notifyAdminsOfIngestResult(stats);
 
   return NextResponse.json({ ok: true, stats });
 }
