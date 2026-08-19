@@ -21,17 +21,22 @@ Custo estimado: **menos de R$ 0,01 por conversa** (modelo `gpt-4o-mini`).
 
 ---
 
-## ⚠️ AÇÃO NECESSÁRIA — Constraint de dedup antes de ativar o cron do Public Signals
+## ✅ Resolvido — Constraint de dedup do Public Signals
 
-O pipeline de ingestão (`/api/v1/admin/public-signals/ingest`, branch `feature/public-signals-ingestion`) faz dedup por hash de conteúdo com `SELECT` seguido de `INSERT` — não é atômico. Com o cron do n8n rodando 1x/dia isso é baixo risco, mas duas execuções sobrepostas (ex: reprocessamento manual disparado duas vezes sem querer) podem inserir a mesma ocorrência duas vezes.
+~~O pipeline de ingestão fazia dedup por `SELECT` seguido de `INSERT`, sem garantia atômica.~~ Resolvido em 19/08/2026: migration 008 (`uq_public_signal_evidence_dedup_hash`, `UNIQUE (dedup_hash)`) aplicada em produção + `INSERT ... ON CONFLICT (dedup_hash) DO NOTHING` no código (`src/app/api/v1/admin/public-signals/ingest/route.ts`). Confirmado sem duplicata histórica antes de aplicar.
 
-**Bloqueante antes do passo "ativar cron no n8n"** — não é opcional, não é "depois":
+---
 
-1. Migration: `ALTER TABLE public_signal_evidence ADD CONSTRAINT uq_public_signal_evidence_dedup_hash UNIQUE (dedup_hash)` (permite `NULL` normalmente em Postgres — múltiplas linhas sem hash não conflitam entre si).
-2. Trocar o `INSERT` em `src/app/api/v1/admin/public-signals/ingest/route.ts` por `INSERT ... ON CONFLICT (dedup_hash) DO NOTHING`.
-3. Confirmar que não há duplicata histórica de `dedup_hash` já na tabela antes de aplicar a constraint (razoável já que é tabela nova, mas confirmar com `SELECT dedup_hash, COUNT(*) FROM public_signal_evidence WHERE dedup_hash IS NOT NULL GROUP BY 1 HAVING COUNT(*) > 1` antes de aplicar).
+## ⚠️ REGRA DE ARQUITETURA — Auto-aprovação do Public Signals (quando for construída)
 
-Migration pequena, sem risco pro dado existente. Discutido e priorizado em 19/08/2026.
+Hoje (19/08/2026) a publicação de ocorrências do Public Signals é **100% manual** — fila de revisão em `/admin/public-signals`, sem nenhuma lógica de auto-aprovação em lugar nenhum do código. Isso é deliberado: é cedo demais pra confiar em publicação sem revisão humana.
+
+**Quando (se) auto-aprovação for implementada no futuro, é obrigatório:**
+
+1. Nascer atrás de um interruptor explícito, controlado por admin, **desligado por padrão** — não pode ser um comportamento que liga sozinho ou que exige opt-out.
+2. O desenho do interruptor (global vs. por fonte vs. por limiar de confiança) deve ser decidido **junto com** o desenho da própria lógica de auto-aprovação, não construído antes — um controle genérico construído sem a automação real por trás vira UI confusa/enganosa (discutido e descartado em 19/08/2026: chegamos a implementar um toggle global `public_signals_settings.auto_approve_enabled` preventivamente e revertemos, porque não havia nada pra ele controlar ainda).
+
+Não é bloqueante agora — é uma restrição de design para quando essa feature for priorizada.
 
 ---
 
