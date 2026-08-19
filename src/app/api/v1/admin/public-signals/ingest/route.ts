@@ -194,9 +194,18 @@ export async function POST(request: NextRequest) {
   stats.itemsSeen = allItems.length;
 
   // ── Teto de segurança: se vier muito mais candidato que o normal (pico
-  // de notícia), processa só os primeiros MAX_ITEMS_PER_RUN — o resto fica
-  // pra próxima rodada (RSS renova todo dia, não perde item de forma
-  // permanente, só adia).
+  // de notícia), processa só MAX_ITEMS_PER_RUN — o resto fica pra próxima
+  // rodada. Embaralha ANTES de cortar: sem isso, a ordem de discovery é
+  // sempre a mesma (mesma sequência de queries/fontes), então os itens do
+  // fim da fila nunca seriam avaliados de verdade — não "adiados pra
+  // amanhã", mas praticamente nunca vistos, já que os mesmos itens do
+  // início tendem a reaparecer dia após dia. Embaralhando, com o tempo todo
+  // candidato tem chance de ser avaliado em algum dia, mesmo sem aumentar
+  // o teto.
+  for (let i = allItems.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [allItems[i], allItems[j]] = [allItems[j], allItems[i]];
+  }
   const toProcess = allItems.slice(0, MAX_ITEMS_PER_RUN);
   stats.itemsSkippedCapReached = allItems.length - toProcess.length;
 
