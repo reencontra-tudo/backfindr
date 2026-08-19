@@ -124,11 +124,19 @@ async function processItem(
 
     const confidence = SOURCE_CONFIDENCE[sourceType] ?? 30;
 
-    await query(
+    // O SELECT acima (dupCheck) já filtra a maioria dos casos — o
+    // ON CONFLICT aqui é o backstop atômico de verdade contra duas
+    // execuções sobrepostas do cron tentando inserir o mesmo dedup_hash ao
+    // mesmo tempo (constraint uq_public_signal_evidence_dedup_hash,
+    // migration 008). Sem isso, o SELECT-then-INSERT tinha uma janela de
+    // corrida real, só de baixo risco prático com cadência 1x/dia.
+    const insertResult = await query(
       `INSERT INTO public_signal_evidence
          (source_url, source_type, has_contact_data, contact_snapshot,
           extracted_fields, dedup_hash, expires_at, status, captured_at)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, 'pending', NOW())`,
+       VALUES ($1, $2, $3, $4, $5, $6, $7, 'pending', NOW())
+       ON CONFLICT (dedup_hash) DO NOTHING
+       RETURNING id`,
       [
         raw.link,
         sourceType,
@@ -147,7 +155,12 @@ async function processItem(
         expiresAt,
       ]
     );
-    stats.inserted++;
+    if (insertResult.rows.length > 0) {
+      stats.inserted++;
+    } else {
+      // ON CONFLICT pegou uma corrida que o SELECT prévio não viu.
+      stats.skippedDuplicateContent++;
+    }
   } catch (err) {
     console.error('[public-signals/ingest] erro processando item', err);
     stats.errors++;
