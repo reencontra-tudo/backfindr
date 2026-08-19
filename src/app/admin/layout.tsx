@@ -11,6 +11,7 @@ import {
   ChevronRight, Bell, Activity, LayoutGrid, Palette, MessageSquare, Radar,
 } from 'lucide-react';
 import { useAuthStore } from '@/hooks/useAuth';
+import { usePushNotifications } from '@/hooks/usePushNotifications';
 
 // ─── Tipos ────────────────────────────────────────────────────────────────────
 
@@ -244,6 +245,13 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   const pathname = usePathname();
   const router   = useRouter();
   const { user, isAuthenticated, fetchMe } = useAuthStore();
+
+  // Registra push notification pro admin logado — mesmo hook do /dashboard,
+  // reaproveitando a mesma subscription (é o mesmo user_id). Sem isso, o
+  // painel admin nunca pedia permissão de notificação, então pushes
+  // endereçados a um admin não tinham pra onde ir (achado em 19/08/2026,
+  // ao desenhar o alerta de conclusão do ingest do Public Signals).
+  usePushNotifications();
 
   const [open,        setOpen]        = useState(false);
   const [stats,       setStats]       = useState<AdminStats>({});
