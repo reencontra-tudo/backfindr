@@ -23,7 +23,11 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   if (!city) return {}
   const cat = CATEGORY_LABELS[params.categoria]
   return {
-    title: `${cat?.label ?? params.categoria} Perdido em ${city.name} | Backfindr`,
+    // Sem "| Backfindr" aqui — o layout raiz (src/app/layout.tsx) já aplica
+    // esse sufixo via `template: '%s | Backfindr'`. Repetir manualmente
+    // duplicava no <title> das 434 páginas ("... | Backfindr | Backfindr"),
+    // achado na auditoria de SEO de 20/08/2026.
+    title: `${cat?.label ?? params.categoria} Perdido em ${city.name}`,
     description: `Perdeu ${cat?.label ?? params.categoria} em ${city.name}? Veja canais oficiais, telefones e orientações locais. Registre grátis no Backfindr.`,
     alternates: { canonical: `https://backfindr.com/achados-perdidos/${params.cidade}/${params.categoria}` }
   }

@@ -5,7 +5,8 @@ import { query } from '@/lib/db'
 export const dynamic = 'force-dynamic'
 
 export const metadata: Metadata = {
-  title: 'Achados e Perdidos no Brasil | Backfindr',
+  // Sem "| Backfindr" manual — mesmo bug/causa das páginas de cidade/categoria.
+  title: 'Achados e Perdidos no Brasil',
   description: 'Encontre o serviço de achados e perdidos da sua cidade. Cadastre objetos perdidos ou achados e ajude a devolver o que é de cada um.',
   alternates: { canonical: 'https://backfindr.com/achados-perdidos' }
 }
