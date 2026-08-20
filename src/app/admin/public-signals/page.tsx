@@ -1,7 +1,8 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
-import { Radar, Newspaper, Building2, Megaphone, CheckCircle2, XCircle, RefreshCw, Loader2, ExternalLink, MapPin, ShieldAlert, Link2, Send } from 'lucide-react';
+import Link from 'next/link';
+import { Radar, Newspaper, Building2, Megaphone, CheckCircle2, XCircle, RefreshCw, Loader2, ExternalLink, MapPin, ShieldAlert, Link2, ChevronRight } from 'lucide-react';
 import { api, parseApiError } from '@/lib/api';
 import { toast } from 'sonner';
 
@@ -31,22 +32,6 @@ const SOURCE_STYLE: Record<string, { icon: typeof Newspaper; label: string; colo
   manual_other:                 { icon: Link2,      label: 'Manual',       color: 'text-amber-400 bg-amber-500/10 border-amber-500/20' },
 };
 
-interface SubmitResult {
-  ok?: boolean;
-  created?: boolean;
-  already_existed?: boolean;
-  is_relevant?: boolean;
-  status?: string;
-  message?: string;
-  extracted?: {
-    title: string;
-    category: string;
-    status_guess: string;
-    location_text: string | null;
-    has_contact_data: boolean;
-  };
-}
-
 const STATUS_LABEL: Record<string, string> = { lost: 'Perdido', found: 'Achado', stolen: 'Roubado' };
 
 export default function AdminPublicSignals() {
@@ -56,12 +41,6 @@ export default function AdminPublicSignals() {
   const [total, setTotal] = useState(0);
   const [pendingCount, setPendingCount] = useState(0);
   const [acting, setActing] = useState<string | null>(null);
-
-  // ── Submissão manual (canal de entrada avulsa, sem esperar o cron) ──────
-  const [submitUrl, setSubmitUrl] = useState('');
-  const [submitType, setSubmitType] = useState<'institution' | 'press' | 'other'>('press');
-  const [submitting, setSubmitting] = useState(false);
-  const [submitResult, setSubmitResult] = useState<SubmitResult | null>(null);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -78,34 +57,6 @@ export default function AdminPublicSignals() {
   }, [filter]);
 
   useEffect(() => { load(); }, [load]);
-
-  const handleSubmitUrl = async () => {
-    if (!submitUrl.trim()) return;
-    setSubmitting(true);
-    setSubmitResult(null);
-    try {
-      const { data } = await api.post('/admin/public-signals/submit', {
-        source_url: submitUrl.trim(),
-        source_type: submitType,
-      });
-      setSubmitResult(data);
-      if (data?.created) {
-        toast.success('Evidência criada — entrou na fila de pendentes');
-        setSubmitUrl('');
-        if (filter === 'pending') load();
-      } else if (data?.already_existed) {
-        toast('Já existia — não duplicado', { icon: 'ℹ️' });
-      } else if (data?.is_relevant === false) {
-        toast('Extraído, mas não reconhecido como ocorrência relevante', { icon: '⚠️' });
-      }
-    } catch (e) {
-      const message = parseApiError(e);
-      setSubmitResult({ message });
-      toast.error(message);
-    } finally {
-      setSubmitting(false);
-    }
-  };
 
   const handleAction = async (evidenceId: string, action: 'approve' | 'reject') => {
     const label = action === 'approve' ? 'Aprovar e publicar no mapa' : 'Rejeitar';
@@ -148,59 +99,16 @@ export default function AdminPublicSignals() {
         </div>
       </div>
 
-      {/* Submissão manual — achou uma URL fora do pipeline automático (ex:
-          via Perplexity, busca manual) e quer submeter sem esperar o cron */}
-      <div className="rounded-xl border border-white/[0.07] bg-white/[0.02] p-4 space-y-3">
-        <p className="text-white/50 text-xs font-medium flex items-center gap-1.5">
-          <Link2 className="w-3.5 h-3.5" /> Submeter URL manualmente
-        </p>
-        <div className="flex flex-col sm:flex-row gap-2">
-          <input
-            type="url"
-            value={submitUrl}
-            onChange={e => setSubmitUrl(e.target.value)}
-            placeholder="https://..."
-            className="flex-1 px-3 py-2 rounded-lg bg-white/[0.03] border border-white/[0.08] text-white text-sm placeholder:text-white/20 focus:outline-none focus:border-teal-500/40"
-          />
-          <select
-            value={submitType}
-            onChange={e => setSubmitType(e.target.value as 'institution' | 'press' | 'other')}
-            className="px-3 py-2 rounded-lg bg-white/[0.03] border border-white/[0.08] text-white text-sm focus:outline-none focus:border-teal-500/40"
-          >
-            <option value="institution">Institucional</option>
-            <option value="press">Imprensa</option>
-            <option value="other">Outro</option>
-          </select>
-          <button
-            onClick={handleSubmitUrl}
-            disabled={submitting || !submitUrl.trim()}
-            className="flex items-center justify-center gap-1.5 px-4 py-2 rounded-lg bg-teal-500/15 text-teal-400 border border-teal-500/30 text-sm font-medium hover:bg-teal-500/20 transition-all disabled:opacity-40 disabled:cursor-not-allowed"
-          >
-            {submitting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
-            Submeter
-          </button>
-        </div>
-
-        {/* Resultado — pra confirmar visualmente que a extração fez sentido
-            antes de seguir pra próxima submissão */}
-        {submitResult && (
-          <div className="rounded-lg border border-white/[0.07] bg-black/20 p-3 text-xs space-y-1.5">
-            {submitResult.extracted ? (
-              <>
-                <p className="text-white/70"><span className="text-white/40">Título:</span> {submitResult.extracted.title}</p>
-                <p className="text-white/70"><span className="text-white/40">Categoria:</span> {submitResult.extracted.category} · <span className="text-white/40">Status:</span> {STATUS_LABEL[submitResult.extracted.status_guess] ?? submitResult.extracted.status_guess}</p>
-                <p className="text-white/70"><span className="text-white/40">Localização:</span> {submitResult.extracted.location_text ?? '(não identificada)'}</p>
-                <p className={submitResult.extracted.has_contact_data ? 'text-amber-400' : 'text-white/40'}>
-                  Contato detectado: {submitResult.extracted.has_contact_data ? 'sim' : 'não'}
-                </p>
-              </>
-            ) : null}
-            <p className={submitResult.created ? 'text-teal-400' : submitResult.already_existed ? 'text-white/40' : 'text-amber-400'}>
-              {submitResult.message}
-            </p>
-          </div>
-        )}
-      </div>
+      {/* Link pra página dedicada de submissão manual (/admin/public-signals/submit) */}
+      <Link
+        href="/admin/public-signals/submit"
+        className="flex items-center justify-between px-4 py-3 rounded-xl border border-white/[0.07] bg-white/[0.02] hover:bg-white/[0.04] hover:border-teal-500/25 transition-all group"
+      >
+        <span className="flex items-center gap-2 text-white/60 text-sm font-medium group-hover:text-white">
+          <Link2 className="w-4 h-4 text-teal-400" /> Submeter URL manualmente
+        </span>
+        <ChevronRight className="w-4 h-4 text-white/20 group-hover:text-teal-400 transition-colors" />
+      </Link>
 
       {/* Filtros */}
       <div className="flex gap-2">
