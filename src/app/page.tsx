@@ -779,7 +779,7 @@ export default function HomePage() {
                   Perdeu, achou ou quer proteger — a rede Backfindr ajuda nos três casos.
                 </p>
                 <p className="mb-7 max-w-md text-sm leading-relaxed text-white/40 md:text-base">
-                  Cole um QR na coleira antes que aconteça, ou aja agora se o desaparecimento já é real.
+                  Aja agora se o desaparecimento já é real, ou cole um QR na coleira antes que aconteça.
                 </p>
 
                 <div className="mb-8 grid grid-cols-2 gap-3">
