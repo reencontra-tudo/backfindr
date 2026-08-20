@@ -24,6 +24,38 @@ import { query } from '@/lib/db';
 // deveria acontecer nas 62 atuais, mas é defensivo pra cidade nova sem
 // dado geocodificado ainda) simplesmente não entram no cálculo e ficam
 // zeradas, não quebram a rota.
+//
+// ── Mapeamento de categoria (achado em 20/08/2026) ─────────────────────────
+// objects.category tem 14 valores reais (resíduo de duas taxonomias
+// coexistindo — nativa do Backfindr e legado Webjetos: 'animal' E 'pet'
+// existem separados) que não batem 1:1 com os 7 slugs de SEO
+// (celular/pet/documento/veiculo/chave/bagagem/geral). category_breakdown
+// grava direto nos slugs de SEO, não na categoria bruta — um mapeamento a
+// menos pra carregar na hora de renderizar.
+//
+// 'electronics' merece cuidado especial: só 46% dos títulos são
+// identificavelmente celular (checado manualmente em 20/08 — 58/127 por
+// palavra-chave no título); o resto é notebook, tablet, TV ou indefinido.
+// Mapear 'electronics' inteiro pra 'celular' distorceria a estatística
+// (a maioria NÃO é celular). Como não existe página de SEO dedicada a
+// "eletrônicos", só o subconjunto identificável por palavra-chave vai pra
+// 'celular' — o resto cai em 'geral', mesmo destino de other/jewelry/book.
+const CATEGORY_TO_SEO_SLUG_SQL = `
+  CASE
+    WHEN o.category = 'phone' THEN 'celular'
+    WHEN o.category = 'electronics' AND (
+      o.title ILIKE '%celular%' OR o.title ILIKE '%iphone%' OR o.title ILIKE '%smartphone%' OR
+      o.title ILIKE '%android%' OR o.title ILIKE '%galaxy%' OR o.title ILIKE '%xiaomi%' OR
+      o.title ILIKE '%motorola%' OR o.title ILIKE '%samsung%'
+    ) THEN 'celular'
+    WHEN o.category IN ('pet', 'animal') THEN 'pet'
+    WHEN o.category = 'document' THEN 'documento'
+    WHEN o.category IN ('vehicle', 'bike') THEN 'veiculo'
+    WHEN o.category = 'keys' THEN 'chave'
+    WHEN o.category IN ('bag', 'wallet') THEN 'bagagem'
+    ELSE 'geral'
+  END
+`;
 export async function POST(req: NextRequest) {
   const auth = await requireAdmin(req);
   if (auth instanceof NextResponse) return auth;
@@ -31,7 +63,7 @@ export async function POST(req: NextRequest) {
   try {
     const result = await query(`
       WITH matched AS (
-        SELECT m.id AS municipality_id, o.category
+        SELECT m.id AS municipality_id, ${CATEGORY_TO_SEO_SLUG_SQL} AS category
         FROM municipalities m
         JOIN objects o
           ON o.is_public = true
@@ -47,9 +79,9 @@ export async function POST(req: NextRequest) {
          ) <= m.radius_km
       ),
       cat_counts AS (
-        SELECT municipality_id, COALESCE(category, 'other') AS category, COUNT(*) AS cnt
+        SELECT municipality_id, category, COUNT(*) AS cnt
         FROM matched
-        GROUP BY municipality_id, COALESCE(category, 'other')
+        GROUP BY municipality_id, category
       ),
       agg AS (
         SELECT municipality_id, SUM(cnt)::int AS total, jsonb_object_agg(category, cnt) AS category_breakdown
