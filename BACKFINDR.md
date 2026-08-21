@@ -1,7 +1,7 @@
 # BACKFINDR — Documento Mestre
 > Arquivo único de referência. Toda sessão deve começar lendo este arquivo COMPLETO.
 > Localização canônica: `~/Downloads/backfindr-local/backfindr-main/BACKFINDR.md`
-> Última atualização: 2026-07-21
+> Última atualização: 2026-08-21
 > **REGRA DE MANUTENÇÃO: nunca usar `cat >>`. Sempre reescrever via Python.**
 
 ---
@@ -116,7 +116,7 @@ cd ~/Downloads/backfindr-local/backfindr-main && pnpm dev  # porta 3003
 
 **Tabelas principais:** users, objects, matches, object_events, municipalities, local_pages,
 condominios, porteiros, unidades, encomendas, custodias, b2b_partners, entregas,
-estabelecimentos, entregadores, analytics_snapshots, boosts, payment_settings, seo_content_seeds, community_posts, public_signal_evidence
+estabelecimentos, entregadores, analytics_snapshots, boosts, payment_settings, seo_content_seeds, community_posts, public_signal_evidence, state_emergency_contacts, municipality_events
 
 **Dados produção (27/06/2026):** 4.303 usuários | 2.019 objetos (58% veículos, 35% animais) | 1 boost vendido | 434 páginas SEO
 
@@ -141,6 +141,14 @@ dedup_hash (UNIQUE), expires_at, status (pending|approved|rejected), captured_at
 Evidência bruta da descoberta de ocorrências públicas (Public Signals) — nunca publica em `objects` sozinha, só após aprovação manual em `/admin/public-signals`.
 
 **Coluna `users.is_system_account`** (migration 006, 18/08/2026): identifica a conta-âncora que "possui" objetos publicados pelo Public Signals (`SYSTEM_ACCOUNT_ID` fixo em `src/lib/systemAccount.ts`). Protegida por 3 `CHECK` constraints no banco (não só aplicação): nunca plano pago, nunca role admin, e-mail sempre o reservado `public-signals@system.backfindr.internal`.
+
+**Enriquecimento local de `municipalities` + tabelas satélite** (migrations 009-013, 20-21/08/2026 — ver histórico da sessão): diversificação de conteúdo das páginas de cidade (item A/B/C do plano de SEO local), sempre com disciplina de fonte oficial obrigatória por dado — nunca inventado, `null` quando não há fonte confiável.
+
+- **`municipalities` ganhou colunas** (migrations 009-010, 012): `latitude`, `longitude`, `radius_km` (raio de cobertura, escalonado por porte populacional: capitais ≥1M hab → 20km, <1M → 15km), `category_breakdown` JSONB (contagem real de objetos por categoria), `last_computed_at`, `main_landmarks` (array de 2 pontos turísticos reais por cidade), `is_capital`, `police_contact` + `police_contact_source_url` + `police_contact_notes` (telefone da delegacia de polícia civil relevante — ver regra de desambiguação abaixo), `emergency_contacts_local` JSONB + `emergency_contacts_local_source_url` + `emergency_contacts_local_updated_at` + `emergency_contacts_local_notes` (telefones úteis da própria prefeitura, complementar ao registro estadual).
+- **Tabela nova `state_emergency_contacts`** (migration 011): 1 linha por UF (`state_code` PK), `phones` JSONB (array de `{label, phone, source_url}` — telefones úteis do governo estadual), usada como fallback quando o município não tem `emergency_contacts_local` próprio.
+- **Tabela nova `municipality_events`** (migration 013, 21/08/2026): fatos cívicos/culturais por município — `event_type` (`founding_date` | `municipal_holiday` | `festival`), `name`, `date_text` (texto livre, não `DATE` fixo — festas recorrentes variam de dia a cada ano), `source_url` obrigatório. Substitui o antigo "item C" (que seria só "eventos anuais que Marcos levantar") por pesquisa direta por fonte pública (prefeitura, IBGE, fonte histórica/cívica confiável) pras 63 cidades.
+- **Regra de desambiguação de `police_contact`**: quando há múltiplas delegacias na cidade, preferir delegacia de turismo (DEATUR/DEAT/DEPTUR/DELTUR — nome varia por estado) por ser o contato mais adequado ao público geral; sem delegacia de turismo confirmável, usar a de menor numeração (mais central), **exceto** quando a fonte oficial documentar desvio explícito de atendimento de plantão pra outra unidade (usar o destino do desvio, não a numeração nominal — caso real: Rio de Janeiro, 1ª DP desvia plantão pra 4ª DP). Nunca fonte de agregador/rede social — sempre domínio oficial (.gov.br ou equivalente estadual/municipal).
+- **Correção de escopo — Rondônia** (21/08/2026): nenhum município de RO estava em `municipalities` desde a criação original da lista (omissão confirmada, não decisão deliberada). Corrigido: Porto Velho adicionado seguindo o mesmo padrão das outras 25 capitais (IBGE `1100205`, `is_capital=true`, `radius_km=15`), com as 7 páginas de SEO geradas e publicadas. **Cobertura real hoje: 63 cidades** (26 capitais + DF + ~36 municípios da RMSP), não mais 62.
 
 ---
 
@@ -201,10 +209,16 @@ Todas as sprints concluídas em 26–27/06/2026:
 
 ## 13. SEO
 
-- 434 páginas publicadas (62 municípios × 7 categorias) ✅
+- 441 páginas publicadas (63 municípios × 7 categorias, corrigido de 62 em 21/08/2026 após adicionar Porto Velho — ver seção 8) ✅
 - Cartaz: 3 formatos (square/vertical/A4) com Sharp + next/og ✅
 - Botão "Baixar Cartaz" área pública → A4 ✅
 - seo_content_seeds: 46 seeds, pipeline diário ativo ✅
+- Sitemap dinâmico (`achados-perdidos/sitemap.ts`) lê `municipalities`+`local_pages` direto do banco — nenhuma cidade nova precisa de alteração de código, só INSERT. **Ainda não submetido ao Google Search Console** — decisão deliberada de aguardar item A/B/D aplicados na maioria das 441 páginas antes de submeter (ver seção 17).
+- **Diversificação de conteúdo local (itens A/B/C/D, status em 21/08/2026):**
+  - Item A/B (dados reais por cidade, sem LLM — `category_breakdown`, `main_landmarks`, `police_contact`, `emergency_contacts_local`): SP completo (37/37 municípios), demais 26 capitais classificadas em nível A/B/C por qualidade de fonte esperada, ~11 estados com `police_contact` parcialmente coberto (RJ e CE como exemplos aprovados, resto do nível A/B em andamento).
+  - `emergency_contacts_local` (telefones úteis da prefeitura, complementar ao estadual): **pausado deliberadamente em 21/08/2026** por baixo retorno — a maioria das prefeituras não tem página "Telefones Úteis" dedicada e confiável; 16/63 cidades cobertas, resto fica `null` até haver motivo pra retomar.
+  - Item C (agora `municipality_events`, migration 013): redefinido de "eventos anuais que Marcos levantar" para pesquisa direta por fonte pública (fundação, feriado municipal, festas tradicionais) — em andamento, sem meta de 63/63.
+  - Item D (renderização do conteúdo gerado nas páginas de cidade/categoria): ainda pendente de aplicar — dados já existem em boa parte, falta ligar na UI de `src/app/achados-perdidos/[cidade]/[categoria]/page.tsx`.
 
 ---
 
@@ -275,7 +289,10 @@ Estrutura de governança do produto instituída em 29/06/2026.
 - **Tokens Meta expiram ~30/07/2026**: renovar Facebook pages + Instagram user token
 - **Seeds SEO**: 46 seeds esgotam ~11/08/2026 — reabastecer antes
 - **Recepção v1**: implementar em React no produto real (próxima sessão)
-- **GSC**: verificar canonicals /achados-perdidos, relatório indexação
+- **GSC**: verificar canonicals /achados-perdidos, relatório indexação — submissão do sitemap ainda travada até item A/B/D estarem aplicados na maioria das 441 páginas (ver seção 13)
+- **police_contact — retomar fila nível A/B**: MG, SC, RS, BA, PR, DF, RR (nível A) e 15 estados do nível B ainda sem `police_contact` gravado; RJ e CE já servem de exemplo aprovado de formato/desambiguação. AM (nível C) fica pra decisão separada por último.
+- **`municipality_events` — continuar pesquisa**: tabela criada em 21/08/2026 (migration 013), volume inicial pequeno — seguir alternando com `police_contact` conforme fizer sentido, sem meta fixa de 63/63.
+- **Item D pendente**: dados locais (A/B/C) já existem parcialmente, mas ainda não estão todos ligados na renderização das páginas de cidade/categoria.
 - **Google Business**: data abertura travada em 2010 → corrigir para 2026
 - **Loop WhatsApp**: revisar sucesso/page.tsx + ShareModal.tsx
 - **Public Signals — bug `stripHtml()` em `src/app/api/v1/news/route.ts`**: ordem de operações erra (decodifica entidades HTML depois de tentar remover as tags), então descrições com HTML escapado do Google News passam sem strip. O mesmo padrão foi copiado (e corrigido) em `src/lib/publicSignals/sources.ts` para o pipeline novo — a rota `news/route.ts` original continua com o bug, fora de escopo da rodada. Registrado como task separada (spawn_task).
@@ -402,6 +419,7 @@ git push origin main
 | 21/07 (cont. 3) | Instalação de Microsoft Clarity (gravação de sessão + heatmap) e Meta Pixel (PageView, ViewContent, Lead, Purchase) em todo o site |
 | 21/07 (cont. 4) | Grande otimização da Home: Performance Mobile 48→87, LCP 14,4 s→2,5 s, Home refatorada em componentes, DeferredHomeLiveMap, Clarity e GA em `lazyOnload`; etapa de performance considerada concluída |
 | 18-19/08 | Backfindr Public Signals Fase 1 (MVP completo): auditoria somente-leitura, conta-âncora + constraints no banco, pipeline de ingestão (descoberta→extração LLM→dedup→fila), fila de aprovação manual, cron n8n ativado e testado em produção, 3 bugs reais corrigidos (filtro de idade, geocoding regionHint, timeout de ingestão), fonte CGN adicionada, alerta push pro admin |
+| 20-21/08 | SEO local (itens A/B/C): `police_contact` completo pras 37 cidades de SP + exemplos aprovados (RJ, CE); nova tabela `state_emergency_contacts` (11/27 estados); `emergency_contacts_local` em `municipalities` (16/63 cidades, depois pausado por baixo retorno); reordenação do "Mapa interativo ao vivo" da Home (boost mantém prioridade, resto ordenado por proximidade real via geolocalização, sem requisição extra); correção de escopo — Porto Velho/RO adicionado à base (omissão da lista original de 62 cidades), 7 páginas de SEO publicadas; nova tabela `municipality_events` (migration 013) redefinindo o item C. Ver histórico detalhado abaixo. |
 
 ### Sessão 08/07/2026 — Correção RLS (Security Advisor)
 
@@ -437,3 +455,26 @@ git push origin main
 **Pendências que ficaram em aberto** (ver seção 17 para lista viva): bug `stripHtml()` em `news/route.ts` (não confundir com o mesmo bug já corrigido em `publicSignals/sources.ts`), fonte `google_alert_corroboration` (estrutura pronta, SERP API não implementada), área de notificações mais ampla (proposta, aguardando confirmação de escopo), Seções 4-5 do prompt master (outreach institucional, triagem "Encontrei") não iniciadas.
 
 **Adendo (19/08/2026, mesmo dia — relatório consolidado revelou mais 2 bugs reais):** o usuário pediu um relatório de status completo do Public Signals pra outra conversa de acompanhamento. Ao verificar ao vivo (Supabase), apareceu um segundo bug de geocoding idêntico ao Morumbi — "Coqueiral" (Cascavel-PR) publicado como Guarapari-ES. Corrigido (1 objeto ao vivo + 2 evidências pendentes). Padrão de 2/2 bugs por ambiguidade de bairro levou a tornar `regionHint` obrigatório em vez de opcional. No mesmo relatório, o usuário repriorizou o `LIMIT 5000` do mapa (estava pendente desde a auditoria original) — resolvido no mesmo dia, ver seção 17.
+
+### Sessão 20-21/08/2026 — SEO local (police_contact, emergency_contacts, feed, Porto Velho, municipality_events)
+
+**Objetivo geral:** diversificar o conteúdo das 62 (depois 63) páginas de cidade com dados reais, verificáveis, nunca inventados — disciplina central de toda a sessão: fonte oficial obrigatória, `source_url` por dado, `null` quando não há fonte confiável, nunca fonte de agregador/rede social.
+
+**`police_contact` (delegacia de polícia relevante por cidade):**
+- SP: 37/37 municípios completos (34 com telefone+fonte, 3 `null` documentados).
+- Regra de desambiguação estabelecida e validada em 3 estados independentes (SP/DEATUR, RJ/DEAT, CE/DEPROTUR): preferir delegacia de turismo; sem ela, menor numeração (mais central); **exceção**: fonte oficial documentando desvio de plantão pra outra unidade usa o destino do desvio, não a numeração nominal (caso real: RJ, 1ª DP desvia pra 4ª DP).
+- 25 capitais classificadas em nível A/B/C por qualidade de fonte esperada; RJ e CE aprovados como exemplo de formato antes de escalar; nível A/B ainda em andamento no fim da sessão (MG, SC, RS, BA, PR, DF, RR + 15 do nível B pendentes; AM/nível C decisão separada por último).
+
+**`state_emergency_contacts` (nova tabela, migration 011) e `emergency_contacts_local` (colunas novas em `municipalities`, migration 012):**
+- Reconhecimento dos 27 portais estaduais "Telefones Úteis": só 5 tinham página ativa e utilizável de cara (BA, GO, MG, PR, PE) — a maioria dos estados não tem essa página consolidada, ou está migrada/quebrada (SP: portal antigo morto sem substituta; PB: portal atual bloqueado por CAPTCHA).
+- Descoberta importante: quando o estado não tem fonte, a **prefeitura da capital** frequentemente tem página própria de "telefones úteis" ou "telefones de emergência" que serve como fonte alternativa — usado pra resolver GO (Goiânia), AM (Manaus) e RS (Porto Alegre), sempre com nota explícita de que a fonte é municipal, não estadual.
+- Resultado: 11/27 estados em `state_emergency_contacts`, 16/63 cidades em `emergency_contacts_local`.
+- **Pausado deliberadamente em 21/08/2026**: retorno marginal baixo, maioria das cidades restantes não tem fonte forte disponível mesmo insistindo. Fortaleza é caso à parte — a página candidata está fora do ar por erro real de infraestrutura (não ausência de conteúdo), pode ser retentada depois.
+
+**Reordenação do "Mapa interativo ao vivo" (Home):** investigação partiu do código E do `git log` do commit original (`1c79f91`) antes de propor mudança — descoberta que o mecanismo de sorteio ponderado existe pra monetização do Boost (fairness pago), não pra "dar variedade" como a intuição inicial sugeria. Decisão tomada (usuário, não técnica): manter boost com peso total no topo; itens não-boosted passam a ser ordenados por proximidade geográfica real do visitante, reaproveitando a mesma chamada que já buscava `nearbyCount` (zero requisição HTTP extra); recência como critério de desempate; sorteio ponderado mantido só entre boosted quando há mais de 6 simultâneos. Implementado em `src/app/page.tsx`, commit `091e528`.
+
+**Correção de escopo — Rondônia:** confirmado que a omissão de RO na lista de 62 municípios era esquecimento na criação original, não decisão deliberada. Porto Velho adicionado seguindo exatamente o padrão das outras 25 capitais (IBGE `1100205`, `radius_km` escalonado por porte, `is_capital=true`), 7 páginas de SEO geradas com conteúdo real específico da cidade (Rio Madeira, Museu Ferroviário Madeira-Mamoré, Mercado Cultural) e verificadas ao vivo em produção. Cobertura real corrigida pra 63 cidades.
+
+**`municipality_events` (nova tabela, migration 013):** item C do plano de conteúdo redefinido — em vez de "eventos anuais que o usuário levantar", pesquisa direta por fonte pública (prefeitura, IBGE, fonte histórica/cívica) de 3 tipos de fato por cidade: data de fundação, feriado municipal oficial, festas tradicionais recorrentes. **Achado relevante do processo:** os 4 exemplos de formato que o usuário deu de memória (Festa do Pêssego em Mogi, Hanami em Suzano, Festa da Uva em Ribeirão Pires, Feira de Artes em Embu) estavam todos imprecisos em algum grau quando checados contra fonte real — nome mudou (Festa do Pêssego → Furusato Matsuri), nome popular vs. oficial (Hanami → Festa da Cerejeira/Sakura Matsuri), ou evento não encontrado de jeito nenhum (Festa da Uva em Ribeirão Pires — substituída por Festa de São José + Festa de N. Sra. do Pilar, que são reais e documentadas). O usuário validou essa correção como prova de que a disciplina de "fonte real vence conhecimento de memória" está funcionando como desenhado, inclusive quando o "conhecimento de memória" é do próprio usuário. Pesquisa iniciada pras 4 cidades de referência, escala pro resto das 63 sem meta fixa, alternando com a fila de `police_contact`.
+
+**Ferramenta de trabalho — lição registrada:** a extensão "Claude in Chrome" (navegador real do usuário, já logado) é preferível ao painel de navegador isolado da sessão pra qualquer tarefa que dependa de sessão autenticada (Supabase, etc.) — o painel isolado não carrega cookies/login do usuário. Ao reutilizar abas existentes do navegador do usuário pra navegação externa, **sempre criar uma aba nova** (`tabs_create_mcp`) em vez de reaproveitar uma aba de ID desconhecido — abas "Untitled query" do Supabase podem pertencer a trabalho em andamento do usuário em outra tarefa, e navegar por cima delas arrisca (mesmo que sem perda real, já que o Supabase persiste rascunho de query por URL) confundir o estado de outra sessão.
