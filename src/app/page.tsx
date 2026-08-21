@@ -32,37 +32,71 @@ interface ActivityItem {
   unique_code?: string | null;
   isRecent?: boolean;
   is_boosted?: boolean;
+  distanceKm?: number | null;
+  createdAtMs?: number;
+}
+
+// Distância entre visitante e objeto (mesma fórmula já usada para nearbyCount —
+// fatorada aqui pra não duplicar, 21/08/2026).
+function haversineKm(lat1: number, lng1: number, lat2: number, lng2: number): number {
+  const R = 6371;
+  const dLat = ((lat2 - lat1) * Math.PI) / 180;
+  const dLng = ((lng2 - lng1) * Math.PI) / 180;
+  const a =
+    Math.sin(dLat / 2) ** 2 +
+    Math.cos((lat1 * Math.PI) / 180) * Math.cos((lat2 * Math.PI) / 180) * Math.sin(dLng / 2) ** 2;
+  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
 }
 
 /**
- * Sorteio ponderado sem reposição.
- * Itens boosted têm peso BOOST_WEIGHT; demais têm peso 1.
- * Após o sorteio, boosted são empurrados para o topo.
+ * Sorteio uniforme sem reposição — usado só quando há mais boosted ativos
+ * do que vagas no feed, pra decidir QUAIS aparecem (nenhum boosted
+ * específico domina todas as visitas). Não decide posição: boosted
+ * escolhidos sempre vão pro topo, isso não muda com a opção C.
  */
-const BOOST_WEIGHT = 4;
-function weightedSample(pool: ActivityItem[], n: number): ActivityItem[] {
-  if (pool.length <= n) return [...pool];
+function pickRandomSubset<T>(pool: T[], n: number): T[] {
   const remaining = [...pool];
-  const selected: ActivityItem[] = [];
+  const selected: T[] = [];
   while (selected.length < n && remaining.length > 0) {
-    const totalWeight = remaining.reduce(
-      (sum, item) => sum + (item.is_boosted ? BOOST_WEIGHT : 1),
-      0
-    );
-    let rand = Math.random() * totalWeight;
-    let idx = 0;
-    for (let i = 0; i < remaining.length; i++) {
-      rand -= remaining[i].is_boosted ? BOOST_WEIGHT : 1;
-      if (rand <= 0) { idx = i; break; }
-    }
+    const idx = Math.floor(Math.random() * remaining.length);
     selected.push(remaining[idx]);
     remaining.splice(idx, 1);
   }
-  // Boosted sobem para o topo, mantendo ordem relativa entre eles
-  return [
-    ...selected.filter((i) => i.is_boosted),
-    ...selected.filter((i) => !i.is_boosted),
-  ];
+  return selected;
+}
+
+// Itens dentro do mesmo "balde" de distância são tratados como equivalentes
+// em proximidade e desempatados por recência, em vez de a diferença de
+// metros virar critério de ordenação.
+const PROXIMITY_BUCKET_KM = 10;
+
+/**
+ * Opção C (21/08/2026, ver discussão de ordenação do feed "ao vivo"):
+ * 1. Boosted ativos sempre no topo — garantia comercial preservada. Se
+ *    houver mais boosted do que vagas, sorteio uniforme decide quais
+ *    aparecem (fairness entre clientes pagantes), não a posição.
+ * 2. Vagas restantes: não-boosted ordenados por proximidade ao visitante
+ *    (quando conhecida); dentro do mesmo balde de PROXIMITY_BUCKET_KM,
+ *    desempate por mais recente (createdAtMs).
+ * 3. Sem localização do visitante: distanceKm é null em todos os itens →
+ *    todos caem no mesmo "balde" → ordenação vira puramente por recência
+ *    (fallback gracioso, sem quebrar).
+ */
+function buildLiveFeed(pool: ActivityItem[], n: number): ActivityItem[] {
+  const boosted = pool.filter((i) => i.is_boosted);
+  const others = pool.filter((i) => !i.is_boosted);
+
+  const chosenBoosted = boosted.length <= n ? boosted : pickRandomSubset(boosted, n);
+  const remainingSlots = Math.max(0, n - chosenBoosted.length);
+
+  const sortedOthers = [...others].sort((a, b) => {
+    const bucketA = a.distanceKm != null ? Math.floor(a.distanceKm / PROXIMITY_BUCKET_KM) : Infinity;
+    const bucketB = b.distanceKm != null ? Math.floor(b.distanceKm / PROXIMITY_BUCKET_KM) : Infinity;
+    if (bucketA !== bucketB) return bucketA - bucketB;
+    return (b.createdAtMs ?? 0) - (a.createdAtMs ?? 0);
+  });
+
+  return [...chosenBoosted, ...sortedOthers.slice(0, remainingSlots)];
 }
 
 const FALLBACK_ACTIVITIES: ActivityItem[] = [
@@ -151,67 +185,63 @@ export default function HomePage() {
   const [nearbyCount, setNearbyCount] = useState<number>(0);
   const [isDenseRegion, setIsDenseRegion] = useState<boolean | null>(null);
 
+  // Geolocalização + feed "ao vivo" numa única chamada a /api/v1/objects/public
+  // (opção C, 21/08/2026): antes eram 2 requisições (uma só pra nearbyCount,
+  // descartando os itens; outra separada de size=20 pra montar o feed). Agora
+  // a mesma resposta de 200 itens alimenta as duas coisas — nearbyCount E a
+  // distância de cada item ao visitante, usada pra ordenar o feed por
+  // proximidade. Sem localização do visitante (ipapi.co falhou/bloqueado),
+  // o feed cai pro fallback gracioso de buildLiveFeed (recência).
   useEffect(() => {
     let cancelled = false;
+
+    const formatTime = (created_at: string): string => {
+      const mins = Math.floor((Date.now() - new Date(created_at).getTime()) / 60000);
+      if (mins < 1) return 'agora';
+      if (mins < 60) return `${mins} min`;
+      const hours = Math.floor(mins / 60);
+      if (hours < 24) return `${hours}h`;
+      const days = Math.floor(hours / 24);
+      if (days < 7) return `${days} dia${days > 1 ? 's' : ''}`;
+      const weeks = Math.floor(days / 7);
+      if (weeks < 5) return `${weeks} sem`;
+      const months = Math.floor(days / 30);
+      if (months < 12) return `há ${months} ${months === 1 ? 'mês' : 'meses'}`;
+      const years = Math.floor(days / 365);
+      return `há ${years} ${years === 1 ? 'ano' : 'anos'}`;
+    };
+
     fetch('https://ipapi.co/json/')
-      .then(r => r.json())
-      .then(async d => {
+      .then((r) => r.json())
+      .then(async (d) => {
         if (cancelled) return;
         if (d?.city) setGeoCity(d.city);
-        if (!d?.latitude || !d?.longitude) { setIsDenseRegion(false); return; }
-        const lat = d.latitude;
-        const lng = d.longitude;
+        const visitorLat: number | null = d?.latitude ?? null;
+        const visitorLng: number | null = d?.longitude ?? null;
+
         const res = await fetch('/api/v1/objects/public?size=200&status=lost');
         const data = res.ok ? await res.json() : null;
         const items: any[] = data?.items ?? [];
-        const count = items.filter((o: any) => {
-          const oLat = o.location?.lat;
-          const oLng = o.location?.lng;
-          if (!oLat || !oLng) return false;
-          const R = 6371;
-          const dLat = ((oLat - lat) * Math.PI) / 180;
-          const dLng = ((oLng - lng) * Math.PI) / 180;
-          const a = Math.sin(dLat/2)**2 + Math.cos(lat*Math.PI/180)*Math.cos(oLat*Math.PI/180)*Math.sin(dLng/2)**2;
-          return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a)) <= 30;
-        }).length;
-        if (!cancelled) { setNearbyCount(count); setIsDenseRegion(count >= 15); }
-      })
-      .catch(() => setIsDenseRegion(false));
-    return () => { cancelled = true; };
-  }, []);
+        if (cancelled) return;
 
-  useEffect(() => {
-    fetch('/api/v1/stats/public')
-      .then(r => r.ok ? r.json() : null)
-      .then(d => { if (d) setPublicStats(d); })
-      .catch(() => {});
-  }, []);
+        // nearbyCount / isDenseRegion só fazem sentido com localização do visitante
+        if (visitorLat != null && visitorLng != null) {
+          const count = items.filter((o: any) => {
+            const oLat = o.location?.lat;
+            const oLng = o.location?.lng;
+            if (!oLat || !oLng) return false;
+            return haversineKm(visitorLat, visitorLng, oLat, oLng) <= 30;
+          }).length;
+          setNearbyCount(count);
+          setIsDenseRegion(count >= 15);
+        } else {
+          setIsDenseRegion(false);
+        }
 
-  useEffect(() => {
-    fetch('/api/v1/objects/public?size=20&status=lost')
-      .then((r) => (r.ok ? r.json() : null))
-      .then((data) => {
-        const items = data?.items ?? [];
         if (!Array.isArray(items) || items.length === 0) return;
 
-        const formatTime = (created_at: string): string => {
-          const mins = Math.floor((Date.now() - new Date(created_at).getTime()) / 60000);
-          if (mins < 1) return 'agora';
-          if (mins < 60) return `${mins} min`;
-          const hours = Math.floor(mins / 60);
-          if (hours < 24) return `${hours}h`;
-          const days = Math.floor(hours / 24);
-          if (days < 7) return `${days} dia${days > 1 ? 's' : ''}`;
-          const weeks = Math.floor(days / 7);
-          if (weeks < 5) return `${weeks} sem`;
-          const months = Math.floor(days / 30);
-          if (months < 12) return `há ${months} ${months === 1 ? 'mês' : 'meses'}`;
-          const years = Math.floor(days / 365);
-          return `há ${years} ${years === 1 ? 'ano' : 'anos'}`;
-        };
-
         const seen = new Set<string>();
-        const mapped = items
+        const mapped: ActivityItem[] = items
           .filter((obj: { id: string; title: string; status: string; created_at: string }) => {
             const day = obj.created_at ? obj.created_at.slice(0, 10) : '';
             const fingerprint = `${obj.title.toLowerCase().trim()}|${obj.status}|${day}`;
@@ -228,7 +258,7 @@ export default function HomePage() {
             status: string;
             unique_code?: string | null;
             location_addr?: string;
-            location?: { address?: string } | null;
+            location?: { lat?: number; lng?: number; address?: string } | null;
             created_at: string;
             is_boosted?: boolean;
           }) => {
@@ -237,6 +267,12 @@ export default function HomePage() {
             const city = cityRaw ? String(cityRaw).split(',').slice(0, 2).join(',').trim() : 'São Paulo, SP';
             const thirtyDaysAgo = Date.now() - 30 * 24 * 60 * 60 * 1000;
             const isRecent = new Date(obj.created_at).getTime() > thirtyDaysAgo;
+            const oLat = obj.location?.lat;
+            const oLng = obj.location?.lng;
+            const distanceKm =
+              visitorLat != null && visitorLng != null && oLat != null && oLng != null
+                ? haversineKm(visitorLat, visitorLng, oLat, oLng)
+                : null;
             return {
               id: obj.id,
               type,
@@ -247,27 +283,38 @@ export default function HomePage() {
               unique_code: obj.unique_code ?? null,
               isRecent,
               is_boosted: obj.is_boosted ?? false,
+              distanceKm,
+              createdAtMs: new Date(obj.created_at).getTime(),
             };
           });
 
         const ninetyDaysAgo = Date.now() - 90 * 24 * 60 * 60 * 1000;
-        const hasRecentItems = mapped.some(
-          (item) => new Date(items.find((o: { id: string }) => o.id === item.id)?.created_at ?? 0).getTime() > ninetyDaysAgo
-        );
+        const hasRecentItems = mapped.some((item) => (item.createdAtMs ?? 0) > ninetyDaysAgo);
         if (hasRecentItems) {
           setActivities(mapped);
         }
       })
+      .catch(() => setIsDenseRegion(false));
+
+    return () => { cancelled = true; };
+  }, []);
+
+  useEffect(() => {
+    fetch('/api/v1/stats/public')
+      .then(r => r.ok ? r.json() : null)
+      .then(d => { if (d) setPublicStats(d); })
       .catch(() => {});
   }, []);
 
-  // Sorteio ponderado: boosted têm 4× mais chance de aparecer e sobem ao topo
+  // Opção C: boosted no topo (sorteio só decide quais, se houver mais do
+  // que vagas); resto ordenado por proximidade ao visitante, com recência
+  // como desempate. Ver buildLiveFeed acima para o raciocínio completo.
   const [liveCards, setLiveCards] = useState<ActivityItem[]>(() =>
     activities.slice(0, 6)
   );
 
   useEffect(() => {
-    setLiveCards(weightedSample(activities, 6));
+    setLiveCards(buildLiveFeed(activities, 6));
   }, [activities]);
 
   return (
