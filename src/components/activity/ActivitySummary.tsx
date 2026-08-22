@@ -6,6 +6,7 @@ import { Activity, ArrowRight, CheckCircle2, Clock, RotateCcw, Zap } from 'lucid
 interface ActivitySummaryProps {
   objectsCount?: number;
   activeCount?: number;
+  foundCount?: number;
   pendingMatches?: number;
   loading?: boolean;
 }
@@ -20,11 +21,13 @@ function nextHourlyCheck(): string {
 export default function ActivitySummary({
   objectsCount = 0,
   activeCount = 0,
+  foundCount = 0,
   pendingMatches = 0,
   loading = false,
 }: ActivitySummaryProps) {
   const hasObjects = objectsCount > 0;
   const hasActive = activeCount > 0;
+  const hasFound = foundCount > 0;
   const hasMatches = pendingMatches > 0;
   const nextCheck = nextHourlyCheck();
 
@@ -43,6 +46,17 @@ export default function ActivitySummary({
       </div>
 
       <div className="space-y-2.5">
+        {hasFound && (
+          <div className="flex items-start gap-2 text-xs text-amber-300 font-medium">
+            <Zap className="w-3.5 h-3.5 text-amber-400 flex-shrink-0 mt-0.5" />
+            <span>
+              {foundCount === 1
+                ? 'Alguém pode ter encontrado um dos seus objetos! Confira e confirme.'
+                : `Alguém pode ter encontrado ${foundCount} dos seus objetos! Confira e confirme.`}
+            </span>
+          </div>
+        )}
+
         <div className="flex items-start gap-2 text-xs text-white/55">
           <CheckCircle2 className="w-3.5 h-3.5 text-teal-400 flex-shrink-0 mt-0.5" />
           <span>

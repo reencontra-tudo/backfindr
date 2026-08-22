@@ -19,6 +19,7 @@ import WelcomeModal from '@/components/ui/WelcomeModal';
 import OnboardingTour, { TourStep } from '@/components/ui/OnboardingTour';
 import CondominioContextBanner from '@/components/CondominioContextBanner';
 import ActivitySummary from '@/components/activity/ActivitySummary';
+import PushPromptCard from '@/components/PushPromptCard';
 
 const EMOJI: Record<string, string> = {
   phone:'📱',wallet:'👛',keys:'🔑',bag:'🎒',pet:'🐾',
@@ -258,15 +259,27 @@ export default function DashboardPage() {
           </Link>
         )}
 
-        {/* ── Activity Summary — Sistema Vivo no dashboard ── */}
+        {/* ── Activity Summary — Sistema Vivo no dashboard ──
+            'found' entra no activeCount (achado de auditoria 22/08/2026):
+            antes ficava fora do filtro, e o widget dizia "nenhuma ocorrência
+            ativa" bem no momento em que alguém alegou ter encontrado o
+            objeto — o oposto do que deveria comunicar. foundCount separado
+            pra dar destaque específico (não é só "monitorando", é "alguém
+            encontrou, aja"). */}
         {!loading && objects.length > 0 && (
           <ActivitySummary
             objectsCount={objects.length}
-            activeCount={objects.filter(o => o.status === 'lost' || o.status === 'stolen').length}
+            activeCount={objects.filter(o => o.status === 'lost' || o.status === 'stolen' || o.status === 'found').length}
+            foundCount={objects.filter(o => o.status === 'found').length}
             pendingMatches={pending}
             loading={loading}
           />
         )}
+
+        {/* ── Convite pra ativar push (item 5, 22/08/2026) — reaparece aqui
+            na volta ao dashboard só se a pessoa ainda não decidiu (ver
+            PushPromptCard: localStorage, não persiste "fechei sem decidir"). ── */}
+        {!loading && objects.length > 0 && <PushPromptCard className="mt-3" />}
 
         {/* ── Onboarding checklist (colapsável) ── */}
         {showOnboarding && (
