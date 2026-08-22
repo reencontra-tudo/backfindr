@@ -361,10 +361,16 @@ export default function PublicObjectClient({ obj }: { obj: RegisteredObject }) {
                   </div>
                 )}
 
-                {/* ── Botão principal ── */}
+                {/* ── Botão principal ──
+                    data-widget-safe-zone: mesmo mecanismo já usado em
+                    scan/[code]/client.tsx (ver AssistantWidget.tsx:742) — sem
+                    isso, o FAB do chat fica livre pra sobrepor este botão em
+                    viewports de pouca altura (confirmado em produção a
+                    375×600) e engolir o toque sem nenhum feedback visível. */}
                 <button
                   onClick={notifyOwner}
                   disabled={loading}
+                  data-widget-safe-zone
                   className="w-full flex items-center justify-center gap-3 bg-teal-500 hover:bg-teal-400 active:bg-teal-600 disabled:opacity-60 text-white font-bold py-4 rounded-xl transition-all text-base"
                   style={{ boxShadow: '0 0 0 1px rgba(20,184,166,0.5), 0 8px 24px rgba(20,184,166,0.2)' }}
                 >

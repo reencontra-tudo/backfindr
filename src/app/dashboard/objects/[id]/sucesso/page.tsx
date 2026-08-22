@@ -11,6 +11,7 @@ import {
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { objectsApi } from '@/lib/api';
+import PushPromptCard from '@/components/PushPromptCard';
 
 interface ObjectData {
   id: string;
@@ -330,6 +331,15 @@ export default function SucessoPage() {
             </div>
           </div>
         </div>
+
+        {/* ── Ativar push (item 5 do fechamento do ciclo, 22/08/2026) ──
+            Antes, "Ative as notificações" era só uma linha de texto no
+            checklist acima, sem nenhum botão atrás — o convite existia mas
+            não fazia nada. */}
+        <PushPromptCard
+          description="Seja avisado na hora se alguém encontrar ou escanear este objeto."
+          className="mb-4"
+        />
 
         {/* ── Download de cartaz ── */}
         <div className="bg-white/[0.02] border border-white/[0.06] rounded-2xl p-5 mb-6 text-left">

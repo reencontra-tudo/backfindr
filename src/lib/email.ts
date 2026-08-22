@@ -1020,6 +1020,130 @@ export async function sendPWAIncentiveEmail(user: { name: string; email: string 
   }
 }
 
+// ─── E-mail de "alguém encontrou seu objeto" ─────────────────────────────────
+// Item 4 do fechamento do ciclo de "encontrei" (22/08/2026) — antes deste
+// e-mail, o clique anônimo em /objeto/[code] ou /scan/[code] só gravava uma
+// linha em `notifications` e tentava push (que depende de permissão que a
+// maioria dos usuários nunca concede — ver auditoria de 21-22/08/2026). Sem
+// e-mail, o dono podia nunca ficar sabendo. Disparado por
+// src/app/api/v1/objects/scan/[code]/notify/route.ts, não bloqueante (falha
+// de e-mail não deve impedir a resposta ao finder).
+const CATEGORY_LABEL_EMAIL: Record<string, string> = {
+  phone: 'celular', electronics: 'aparelho', wallet: 'carteira', keys: 'molho de chaves',
+  bag: 'bolsa/mochila', pet: 'pet', animal: 'pet', bike: 'bicicleta', vehicle: 'veículo',
+  document: 'documento', jewelry: 'joia/relógio', clothing: 'peça de roupa', other: 'objeto',
+};
+
+export async function sendObjectFoundEmail(
+  user: { name: string; email: string },
+  obj: { id: string; title: string; category: string; isProtected?: boolean }
+) {
+  const firstName = user.name.split(' ')[0];
+  const categoryLabel = CATEGORY_LABEL_EMAIL[obj.category] ?? 'objeto';
+  const objectUrl = `https://www.backfindr.com/dashboard/objects/${obj.id}`;
+  const subject = obj.isProtected
+    ? `📍 O QR Code do seu ${categoryLabel} foi escaneado`
+    : `🎉 Alguém pode ter encontrado seu ${categoryLabel}`;
+
+  const html = `
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>${subject}</title>
+</head>
+<body style="margin:0;padding:0;background:#080b0f;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;">
+  <table width="100%" cellpadding="0" cellspacing="0" style="background:#080b0f;padding:40px 20px;">
+    <tr>
+      <td align="center">
+        <table width="100%" cellpadding="0" cellspacing="0" style="max-width:520px;background:#0f1318;border:1px solid rgba(255,255,255,0.08);border-radius:20px;overflow:hidden;">
+
+          <!-- Header -->
+          <tr>
+            <td style="padding:32px 32px 0;text-align:center;">
+              <div style="display:inline-flex;align-items:center;gap:10px;margin-bottom:8px;">
+                <div style="width:36px;height:36px;background:#14b8a6;border-radius:10px;display:inline-flex;align-items:center;justify-content:center;">
+                  <span style="color:white;font-size:18px;">📍</span>
+                </div>
+                <span style="color:white;font-size:18px;font-weight:700;">Backfindr</span>
+              </div>
+            </td>
+          </tr>
+
+          <!-- Body -->
+          <tr>
+            <td style="padding:24px 32px 32px;">
+
+              <div style="text-align:center;margin-bottom:20px;">
+                <div style="display:inline-block;background:rgba(20,184,166,0.1);border:1px solid rgba(20,184,166,0.25);border-radius:50%;width:72px;height:72px;line-height:72px;text-align:center;">
+                  <span style="font-size:32px;">${obj.isProtected ? '📍' : '🎉'}</span>
+                </div>
+              </div>
+
+              <h1 style="color:white;font-size:22px;font-weight:700;margin:0 0 8px;text-align:center;line-height:1.3;">
+                ${obj.isProtected ? `Olá, ${firstName}` : `Boa notícia, ${firstName}!`}
+              </h1>
+              <p style="color:rgba(255,255,255,0.55);font-size:14px;line-height:1.6;margin:0 0 24px;text-align:center;">
+                ${obj.isProtected
+                  ? `Alguém escaneou o QR Code do seu objeto <strong style="color:white;">${obj.title}</strong>. Verifique se está tudo bem.`
+                  : `Alguém pode ter encontrado <strong style="color:white;">${obj.title}</strong> e avisou pelo Backfindr.`}
+              </p>
+
+              <table width="100%" cellpadding="0" cellspacing="0" style="margin-bottom:24px;">
+                <tr>
+                  <td align="center">
+                    <a href="${objectUrl}"
+                       style="display:inline-block;background:#14b8a6;color:white;font-size:15px;font-weight:700;text-decoration:none;padding:14px 32px;border-radius:12px;box-shadow:0 4px 20px rgba(20,184,166,0.25);">
+                      Ver detalhes do objeto →
+                    </a>
+                  </td>
+                </tr>
+              </table>
+
+              <table width="100%" cellpadding="0" cellspacing="0" style="background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.07);border-radius:14px;">
+                <tr>
+                  <td style="padding:18px 22px;">
+                    <p style="color:rgba(255,255,255,0.5);font-size:13px;line-height:1.6;margin:0;">
+                      🔒 A identidade de quem clicou não é revelada automaticamente — a plataforma protege os dados de ambos os lados até vocês combinarem os próximos passos.
+                    </p>
+                  </td>
+                </tr>
+              </table>
+            </td>
+          </tr>
+
+          <!-- Footer -->
+          <tr>
+            <td style="padding:20px 32px;border-top:1px solid rgba(255,255,255,0.06);text-align:center;">
+              <p style="color:rgba(255,255,255,0.2);font-size:12px;margin:0;">
+                © 2026 Backfindr · <a href="https://www.backfindr.com" style="color:rgba(255,255,255,0.3);text-decoration:none;">www.backfindr.com</a>
+              </p>
+            </td>
+          </tr>
+
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>
+  `.trim();
+
+  try {
+    const { error } = await getResend().emails.send({
+      from: FROM,
+      to: [user.email],
+      subject,
+      html,
+    });
+    if (error) console.error('[email] Erro ao enviar aviso de objeto encontrado:', error);
+  } catch (err) {
+    // Não bloquear a resposta ao finder se o e-mail falhar
+    console.error('[email] Exceção ao enviar aviso de objeto encontrado:', err);
+  }
+}
+
 // ─── Função genérica sendEmail (usada pelo boost-expiration cron) ─────────────
 export async function sendEmail({ to, subject, html }: { to: string; subject: string; html: string }) {
   try {

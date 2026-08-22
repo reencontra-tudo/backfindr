@@ -9,8 +9,20 @@ import {
   Lock,
 } from 'lucide-react';
 import Cookies from 'js-cookie';
+import { toast } from 'sonner';
 import { useAuthStore } from '@/hooks/useAuth';
 import ImpersonationBanner from '@/components/ui/ImpersonationBanner';
+import { playNotificationSound } from '@/lib/notificationSound';
+
+// Formato mínimo retornado por GET /api/v1/notifications — só os campos que
+// o polling do sino/toast precisa (ver src/app/api/v1/notifications/route.ts).
+interface NotifRow {
+  id: string;
+  type: string;
+  title: string;
+  message: string;
+  read: boolean;
+}
 
 // ─── Definição do menu ────────────────────────────────────────────────────────
 //
@@ -36,9 +48,15 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const { user, isAuthenticated, logout, fetchMe } = useAuthStore();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [pendingMatches, setPendingMatches] = useState(0);
+  const [unreadNotifs, setUnreadNotifs] = useState(0);
   const [objectCount, setObjectCount] = useState<number | null>(null); // null = ainda carregando
   const [hydrated, setHydrated] = useState(false);
   const initDone = useRef(false);
+  // IDs de notificação já vistos nesta sessão do dashboard — usado só pra
+  // saber quais são "novas" (chegaram depois que a aba abriu) e merecem
+  // som + toast. null = ainda não estabelecemos a base (evita disparar som
+  // pra um backlog de notificações antigas assim que o dashboard carrega).
+  const seenNotifIds = useRef<Set<string> | null>(null);
 
   // Aguarda a reidratação do Zustand persist antes de redirecionar
   useEffect(() => {
@@ -107,6 +125,58 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       .catch(() => {});
   }, [isAuthenticated]);
 
+  // ── Notificações em tempo real (item 3 e 6 do fechamento do ciclo de
+  // "encontrei", 22/08/2026) ────────────────────────────────────────────────
+  // Antes disso, uma notificação de "alguém encontrou seu objeto" só
+  // aparecia se o dono entrasse manualmente em /dashboard/notifications —
+  // nenhum sinal no resto do dashboard. Agora: badge de não-lidas no item
+  // "Notificações" da barra lateral (igual ao badge de Matches, que já
+  // existia) + som e toast destacado quando uma notificação nova chega
+  // enquanto a aba está aberta, sem precisar recarregar a página.
+  useEffect(() => {
+    if (!isAuthenticated) return;
+
+    let cancelled = false;
+
+    const poll = () => {
+      const token = Cookies.get('access_token');
+      if (!token) return;
+      fetch('/api/v1/notifications', { headers: { Authorization: `Bearer ${token}` } })
+        .then(r => r.ok ? r.json() : null)
+        .then((data: { notifications?: NotifRow[] } | null) => {
+          if (cancelled || !data) return;
+          const rows = data.notifications ?? [];
+          setUnreadNotifs(rows.filter(n => !n.read).length);
+
+          if (seenNotifIds.current === null) {
+            // Primeira leitura desta sessão: só estabelece a base, não
+            // dispara som/toast pra notificações que já existiam antes de
+            // a aba abrir.
+            seenNotifIds.current = new Set(rows.map(n => n.id));
+            return;
+          }
+
+          const fresh = rows.filter(n => !seenNotifIds.current!.has(n.id));
+          fresh.forEach(n => seenNotifIds.current!.add(n.id));
+
+          if (fresh.length > 0) {
+            playNotificationSound();
+            fresh.forEach(n => {
+              toast.success(n.title, {
+                description: n.message,
+                duration: 10000,
+              });
+            });
+          }
+        })
+        .catch(() => {});
+    };
+
+    poll();
+    const interval = setInterval(poll, 20000);
+    return () => { cancelled = true; clearInterval(interval); };
+  }, [isAuthenticated]);
+
   // Close sidebar on route change
   useEffect(() => { setSidebarOpen(false); }, [pathname]);
 
@@ -154,7 +224,11 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           .map(({ href, icon: Icon, label, requiresObjects }) => {
             const active = pathname === href || (href !== '/dashboard' && pathname.startsWith(href));
             const isMatches = href === '/dashboard/matches';
-            const badge = isMatches && pendingMatches > 0 ? pendingMatches : null;
+            const isNotifications = href === '/dashboard/notifications';
+            const badge =
+              isMatches && pendingMatches > 0 ? pendingMatches :
+              isNotifications && unreadNotifs > 0 ? unreadNotifs :
+              null;
 
             // Item bloqueado: requer objetos mas o usuário ainda não tem nenhum
             const locked = requiresObjects && !hasObjects && !isSuperAdmin;
