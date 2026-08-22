@@ -75,12 +75,20 @@ function buildPrompt(
   const categoryCount = breakdown[category] ?? 0;
   const landmarks = ctx.main_landmarks ?? [];
 
+  // Nota sobre o par total/categoria (achado na amostra de 5 cidades,
+  // 21/08/2026): pra categoria "geral" as duas linhas descrevem números
+  // diferentes mas de nomes parecidos ("objeto perdido" é tanto o rótulo
+  // da página quanto um dos 7 slugs de category_breakdown) — em 1 de 5
+  // cidades testadas o LLM confundiu as duas e citou o número da
+  // categoria com a moldura do total da região. Pra "geral" só o total
+  // entra na lista de fatos; o recorte por categoria só faz sentido (e só
+  // é inequívoco) nas páginas de categoria específica.
   const facts: string[] = [];
   if (totalCount > 0) {
-    facts.push(`- Total de objetos já registrados na região de ${cityName}: ${totalCount}`);
+    facts.push(`- TOTAL de objetos já registrados em toda a região de ${cityName} (todas as categorias somadas): ${totalCount}`);
   }
-  if (categoryCount > 0) {
-    facts.push(`- Desses, registros da categoria "${categoryLabel}": ${categoryCount}`);
+  if (category !== 'geral' && categoryCount > 0) {
+    facts.push(`- Desse total, quantos são especificamente da categoria "${categoryLabel}" (não confundir com o total acima): ${categoryCount}`);
   }
   if (landmarks.length > 0) {
     facts.push(`- Pontos de referência conhecidos da cidade: ${landmarks.join(', ')}`);
