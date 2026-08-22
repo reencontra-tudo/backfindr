@@ -46,21 +46,24 @@ export default async function CidadeCategoria({ params }: Props) {
   const faq = page?.faq_content ?? []
   const cat = CATEGORY_LABELS[params.categoria] ?? { label: params.categoria, icon: '📦' }
 
-  // ── Dados locais reais (item A/B da diversificação de conteúdo,
-  // 20/08/2026) — renderizado direto de municipalities, SEM passar por
-  // LLM. É a garantia estrutural de especificidade: mesmo que
+  // ── Dados locais reais (item B — landmarks/police_contact — e item C —
+  // municipality_events) — renderizado direto de municipalities, SEM
+  // passar por LLM. É a garantia estrutural de especificidade: mesmo que
   // tips_content/intro_text não tenham sido regenerados ainda, esta
   // seção já muda de verdade por cidade, porque a fonte é um SELECT, não
-  // prosa. category_breakdown já vem gravado nos slugs de SEO (ver
-  // src/app/api/v1/admin/municipalities/refresh-stats/route.ts) — sem
-  // mapeamento adicional aqui.
-  const breakdown = (city.category_breakdown ?? {}) as Record<string, number>
-  const categoryCount = breakdown[params.categoria] ?? 0
-  const totalCount = city.total_objects_registered ?? 0
-  const topCategorySlug = Object.entries(breakdown).sort(([, a], [, b]) => b - a)[0]?.[0]
-  const topCategoryLabel = topCategorySlug ? (CATEGORY_LABELS[topCategorySlug]?.label ?? topCategorySlug) : null
+  // prosa.
+  //
+  // total_objects_registered/category_breakdown (item A) ficou de fora
+  // de propósito (correção de 21/08/2026, depois da amostra de 5
+  // cidades) — não é questão de threshold de volume, é que contagem de
+  // ocorrência é um dado que fica desatualizado a cada novo cadastro:
+  // refresh-stats só roda quando alguém chama manualmente, não há cron
+  // ainda, então esse número vai defasando com o tempo numa página que
+  // não atualiza em tempo real. Os dois campos continuam gravados no
+  // banco pra uso interno (dashboard admin), só não aparecem mais aqui.
+  // Landmarks/police_contact/eventos são fatos estáveis — não mudam com
+  // o volume de cadastro do dia a dia.
   const landmarks: string[] = Array.isArray(city.main_landmarks) ? city.main_landmarks : []
-  const hasLocalData = totalCount > 0 || landmarks.length > 0 || Boolean(city.police_contact)
 
   // ── Evento aplicável (item C/D, 21/08/2026) — municipality_events já
   // populado pras 63 cidades. Escolhe 1 evento "do momento" (mês atual)
@@ -86,6 +89,7 @@ export default async function CidadeCategoria({ params }: Props) {
     municipal_holiday: 'Feriado municipal',
     festival: 'Festa tradicional',
   }
+  const hasLocalData = landmarks.length > 0 || Boolean(city.police_contact) || Boolean(applicableEvent)
 
   const isVeiculo = params.categoria === 'veiculo'
   const isGeral   = params.categoria === 'geral'
@@ -203,67 +207,67 @@ export default async function CidadeCategoria({ params }: Props) {
           </div>
         </div>
 
-        {/* DADOS LOCAIS REAIS — renderizado direto do banco, sem LLM (item D, 21/08/2026) */}
+        {/* DADOS LOCAIS REAIS — renderizado direto do banco, sem LLM (item D,
+            21/08/2026). Só fatos estáveis: landmarks, evento aplicável e
+            police_contact. total_objects_registered/category_breakdown
+            (item A) foi removido daqui de propósito — contagem de
+            ocorrência desatualiza a cada cadastro novo e não há refresh
+            automático ainda; ver nota acima na declaração de hasLocalData. */}
         {hasLocalData && (
           <section
             className="rounded-2xl p-5 mb-8"
             style={{ backgroundColor: '#111827', border: '1px solid #1f2937' }}
           >
-            <h2 className="text-sm font-semibold mb-4" style={{ color: '#9CA3AF' }}>
-              {city.name} em números
+            <h2 className="text-sm font-semibold mb-1" style={{ color: '#9CA3AF' }}>
+              Sobre {city.name}
             </h2>
-            <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 mb-1">
-              {totalCount > 0 && (
-                <div>
-                  <p className="text-2xl font-black" style={{ color: '#14B8A6' }}>{totalCount}</p>
-                  <p className="text-xs" style={{ color: '#9CA3AF' }}>objetos registrados na região</p>
-                </div>
-              )}
-              {topCategoryLabel && (
-                <div>
-                  <p className="text-lg font-black leading-snug" style={{ color: '#14B8A6' }}>{topCategoryLabel}</p>
-                  <p className="text-xs" style={{ color: '#9CA3AF' }}>categoria mais comum</p>
-                </div>
-              )}
-              {landmarks.length > 0 && (
-                <div>
-                  <p className="text-sm font-bold leading-snug" style={{ color: '#FFFFFF' }}>{landmarks.join(' · ')}</p>
-                  <p className="text-xs" style={{ color: '#9CA3AF' }}>pontos de referência</p>
-                </div>
-              )}
-            </div>
+
+            {landmarks.length > 0 && (
+              <p className="text-sm font-bold leading-snug mt-3" style={{ color: '#FFFFFF' }}>
+                📍 {landmarks.join(' · ')}
+              </p>
+            )}
 
             {applicableEvent && (
-              <p className="text-xs mt-4 pt-4" style={{ color: '#9CA3AF', borderTop: '1px solid #1f2937' }}>
+              <p
+                className="text-xs mt-4 pt-4"
+                style={landmarks.length > 0 ? { color: '#9CA3AF', borderTop: '1px solid #1f2937' } : { color: '#9CA3AF' }}
+              >
                 📅 {EVENT_TYPE_LABEL[applicableEvent.event_type] ?? 'Data local'}: {' '}
                 <strong style={{ color: '#FFFFFF' }}>{applicableEvent.name}</strong>
                 {applicableEvent.date_text ? ` — ${applicableEvent.date_text}` : ''}
               </p>
             )}
 
-            {city.police_contact ? (
-              <p className="text-xs mt-4 pt-4" style={{ color: '#9CA3AF', borderTop: '1px solid #1f2937' }}>
-                📞 Delegacia de referência: <strong style={{ color: '#FFFFFF' }}>{city.police_contact}</strong>
-                {city.police_contact_source_url && (
-                  <>
-                    {' '}—{' '}
-                    <a
-                      href={city.police_contact_source_url}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      style={{ color: '#14B8A6' }}
-                      className="hover:underline"
-                    >
-                      fonte oficial
-                    </a>
-                  </>
-                )}
-              </p>
-            ) : (
-              <p className="text-xs mt-4 pt-4" style={{ color: '#9CA3AF', borderTop: '1px solid #1f2937' }}>
-                📞 Procure a delegacia mais próxima ou a Polícia Civil de {city.state_name} pra registrar boletim de ocorrência.
-              </p>
-            )}
+            {(() => {
+              const hasBorderAbove = landmarks.length > 0 || Boolean(applicableEvent)
+              const pStyle = hasBorderAbove
+                ? { color: '#9CA3AF', borderTop: '1px solid #1f2937' }
+                : { color: '#9CA3AF' }
+              return city.police_contact ? (
+                <p className="text-xs mt-4 pt-4" style={pStyle}>
+                  📞 Delegacia de referência: <strong style={{ color: '#FFFFFF' }}>{city.police_contact}</strong>
+                  {city.police_contact_source_url && (
+                    <>
+                      {' '}—{' '}
+                      <a
+                        href={city.police_contact_source_url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        style={{ color: '#14B8A6' }}
+                        className="hover:underline"
+                      >
+                        fonte oficial
+                      </a>
+                    </>
+                  )}
+                </p>
+              ) : (
+                <p className="text-xs mt-4 pt-4" style={pStyle}>
+                  📞 Procure a delegacia mais próxima ou a Polícia Civil de {city.state_name} pra registrar boletim de ocorrência.
+                </p>
+              )
+            })()}
           </section>
         )}
 

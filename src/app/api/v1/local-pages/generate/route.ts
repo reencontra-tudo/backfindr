@@ -31,8 +31,6 @@ interface MunicipalityEvent {
 interface CityContext {
   name: string;
   state_name: string;
-  total_objects_registered: number | null;
-  category_breakdown: Record<string, number> | null;
   main_landmarks: string[] | null;
   police_contact: string | null;
   police_contact_notes: string | null;
@@ -58,10 +56,19 @@ function pickApplicableEvent(events: MunicipalityEvent[]): MunicipalityEvent | n
 // LLM preenchia o resto por conta própria, sem nada que garantisse
 // especificidade real por cidade. Agora todo fato citável vem de uma lista
 // fechada (FATOS REAIS) construída a partir do que já está gravado no banco
-// (estatísticas reais via refresh-stats, main_landmarks, police_contact,
-// municipality_events) — a instrução explícita é nunca extrapolar além
-// dessa lista. Regra de omissão graciosa pra police_contact null: nunca
-// inventar telefone/nome de delegacia, só orientar de forma genérica.
+// (main_landmarks, police_contact, municipality_events) — a instrução
+// explícita é nunca extrapolar além dessa lista. Regra de omissão graciosa
+// pra police_contact null: nunca inventar telefone/nome de delegacia, só
+// orientar de forma genérica.
+//
+// total_objects_registered/category_breakdown (item A) foi removido da
+// lista de fatos de propósito (correção de 21/08/2026, depois da amostra
+// de 5 cidades) — não é sobre a ambiguidade "geral" vs. total que a nota
+// anterior aqui descrevia (isso foi corrigido e depois removido junto),
+// é que contagem de ocorrência desatualiza a cada cadastro novo e não há
+// refresh automático ainda (refresh-stats só roda manual). Citar esse
+// número na prosa geraria uma página que "mente" com o tempo — os dois
+// campos continuam gravados no banco pra uso interno (dashboard admin).
 function buildPrompt(
   cityName: string,
   stateName: string,
@@ -70,26 +77,9 @@ function buildPrompt(
   applicableEvent: MunicipalityEvent | null
 ): string {
   const categoryLabel = CATEGORY_LABELS[category] ?? category;
-  const breakdown = ctx.category_breakdown ?? {};
-  const totalCount = ctx.total_objects_registered ?? 0;
-  const categoryCount = breakdown[category] ?? 0;
   const landmarks = ctx.main_landmarks ?? [];
 
-  // Nota sobre o par total/categoria (achado na amostra de 5 cidades,
-  // 21/08/2026): pra categoria "geral" as duas linhas descrevem números
-  // diferentes mas de nomes parecidos ("objeto perdido" é tanto o rótulo
-  // da página quanto um dos 7 slugs de category_breakdown) — em 1 de 5
-  // cidades testadas o LLM confundiu as duas e citou o número da
-  // categoria com a moldura do total da região. Pra "geral" só o total
-  // entra na lista de fatos; o recorte por categoria só faz sentido (e só
-  // é inequívoco) nas páginas de categoria específica.
   const facts: string[] = [];
-  if (totalCount > 0) {
-    facts.push(`- TOTAL de objetos já registrados em toda a região de ${cityName} (todas as categorias somadas): ${totalCount}`);
-  }
-  if (category !== 'geral' && categoryCount > 0) {
-    facts.push(`- Desse total, quantos são especificamente da categoria "${categoryLabel}" (não confundir com o total acima): ${categoryCount}`);
-  }
   if (landmarks.length > 0) {
     facts.push(`- Pontos de referência conhecidos da cidade: ${landmarks.join(', ')}`);
   }
@@ -156,11 +146,12 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'municipality_id e category_slug são obrigatórios' }, { status: 400 });
     }
 
-    // Buscar dados reais da cidade — agora inclui tudo que vira grounding do
-    // prompt (item D, 21/08/2026): estatísticas, landmarks e police_contact.
+    // Buscar dados reais da cidade — inclui tudo que vira grounding do
+    // prompt (item D, 21/08/2026): landmarks e police_contact. Não busca
+    // total_objects_registered/category_breakdown de propósito — ver nota
+    // acima de buildPrompt() sobre por que essa contagem saiu do prompt.
     const cityResult = await query(
-      `SELECT name, state_name, total_objects_registered, category_breakdown,
-              main_landmarks, police_contact, police_contact_notes
+      `SELECT name, state_name, main_landmarks, police_contact, police_contact_notes
        FROM municipalities WHERE id = $1`,
       [municipality_id]
     );
