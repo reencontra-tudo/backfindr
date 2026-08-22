@@ -135,6 +135,25 @@ ${applicableEvent ? `- Inclua a 4ª pergunta de FAQ sobre "${applicableEvent.nam
 - Mencione o Backfindr como plataforma de achados e perdidos`;
 }
 
+// ── GET: lista páginas publicadas (rollout item D, 21/08/2026) ──────────────
+// Endpoint de apoio pra iterar o rollout de regeneração nas ~497 páginas
+// publicadas sem precisar de acesso direto ao banco a partir do cliente que
+// dispara os POSTs — só (municipality_id, category_slug), sem conteúdo, pra
+// manter a resposta leve mesmo com centenas de linhas.
+export async function GET(req: NextRequest) {
+  const adminCheck = await requireAdmin(req);
+  if (adminCheck instanceof NextResponse) return adminCheck;
+
+  const result = await query(
+    `SELECT lp.municipality_id, m.slug, lp.category_slug
+     FROM local_pages lp
+     JOIN municipalities m ON m.id = lp.municipality_id
+     WHERE lp.status = 'published'
+     ORDER BY m.slug, lp.category_slug`
+  );
+  return NextResponse.json({ count: result.rows.length, pages: result.rows });
+}
+
 export async function POST(req: NextRequest) {
   const adminCheck = await requireAdmin(req);
   if (adminCheck instanceof NextResponse) return adminCheck;
