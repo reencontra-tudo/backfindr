@@ -46,6 +46,51 @@ export default async function CidadeCategoria({ params }: Props) {
   const faq = page?.faq_content ?? []
   const cat = CATEGORY_LABELS[params.categoria] ?? { label: params.categoria, icon: '📦' }
 
+  // ── Dados locais reais (item B — landmarks/police_contact — e item C —
+  // municipality_events) — renderizado direto de municipalities, SEM
+  // passar por LLM. É a garantia estrutural de especificidade: mesmo que
+  // tips_content/intro_text não tenham sido regenerados ainda, esta
+  // seção já muda de verdade por cidade, porque a fonte é um SELECT, não
+  // prosa.
+  //
+  // total_objects_registered/category_breakdown (item A) ficou de fora
+  // de propósito (correção de 21/08/2026, depois da amostra de 5
+  // cidades) — não é questão de threshold de volume, é que contagem de
+  // ocorrência é um dado que fica desatualizado a cada novo cadastro:
+  // refresh-stats só roda quando alguém chama manualmente, não há cron
+  // ainda, então esse número vai defasando com o tempo numa página que
+  // não atualiza em tempo real. Os dois campos continuam gravados no
+  // banco pra uso interno (dashboard admin), só não aparecem mais aqui.
+  // Landmarks/police_contact/eventos são fatos estáveis — não mudam com
+  // o volume de cadastro do dia a dia.
+  const landmarks: string[] = Array.isArray(city.main_landmarks) ? city.main_landmarks : []
+
+  // ── Evento aplicável (item C/D, 21/08/2026) — municipality_events já
+  // populado pras 63 cidades. Escolhe 1 evento "do momento" (mês atual)
+  // quando existe; senão cai pra founding_date, que é fato histórico
+  // sempre aplicável, não depende de época do ano.
+  const eventsResult = await query(
+    `SELECT event_type, name, description, date_text, month, day
+     FROM municipality_events WHERE municipality_id = $1 ORDER BY event_type`,
+    [city.id]
+  )
+  const events = eventsResult.rows as Array<{
+    event_type: string; name: string; description: string | null
+    date_text: string | null; month: number | null; day: number | null
+  }>
+  const currentMonth = new Date().getMonth() + 1
+  const applicableEvent =
+    events.find(e => e.month === currentMonth) ??
+    events.find(e => e.event_type === 'founding_date') ??
+    events[0] ??
+    null
+  const EVENT_TYPE_LABEL: Record<string, string> = {
+    founding_date: 'Fundação',
+    municipal_holiday: 'Feriado municipal',
+    festival: 'Festa tradicional',
+  }
+  const hasLocalData = landmarks.length > 0 || Boolean(city.police_contact) || Boolean(applicableEvent)
+
   const isVeiculo = params.categoria === 'veiculo'
   const isGeral   = params.categoria === 'geral'
 
@@ -161,6 +206,70 @@ export default async function CidadeCategoria({ params }: Props) {
             )}
           </div>
         </div>
+
+        {/* DADOS LOCAIS REAIS — renderizado direto do banco, sem LLM (item D,
+            21/08/2026). Só fatos estáveis: landmarks, evento aplicável e
+            police_contact. total_objects_registered/category_breakdown
+            (item A) foi removido daqui de propósito — contagem de
+            ocorrência desatualiza a cada cadastro novo e não há refresh
+            automático ainda; ver nota acima na declaração de hasLocalData. */}
+        {hasLocalData && (
+          <section
+            className="rounded-2xl p-5 mb-8"
+            style={{ backgroundColor: '#111827', border: '1px solid #1f2937' }}
+          >
+            <h2 className="text-sm font-semibold mb-1" style={{ color: '#9CA3AF' }}>
+              Sobre {city.name}
+            </h2>
+
+            {landmarks.length > 0 && (
+              <p className="text-sm font-bold leading-snug mt-3" style={{ color: '#FFFFFF' }}>
+                📍 {landmarks.join(' · ')}
+              </p>
+            )}
+
+            {applicableEvent && (
+              <p
+                className="text-xs mt-4 pt-4"
+                style={landmarks.length > 0 ? { color: '#9CA3AF', borderTop: '1px solid #1f2937' } : { color: '#9CA3AF' }}
+              >
+                📅 {EVENT_TYPE_LABEL[applicableEvent.event_type] ?? 'Data local'}: {' '}
+                <strong style={{ color: '#FFFFFF' }}>{applicableEvent.name}</strong>
+                {applicableEvent.date_text ? ` — ${applicableEvent.date_text}` : ''}
+              </p>
+            )}
+
+            {(() => {
+              const hasBorderAbove = landmarks.length > 0 || Boolean(applicableEvent)
+              const pStyle = hasBorderAbove
+                ? { color: '#9CA3AF', borderTop: '1px solid #1f2937' }
+                : { color: '#9CA3AF' }
+              return city.police_contact ? (
+                <p className="text-xs mt-4 pt-4" style={pStyle}>
+                  📞 Delegacia de referência: <strong style={{ color: '#FFFFFF' }}>{city.police_contact}</strong>
+                  {city.police_contact_source_url && (
+                    <>
+                      {' '}—{' '}
+                      <a
+                        href={city.police_contact_source_url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        style={{ color: '#14B8A6' }}
+                        className="hover:underline"
+                      >
+                        fonte oficial
+                      </a>
+                    </>
+                  )}
+                </p>
+              ) : (
+                <p className="text-xs mt-4 pt-4" style={pStyle}>
+                  📞 Procure a delegacia mais próxima ou a Polícia Civil de {city.state_name} pra registrar boletim de ocorrência.
+                </p>
+              )
+            })()}
+          </section>
+        )}
 
         {/* GUIA LOCAL */}
         {page?.tips_content && (
