@@ -4,6 +4,7 @@ import { query } from '@/lib/db';
 import { successResponse, notFoundResponse, internalErrorResponse } from '@/lib/response';
 import { sendPushToUser, scanPayload } from '@/lib/pushNotification';
 import { sendObjectFoundEmail } from '@/lib/email';
+import { Events, recordEvent } from '@/lib/events';
 
 export async function POST(
   _request: NextRequest,
@@ -29,11 +30,18 @@ export async function POST(
       ? `Alguém escaneou o QR Code do seu objeto "${object.title}". Verifique se está tudo bem.`
       : `Alguém escaneou o QR Code do seu objeto "${object.title}" e quer devolvê-lo.`;
 
-    // Registrar notificação para o dono
+    // Registrar notificação para o dono — `url` (migration 014, 22/08/2026)
+    // aponta pra página do objeto, onde o banner de destaque de "found"
+    // (item 2 do fechamento do ciclo) vive. Antes desta coluna existir, o
+    // clique na notificação não levava a lugar nenhum em NENHUM dos 6
+    // pontos do código que inserem em `notifications` — corrigido aqui
+    // especificamente pra este fluxo; os outros 5 ficam como backlog
+    // separado (ver seção 17 do BACKFINDR.md).
+    const objectUrl = `/dashboard/objects/${object.id}`;
     await query(
-      `INSERT INTO notifications (user_id, title, message, type, created_at)
-       VALUES ($1, $2, $3, $4, NOW())`,
-      [object.user_id, notifTitle, notifMessage, 'scan']
+      `INSERT INTO notifications (user_id, title, message, type, url, created_at)
+       VALUES ($1, $2, $3, $4, $5, NOW())`,
+      [object.user_id, notifTitle, notifMessage, 'scan', objectUrl]
     );
 
     // Atualizar status para 'found' se estava 'lost' ou 'protected'
@@ -42,6 +50,25 @@ export async function POST(
        WHERE id = $1 AND status IN ('lost', 'protected')`,
       [object.id]
     );
+
+    // Timeline da ocorrência (item 1 do fechamento do ciclo, 22/08/2026) —
+    // Events.qrScanned/ownerNotified já existiam em src/lib/events.ts, com
+    // ícone/cor já mapeados no ActivityCenterCard, mas nunca eram chamados
+    // por esta rota — infraestrutura pronta, só não conectada. `owner_notified`
+    // carrega `previous_status` em metadata pra alimentar o botão "Ainda não
+    // recebi" no banner (reverte pro status de antes de virar 'found').
+    Events.qrScanned(object.id, { via: isProtected ? 'protected_scan' : 'find_report' })
+      .catch(err => console.error('[events] qrScanned failed:', err));
+    if (object.user_id) {
+      recordEvent({
+        object_id: object.id,
+        user_id: object.user_id,
+        type: 'owner_notified',
+        title: 'Dono notificado',
+        source: 'system',
+        metadata: { previous_status: object.status },
+      }).catch(err => console.error('[events] ownerNotified failed:', err));
+    }
 
     // Disparar push notification e e-mail (fire-and-forget) — só quando o
     // objeto tem dono real. Objetos legados/sem dono (user_id null, ex:

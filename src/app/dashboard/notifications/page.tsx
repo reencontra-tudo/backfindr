@@ -105,8 +105,11 @@ export default function NotificationsPage() {
         <div>
           <h1 className="font-display text-2xl font-bold text-white flex items-center gap-2">
             Notificações
+            {/* Âmbar (item 5, 22/08/2026) — consistente com o badge do sino em
+                dashboard/layout.tsx, mesma razão: verde/brand comunicava
+                "sucesso" pra um conteúdo que pede atenção do dono. */}
             {unread > 0 && (
-              <span className="bg-brand-500 text-white text-xs font-bold px-2 py-0.5 rounded-full">
+              <span className="bg-amber-500 text-white text-xs font-bold px-2 py-0.5 rounded-full">
                 {unread}
               </span>
             )}

@@ -264,7 +264,13 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                 <Icon className="w-4 h-4 flex-shrink-0" />
                 <span className="flex-1">{label}</span>
                 {badge != null && (
-                  <span className="bg-teal-500 text-white text-xs font-bold w-5 h-5 rounded-full flex items-center justify-center">
+                  // Âmbar pra Notificações (item 5, 22/08/2026) — verde comunicava
+                  // "sucesso"/neutro, inconsistente com o conteúdo real ("alguém
+                  // encontrou seu objeto" pede atenção, não é uma boa notícia
+                  // passiva). Matches continua teal — natureza diferente de aviso.
+                  <span className={`text-white text-xs font-bold w-5 h-5 rounded-full flex items-center justify-center ${
+                    isNotifications ? 'bg-amber-500' : 'bg-teal-500'
+                  }`}>
                     {badge}
                   </span>
                 )}
