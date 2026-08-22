@@ -21,10 +21,15 @@ export async function GET(request: NextRequest) {
     }
 
     // Buscar notificações
+    // `url` incluído em 22/08/2026 — a coluna existe (migration 014), o INSERT
+    // do fluxo "Encontrei" já a preenche e o frontend (dashboard/notifications/
+    // page.tsx) já lê `notif.url` pra navegar no clique, mas esse SELECT nunca
+    // devolvia a coluna: todo clique em notificação ficava sem efeito, mesmo
+    // com o resto do fechamento do ciclo (PR #4) já no ar.
     const result = await query(
-      `SELECT id, title, message, type, read, created_at 
-       FROM notifications 
-       WHERE user_id = $1 
+      `SELECT id, title, message, type, read, url, created_at
+       FROM notifications
+       WHERE user_id = $1
        ORDER BY created_at DESC`,
       [payload.sub]
     );
