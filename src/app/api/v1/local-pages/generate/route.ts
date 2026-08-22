@@ -13,11 +13,98 @@ const CATEGORY_LABELS: Record<string, string> = {
   geral: 'objeto perdido',
 };
 
-function buildPrompt(cityName: string, stateName: string, category: string): string {
+const EVENT_TYPE_LABEL: Record<string, string> = {
+  founding_date: 'Data de fundação',
+  municipal_holiday: 'Feriado municipal',
+  festival: 'Festa/evento tradicional',
+};
+
+interface MunicipalityEvent {
+  event_type: string;
+  name: string;
+  description: string | null;
+  date_text: string | null;
+  month: number | null;
+  day: number | null;
+}
+
+interface CityContext {
+  name: string;
+  state_name: string;
+  total_objects_registered: number | null;
+  category_breakdown: Record<string, number> | null;
+  main_landmarks: string[] | null;
+  police_contact: string | null;
+  police_contact_notes: string | null;
+}
+
+// ── Escolha do evento aplicável (item C/D, 21/08/2026) ──────────────────────
+// Mesma regra usada em src/app/achados-perdidos/[cidade]/[categoria]/page.tsx:
+// prioriza evento do mês atual (relevância sazonal); sem isso, cai pra
+// founding_date, que é fato histórico sempre válido, não depende de época
+// do ano. Mantém as duas rotas consistentes na mesma decisão.
+function pickApplicableEvent(events: MunicipalityEvent[]): MunicipalityEvent | null {
+  if (events.length === 0) return null;
+  const currentMonth = new Date().getMonth() + 1;
+  return (
+    events.find((e) => e.month === currentMonth) ??
+    events.find((e) => e.event_type === 'founding_date') ??
+    events[0]
+  );
+}
+
+// ── Prompt com grounding obrigatório (item D, 21/08/2026) ───────────────────
+// Antes desta mudança, buildPrompt() só recebia cidade/estado/categoria — o
+// LLM preenchia o resto por conta própria, sem nada que garantisse
+// especificidade real por cidade. Agora todo fato citável vem de uma lista
+// fechada (FATOS REAIS) construída a partir do que já está gravado no banco
+// (estatísticas reais via refresh-stats, main_landmarks, police_contact,
+// municipality_events) — a instrução explícita é nunca extrapolar além
+// dessa lista. Regra de omissão graciosa pra police_contact null: nunca
+// inventar telefone/nome de delegacia, só orientar de forma genérica.
+function buildPrompt(
+  cityName: string,
+  stateName: string,
+  category: string,
+  ctx: CityContext,
+  applicableEvent: MunicipalityEvent | null
+): string {
   const categoryLabel = CATEGORY_LABELS[category] ?? category;
+  const breakdown = ctx.category_breakdown ?? {};
+  const totalCount = ctx.total_objects_registered ?? 0;
+  const categoryCount = breakdown[category] ?? 0;
+  const landmarks = ctx.main_landmarks ?? [];
+
+  const facts: string[] = [];
+  if (totalCount > 0) {
+    facts.push(`- Total de objetos já registrados na região de ${cityName}: ${totalCount}`);
+  }
+  if (categoryCount > 0) {
+    facts.push(`- Desses, registros da categoria "${categoryLabel}": ${categoryCount}`);
+  }
+  if (landmarks.length > 0) {
+    facts.push(`- Pontos de referência conhecidos da cidade: ${landmarks.join(', ')}`);
+  }
+  if (ctx.police_contact) {
+    facts.push(`- Telefone de delegacia/unidade policial de referência: ${ctx.police_contact}`);
+  } else {
+    facts.push(
+      `- NÃO há telefone de delegacia específico confirmado pra esta cidade. NUNCA invente um número ou nome de unidade — oriente de forma genérica ("procure a delegacia mais próxima" ou "contate a Polícia Civil de ${stateName}").`
+    );
+  }
+  if (applicableEvent) {
+    const eventLabel = EVENT_TYPE_LABEL[applicableEvent.event_type] ?? 'Data local';
+    facts.push(
+      `- ${eventLabel}: ${applicableEvent.name}${applicableEvent.date_text ? ` (${applicableEvent.date_text})` : ''}${applicableEvent.description ? ` — ${applicableEvent.description}` : ''}`
+    );
+  }
+
   return `Você é redator SEO especializado em achados e perdidos no Brasil.
 
 Crie conteúdo para a página: "Achados e Perdidos de ${categoryLabel} em ${cityName}, ${stateName}"
+
+FATOS REAIS DESTA CIDADE (única fonte de dados permitida pra citar números, telefones, nomes de lugares ou datas — nunca invente nada além do que está listado aqui; se um fato não estiver na lista, não o mencione):
+${facts.length > 0 ? facts.join('\n') : '- Nenhum dado adicional disponível para esta cidade além do nome e estado.'}
 
 Retorne APENAS um JSON válido com esta estrutura exata:
 {
@@ -31,44 +118,67 @@ Retorne APENAS um JSON válido com esta estrutura exata:
   "faq_content": [
     {"question": "pergunta 1", "answer": "resposta 1"},
     {"question": "pergunta 2", "answer": "resposta 2"},
-    {"question": "pergunta 3", "answer": "resposta 3"}
+    {"question": "pergunta 3", "answer": "resposta 3"}${
+      applicableEvent
+        ? `,\n    {"question": "pergunta sobre ${applicableEvent.name}", "answer": "resposta usando só o fato fornecido acima sobre ${applicableEvent.name}"}`
+        : ''
+    }
   ]
 }
 
 Regras:
 - Mencione ${cityName} naturalmente no texto
+- Use os FATOS REAIS acima quando fizerem sentido no texto — eles são o que torna esta página específica de ${cityName}, não genérica
+- NUNCA invente estatística, telefone, nome de delegacia, data ou fato que não esteja na lista de FATOS REAIS
+- Quando a lista disser que não há telefone confirmado, oriente de forma genérica ("procure a delegacia mais próxima", "contate a Polícia Civil de ${stateName}") — nunca invente um número ou nome de unidade
+${applicableEvent ? `- Inclua a 4ª pergunta de FAQ sobre "${applicableEvent.name}", usando somente a informação fornecida nos FATOS REAIS` : '- Não inclua uma 4ª pergunta de FAQ — não há evento aplicável pra esta cidade'}
 - Foque em ações práticas e úteis
 - Tom: direto, confiável, prestativo
-- Não invente estatísticas
 - Mencione o Backfindr como plataforma de achados e perdidos`;
 }
 
 export async function POST(req: NextRequest) {
   const adminCheck = await requireAdmin(req);
-  if (adminCheck) return adminCheck;
+  if (adminCheck instanceof NextResponse) return adminCheck;
 
   try {
-    const { municipality_id, category_slug } = await req.json();
+    const { municipality_id, category_slug, regenerate } = await req.json();
 
     if (!municipality_id || !category_slug) {
       return NextResponse.json({ error: 'municipality_id e category_slug são obrigatórios' }, { status: 400 });
     }
 
-    // Buscar dados da cidade
+    // Buscar dados reais da cidade — agora inclui tudo que vira grounding do
+    // prompt (item D, 21/08/2026): estatísticas, landmarks e police_contact.
     const cityResult = await query(
-      `SELECT name, state_name FROM municipalities WHERE id = $1`,
+      `SELECT name, state_name, total_objects_registered, category_breakdown,
+              main_landmarks, police_contact, police_contact_notes
+       FROM municipalities WHERE id = $1`,
       [municipality_id]
     );
     const city = cityResult.rows[0];
     if (!city) return NextResponse.json({ error: 'Município não encontrado' }, { status: 404 });
+
+    const eventsResult = await query(
+      `SELECT event_type, name, description, date_text, month, day
+       FROM municipality_events WHERE municipality_id = $1 ORDER BY event_type`,
+      [municipality_id]
+    );
+    const applicableEvent = pickApplicableEvent(eventsResult.rows as MunicipalityEvent[]);
 
     // Verificar se já existe
     const existing = await query(
       `SELECT id, status FROM local_pages WHERE municipality_id = $1 AND category_slug = $2`,
       [municipality_id, category_slug]
     );
-    if (existing.rows[0]?.status === 'published') {
-      return NextResponse.json({ error: 'Página já publicada. Use status=outdated para regenerar.' }, { status: 409 });
+    // `regenerate: true` é o único jeito de sobrescrever uma página já
+    // publicada (item D, 21/08/2026) — sem isso, published continua
+    // protegida contra reescrita acidental, mesmo comportamento de antes.
+    if (existing.rows[0]?.status === 'published' && !regenerate) {
+      return NextResponse.json(
+        { error: 'Página já publicada. Passe regenerate=true pra regenerar mantendo published.' },
+        { status: 409 }
+      );
     }
 
     // Gerar conteúdo via OpenAI
@@ -83,7 +193,7 @@ export async function POST(req: NextRequest) {
         temperature: 0.7,
         messages: [
           { role: 'system', content: 'Você é redator SEO. Retorne apenas JSON válido, sem markdown, sem explicações.' },
-          { role: 'user', content: buildPrompt(city.name, city.state_name, category_slug) },
+          { role: 'user', content: buildPrompt(city.name, city.state_name, category_slug, city, applicableEvent) },
         ],
       }),
     });
@@ -102,18 +212,24 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Resposta da IA inválida', raw }, { status: 500 });
     }
 
-    // Salvar ou atualizar no banco
+    // Salvar ou atualizar no banco. Regenerando uma página published, o
+    // status permanece 'published' — cair pra 'draft' tiraria a página do
+    // ar (page.tsx só faz SELECT com status = 'published'), o que não é o
+    // objetivo de uma regeneração de conteúdo já no ar.
+    const wasPublished = existing.rows[0]?.status === 'published';
+    const newStatus = wasPublished ? 'published' : 'draft';
+
     if (existing.rows[0]) {
       await query(
         `UPDATE local_pages SET
           title=$1, meta_description=$2, hero_headline=$3, intro_text=$4,
           tips_content=$5, faq_content=$6, cta_text=$7, focus_keyword=$8,
-          status='draft', generated_at=NOW(), last_updated=NOW()
-         WHERE municipality_id=$9 AND category_slug=$10`,
+          status=$9, generated_at=NOW(), last_updated=NOW()
+         WHERE municipality_id=$10 AND category_slug=$11`,
         [
           content.title, content.meta_description, content.hero_headline,
           content.intro_text, content.tips_content, JSON.stringify(content.faq_content),
-          content.cta_text, content.focus_keyword,
+          content.cta_text, content.focus_keyword, newStatus,
           municipality_id, category_slug,
         ]
       );
@@ -131,7 +247,7 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    return NextResponse.json({ success: true, city: city.name, category: category_slug, content });
+    return NextResponse.json({ success: true, city: city.name, category: category_slug, status: newStatus, content });
 
   } catch (err: any) {
     return NextResponse.json({ error: err.message }, { status: 500 });
