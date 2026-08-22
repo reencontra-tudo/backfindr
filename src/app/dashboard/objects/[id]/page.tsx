@@ -13,11 +13,11 @@ import LocationMap from '@/components/LocationMap';
 import BoostRenewalSuggestion from '@/components/BoostRenewalSuggestion';
 import ActivityCenterCard from '@/components/object-detail/ActivityCenterCard';
 import { toast } from 'sonner';
-import { format } from 'date-fns';
+import { format, formatDistanceToNow } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { objectsApi, parseApiError } from '@/lib/api';
 import { ImageLightbox, useLightbox } from '@/components/ImageLightbox';
-import { RegisteredObject } from '@/types';
+import { RegisteredObject, ObjectStatus } from '@/types';
 import Cookies from 'js-cookie';
 
 // ─── Constants ────────────────────────────────────────────────────────────────
@@ -231,6 +231,104 @@ function StatusBadge({ status }: { status: string }) {
       {cfg.icon}
       {cfg.label}
     </span>
+  );
+}
+
+// ─── Banner de "found" ──────────────────────────────────────────────────────
+// Item 2 do fechamento do ciclo "Encontrei" (22/08/2026). Antes disso, um
+// objeto marcado found ficava só com um chip igual aos outros 4 status, sem
+// destaque nenhum — exatamente o "sem pra onde ir" que o Marcos confirmou.
+// `previousStatus` vem do evento `owner_notified` gravado por
+// src/app/api/v1/objects/scan/[code]/notify/route.ts (metadata.previous_status)
+// — é o que permite "Ainda não recebi" voltar pro status certo, não um
+// palpite fixo de 'lost'.
+function FoundBanner({
+  object,
+  onUpdated,
+  onConfirmedReturn,
+}: {
+  object: RegisteredObject;
+  onUpdated: (obj: RegisteredObject) => void;
+  onConfirmedReturn: () => void;
+}) {
+  const [previousStatus, setPreviousStatus] = useState<string>('lost');
+  const [loadingAction, setLoadingAction] = useState<'confirm' | 'revert' | null>(null);
+
+  useEffect(() => {
+    const token = Cookies.get('access_token');
+    if (!token) return;
+    fetch(`/api/v1/objects/${object.id}/events`, {
+      headers: { Authorization: `Bearer ${token}` },
+    })
+      .then((r) => (r.ok ? r.json() : null))
+      .then((data) => {
+        const events = (data?.events ?? []) as Array<{ type: string; metadata?: { previous_status?: string } }>;
+        // events vem DESC (mais recente primeiro) — o primeiro owner_notified
+        // encontrado é o que gerou este banner.
+        const notif = events.find((e) => e.type === 'owner_notified');
+        if (notif?.metadata?.previous_status) setPreviousStatus(notif.metadata.previous_status);
+      })
+      .catch(() => {});
+  }, [object.id]);
+
+  const confirmReturn = async () => {
+    setLoadingAction('confirm');
+    try {
+      await objectsApi.update(object.id, { status: 'returned' });
+      onUpdated({ ...object, status: 'returned' as ObjectStatus });
+      onConfirmedReturn();
+    } catch (err) {
+      toast.error(parseApiError(err));
+    } finally {
+      setLoadingAction(null);
+    }
+  };
+
+  const revertStatus = async () => {
+    setLoadingAction('revert');
+    try {
+      await objectsApi.update(object.id, { status: previousStatus });
+      onUpdated({ ...object, status: previousStatus as ObjectStatus });
+      toast.success(`Status voltou para ${STATUS_CONFIG[previousStatus]?.label ?? previousStatus}.`);
+    } catch (err) {
+      toast.error(parseApiError(err));
+    } finally {
+      setLoadingAction(null);
+    }
+  };
+
+  const timeAgo = formatDistanceToNow(new Date(object.updated_at), { addSuffix: true, locale: ptBR });
+
+  return (
+    <div className="rounded-2xl border border-amber-500/30 bg-amber-500/[0.07] p-4 sm:p-5">
+      <div className="flex items-start gap-3 mb-4">
+        <div className="w-9 h-9 rounded-xl bg-amber-500/15 border border-amber-500/25 flex items-center justify-center flex-shrink-0">
+          <Package className="w-4 h-4 text-amber-400" />
+        </div>
+        <div>
+          <p className="text-amber-300 font-display font-semibold text-sm">Alguém sinalizou que encontrou este objeto</p>
+          <p className="text-white/45 text-xs mt-0.5">{timeAgo} · o finder é anônimo, sem contato direto disponível ainda</p>
+        </div>
+      </div>
+      <div className="flex flex-col sm:flex-row gap-2">
+        <button
+          onClick={confirmReturn}
+          disabled={loadingAction !== null}
+          className="flex-1 flex items-center justify-center gap-2 bg-green-500 hover:bg-green-400 disabled:opacity-60 text-white text-sm font-semibold py-2.5 rounded-xl transition-all"
+        >
+          {loadingAction === 'confirm' ? <Loader2 className="w-4 h-4 animate-spin" /> : <CheckCircle2 className="w-4 h-4" />}
+          Confirmar devolução
+        </button>
+        <button
+          onClick={revertStatus}
+          disabled={loadingAction !== null}
+          className="flex-1 sm:flex-none flex items-center justify-center gap-2 border border-amber-500/25 text-amber-300 hover:bg-amber-500/10 disabled:opacity-60 text-sm font-medium py-2.5 px-4 rounded-xl transition-all"
+        >
+          {loadingAction === 'revert' ? <Loader2 className="w-4 h-4 animate-spin" /> : null}
+          Ainda não recebi
+        </button>
+      </div>
+    </div>
   );
 }
 
@@ -488,8 +586,19 @@ export default function ObjectDetailPage() {
         {/* ── ZONA 2 + 3: CORPO ────────────────────────────────────────────── */}
         <div className="p-4 sm:p-6 lg:p-8">
 
-          {/* ── Centro de Atividade — visível antes do grid ── */}
-          {(obj.status === 'lost' || obj.status === 'stolen') && (
+          {/* ── Banner de destaque quando alguém sinalizou "encontrei" (item 2 do
+              fechamento do ciclo, 22/08/2026) ── */}
+          {obj.status === 'found' && (
+            <div className="mb-5">
+              <FoundBanner object={obj} onUpdated={(updated) => setObj(updated)} onConfirmedReturn={() => setShowRecoveredModal(true)} />
+            </div>
+          )}
+
+          {/* ── Centro de Atividade — visível antes do grid.
+              'found' incluído (22/08/2026): os eventos qr_scanned/owner_notified
+              conectados no /notify precisam de onde aparecer — antes disso o
+              card inteiro ficava escondido justo quando havia atividade nova. ── */}
+          {(obj.status === 'lost' || obj.status === 'stolen' || obj.status === 'found') && (
             <div className="mb-5">
               <ActivityCenterCard object={obj} matchCount={0} scanCount={0} shareCount={0} />
             </div>
