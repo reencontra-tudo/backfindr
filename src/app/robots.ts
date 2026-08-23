@@ -26,8 +26,6 @@ export default function robots(): MetadataRoute.Robots {
           '/parceiro',
           '/terms',
           '/privacy',
-          '/auth/login',
-          '/auth/register',
         ],
         disallow: [
           '/dashboard/',
