@@ -99,11 +99,16 @@ export async function PATCH(
            images = COALESCE($8, images),
            reward_amount = COALESCE($9, reward_amount),
            reward_description = COALESCE($10, reward_description),
+           -- resolved_at: populado quando o dono confirma devolução (FoundBanner
+           -- → "Confirmar devolução" → status='returned'), 23/08/2026. Coluna já
+           -- existia órfã na tabela; visibility segue órfão de propósito (fora de
+           -- escopo — ver backlog de status em BACKFINDR.md seção 17).
+           resolved_at = CASE WHEN $3 = 'returned' THEN NOW() ELSE resolved_at END,
            updated_at = NOW()
        WHERE id = $11 AND user_id = $12
        RETURNING id, title, description, status, category, type, location, latitude, longitude,
                  qr_code, images, color, brand, breed, is_legacy, source, user_id,
-                 reward_amount, reward_description, created_at, updated_at`,
+                 reward_amount, reward_description, resolved_at, created_at, updated_at`,
       [title, description, status, category || type, location, latitude, longitude,
        images ? JSON.stringify(images) : null,
        reward_amount !== undefined ? reward_amount : null,
