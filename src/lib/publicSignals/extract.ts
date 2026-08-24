@@ -51,7 +51,8 @@ Responda APENAS com um JSON no formato exato:
 Regras rígidas:
 - Nunca invente dado que não está no texto. Se não tiver certeza de algo, prefira "other"/null em vez de adivinhar.
 - "is_relevant": quando em dúvida, marque false. É preferível descartar um caso real do que publicar um caso inventado ou genérico demais.
-- Nunca inclua no "title" ou em qualquer campo além de "contact_text" um telefone, e-mail ou endereço específico.`;
+- Nunca inclua no "title" ou em qualquer campo além de "contact_text" um telefone, e-mail ou endereço específico.
+- Cuidado com histórias que soam como "final feliz": um animal/objeto resgatado e entregue a um terceiro (veterinário, ONG, abrigo, delegacia, achados-e-perdidos) SEM que o texto confirme que o dono/tutor ORIGINAL foi identificado e reencontrado continua sendo um caso "found" em aberto, nunca "returned" — aliás "returned" nem existe nas opções de status_guess, então isso já é estruturalmente impossível de errar. O risco real está no "title": nunca copie do texto-fonte uma frase que sugira encerramento/adoção definitiva (ex.: "ganha novo lar", "encontra um novo dono", "final feliz") sem qualificá-la — prefira formular o título com foco no fato objetivo e verificável ("encontrado", "resgatado", "à espera do tutor"), já que esse título pode ser tudo que um revisor humano lê antes de aprovar.`;
 
 export async function extractSignal(item: RawSignalItem): Promise<ExtractedSignal | null> {
   const apiKey = process.env.OPENAI_API_KEY;
