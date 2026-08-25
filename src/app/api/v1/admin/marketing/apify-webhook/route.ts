@@ -3,7 +3,9 @@ import { query } from '@/lib/db';
 
 export const dynamic = 'force-dynamic';
 
-const WEBHOOK_TOKEN = process.env.WEBHOOK_TOKEN ?? 'backfindr-webhook-secret-2024';
+// Fallback hardcoded removido em 25/08/2026 — ver comentário em
+// marketing/webhook/route.ts. Sem a var configurada, fail closed.
+const WEBHOOK_TOKEN = process.env.WEBHOOK_TOKEN ?? '';
 const APIFY_API_TOKEN = process.env.APIFY_API_TOKEN ?? '';
 const MAX_AGE_DAYS = 30;
 
@@ -57,7 +59,7 @@ function detectTipoItem(texto: string): string {
 export async function POST(req: NextRequest) {
   const authHeader = req.headers.get('Authorization') ?? '';
   const token = authHeader.replace('Bearer ', '').trim();
-  if (token !== WEBHOOK_TOKEN) {
+  if (!WEBHOOK_TOKEN || token !== WEBHOOK_TOKEN) {
     return NextResponse.json({ detail: 'Token inválido' }, { status: 401 });
   }
 
