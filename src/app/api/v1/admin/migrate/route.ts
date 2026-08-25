@@ -289,6 +289,18 @@ export async function POST(req: NextRequest) {
       name: 'create_community_comments_post_index',
       sql: `CREATE INDEX IF NOT EXISTS idx_community_comments_post_id ON community_comments(post_id)`,
     },
+
+    // ── Ciclo found→returned: sinalização de /notify isolada de `status`
+    // (item 3b, 25/08/2026 — ver comentário completo em FoundBanner,
+    // src/app/dashboard/objects/[id]/page.tsx) ──────────────────────────────
+    {
+      name: 'add_found_pending_confirmation_to_objects',
+      sql: `
+        ALTER TABLE objects
+          ADD COLUMN IF NOT EXISTS found_pending_confirmation BOOLEAN NOT NULL DEFAULT false,
+          ADD COLUMN IF NOT EXISTS found_pending_since TIMESTAMPTZ DEFAULT NULL
+      `,
+    },
   ];
 
   const results: { name: string; status: string; error?: string }[] = [];

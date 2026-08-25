@@ -11,7 +11,11 @@ export interface AuthTokens { access_token:string; refresh_token:string; token_t
 export type ObjectStatus = 'lost'|'found'|'returned'|'stolen'|'protected'|'archived';
 export type ObjectCategory = 'phone'|'wallet'|'keys'|'bag'|'pet'|'bike'|'vehicle'|'document'|'jewelry'|'electronics'|'clothing'|'other';
 export interface ObjectLocation { lat:number; lng:number; address?:string; }
-export interface RegisteredObject { id:string; title:string; description:string; category:ObjectCategory; status:ObjectStatus; owner_id:string; unique_code:string; qr_code?:string; photos:string[]; location?:ObjectLocation; pet_species?:string; pet_breed?:string; pet_color?:string; pet_microchip?:string; reward_amount?:number|null; reward_description?:string|null; category_fields?:Record<string,unknown>; is_boosted?:boolean; boost_expires_at?:string|null; created_at:string; updated_at:string; source?:string; is_legacy?:boolean; }
+// found_pending_confirmation/found_pending_since (25/08/2026, item 3b do
+// ciclo found→returned): sinalização de /notify anônimo, isolada de
+// `status` de propósito — ver comentário completo em FoundBanner
+// (src/app/dashboard/objects/[id]/page.tsx).
+export interface RegisteredObject { id:string; title:string; description:string; category:ObjectCategory; status:ObjectStatus; owner_id:string; unique_code:string; qr_code?:string; photos:string[]; location?:ObjectLocation; pet_species?:string; pet_breed?:string; pet_color?:string; pet_microchip?:string; reward_amount?:number|null; reward_description?:string|null; category_fields?:Record<string,unknown>; is_boosted?:boolean; boost_expires_at?:string|null; found_pending_confirmation?:boolean; found_pending_since?:string|null; created_at:string; updated_at:string; source?:string; is_legacy?:boolean; }
 export interface Match { id:string; lost_object_id:string; found_object_id:string; score:number; confidence_score?:number; status:'pending'|'confirmed'|'rejected'; created_at:string; updated_at?:string; lost_title?:string; found_title?:string; lost_description?:string; found_description?:string; }
 export interface Notification { id:string; type:string; title:string; message:string; body?:string; url?:string; read:boolean; created_at:string; }
 export interface PaginatedResponse<T> { items:T[]; total:number; page?:number; size?:number; pages?:number; }
