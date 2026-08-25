@@ -26,7 +26,7 @@ const CATEGORIES = [
   },
   {
     slug: 'veiculo',
-    label: 'Veículo Roubado',
+    label: 'Veículo',
     icon: '🚗',
     desc: 'Carro, moto, caminhonete',
   },
