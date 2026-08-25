@@ -40,6 +40,10 @@ const STATUS_CONFIG: Record<string, { label: string; icon: React.ReactNode; colo
   returned:  { label: 'Recuperado', icon: <CheckCircle2 className="w-4 h-4" />,  color: 'text-green-400',  bg: 'bg-green-500/10 border-green-500/20' },
   stolen:    { label: 'Roubado',    icon: <Clock className="w-4 h-4" />,         color: 'text-orange-400', bg: 'bg-orange-500/10 border-orange-500/20' },
   protected: { label: 'Protegido',  icon: <CheckCircle2 className="w-4 h-4" />,  color: 'text-blue-400',   bg: 'bg-blue-500/10 border-blue-500/20' },
+  // 'archived' setado só pela moderação (denúncia/ocultação) — adicionado
+  // em 25/08/2026 pra não cair no fallback STATUS_CONFIG.lost e mostrar um
+  // objeto oculto como se ainda estivesse "Perdido" pro dono.
+  archived:  { label: 'Arquivado',  icon: <Info className="w-4 h-4" />,          color: 'text-white/40',   bg: 'bg-white/5 border-white/10' },
 };
 
 // ─── QR Code component ────────────────────────────────────────────────────────
