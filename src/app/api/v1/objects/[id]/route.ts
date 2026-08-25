@@ -46,6 +46,10 @@ function normalizeObject(row: Record<string, unknown>) {
     source: row.source,
     reward_amount: row.reward_amount ? parseFloat(String(row.reward_amount)) : null,
     reward_description: row.reward_description || null,
+    // found_pending_confirmation/found_pending_since (25/08/2026, item 3b) —
+    // ver comentário completo em FoundBanner (dashboard/objects/[id]/page.tsx).
+    found_pending_confirmation: row.found_pending_confirmation ?? false,
+    found_pending_since: row.found_pending_since ?? null,
     created_at: row.created_at,
     updated_at: row.updated_at,
   };
@@ -63,7 +67,8 @@ export async function GET(
     const result = await query(
       `SELECT id, title, description, status, category, type, location, latitude, longitude,
               qr_code, images, color, brand, breed, is_legacy, source, user_id,
-              reward_amount, reward_description, created_at, updated_at
+              reward_amount, reward_description, found_pending_confirmation, found_pending_since,
+              created_at, updated_at
        FROM objects WHERE id = $1 AND user_id = $2`,
       [params.id, payload.sub]
     );
@@ -84,7 +89,13 @@ export async function PATCH(
     const payload = verifyToken(token);
     if (!payload) return unauthorizedResponse();
     const body = await request.json();
-    const { title, description, status, category, type, location, latitude, longitude, images, reward_amount, reward_description } = body;
+    const {
+      title, description, status, category, type, location, latitude, longitude, images,
+      reward_amount, reward_description,
+      // found_pending_confirmation: só o dono some com o sinal (confirmando
+      // devolução ou descartando via "Ainda não recebi") — ver FoundBanner.
+      found_pending_confirmation,
+    } = body;
 
     if (status && !OWNER_SETTABLE_STATUSES.includes(status)) {
       return errorResponse(`Status inválido. Permitidos: ${OWNER_SETTABLE_STATUSES.join(', ')}`, 400);
@@ -110,6 +121,7 @@ export async function PATCH(
            images = COALESCE($8, images),
            reward_amount = COALESCE($9, reward_amount),
            reward_description = COALESCE($10, reward_description),
+           found_pending_confirmation = COALESCE($13, found_pending_confirmation),
            -- resolved_at: populado quando o dono confirma devolução (FoundBanner
            -- → "Confirmar devolução" → status='returned'), 23/08/2026. Coluna já
            -- existia órfã na tabela; visibility segue órfão de propósito (fora de
@@ -119,12 +131,14 @@ export async function PATCH(
        WHERE id = $11 AND user_id = $12
        RETURNING id, title, description, status, category, type, location, latitude, longitude,
                  qr_code, images, color, brand, breed, is_legacy, source, user_id,
-                 reward_amount, reward_description, resolved_at, created_at, updated_at`,
+                 reward_amount, reward_description, found_pending_confirmation, found_pending_since,
+                 resolved_at, created_at, updated_at`,
       [title, description, status, category || type, location, latitude, longitude,
        images ? JSON.stringify(images) : null,
        reward_amount !== undefined ? reward_amount : null,
        reward_description !== undefined ? reward_description : null,
-       params.id, payload.sub]
+       params.id, payload.sub,
+       typeof found_pending_confirmation === 'boolean' ? found_pending_confirmation : null]
     );
     if (result.rows.length === 0) return notFoundResponse();
 

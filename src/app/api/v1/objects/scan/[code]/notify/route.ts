@@ -6,6 +6,22 @@ import { sendPushToUser, scanPayload } from '@/lib/pushNotification';
 import { sendObjectFoundEmail } from '@/lib/email';
 import { Events, recordEvent } from '@/lib/events';
 
+// Mitigação de segurança (item 3b do ciclo found→returned, 25/08/2026):
+// esta rota é pública e sem autenticação nenhuma — qualquer um que escaneie
+// o QR físico (ou monte a URL manualmente) pode chamá-la. Marcos já
+// acionou isso sem querer numa sessão anterior. Duas mudanças:
+//
+// 1. Não flipa mais `status` pra 'found' sozinha — só marca
+//    `found_pending_confirmation`, um campo isolado que só decide se o
+//    FoundBanner aparece (ver comentário completo lá,
+//    src/app/dashboard/objects/[id]/page.tsx). Uma sinalização anônima
+//    falsa/mal-intencionada nunca mais contamina o status real do objeto,
+//    que só muda quando o próprio dono confirma a devolução.
+// 2. Cooldown entre notificações pro mesmo objeto — sem isso, scans
+//    repetidos (curiosidade ou má intenção) spammavam push/e-mail/in-app
+//    do dono a cada clique, sem limite nenhum.
+const NOTIFY_COOLDOWN_MINUTES = 15;
+
 export async function POST(
   _request: NextRequest,
   { params }: { params: { code: string } }
@@ -23,12 +39,28 @@ export async function POST(
 
     const object = objectResult.rows[0] as { id: string; user_id: string | null; title: string; status: string; category: string };
 
+    // Cooldown — se o dono já foi notificado recentemente sobre este
+    // objeto, não repete. `owner_notified` é o mesmo evento gravado mais
+    // abaixo, então isso também é idempotente entre chamadas concorrentes.
+    const lastNotify = await query(
+      `SELECT created_at FROM object_events
+       WHERE object_id = $1 AND type = 'owner_notified'
+       ORDER BY created_at DESC LIMIT 1`,
+      [object.id]
+    );
+    if (lastNotify.rows.length > 0) {
+      const minutesSince = (Date.now() - new Date(lastNotify.rows[0].created_at as string).getTime()) / 60000;
+      if (minutesSince < NOTIFY_COOLDOWN_MINUTES) {
+        return successResponse({ message: 'Owner already notified recently' });
+      }
+    }
+
     // Mensagem contextual: objeto protegido preventivamente vs objeto perdido
     const isProtected = object.status === 'protected';
-    const notifTitle   = isProtected ? 'QR Code escaneado! 📍' : 'Seu objeto foi encontrado! 🎉';
+    const notifTitle   = isProtected ? 'QR Code escaneado! 📍' : 'Alguém sinalizou que encontrou seu objeto 👀';
     const notifMessage = isProtected
       ? `Alguém escaneou o QR Code do seu objeto "${object.title}". Verifique se está tudo bem.`
-      : `Alguém escaneou o QR Code do seu objeto "${object.title}" e quer devolvê-lo.`;
+      : `Alguém escaneou o QR Code do seu objeto "${object.title}" dizendo que quer devolvê-lo. Confirme na página do objeto antes de combinar qualquer coisa.`;
 
     // Registrar notificação para o dono — `url` (migration 014, 22/08/2026)
     // aponta pra página do objeto, onde o banner de destaque de "found"
@@ -44,19 +76,20 @@ export async function POST(
       [object.user_id, notifTitle, notifMessage, 'scan', objectUrl]
     );
 
-    // Atualizar status para 'found' se estava 'lost' ou 'protected'
+    // Sinaliza found_pending_confirmation em vez de mudar `status` direto.
+    // Mesmo escopo de elegibilidade que o UPDATE de status tinha antes
+    // (só lost/protected) — 'stolen'/'found'/'returned'/'archived'
+    // continuam só recebendo a notificação de scan, sem acionar o banner.
     await query(
-      `UPDATE objects SET status = 'found', updated_at = NOW()
-       WHERE id = $1 AND status IN ('lost', 'protected')`,
+      `UPDATE objects SET found_pending_confirmation = true, found_pending_since = NOW()
+       WHERE id = $1 AND status IN ('lost', 'protected') AND found_pending_confirmation = false`,
       [object.id]
     );
 
     // Timeline da ocorrência (item 1 do fechamento do ciclo, 22/08/2026) —
     // Events.qrScanned/ownerNotified já existiam em src/lib/events.ts, com
     // ícone/cor já mapeados no ActivityCenterCard, mas nunca eram chamados
-    // por esta rota — infraestrutura pronta, só não conectada. `owner_notified`
-    // carrega `previous_status` em metadata pra alimentar o botão "Ainda não
-    // recebi" no banner (reverte pro status de antes de virar 'found').
+    // por esta rota — infraestrutura pronta, só não conectada.
     Events.qrScanned(object.id, { via: isProtected ? 'protected_scan' : 'find_report' })
       .catch(err => console.error('[events] qrScanned failed:', err));
     if (object.user_id) {
@@ -66,7 +99,6 @@ export async function POST(
         type: 'owner_notified',
         title: 'Dono notificado',
         source: 'system',
-        metadata: { previous_status: object.status },
       }).catch(err => console.error('[events] ownerNotified failed:', err));
     }
 

@@ -242,10 +242,18 @@ function StatusBadge({ status }: { status: string }) {
 // Item 2 do fechamento do ciclo "Encontrei" (22/08/2026). Antes disso, um
 // objeto marcado found ficava só com um chip igual aos outros 4 status, sem
 // destaque nenhum — exatamente o "sem pra onde ir" que o Marcos confirmou.
-// `previousStatus` vem do evento `owner_notified` gravado por
-// src/app/api/v1/objects/scan/[code]/notify/route.ts (metadata.previous_status)
-// — é o que permite "Ainda não recebi" voltar pro status certo, não um
-// palpite fixo de 'lost'.
+//
+// Redesenhado em 25/08/2026 (item 3b do backlog — mitigação de segurança):
+// antes, um /notify anônimo (sem NENHUMA autenticação, qualquer um que
+// escaneie o QR Code) mudava `status` pra 'found' na hora — status é um
+// campo com peso real em todo o resto do app (mapa, matching, filtros).
+// Agora /notify só marca `found_pending_confirmation = true`, sem tocar em
+// `status` — o sinal fica isolado num campo que só serve pra decidir se
+// esse banner aparece, então uma sinalização falsa/mal-intencionada nunca
+// contamina o status real do objeto. Isso também elimina a necessidade do
+// truque de buscar `previous_status` no evento `owner_notified` só pra
+// poder reverter — não tem mais nada pra reverter, só descartar a
+// sinalização (`dismissPending`).
 function FoundBanner({
   object,
   onUpdated,
@@ -255,31 +263,13 @@ function FoundBanner({
   onUpdated: (obj: RegisteredObject) => void;
   onConfirmedReturn: () => void;
 }) {
-  const [previousStatus, setPreviousStatus] = useState<string>('lost');
-  const [loadingAction, setLoadingAction] = useState<'confirm' | 'revert' | null>(null);
-
-  useEffect(() => {
-    const token = Cookies.get('access_token');
-    if (!token) return;
-    fetch(`/api/v1/objects/${object.id}/events`, {
-      headers: { Authorization: `Bearer ${token}` },
-    })
-      .then((r) => (r.ok ? r.json() : null))
-      .then((data) => {
-        const events = (data?.events ?? []) as Array<{ type: string; metadata?: { previous_status?: string } }>;
-        // events vem DESC (mais recente primeiro) — o primeiro owner_notified
-        // encontrado é o que gerou este banner.
-        const notif = events.find((e) => e.type === 'owner_notified');
-        if (notif?.metadata?.previous_status) setPreviousStatus(notif.metadata.previous_status);
-      })
-      .catch(() => {});
-  }, [object.id]);
+  const [loadingAction, setLoadingAction] = useState<'confirm' | 'dismiss' | null>(null);
 
   const confirmReturn = async () => {
     setLoadingAction('confirm');
     try {
-      await objectsApi.update(object.id, { status: 'returned' });
-      onUpdated({ ...object, status: 'returned' as ObjectStatus });
+      await objectsApi.update(object.id, { status: 'returned', found_pending_confirmation: false });
+      onUpdated({ ...object, status: 'returned' as ObjectStatus, found_pending_confirmation: false });
       onConfirmedReturn();
     } catch (err) {
       toast.error(parseApiError(err));
@@ -288,12 +278,12 @@ function FoundBanner({
     }
   };
 
-  const revertStatus = async () => {
-    setLoadingAction('revert');
+  const dismissPending = async () => {
+    setLoadingAction('dismiss');
     try {
-      await objectsApi.update(object.id, { status: previousStatus });
-      onUpdated({ ...object, status: previousStatus as ObjectStatus });
-      toast.success(`Status voltou para ${STATUS_CONFIG[previousStatus]?.label ?? previousStatus}.`);
+      await objectsApi.update(object.id, { found_pending_confirmation: false });
+      onUpdated({ ...object, found_pending_confirmation: false });
+      toast.success('Sinalização descartada — status do objeto não foi alterado.');
     } catch (err) {
       toast.error(parseApiError(err));
     } finally {
@@ -301,7 +291,10 @@ function FoundBanner({
     }
   };
 
-  const timeAgo = formatDistanceToNow(new Date(object.updated_at), { addSuffix: true, locale: ptBR });
+  const timeAgo = formatDistanceToNow(
+    new Date(object.found_pending_since || object.updated_at),
+    { addSuffix: true, locale: ptBR }
+  );
 
   return (
     <div className="rounded-2xl border border-amber-500/30 bg-amber-500/[0.07] p-4 sm:p-5">
@@ -324,11 +317,11 @@ function FoundBanner({
           Confirmar devolução
         </button>
         <button
-          onClick={revertStatus}
+          onClick={dismissPending}
           disabled={loadingAction !== null}
           className="flex-1 sm:flex-none flex items-center justify-center gap-2 border border-amber-500/25 text-amber-300 hover:bg-amber-500/10 disabled:opacity-60 text-sm font-medium py-2.5 px-4 rounded-xl transition-all"
         >
-          {loadingAction === 'revert' ? <Loader2 className="w-4 h-4 animate-spin" /> : null}
+          {loadingAction === 'dismiss' ? <Loader2 className="w-4 h-4 animate-spin" /> : null}
           Ainda não recebi
         </button>
       </div>
@@ -591,8 +584,10 @@ export default function ObjectDetailPage() {
         <div className="p-4 sm:p-6 lg:p-8">
 
           {/* ── Banner de destaque quando alguém sinalizou "encontrei" (item 2 do
-              fechamento do ciclo, 22/08/2026) ── */}
-          {obj.status === 'found' && (
+              fechamento do ciclo, 22/08/2026). Gatilho trocado de `status ===
+              'found'` pra `found_pending_confirmation` em 25/08/2026 — /notify
+              não muda mais `status` sozinho (ver comentário em FoundBanner). ── */}
+          {obj.found_pending_confirmation && (
             <div className="mb-5">
               <FoundBanner object={obj} onUpdated={(updated) => setObj(updated)} onConfirmedReturn={() => setShowRecoveredModal(true)} />
             </div>
@@ -601,8 +596,10 @@ export default function ObjectDetailPage() {
           {/* ── Centro de Atividade — visível antes do grid.
               'found' incluído (22/08/2026): os eventos qr_scanned/owner_notified
               conectados no /notify precisam de onde aparecer — antes disso o
-              card inteiro ficava escondido justo quando havia atividade nova. ── */}
-          {(obj.status === 'lost' || obj.status === 'stolen' || obj.status === 'found') && (
+              card inteiro ficava escondido justo quando havia atividade nova.
+              found_pending_confirmation incluído em 25/08/2026 pelo mesmo
+              motivo, já que /notify não muda mais `status` pra 'found'. ── */}
+          {(obj.status === 'lost' || obj.status === 'stolen' || obj.status === 'found' || obj.found_pending_confirmation) && (
             <div className="mb-5">
               <ActivityCenterCard object={obj} matchCount={0} scanCount={0} shareCount={0} />
             </div>
