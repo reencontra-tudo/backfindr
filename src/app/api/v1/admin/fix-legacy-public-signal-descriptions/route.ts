@@ -1,6 +1,7 @@
 export const dynamic = 'force-dynamic';
 import { NextRequest, NextResponse } from 'next/server';
 import { query } from '@/lib/db';
+import { requireAdmin } from '@/lib/adminGuard';
 import { buildPublicSignalDescription, LEGACY_GENERIC_DESCRIPTION_PREFIX } from '@/lib/publicSignals/description';
 
 const MIGRATION_SECRET = process.env.MIGRATION_SECRET || '';
@@ -17,14 +18,22 @@ const MIGRATION_SECRET = process.env.MIGRATION_SECRET || '';
  *
  * Não usa raw_description (ver comentário em lib/publicSignals/description.ts
  * pro porquê: pode conter PII de contato ou HTML cru/truncado).
+ *
+ * Auth: aceita sessão de admin já logada (cookie access_token, mesmo guard
+ * do resto do painel) OU MIGRATION_SECRET no body — mesmo padrão de
+ * fix-legacy-status/route.ts, com o cookie como atalho pra execução manual
+ * via painel sem precisar manusear o secret.
  */
 export async function POST(req: NextRequest) {
-  let authorized = false;
-  try {
-    const body = (await req.json().catch(() => ({}))) as Record<string, unknown>;
-    if (MIGRATION_SECRET && body.secret === MIGRATION_SECRET) authorized = true;
-  } catch {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  const adminAuth = await requireAdmin(req);
+  let authorized = !(adminAuth instanceof NextResponse);
+  if (!authorized) {
+    try {
+      const body = (await req.json().catch(() => ({}))) as Record<string, unknown>;
+      if (MIGRATION_SECRET && body.secret === MIGRATION_SECRET) authorized = true;
+    } catch {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
   }
   if (!authorized) return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
 
