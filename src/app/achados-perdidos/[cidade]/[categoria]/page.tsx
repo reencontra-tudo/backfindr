@@ -9,7 +9,7 @@ const CATEGORY_LABELS: Record<string, { label: string; icon: string }> = {
   celular:   { label: 'Celular',         icon: '📱' },
   pet:       { label: 'Pet',             icon: '🐾' },
   documento: { label: 'Documento',       icon: '📄' },
-  veiculo:   { label: 'Veículo Roubado', icon: '🚗' },
+  veiculo:   { label: 'Veículo',         icon: '🚗' },
   chave:     { label: 'Chave',           icon: '🔑' },
   bagagem:   { label: 'Bagagem',         icon: '🧳' },
   geral:     { label: 'Guia Completo',   icon: '📋' },
