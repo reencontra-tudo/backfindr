@@ -4,6 +4,7 @@ import { requireAdmin } from '@/lib/adminGuard';
 import { query } from '@/lib/db';
 import { z } from 'zod';
 import { SYSTEM_ACCOUNT_ID } from '@/lib/systemAccount';
+import { buildPublicSignalDescription } from '@/lib/publicSignals/description';
 
 // ─── GET /api/v1/admin/public-signals ──────────────────────────────────────
 // Fila de aprovação (seção 6 do prompt master). Lista evidências
@@ -125,7 +126,7 @@ export async function POST(req: NextRequest) {
       [
         SYSTEM_ACCOUNT_ID,
         fields.title,
-        `Ocorrência identificada automaticamente a partir de fonte pública. Fonte: ${evidence.source_url}`,
+        buildPublicSignalDescription(fields, evidence.source_url, evidence.source_type),
         status,
         category,
         fields.location_text || null,
