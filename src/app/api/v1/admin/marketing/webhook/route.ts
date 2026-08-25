@@ -1,8 +1,15 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { query } from '@/lib/db';
+import { requireAdmin } from '@/lib/adminGuard';
 export const dynamic = 'force-dynamic';
 
-const WEBHOOK_TOKEN = process.env.WEBHOOK_TOKEN ?? 'backfindr-webhook-secret-2024';
+// Fallback hardcoded removido em 25/08/2026 — o literal
+// 'backfindr-webhook-secret-2024' ficava público no source (e era retornado
+// em texto puro pelo GET abaixo, sem nenhuma auth). Tratado como
+// comprometido: WEBHOOK_TOKEN foi rotacionado no Vercel, e sem a var
+// configurada a rota agora rejeita tudo (fail closed) em vez de cair num
+// valor conhecido.
+const WEBHOOK_TOKEN = process.env.WEBHOOK_TOKEN ?? '';
 
 function calcScore(texto: string, comentarios: number, dataPost: Date, tipoItem: string) {
   let s = 0;
@@ -36,7 +43,7 @@ export async function POST(req: NextRequest) {
   // Verificar token de autenticação
   const authHeader = req.headers.get('Authorization') ?? '';
   const token = authHeader.replace('Bearer ', '').trim();
-  if (token !== WEBHOOK_TOKEN) {
+  if (!WEBHOOK_TOKEN || token !== WEBHOOK_TOKEN) {
     return NextResponse.json({ detail: 'Token inválido' }, { status: 401 });
   }
 
@@ -105,12 +112,24 @@ export async function POST(req: NextRequest) {
 }
 
 // ─── GET /api/v1/admin/marketing/webhook ─────────────────────────────────────
-// Retorna a documentação do webhook
+// Retorna a documentação do webhook.
+// Corrigido em 25/08/2026: essa rota não tinha NENHUMA autenticação e
+// devolvia o WEBHOOK_TOKEN real em texto puro pra qualquer requisição — ou
+// seja, qualquer pessoa podia fazer `curl` nela e pegar o segredo vigente,
+// o que por si só já invalidava qualquer rotação. Agora exige admin e nunca
+// ecoa o valor completo, só um preview mascarado.
 export async function GET(req: NextRequest) {
+  const auth = await requireAdmin(req);
+  if (auth instanceof NextResponse) return auth;
+
   const baseUrl = process.env.NEXTAUTH_URL ?? 'https://backfindr.com';
+  const maskedToken = WEBHOOK_TOKEN
+    ? `${WEBHOOK_TOKEN.slice(0, 4)}${'•'.repeat(Math.max(WEBHOOK_TOKEN.length - 4, 8))}`
+    : '(não configurado)';
   return NextResponse.json({
     endpoint: `POST ${baseUrl}/api/v1/admin/marketing/webhook`,
-    token: `Bearer ${WEBHOOK_TOKEN}`,
+    token: `Bearer ${maskedToken}`,
+    token_nota: 'Valor completo não é retornado por esta rota — consulte WEBHOOK_TOKEN nas Environment Variables do Vercel.',
     campos: {
       rede: { tipo: 'string', obrigatorio: true, valores: 'facebook | instagram | twitter | reddit | tiktok' },
       texto: { tipo: 'string', obrigatorio: true, descricao: 'Texto completo do post' },
@@ -124,7 +143,7 @@ export async function GET(req: NextRequest) {
     },
     exemplo_curl: `curl -X POST ${baseUrl}/api/v1/admin/marketing/webhook \\
   -H "Content-Type: application/json" \\
-  -H "Authorization: Bearer ${WEBHOOK_TOKEN}" \\
+  -H "Authorization: Bearer ${maskedToken}" \\
   -d '{
     "rede": "facebook",
     "texto": "Perdi meu celular ontem na Paulista...",

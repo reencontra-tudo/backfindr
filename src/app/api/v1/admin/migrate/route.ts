@@ -4,7 +4,11 @@ import { verifyToken, extractTokenFromHeader } from '@/lib/jwt';
 
 export const dynamic = 'force-dynamic';
 
-const ADMIN_IDS = process.env.ADMIN_IDS?.split(',').map(s => s.trim()) || [];
+// Nome corrigido em 25/08/2026 — lia process.env.ADMIN_IDS, que nunca existiu
+// no Vercel (só ADMIN_USER_IDS estava configurada, com esse nome). Como a
+// var lida sempre voltava undefined, ADMIN_IDS.length === 0 era sempre
+// verdadeiro e a linha abaixo aceitava QUALQUER JWT válido, não só admin.
+const ADMIN_IDS = process.env.ADMIN_USER_IDS?.split(',').map(s => s.trim()) || [];
 const MIGRATION_SECRET = process.env.MIGRATION_SECRET || '';
 
 // POST /api/v1/admin/migrate — executa migrations pendentes

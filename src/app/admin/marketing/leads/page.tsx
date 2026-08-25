@@ -707,10 +707,15 @@ function WebhookPanel() {
   const [copied, setCopied] = useState<string | null>(null);
   const [logs, setLogs] = useState<Lead[]>([]);
   const [loadingLogs, setLoadingLogs] = useState(false);
-  const WEBHOOK_TOKEN = 'backfindr-webhook-secret-2024';
+  // WEBHOOK_TOKEN removido do código em 25/08/2026 — esse literal (idêntico
+  // ao fallback hardcoded que existia nas rotas de webhook) ficava embutido
+  // no bundle JS público desta página, o que sozinho já invalidava qualquer
+  // rotação do secret. O valor real agora só existe como env var no Vercel;
+  // o placeholder abaixo é só pra manter o exemplo de curl legível.
+  const WEBHOOK_TOKEN_PLACEHOLDER = '<WEBHOOK_TOKEN — ver Vercel>';
   const baseUrl = 'https://backfindr.com';
   const endpoint = `${baseUrl}/api/v1/admin/marketing/webhook`;
-  const curl = `curl -X POST ${endpoint} \\\n  -H "Content-Type: application/json" \\\n  -H "Authorization: Bearer ${WEBHOOK_TOKEN}" \\\n  -d '{\n    "rede": "facebook",\n    "texto": "Perdi meu celular ontem na Paulista, urgente!",\n    "link": "https://facebook.com/post/123",\n    "keyword": "perdi celular",\n    "usuario": "@joao_silva",\n    "cidade": "São Paulo",\n    "tipoItem": "celular",\n    "comentarios": 3\n  }'`;
+  const curl = `curl -X POST ${endpoint} \\\n  -H "Content-Type: application/json" \\\n  -H "Authorization: Bearer ${WEBHOOK_TOKEN_PLACEHOLDER}" \\\n  -d '{\n    "rede": "facebook",\n    "texto": "Perdi meu celular ontem na Paulista, urgente!",\n    "link": "https://facebook.com/post/123",\n    "keyword": "perdi celular",\n    "usuario": "@joao_silva",\n    "cidade": "São Paulo",\n    "tipoItem": "celular",\n    "comentarios": 3\n  }'`;
 
   const copy = (text: string, key: string) => {
     navigator.clipboard.writeText(text);
@@ -751,12 +756,9 @@ function WebhookPanel() {
         </div>
         <div>
           <p className="text-xs mb-1" style={{ color: 'oklch(0.45 0.015 240)' }}>Token de autenticação</p>
-          <div className="flex items-center gap-2">
-            <p className="text-xs font-mono flex-1" style={{ color: 'oklch(0.6 0.015 240)' }}>backfindr-we•••••••••••••</p>
-            <button onClick={() => copy(WEBHOOK_TOKEN, 'token')} className="p-1.5 rounded" style={{ background: 'oklch(0.15 0.015 240)', color: 'oklch(0.55 0.015 240)' }}>
-              {copied === 'token' ? <Check size={12} style={{ color: '#34D399' }} /> : <Copy size={12} />}
-            </button>
-          </div>
+          <p className="text-xs font-mono flex-1" style={{ color: 'oklch(0.6 0.015 240)' }}>
+            Valor real não fica no código — ver <code>WEBHOOK_TOKEN</code> nas Environment Variables do Vercel.
+          </p>
         </div>
       </div>
 
