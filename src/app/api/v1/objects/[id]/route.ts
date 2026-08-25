@@ -2,8 +2,15 @@ export const dynamic = 'force-dynamic';
 import { NextRequest } from 'next/server';
 import { query } from '@/lib/db';
 import { verifyToken, extractTokenFromHeader } from '@/lib/jwt';
-import { successResponse, unauthorizedResponse, notFoundResponse, internalErrorResponse } from '@/lib/response';
+import { successResponse, errorResponse, unauthorizedResponse, notFoundResponse, internalErrorResponse } from '@/lib/response';
 import { Events } from '@/lib/events';
+
+// Consolidado em 25/08/2026 — esta rota aceitava QUALQUER string em `status`,
+// sem validação nenhuma (achado no mapeamento de status pedido em 23/08).
+// 'archived' fica de fora de propósito: é setado só pela moderação
+// (api/v1/admin/moderacao/route.ts) quando um objeto é denunciado/oculto,
+// nunca uma escolha do próprio dono. Lista completa em src/types/index.ts.
+const OWNER_SETTABLE_STATUSES = ['lost', 'found', 'returned', 'stolen', 'protected'];
 
 function normalizeObject(row: Record<string, unknown>) {
   const lat = row.latitude ? parseFloat(String(row.latitude)) : null;
@@ -78,6 +85,10 @@ export async function PATCH(
     if (!payload) return unauthorizedResponse();
     const body = await request.json();
     const { title, description, status, category, type, location, latitude, longitude, images, reward_amount, reward_description } = body;
+
+    if (status && !OWNER_SETTABLE_STATUSES.includes(status)) {
+      return errorResponse(`Status inválido. Permitidos: ${OWNER_SETTABLE_STATUSES.join(', ')}`, 400);
+    }
 
     // Buscar status atual antes do update (para evento statusChanged)
     const currentResult = await query(

@@ -3,7 +3,10 @@ import { NextRequest, NextResponse } from 'next/server';
 import { requireAdmin } from '@/lib/adminGuard';
 import { query } from '@/lib/db';
 
-const VALID_STATUSES = ['lost', 'found', 'returned', 'stolen', 'archived'];
+// Lista consolidada em 25/08/2026 — faltava 'protected' aqui (status real e
+// ativamente usado no dashboard/matching, não sinônimo de 'archived'; ver
+// src/types/index.ts para o mapeamento completo dos 6 valores válidos).
+const VALID_STATUSES = ['lost', 'found', 'returned', 'stolen', 'protected', 'archived'];
 
 export async function GET(req: NextRequest, { params }: { params: { id: string } }) {
   const auth = await requireAdmin(req);
