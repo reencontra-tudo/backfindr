@@ -3,47 +3,15 @@ import { NextRequest, NextResponse } from 'next/server';
 import { requireAdmin } from '@/lib/adminGuard';
 import { query } from '@/lib/db';
 import { sendMatchAlertEmail } from '@/lib/email';
+import { calculateMatchScore as calculateMatchScoreBase } from '@/lib/matching';
 
 const MAX_RADIUS_KM = 50;
 
-function haversineKm(lat1: number, lon1: number, lat2: number, lon2: number): number {
-  const R = 6371;
-  const dLat = ((lat2 - lat1) * Math.PI) / 180;
-  const dLon = ((lon2 - lon1) * Math.PI) / 180;
-  const a =
-    Math.sin(dLat / 2) * Math.sin(dLat / 2) +
-    Math.cos((lat1 * Math.PI) / 180) *
-      Math.cos((lat2 * Math.PI) / 180) *
-      Math.sin(dLon / 2) *
-      Math.sin(dLon / 2);
-  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-}
-
+// Consolidado em 26/08/2026 em src/lib/matching.ts — mantém exatamente o
+// mesmo comportamento de antes (bônus de marca, sem sinônimo/descrição), só
+// sem a lógica duplicada localmente. Ver comentário completo no módulo.
 function calculateMatchScore(obj: Record<string, unknown>, candidate: Record<string, unknown>): number {
-  let score = 0;
-  const objCat = obj.category || obj.type;
-  const canCat = candidate.category || candidate.type;
-  if (objCat && canCat && objCat === canCat) score += 30;
-  const lat1 = parseFloat(obj.latitude as string);
-  const lon1 = parseFloat(obj.longitude as string);
-  const lat2 = parseFloat(candidate.latitude as string);
-  const lon2 = parseFloat(candidate.longitude as string);
-  if (!isNaN(lat1) && !isNaN(lat2)) {
-    const distKm = haversineKm(lat1, lon1, lat2, lon2);
-    if (distKm <= 2)       score += 40;
-    else if (distKm <= 10) score += 30;
-    else if (distKm <= 25) score += 15;
-    else if (distKm <= 50) score += 5;
-  } else {
-    score += 15;
-  }
-  const objWords = String(obj.title || '').toLowerCase().split(/\s+/).filter(Boolean);
-  const canWords = String(candidate.title || '').toLowerCase().split(/\s+/).filter(Boolean);
-  const commonWords = objWords.filter(w => w.length > 3 && canWords.includes(w));
-  if (commonWords.length > 0) score += Math.min(20, commonWords.length * 7);
-  if (obj.color && candidate.color && obj.color === candidate.color) score += 10;
-  if (obj.brand && candidate.brand && obj.brand === candidate.brand) score += 10;
-  return Math.min(100, score);
+  return calculateMatchScoreBase(obj, candidate, { brand: true });
 }
 
 // ─── POST /api/v1/admin/matching/run-all ──────────────────────────────────────
