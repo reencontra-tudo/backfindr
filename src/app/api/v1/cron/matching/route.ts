@@ -51,8 +51,12 @@ function calculateScore(obj: Record<string, unknown>, candidate: Record<string, 
 // GET — chamado pelo Vercel Cron
 export async function GET(request: NextRequest) {
   const authHeader = request.headers.get('authorization');
-  const cronSecret = process.env.CRON_SECRET || 'backfindr-cron-secret';
-  if (authHeader !== `Bearer ${cronSecret}`) {
+  const cronSecret = process.env.CRON_SECRET;
+  // Fail-closed (25/08/2026, rotação do CRON_SECRET): o fallback hardcoded
+  // 'backfindr-cron-secret' era público no código-fonte — qualquer deploy
+  // sem CRON_SECRET configurado ficava protegido só por uma string
+  // conhecida. Sem CRON_SECRET, a rota recusa qualquer chamada.
+  if (!cronSecret || authHeader !== `Bearer ${cronSecret}`) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 

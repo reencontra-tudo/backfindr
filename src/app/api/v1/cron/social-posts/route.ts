@@ -10,7 +10,11 @@ export async function GET(req: NextRequest) {
   const authHeader = req.headers.get('authorization');
   const cronSecret = process.env.CRON_SECRET;
 
-  if (cronSecret && authHeader !== `Bearer ${cronSecret}`) {
+  // Fail-closed (25/08/2026, rotação do CRON_SECRET): a condição antiga
+  // (`cronSecret && ...`) pulava a checagem inteira sem CRON_SECRET
+  // configurado — qualquer GET sem nenhum header passava. Agora exige
+  // CRON_SECRET configurado E o header batendo com ele.
+  if (!cronSecret || authHeader !== `Bearer ${cronSecret}`) {
     return NextResponse.json({ detail: 'Não autorizado' }, { status: 401 });
   }
 

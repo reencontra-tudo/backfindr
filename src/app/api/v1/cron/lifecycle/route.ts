@@ -24,11 +24,15 @@ import { sendPushToUser } from '@/lib/pushNotification';
  */
 
 export async function GET(request: NextRequest) {
-  // Verificar token de segurança (opcional, mas recomendado)
+  // Verificar token de segurança
   const authHeader = request.headers.get('authorization');
-  const cronSecret = process.env.CRON_SECRET || 'default-secret';
+  const cronSecret = process.env.CRON_SECRET;
 
-  if (authHeader !== `Bearer ${cronSecret}`) {
+  // Fail-closed (25/08/2026, rotação do CRON_SECRET): o fallback hardcoded
+  // 'default-secret' era público no código-fonte — qualquer deploy sem
+  // CRON_SECRET configurado ficava protegido só por uma string conhecida.
+  // Sem CRON_SECRET, a rota recusa qualquer chamada.
+  if (!cronSecret || authHeader !== `Bearer ${cronSecret}`) {
     return new Response(JSON.stringify({ error: 'Unauthorized' }), { status: 401 });
   }
 
