@@ -6,6 +6,7 @@ import { successResponse, unauthorizedResponse, internalErrorResponse } from '@/
 import { sendMatchAlertEmail } from '@/lib/email';
 import { sendPushToUser, matchPayload } from '@/lib/pushNotification';
 import { Events } from '@/lib/events';
+import { calculateMatchScore as calculateMatchScoreBase } from '@/lib/matching';
 
 const MAX_RADIUS_KM = 50;
 
@@ -16,129 +17,11 @@ const MAX_RADIUS_KM = 50;
 const SCORE_DIRECT_MATCH = 40;
 const SCORE_SEMANTIC_MIN = 20;
 
-// ─── Dicionário de sinônimos (PT-BR, normalizado sem acento) ───────────────
-const SINONIMOS: Record<string, string[]> = {
-  bolsa: ['mochila', 'sacola', 'bag', 'pochete', 'carteira', 'maleta', 'pasta'],
-  mochila: ['bolsa', 'sacola', 'bag', 'morral', 'saco'],
-  sacola: ['bolsa', 'mochila', 'bag', 'saco'],
-  celular: ['telefone', 'smartphone', 'iphone', 'android', 'aparelho', 'samsung', 'motorola'],
-  telefone: ['celular', 'smartphone', 'aparelho'],
-  carteira: ['wallet', 'bolsa', 'porta-documentos', 'porta documentos'],
-  chave: ['chaves', 'chaveiro', 'key'],
-  oculos: ['lentes', 'armacao', 'grau', 'sol'],
-  notebook: ['computador', 'laptop', 'note', 'mac', 'macbook'],
-  computador: ['notebook', 'laptop', 'pc', 'desktop'],
-  caderno: ['cadernos', 'agenda', 'livro', 'bloco', 'diario'],
-  agenda: ['caderno', 'livro', 'bloco', 'diario'],
-  cachorro: ['cao', 'dog', 'pet', 'animal', 'canino'],
-  cao: ['cachorro', 'dog', 'pet', 'animal'],
-  gato: ['cat', 'felino', 'pet', 'animal', 'gatinho'],
-  relogio: ['watch', 'smartwatch', 'cronometro'],
-  documento: ['documentos', 'rg', 'cpf', 'identidade', 'passaporte', 'habilitacao', 'cnh'],
-  identidade: ['rg', 'documento', 'cpf', 'passaporte'],
-  onibus: ['bus', 'coletivo', 'transporte'],
-  trem: ['metro', 'metrô', 'subway'],
-  tablet: ['ipad', 'kindle', 'leitor'],
-  fone: ['fones', 'headphone', 'earphone', 'airpod', 'auricular', 'headset'],
-  headphone: ['fone', 'fones', 'earphone', 'airpod', 'auricular'],
-};
-
-// ─── Normalização de texto ──────────────────────────────────────────────────
-function removerAcentos(str: string): string {
-  return str.normalize('NFD').replace(/[\u0300-\u036f]/g, '');
-}
-
-function normalizarPalavra(word: string): string {
-  word = removerAcentos(word).toLowerCase().trim();
-  // Remove plural simples: 's' final em palavras com mais de 4 letras
-  if (word.length > 4 && word.endsWith('s')) word = word.slice(0, -1);
-  return word;
-}
-
-function tokenizar(text: string): string[] {
-  return removerAcentos(text)
-    .toLowerCase()
-    .split(/\s+/)
-    .filter(w => w.length > 2);
-}
-
-function expandirTokens(tokens: string[]): Set<string> {
-  const expanded = new Set<string>();
-  for (const token of tokens) {
-    const norm = normalizarPalavra(token);
-    expanded.add(norm);
-    const sinonimos = SINONIMOS[norm] || [];
-    for (const s of sinonimos) expanded.add(normalizarPalavra(s));
-  }
-  return expanded;
-}
-
-// ─── Cálculo de distância (Haversine) ──────────────────────────────────────
-function haversineKm(lat1: number, lon1: number, lat2: number, lon2: number): number {
-  const R = 6371;
-  const dLat = ((lat2 - lat1) * Math.PI) / 180;
-  const dLon = ((lon2 - lon1) * Math.PI) / 180;
-  const a =
-    Math.sin(dLat / 2) * Math.sin(dLat / 2) +
-    Math.cos((lat1 * Math.PI) / 180) *
-      Math.cos((lat2 * Math.PI) / 180) *
-      Math.sin(dLon / 2) *
-      Math.sin(dLon / 2);
-  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-}
-
-// ─── Score heurístico (Fix 2: sinônimos + normalização) ────────────────────
-function calculateMatchScore(
-  obj: Record<string, unknown>,
-  candidate: Record<string, unknown>
-): number {
-  let score = 0;
-
-  // Categoria (+30)
-  const objCat = obj.category || obj.type;
-  const canCat = candidate.category || candidate.type;
-  if (objCat && canCat && objCat === canCat) score += 30;
-
-  // Distância geográfica
-  const lat1 = parseFloat(obj.latitude as string);
-  const lon1 = parseFloat(obj.longitude as string);
-  const lat2 = parseFloat(candidate.latitude as string);
-  const lon2 = parseFloat(candidate.longitude as string);
-  if (!isNaN(lat1) && !isNaN(lat2)) {
-    const distKm = haversineKm(lat1, lon1, lat2, lon2);
-    if (distKm <= 2)       score += 40;
-    else if (distKm <= 10) score += 30;
-    else if (distKm <= 25) score += 15;
-    else if (distKm <= 50) score += 5;
-  } else {
-    score += 15; // sem localização, benefício da dúvida
-  }
-
-  // Título — com sinônimos (+7 por palavra em comum, até 20 pts)
-  if (obj.title && candidate.title) {
-    const w1 = expandirTokens(tokenizar(obj.title as string));
-    const w2 = expandirTokens(tokenizar(candidate.title as string));
-    const common = [...w1].filter(w => w2.has(w)).length;
-    if (common > 0) score += Math.min(20, common * 7);
-  }
-
-  // Descrição — com sinônimos (até 10 pts)
-  if (obj.description && candidate.description) {
-    const w1 = tokenizar(obj.description as string);
-    const w2 = expandirTokens(tokenizar(candidate.description as string));
-    const w1Expanded = expandirTokens(w1);
-    const common = [...w1Expanded].filter(w => w2.has(w)).length;
-    score += Math.min(10, (common / Math.max(w1.length, 1)) * 10);
-  }
-
-  // Cor (+10 se coincidir)
-  if (obj.color && candidate.color) {
-    const c1 = normalizarPalavra(obj.color as string);
-    const c2 = normalizarPalavra(candidate.color as string);
-    if (c1 === c2) score += 10;
-  }
-
-  return Math.min(100, Math.round(score));
+// Consolidado em 26/08/2026 em src/lib/matching.ts — mantém exatamente o
+// mesmo comportamento de antes (sinônimos + score de descrição), só sem a
+// lógica duplicada localmente. Ver comentário completo no módulo.
+function calculateMatchScore(obj: Record<string, unknown>, candidate: Record<string, unknown>): number {
+  return calculateMatchScoreBase(obj, candidate, { synonyms: true, description: true });
 }
 
 // ─── Validação semântica via Claude (camada 2) ────────────────────────────

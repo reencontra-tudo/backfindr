@@ -4,48 +4,17 @@ import { query } from '@/lib/db';
 import { Events } from '@/lib/events';
 import { sendMatchAlertEmail } from '@/lib/email';
 import { sendPushToUser, matchPayload } from '@/lib/pushNotification';
+import { calculateMatchScore as calculateMatchScoreBase } from '@/lib/matching';
 
 const MAX_RADIUS_KM = 50;
 const SCORE_MIN = 40;
 const CRON_INTERVAL_MINUTES = 15;
 
-function haversineKm(lat1: number, lon1: number, lat2: number, lon2: number): number {
-  const R = 6371;
-  const dLat = ((lat2 - lat1) * Math.PI) / 180;
-  const dLon = ((lon2 - lon1) * Math.PI) / 180;
-  const a =
-    Math.sin(dLat / 2) * Math.sin(dLat / 2) +
-    Math.cos((lat1 * Math.PI) / 180) *
-      Math.cos((lat2 * Math.PI) / 180) *
-      Math.sin(dLon / 2) *
-      Math.sin(dLon / 2);
-  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-}
-
+// Consolidado em 26/08/2026 em src/lib/matching.ts — mantém exatamente o
+// mesmo comportamento de antes (sem sinônimo/descrição/marca), só sem a
+// lógica duplicada localmente. Ver comentário completo no módulo.
 function calculateScore(obj: Record<string, unknown>, candidate: Record<string, unknown>): number {
-  let score = 0;
-  const objCat = obj.category || obj.type;
-  const canCat = candidate.category || candidate.type;
-  if (objCat && canCat && objCat === canCat) score += 30;
-  const lat1 = parseFloat(obj.latitude as string);
-  const lon1 = parseFloat(obj.longitude as string);
-  const lat2 = parseFloat(candidate.latitude as string);
-  const lon2 = parseFloat(candidate.longitude as string);
-  if (!isNaN(lat1) && !isNaN(lat2)) {
-    const d = haversineKm(lat1, lon1, lat2, lon2);
-    if (d <= 2) score += 40;
-    else if (d <= 10) score += 30;
-    else if (d <= 25) score += 15;
-    else if (d <= 50) score += 5;
-  } else {
-    score += 15;
-  }
-  const w1 = String(obj.title || '').toLowerCase().split(/\s+/).filter((w: string) => w.length > 3);
-  const w2 = String(candidate.title || '').toLowerCase().split(/\s+/).filter((w: string) => w.length > 3);
-  const common = w1.filter((w: string) => w2.includes(w));
-  if (common.length > 0) score += Math.min(20, common.length * 7);
-  if (obj.color && candidate.color && obj.color === candidate.color) score += 10;
-  return Math.min(100, score);
+  return calculateMatchScoreBase(obj, candidate);
 }
 
 // GET — chamado pelo Vercel Cron
