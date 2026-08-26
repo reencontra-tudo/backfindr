@@ -1,7 +1,8 @@
 'use client';
 
 import { useEffect, useState, useCallback } from 'react';
-import { Zap, CheckCircle2, XCircle, Clock, RefreshCw, Loader2 } from 'lucide-react';
+import Link from 'next/link';
+import { Zap, CheckCircle2, XCircle, Clock, RefreshCw, Loader2, ExternalLink } from 'lucide-react';
 import { api, parseApiError } from '@/lib/api';
 import { toast } from 'sonner';
 
@@ -9,6 +10,8 @@ interface Match {
   id: string;
   status: string;
   score: number; // 0–100 (inteiro vindo do banco)
+  lost_id?: string;
+  found_id?: string;
   lost_title: string;
   found_title: string;
   lost_category?: string;
@@ -44,6 +47,8 @@ export default function AdminMatches() {
         id: m.id,
         status: m.status,
         score: typeof m.score === 'number' ? m.score : parseFloat(String(m.score ?? '0')),
+        lost_id: m.lost_id,
+        found_id: m.found_id,
         lost_title: String(m.lost_title ?? m.object_title ?? 'Sem título'),
         found_title: String(m.found_title ?? m.matched_title ?? 'Sem título'),
         lost_category: m.lost_category,
@@ -163,16 +168,43 @@ export default function AdminMatches() {
                   {/* Objects */}
                   <div className="flex-1 min-w-0">
                     <div className="grid grid-cols-2 gap-3 mb-3">
-                      <div className="bg-red-500/[0.04] border border-red-500/10 rounded-xl p-3">
-                        <p className="text-[10px] text-red-400/60 uppercase tracking-wider mb-1">Perdido</p>
-                        <p className="text-white text-sm font-medium truncate">{match.lost_title}</p>
-                        {match.lost_category && <p className="text-white/30 text-xs truncate">{match.lost_category}</p>}
-                      </div>
-                      <div className="bg-teal-500/[0.04] border border-teal-500/10 rounded-xl p-3">
-                        <p className="text-[10px] text-teal-400/60 uppercase tracking-wider mb-1">Achado</p>
-                        <p className="text-white text-sm font-medium truncate">{match.found_title}</p>
-                        {match.found_category && <p className="text-white/30 text-xs truncate">{match.found_category}</p>}
-                      </div>
+                      {/* Cards viram link pro detalhe do objeto (nova aba) — revisão
+                          humana mais rápida enquanto não há histórico suficiente pra
+                          ajustar o filtro de matching sozinho (pedido de Marcos,
+                          26/08/2026). Sem lost_id/found_id (registro órfão raro),
+                          cai pro <div> estático de antes. */}
+                      {match.lost_id ? (
+                        <Link href={`/admin/objects/${match.lost_id}`} target="_blank"
+                          className="group bg-red-500/[0.04] border border-red-500/10 rounded-xl p-3 hover:bg-red-500/[0.08] hover:border-red-500/25 transition-all cursor-pointer">
+                          <p className="text-[10px] text-red-400/60 uppercase tracking-wider mb-1 flex items-center gap-1">
+                            Perdido <ExternalLink className="w-2.5 h-2.5 opacity-0 group-hover:opacity-60 transition-opacity" />
+                          </p>
+                          <p className="text-white text-sm font-medium truncate">{match.lost_title}</p>
+                          {match.lost_category && <p className="text-white/30 text-xs truncate">{match.lost_category}</p>}
+                        </Link>
+                      ) : (
+                        <div className="bg-red-500/[0.04] border border-red-500/10 rounded-xl p-3">
+                          <p className="text-[10px] text-red-400/60 uppercase tracking-wider mb-1">Perdido</p>
+                          <p className="text-white text-sm font-medium truncate">{match.lost_title}</p>
+                          {match.lost_category && <p className="text-white/30 text-xs truncate">{match.lost_category}</p>}
+                        </div>
+                      )}
+                      {match.found_id ? (
+                        <Link href={`/admin/objects/${match.found_id}`} target="_blank"
+                          className="group bg-teal-500/[0.04] border border-teal-500/10 rounded-xl p-3 hover:bg-teal-500/[0.08] hover:border-teal-500/25 transition-all cursor-pointer">
+                          <p className="text-[10px] text-teal-400/60 uppercase tracking-wider mb-1 flex items-center gap-1">
+                            Achado <ExternalLink className="w-2.5 h-2.5 opacity-0 group-hover:opacity-60 transition-opacity" />
+                          </p>
+                          <p className="text-white text-sm font-medium truncate">{match.found_title}</p>
+                          {match.found_category && <p className="text-white/30 text-xs truncate">{match.found_category}</p>}
+                        </Link>
+                      ) : (
+                        <div className="bg-teal-500/[0.04] border border-teal-500/10 rounded-xl p-3">
+                          <p className="text-[10px] text-teal-400/60 uppercase tracking-wider mb-1">Achado</p>
+                          <p className="text-white text-sm font-medium truncate">{match.found_title}</p>
+                          {match.found_category && <p className="text-white/30 text-xs truncate">{match.found_category}</p>}
+                        </div>
+                      )}
                     </div>
 
                     <div className="flex items-center justify-between">
