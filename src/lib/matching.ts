@@ -69,6 +69,23 @@ function expandirTokens(tokens: string[]): Set<string> {
   return expanded;
 }
 
+// ─── Grupos de categoria equivalentes ───────────────────────────────────────
+// 'animal' (444 objetos, legado Webjetos) e 'pet' (323, categoria atual do
+// app) são o mesmo conceito com nome diferente por herança do import —
+// confirmado 1:1 com is_legacy (26/08/2026). Sem isso, o filtro obrigatório
+// de categoria (25/08/2026) nunca deixava um cão cadastrado como 'animal'
+// casar com um cão cadastrado como 'pet', mesmo na mesma rua.
+const CATEGORY_SYNONYMS: Record<string, string[]> = {
+  pet: ['pet', 'animal'],
+  animal: ['pet', 'animal'],
+};
+
+// Retorna o grupo de categorias compatíveis com `category` (inclui ela
+// mesma). Categorias sem sinônimo conhecido retornam um grupo de 1.
+export function expandCategoryGroup(category: string): string[] {
+  return CATEGORY_SYNONYMS[category] || [category];
+}
+
 // ─── Cálculo de distância (Haversine) ──────────────────────────────────────
 export function haversineKm(lat1: number, lon1: number, lat2: number, lon2: number): number {
   const R = 6371;
@@ -165,4 +182,37 @@ export function calculateMatchScore(
   }
 
   return Math.min(100, Math.round(score));
+}
+
+// ─── Sobreposição mínima de texto (26/08/2026) ─────────────────────────────
+// Categoria (agora filtro obrigatório) + distância sozinhas bastavam pra
+// bater o threshold sem nenhuma palavra em comum entre os dois objetos —
+// 42% das matches do diagnóstico (score=45) eram exatamente isso: mesma
+// categoria, raio de 10-25km, zero sobreposição de título/descrição. Esta
+// função replica a MESMA lógica de comparação de texto de
+// calculateMatchScore (mesmas options, pra não divergir de novo), mas
+// devolve só um booleano — usada como gate extra, independente da soma do
+// score, antes de criar o match.
+export function hasTextOverlap(
+  obj: Record<string, unknown>,
+  candidate: Record<string, unknown>,
+  options: MatchScoreOptions = {}
+): boolean {
+  if (options.synonyms) {
+    if (obj.title && candidate.title) {
+      const w1 = expandirTokens(tokenizar(obj.title as string));
+      const w2 = expandirTokens(tokenizar(candidate.title as string));
+      if ([...w1].some(w => w2.has(w))) return true;
+    }
+    if (options.description && obj.description && candidate.description) {
+      const w1 = tokenizar(obj.description as string);
+      const w2 = expandirTokens(tokenizar(candidate.description as string));
+      const w1Expanded = expandirTokens(w1);
+      if ([...w1Expanded].some(w => w2.has(w))) return true;
+    }
+    return false;
+  }
+  const objWords = String(obj.title || '').toLowerCase().split(/\s+/).filter(Boolean);
+  const canWords = String(candidate.title || '').toLowerCase().split(/\s+/).filter(Boolean);
+  return objWords.some(w => w.length > 3 && canWords.includes(w));
 }
