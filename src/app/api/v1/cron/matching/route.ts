@@ -68,6 +68,11 @@ export async function GET(request: NextRequest) {
       // (mesmo comportamento de antes pra objetos sem categoria).
       const categoryFilter = object.category ? 'AND (category = $5 OR type = $5)' : '';
 
+      // is_legacy = false exclui os registros migrados do Webjetos
+      // (26/08/2026) — 93% da base de objetos ativos hoje é desse legado
+      // (2014-2016), com título/descrição genéricos demais ("CACHORRO
+      // DESAPARECIDO" x2) pra matching automático fazer sentido. As 43
+      // matches do diagnóstico eram 100% webjetos×webjetos.
       if (hasLocation) {
         candidateQuery = `
           SELECT * FROM objects
@@ -78,6 +83,7 @@ export async function GET(request: NextRequest) {
               cos(radians(longitude::float) - radians($3)) +
               sin(radians($2)) * sin(radians(latitude::float))
             ))) <= $4
+            AND is_legacy = false
             ${categoryFilter}
           ORDER BY created_at DESC LIMIT 100`;
         candidateParams = object.category
@@ -87,6 +93,7 @@ export async function GET(request: NextRequest) {
         candidateQuery = `
           SELECT * FROM objects
           WHERE status = 'found' AND id != $1
+            AND is_legacy = false
             AND (category = $2 OR type = $2)
           ORDER BY created_at DESC LIMIT 50`;
         candidateParams = [object.id, object.category];
