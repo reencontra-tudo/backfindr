@@ -4,7 +4,7 @@ import { query } from '@/lib/db';
 import { Events } from '@/lib/events';
 import { sendMatchAlertEmail } from '@/lib/email';
 import { sendPushToUser, matchPayload } from '@/lib/pushNotification';
-import { calculateMatchScore as calculateMatchScoreBase } from '@/lib/matching';
+import { calculateMatchScore as calculateMatchScoreBase, expandCategoryGroup, hasTextOverlap } from '@/lib/matching';
 
 const MAX_RADIUS_KM = 50;
 const SCORE_MIN = 40;
@@ -66,7 +66,11 @@ export async function GET(request: NextRequest) {
       // etc. virarem candidatos e baterem o threshold só com distância +
       // sobreposição de palavras. Sem category, nenhum filtro é aplicado
       // (mesmo comportamento de antes pra objetos sem categoria).
-      const categoryFilter = object.category ? 'AND (category = $5 OR type = $5)' : '';
+      // animal/pet são o mesmo conceito com nome diferente por herança do
+      // legado (26/08/2026) — expandCategoryGroup trata como sinônimo pra
+      // não travar um cão 'animal' de casar com um cão 'pet'.
+      const categoryGroup = object.category ? expandCategoryGroup(object.category as string) : null;
+      const categoryFilter = categoryGroup ? 'AND (category = ANY($5) OR type = ANY($5))' : '';
 
       // is_legacy = false exclui os registros migrados do Webjetos
       // (26/08/2026) — 93% da base de objetos ativos hoje é desse legado
@@ -86,17 +90,17 @@ export async function GET(request: NextRequest) {
             AND is_legacy = false
             ${categoryFilter}
           ORDER BY created_at DESC LIMIT 100`;
-        candidateParams = object.category
-          ? [object.id, lat, lon, MAX_RADIUS_KM, object.category]
+        candidateParams = categoryGroup
+          ? [object.id, lat, lon, MAX_RADIUS_KM, categoryGroup]
           : [object.id, lat, lon, MAX_RADIUS_KM];
-      } else if (object.category) {
+      } else if (categoryGroup) {
         candidateQuery = `
           SELECT * FROM objects
           WHERE status = 'found' AND id != $1
             AND is_legacy = false
-            AND (category = $2 OR type = $2)
+            AND (category = ANY($2) OR type = ANY($2))
           ORDER BY created_at DESC LIMIT 50`;
-        candidateParams = [object.id, object.category];
+        candidateParams = [object.id, categoryGroup];
       } else {
         Events.matchingCompleted(object.id as string, 0).catch(() => {});
         continue;
@@ -108,6 +112,10 @@ export async function GET(request: NextRequest) {
       for (const candidate of candidates.rows) {
         const score = calculateScore(object, candidate);
         if (score < SCORE_MIN) continue;
+        // categoria+distância sozinhas não bastam mais pra criar match
+        // (26/08/2026) — 42% das matches do diagnóstico eram exatamente
+        // isso, score=45, zero palavra em comum no título.
+        if (!hasTextOverlap(object, candidate)) continue;
 
         const existing = await query(
           `SELECT id FROM matches

@@ -6,7 +6,7 @@ import { successResponse, unauthorizedResponse, internalErrorResponse } from '@/
 import { sendMatchAlertEmail } from '@/lib/email';
 import { sendPushToUser, matchPayload } from '@/lib/pushNotification';
 import { Events } from '@/lib/events';
-import { calculateMatchScore as calculateMatchScoreBase } from '@/lib/matching';
+import { calculateMatchScore as calculateMatchScoreBase, expandCategoryGroup, hasTextOverlap } from '@/lib/matching';
 
 const MAX_RADIUS_KM = 50;
 
@@ -121,7 +121,11 @@ export async function POST(request: NextRequest) {
     // etc. virarem candidatos e baterem o threshold só com distância +
     // sobreposição de palavras. Sem category, nenhum filtro de categoria é
     // aplicado (mesmo comportamento de antes pra objetos sem categoria).
-    const categoryFilter = object.category ? 'AND (category = $6 OR type = $6)' : '';
+    // animal/pet são o mesmo conceito com nome diferente por herança do
+    // legado (26/08/2026) — expandCategoryGroup trata como sinônimo pra não
+    // travar um cão 'animal' de casar com um cão 'pet'.
+    const categoryGroup = object.category ? expandCategoryGroup(object.category as string) : null;
+    const categoryFilter = categoryGroup ? 'AND (category = ANY($6) OR type = ANY($6))' : '';
 
     // is_legacy = false exclui os registros migrados do Webjetos (26/08/2026)
     // — 93% da base de objetos ativos hoje é desse legado (2014-2016), com
@@ -154,18 +158,18 @@ export async function POST(request: NextRequest) {
         ORDER BY distance_km ASC
         LIMIT 200
       `;
-      candidateParams = object.category
-        ? [oppositeStatus, objectId, lat, lon, MAX_RADIUS_KM, object.category]
+      candidateParams = categoryGroup
+        ? [oppositeStatus, objectId, lat, lon, MAX_RADIUS_KM, categoryGroup]
         : [oppositeStatus, objectId, lat, lon, MAX_RADIUS_KM];
-    } else if (object.category) {
+    } else if (categoryGroup) {
       candidateQuery = `
         SELECT * FROM objects
         WHERE status = $1 AND id != $2
           AND is_legacy = false
-          AND (category = $3 OR type = $3)
+          AND (category = ANY($3) OR type = ANY($3))
         ORDER BY created_at DESC LIMIT 100
       `;
-      candidateParams = [oppositeStatus, objectId, object.category];
+      candidateParams = [oppositeStatus, objectId, categoryGroup];
     } else {
       candidateQuery = `
         SELECT * FROM objects
@@ -185,7 +189,11 @@ export async function POST(request: NextRequest) {
     for (const candidate of candidatesResult.rows) {
       const score = calculateMatchScore(object, candidate);
 
-      if (score >= SCORE_DIRECT_MATCH) {
+      // categoria+distância sozinhas não bastam mais pra criar match direto
+      // (26/08/2026) — 42% das matches do diagnóstico eram exatamente isso,
+      // score=45, zero palavra em comum. A camada semântica (abaixo) já tem
+      // sua própria validação independente (IA ≥60), não precisa do gate.
+      if (score >= SCORE_DIRECT_MATCH && hasTextOverlap(object, candidate, { synonyms: true, description: true })) {
         // Camada 1: match direto por heurística
         await processMatch(object, candidate, score, objectId, payload.sub, matches);
       } else if (score >= SCORE_SEMANTIC_MIN) {
