@@ -116,6 +116,13 @@ export async function POST(request: NextRequest) {
     let candidateQuery: string;
     let candidateParams: unknown[];
 
+    // Categoria virou filtro obrigatório na busca (26/08/2026) — antes só
+    // pesava no score (+30), o que deixava electronics↔other, vehicle↔other
+    // etc. virarem candidatos e baterem o threshold só com distância +
+    // sobreposição de palavras. Sem category, nenhum filtro de categoria é
+    // aplicado (mesmo comportamento de antes pra objetos sem categoria).
+    const categoryFilter = object.category ? 'AND (category = $6 OR type = $6)' : '';
+
     if (hasLocation) {
       candidateQuery = `
         SELECT *,
@@ -136,10 +143,13 @@ export async function POST(request: NextRequest) {
               sin(radians($3)) * sin(radians(latitude::float))
             ))
           ) <= $5
+          ${categoryFilter}
         ORDER BY distance_km ASC
         LIMIT 200
       `;
-      candidateParams = [oppositeStatus, objectId, lat, lon, MAX_RADIUS_KM];
+      candidateParams = object.category
+        ? [oppositeStatus, objectId, lat, lon, MAX_RADIUS_KM, object.category]
+        : [oppositeStatus, objectId, lat, lon, MAX_RADIUS_KM];
     } else if (object.category) {
       candidateQuery = `
         SELECT * FROM objects
