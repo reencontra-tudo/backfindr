@@ -29,8 +29,12 @@ import { recordEvent } from '@/lib/events';
  */
 export async function GET(request: NextRequest) {
   const authHeader = request.headers.get('authorization');
-  const cronSecret = process.env.CRON_SECRET || 'default-secret';
-  if (authHeader !== `Bearer ${cronSecret}`) {
+  const cronSecret = process.env.CRON_SECRET;
+  // Fail-closed (26/08/2026): copiei o fallback hardcoded de lifecycle/route.ts
+  // sem questionar quando escrevi esta rota — mesmo defeito, mesmo fix. Sem
+  // CRON_SECRET, a rota recusa qualquer chamada em vez de aceitar uma string
+  // pública conhecida.
+  if (!cronSecret || authHeader !== `Bearer ${cronSecret}`) {
     return new Response(JSON.stringify({ error: 'Unauthorized' }), { status: 401 });
   }
 

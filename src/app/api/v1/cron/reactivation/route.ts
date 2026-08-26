@@ -140,7 +140,12 @@ function generatePersonalizedTips(obj: ObjectRow): string[] {
 // ─── Handler ──────────────────────────────────────────────────────────────────
 export async function GET(req: NextRequest) {
   const secret = req.headers.get('authorization')?.replace('Bearer ', '');
-  if (secret !== process.env.CRON_SECRET) {
+  const cronSecret = process.env.CRON_SECRET;
+  // Fail-closed (25/08/2026, rotação do CRON_SECRET): sem essa checagem
+  // extra, CRON_SECRET indefinido + nenhum header Authorization enviado
+  // resultava em `undefined !== undefined` = false, ou seja, passava sem
+  // autenticação nenhuma.
+  if (!cronSecret || secret !== cronSecret) {
     return NextResponse.json({ detail: 'Unauthorized' }, { status: 401 });
   }
 
