@@ -58,19 +58,52 @@ const ActionSchema = z.object({
   action: z.enum(['approve', 'reject']),
 });
 
-async function geocode(locationText: string): Promise<{ lat: number | null; lng: number | null }> {
+// regionHint (27/08/2026): backstop deterministico contra a LLM esquecer de
+// incluir a regiao no location_text. Achado real: "Cachorro encontrado no
+// bairro Parque Verde" (fonte CGN, regiao fixa "Cascavel, PR") geocodificou
+// para o bairro homonimo de Belem-PA porque location_text veio so como
+// "Parque Verde" -- a LLM nao seguiu a instrucao do prompt de completar com
+// a regiao. regionHint agora vem persistido desde a ingestao (migration
+// 015), entao nao depende mais so da LLM ter feito certo: (1) garante a
+// regiao na propria query mandada pro Mapbox se o texto ainda nao a
+// mencionar, e (2) valida o place_name do resultado contra a regiao antes
+// de aceitar -- prefere null (sem pin, bonus neutro no matching) a um pin
+// errado virando ima de match falso.
+async function geocode(
+  locationText: string,
+  regionHint: string | null
+): Promise<{ lat: number | null; lng: number | null }> {
   const mapboxToken = process.env.MAPBOX_SERVER_TOKEN || process.env.NEXT_PUBLIC_MAPBOX_TOKEN;
   if (!mapboxToken || !locationText || locationText.trim().length < 2) return { lat: null, lng: null };
+
+  const regionCity = regionHint ? regionHint.split(',')[0].trim().toLowerCase() : null;
+  const alreadyHasRegion = regionCity && locationText.toLowerCase().includes(regionCity);
+  const geocodeQuery = regionHint && !alreadyHasRegion
+    ? `${locationText}, ${regionHint}`
+    : locationText;
+
   try {
     const geoRes = await fetch(
-      `https://api.mapbox.com/geocoding/v5/mapbox.places/${encodeURIComponent(locationText)}.json?access_token=${mapboxToken}&language=pt&limit=1&country=br`,
+      `https://api.mapbox.com/geocoding/v5/mapbox.places/${encodeURIComponent(geocodeQuery)}.json?access_token=${mapboxToken}&language=pt&limit=1&country=br`,
       { signal: AbortSignal.timeout(8000) }
     );
     if (!geoRes.ok) return { lat: null, lng: null };
     const geoData = await geoRes.json();
-    const coords = geoData.features?.[0]?.center; // [lng, lat]
-    if (coords && coords.length === 2) return { lat: coords[1], lng: coords[0] };
-    return { lat: null, lng: null };
+    const feature = geoData.features?.[0];
+    const coords = feature?.center; // [lng, lat]
+    if (!coords || coords.length !== 2) return { lat: null, lng: null };
+
+    if (regionCity) {
+      const placeName = String(feature.place_name || '').toLowerCase();
+      if (!placeName.includes(regionCity)) {
+        // Resultado do Mapbox nao bate com a regiao conhecida da fonte —
+        // mesmo padrao do bug real (Belem-PA em vez de Cascavel-PR). Sem
+        // local é mais seguro que local errado.
+        return { lat: null, lng: null };
+      }
+    }
+
+    return { lat: coords[1], lng: coords[0] };
   } catch {
     return { lat: null, lng: null };
   }
@@ -112,7 +145,9 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ detail: 'extracted_fields incompleto — não é possível aprovar' }, { status: 422 });
     }
 
-    const { lat, lng } = fields.location_text ? await geocode(fields.location_text) : { lat: null, lng: null };
+    const { lat, lng } = fields.location_text
+      ? await geocode(fields.location_text, evidence.region_hint ?? null)
+      : { lat: null, lng: null };
     const qrCode = `${Math.random().toString(36).substring(2, 10).toUpperCase()}`;
     const status = ['lost', 'found', 'stolen'].includes(fields.status_guess ?? '') ? fields.status_guess : 'lost';
     const category = fields.category || 'other';

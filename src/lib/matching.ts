@@ -51,11 +51,44 @@ function normalizarPalavra(word: string): string {
   return word;
 }
 
+// STOPWORDS do gate de sobreposicao de texto (27/08/2026)
+// Achado real ao investigar "Cachorro Leon"/"Gato Dinho"/"Suri Shitzu" todos
+// batendo em "Cachorro encontrado no bairro Parque Verde": a unica palavra
+// em comum em todos os casos era "bairro" - presente em quase toda
+// descricao gerada pelo Public Signals ("Categoria: X. Local: bairro Y.
+// Ocorrencia identificada automaticamente..."). Confirmado com as fontes
+// reais (DDDs diferentes, especies diferentes - gato x cachorro) que zero
+// desses pares tinha qualquer relacao de verdade. "documento" teve o mesmo
+// problema no par Ceoli Faller x Cristiano Cardoso - nome da categoria nao
+// e sobreposicao real, so descreve o tipo de objeto que qualquer par da
+// mesma categoria ja compartilha por definicao.
+const STOPWORDS = new Set([
+  // Estrutura da descricao/boilerplate do Public Signals
+  'bairro', 'categoria', 'local', 'ocorrencia', 'identificada',
+  'automaticamente', 'partir', 'canal', 'institucional', 'fonte', 'nome',
+  'achados', 'perdidos',
+  // Verbos/status genericos de titulo - descrevem o que aconteceu, nao QUAL
+  // objeto e
+  'perdeu', 'perdida', 'perdido', 'desapareceu', 'encontrado', 'encontrada',
+  'encontrou', 'roubado', 'roubada', 'sumiu', 'procura',
+  // Nome da propria categoria em portugues - bater so nisso nao e
+  // sobreposicao real, e o filtro de categoria (ja obrigatorio) repetido
+  'documento', 'documentos', 'identidade', 'cachorro', 'cachorra', 'gato',
+  'gata', 'animal', 'veiculo', 'celular', 'bicicleta', 'joia', 'joias',
+  'roupa', 'roupas', 'eletronico', 'eletronicos', 'bolsa', 'carteira',
+  'chave', 'chaves',
+]);
+
+function isStopword(word: string): boolean {
+  return STOPWORDS.has(normalizarPalavra(word));
+}
+
 function tokenizar(text: string): string[] {
   return removerAcentos(text)
     .toLowerCase()
     .split(/\s+/)
-    .filter(w => w.length > 2);
+    .filter(w => w.length > 2)
+    .filter(w => !isStopword(w));
 }
 
 function expandirTokens(tokens: string[]): Set<string> {
@@ -212,7 +245,14 @@ export function hasTextOverlap(
     }
     return false;
   }
+  // length > 2 (27/08/2026, mesmo limiar do tokenizar): antes, um nome
+  // curto real (ex: "Rex", 3 letras) só passava "por acidente" porque a
+  // palavra de categoria ("cachorro") também estava nas duas strings e essa
+  // sim tinha length > 3 — descoberto testando o fix de stopwords contra um
+  // par de controle real (mesmo nome, mesma cor). Com "cachorro" virando
+  // stopword, manter o limiar em > 3 bloquearia esse match legítimo junto
+  // com os falsos positivos.
   const objWords = String(obj.title || '').toLowerCase().split(/\s+/).filter(Boolean);
   const canWords = String(candidate.title || '').toLowerCase().split(/\s+/).filter(Boolean);
-  return objWords.some(w => w.length > 3 && canWords.includes(w));
+  return objWords.some(w => w.length > 2 && !isStopword(w) && canWords.includes(w));
 }
