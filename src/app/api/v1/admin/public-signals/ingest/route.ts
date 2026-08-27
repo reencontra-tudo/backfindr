@@ -179,8 +179,9 @@ async function processItem(
     const insertResult = await query(
       `INSERT INTO public_signal_evidence
          (source_url, source_type, has_contact_data, contact_snapshot,
-          extracted_fields, dedup_hash, expires_at, status, captured_at)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, 'pending', NOW())
+          extracted_fields, dedup_hash, expires_at, status, captured_at,
+          region_hint)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, 'pending', NOW(), $8)
        ON CONFLICT (dedup_hash) DO NOTHING
        RETURNING id`,
       [
@@ -199,6 +200,11 @@ async function processItem(
         }),
         dedupHash,
         expiresAt,
+        // Persistido aqui (27/08/2026) para servir de backstop determinístico
+        // na geocodificação em admin/public-signals/route.ts — antes disso,
+        // regionHint só existia no momento do prompt da LLM e era descartado
+        // em seguida (ver migration 015).
+        regionHint,
       ]
     );
     if (insertResult.rows.length > 0) {
