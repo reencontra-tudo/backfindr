@@ -6,72 +6,24 @@ import { successResponse, unauthorizedResponse, internalErrorResponse } from '@/
 import { sendMatchAlertEmail } from '@/lib/email';
 import { sendPushToUser, matchPayload } from '@/lib/pushNotification';
 import { Events } from '@/lib/events';
-import { calculateMatchScore as calculateMatchScoreBase, expandCategoryGroup, hasTextOverlap } from '@/lib/matching';
+import {
+  calculateMatchScore as calculateMatchScoreBase,
+  expandCategoryGroup,
+  classifyStage2,
+  semanticMatchScore,
+  STAGE3_SEMANTIC_ACCEPT_THRESHOLD,
+} from '@/lib/matching';
 
 const MAX_RADIUS_KM = 50;
 
-// ─── Threshold de score ────────────────────────────────────────────────────
-// >= 40  → match direto (sem IA)
-// 20–39  → envia para validação semântica via Claude
-// < 20   → descarta
-const SCORE_DIRECT_MATCH = 40;
-const SCORE_SEMANTIC_MIN = 20;
-
 // Consolidado em 26/08/2026 em src/lib/matching.ts — mantém exatamente o
 // mesmo comportamento de antes (sinônimos + score de descrição), só sem a
-// lógica duplicada localmente. Ver comentário completo no módulo.
+// lógica duplicada localmente. Ver comentário completo no módulo. Usado só
+// como score de EXIBIÇÃO (coluna score da tabela matches) — a decisão de
+// criar match ou não vem do funil em estágios (classifyStage2), não mais
+// de score >= threshold (27/08/2026, ver src/lib/matching.ts).
 function calculateMatchScore(obj: Record<string, unknown>, candidate: Record<string, unknown>): number {
   return calculateMatchScoreBase(obj, candidate, { synonyms: true, description: true });
-}
-
-// ─── Validação semântica via Claude (camada 2) ────────────────────────────
-async function semanticMatchScore(
-  obj: Record<string, unknown>,
-  candidate: Record<string, unknown>
-): Promise<number> {
-  try {
-    const prompt = `Você é um especialista em recuperação de objetos perdidos.
-Avalie se os dois objetos abaixo provavelmente são o mesmo objeto.
-
-OBJETO A (${obj.status === 'lost' ? 'PERDIDO' : 'ACHADO'}):
-Título: ${obj.title}
-Descrição: ${obj.description || '(sem descrição)'}
-Cor: ${obj.color || '(não informada)'}
-Categoria: ${obj.category || obj.type || '(não informada)'}
-
-OBJETO B (${candidate.status === 'lost' ? 'PERDIDO' : 'ACHADO'}):
-Título: ${candidate.title}
-Descrição: ${candidate.description || '(sem descrição)'}
-Cor: ${candidate.color || '(não informada)'}
-Categoria: ${candidate.category || candidate.type || '(não informada)'}
-
-Responda APENAS com um JSON no formato:
-{"score": <número de 0 a 100>, "reason": "<explicação em uma frase>"}
-
-Onde score representa a probabilidade de serem o mesmo objeto:
-0-20: improvável | 21-50: possível | 51-80: provável | 81-100: quase certeza`;
-
-    const response = await fetch('https://api.anthropic.com/v1/messages', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        model: 'claude-haiku-4-5-20251001', // modelo mais rápido e barato
-        max_tokens: 150,
-        messages: [{ role: 'user', content: prompt }],
-      }),
-    });
-
-    if (!response.ok) return 0;
-
-    const data = await response.json();
-    const text = data.content?.[0]?.text || '';
-    const clean = text.replace(/```json|```/g, '').trim();
-    const parsed = JSON.parse(clean);
-    return typeof parsed.score === 'number' ? parsed.score : 0;
-  } catch {
-    console.error('[matching] Erro na validação semântica');
-    return 0; // falha silenciosa — não bloqueia o fluxo
-  }
 }
 
 // ─── POST /api/v1/matching/run ─────────────────────────────────────────────
@@ -187,28 +139,33 @@ export async function POST(request: NextRequest) {
     const semanticChecks: Promise<void>[] = [];
 
     for (const candidate of candidatesResult.rows) {
-      const score = calculateMatchScore(object, candidate);
+      const score = calculateMatchScore(object, candidate); // só exibição (coluna score)
 
-      // categoria+distância sozinhas não bastam mais pra criar match direto
-      // (26/08/2026) — 42% das matches do diagnóstico eram exatamente isso,
-      // score=45, zero palavra em comum. A camada semântica (abaixo) já tem
-      // sua própria validação independente (IA ≥60), não precisa do gate.
-      if (score >= SCORE_DIRECT_MATCH && hasTextOverlap(object, candidate, { synonyms: true, description: true })) {
-        // Camada 1: match direto por heurística
+      // Funil em estágios (27/08/2026, ver src/lib/matching.ts): overlap de
+      // texto real é obrigatório pra sobreviver o estágio 2 (elimina antes
+      // de qualquer confiança); confiança (distância+cor, sem categoria) só
+      // decide DIRETO vs AMBÍGUO entre quem já sobreviveu.
+      const stage2 = classifyStage2(
+        object,
+        candidate,
+        { synonyms: true, description: true }, // overlapOptions — igual ao caminho individual de sempre
+        { brand: false } // confidenceOptions — individual não coleta marca hoje
+      );
+
+      if (stage2.decision === 'direct') {
         await processMatch(object, candidate, score, objectId, payload.sub, matches);
-      } else if (score >= SCORE_SEMANTIC_MIN) {
-        // Camada 2: validação semântica via Claude (assíncrona em paralelo)
+      } else if (stage2.decision === 'ambiguous') {
+        // Estágio 3 (LLM) — assíncrono em paralelo, mesmo padrão de antes
         const checkPromise = (async () => {
           const aiScore = await semanticMatchScore(object, candidate);
-          if (aiScore >= 60) {
-            // Claude confirmou — usa a média dos dois scores
+          if (aiScore >= STAGE3_SEMANTIC_ACCEPT_THRESHOLD) {
             const finalScore = Math.round((score + aiScore) / 2);
             await processMatch(object, candidate, finalScore, objectId, payload.sub, matches);
           }
         })();
         semanticChecks.push(checkPromise);
       }
-      // score < SCORE_SEMANTIC_MIN → descarta silenciosamente
+      // 'eliminated' → descarta silenciosamente
     }
 
     // Aguarda todas as validações semânticas

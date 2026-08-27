@@ -3,7 +3,13 @@ import { NextRequest, NextResponse } from 'next/server';
 import { requireAdmin } from '@/lib/adminGuard';
 import { query } from '@/lib/db';
 import { sendMatchAlertEmail } from '@/lib/email';
-import { calculateMatchScore as calculateMatchScoreBase, expandCategoryGroup, hasTextOverlap } from '@/lib/matching';
+import {
+  calculateMatchScore as calculateMatchScoreBase,
+  expandCategoryGroup,
+  classifyStage2,
+  semanticMatchScore,
+  STAGE3_SEMANTIC_ACCEPT_THRESHOLD,
+} from '@/lib/matching';
 
 const MAX_RADIUS_KM = 50;
 
@@ -36,6 +42,11 @@ export async function POST(req: NextRequest) {
 
     let totalCreated = 0;
     let totalChecked = 0;
+    // Estágio 3 formalizado aqui pela primeira vez (27/08/2026) — antes só
+    // existia no caminho individual. Contadores pra reportar o custo real,
+    // não só o resultado final.
+    let totalAmbiguous = 0;
+    let totalSemanticAccepted = 0;
 
     for (const object of lostObjects.rows) {
       const lat = parseFloat(object.latitude);
@@ -98,12 +109,28 @@ export async function POST(req: NextRequest) {
       totalChecked += candidates.rows.length;
 
       for (const candidate of candidates.rows) {
-        const score = calculateMatchScore(object, candidate);
-        if (score < 40) continue;
-        // categoria+distância sozinhas não bastam mais pra criar match
-        // (26/08/2026) — 42% das matches do diagnóstico eram exatamente
-        // isso, score=45, zero palavra em comum no título.
-        if (!hasTextOverlap(object, candidate, { brand: true })) continue;
+        const score = calculateMatchScore(object, candidate); // só exibição (coluna score)
+
+        // Funil em estágios (27/08/2026, ver src/lib/matching.ts) — overlap
+        // de texto real obrigatório primeiro, confiança (sem categoria)
+        // decide DIRETO vs AMBÍGUO entre quem sobreviveu.
+        const stage2 = classifyStage2(object, candidate, {}, { brand: true });
+
+        let finalScore: number | null = null;
+        if (stage2.decision === 'direct') {
+          finalScore = score;
+        } else if (stage2.decision === 'ambiguous') {
+          // Estágio 3 — antes não existia neste caminho, só no individual.
+          // Volume estimado contra a base atual: ~9 candidatos ambíguos no
+          // total do sistema, seguro rodar síncrono aqui.
+          totalAmbiguous++;
+          const aiScore = await semanticMatchScore(object, candidate);
+          if (aiScore >= STAGE3_SEMANTIC_ACCEPT_THRESHOLD) {
+            finalScore = Math.round((score + aiScore) / 2);
+            totalSemanticAccepted++;
+          }
+        }
+        if (finalScore === null) continue; // eliminado, ou ambíguo rejeitado pela LLM
 
         // Verifica se já existe match entre esses dois objetos
         const existing = await query(
@@ -118,7 +145,7 @@ export async function POST(req: NextRequest) {
           `INSERT INTO matches (lost_object_id, found_object_id, score, status, created_at, updated_at)
            VALUES ($1, $2, $3, 'pending', NOW(), NOW())
            RETURNING id`,
-          [object.id, candidate.id, score]
+          [object.id, candidate.id, finalScore]
         );
         totalCreated++;
 
@@ -136,7 +163,7 @@ export async function POST(req: NextRequest) {
               { name: owner.name, email: owner.email },
               object.title as string,
               matchResult.rows[0]?.id ?? '',
-              score,
+              finalScore,
               candidate.title as string
             ).catch(err => console.error('[admin/matching] Falha ao enviar e-mail de match:', err));
           }
@@ -147,9 +174,11 @@ export async function POST(req: NextRequest) {
     }
 
     return NextResponse.json({
-      message: `Matching completo. ${totalCreated} match(es) criado(s) de ${totalChecked} candidatos verificados.`,
+      message: `Matching completo. ${totalCreated} match(es) criado(s) de ${totalChecked} candidatos verificados (${totalAmbiguous} ambíguo(s) enviado(s) ao estágio 3, ${totalSemanticAccepted} confirmado(s) pela IA).`,
       matches_created: totalCreated,
       candidates_checked: totalChecked,
+      stage3_ambiguous: totalAmbiguous,
+      stage3_accepted: totalSemanticAccepted,
       objects_processed: lostObjects.rows.length,
     });
   } catch (e) {

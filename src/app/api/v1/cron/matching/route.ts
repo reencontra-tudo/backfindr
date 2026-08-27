@@ -4,10 +4,15 @@ import { query } from '@/lib/db';
 import { Events } from '@/lib/events';
 import { sendMatchAlertEmail } from '@/lib/email';
 import { sendPushToUser, matchPayload } from '@/lib/pushNotification';
-import { calculateMatchScore as calculateMatchScoreBase, expandCategoryGroup, hasTextOverlap } from '@/lib/matching';
+import {
+  calculateMatchScore as calculateMatchScoreBase,
+  expandCategoryGroup,
+  classifyStage2,
+  semanticMatchScore,
+  STAGE3_SEMANTIC_ACCEPT_THRESHOLD,
+} from '@/lib/matching';
 
 const MAX_RADIUS_KM = 50;
-const SCORE_MIN = 40;
 const CRON_INTERVAL_MINUTES = 15;
 
 // Consolidado em 26/08/2026 em src/lib/matching.ts — mantém exatamente o
@@ -110,12 +115,26 @@ export async function GET(request: NextRequest) {
       let objectMatches = 0;
 
       for (const candidate of candidates.rows) {
-        const score = calculateScore(object, candidate);
-        if (score < SCORE_MIN) continue;
-        // categoria+distância sozinhas não bastam mais pra criar match
-        // (26/08/2026) — 42% das matches do diagnóstico eram exatamente
-        // isso, score=45, zero palavra em comum no título.
-        if (!hasTextOverlap(object, candidate)) continue;
+        const score = calculateScore(object, candidate); // só exibição (coluna score)
+
+        // Funil em estágios (27/08/2026, ver src/lib/matching.ts) — overlap
+        // de texto real obrigatório primeiro, confiança (sem categoria)
+        // decide DIRETO vs AMBÍGUO entre quem sobreviveu.
+        const stage2 = classifyStage2(object, candidate);
+
+        let finalScore: number | null = null;
+        if (stage2.decision === 'direct') {
+          finalScore = score;
+        } else if (stage2.decision === 'ambiguous') {
+          // Estágio 3 — formalizado aqui pela primeira vez (27/08/2026),
+          // antes só existia no caminho individual. Volume estimado contra
+          // a base atual: ~9 candidatos ambíguos no total do sistema.
+          const aiScore = await semanticMatchScore(object, candidate);
+          if (aiScore >= STAGE3_SEMANTIC_ACCEPT_THRESHOLD) {
+            finalScore = Math.round((score + aiScore) / 2);
+          }
+        }
+        if (finalScore === null) continue; // eliminado, ou ambíguo rejeitado pela IA
 
         const existing = await query(
           `SELECT id FROM matches
@@ -129,7 +148,7 @@ export async function GET(request: NextRequest) {
           `INSERT INTO matches (lost_object_id, found_object_id, score, status, created_at, updated_at)
            VALUES ($1, $2, $3, 'pending', NOW(), NOW())
            RETURNING id`,
-          [object.id, candidate.id, score]
+          [object.id, candidate.id, finalScore]
         );
 
         const matchId = matchResult.rows[0]?.id as string;
@@ -137,7 +156,7 @@ export async function GET(request: NextRequest) {
         totalMatches++;
 
         // ── Evento: match encontrado ─────────────────────────────────
-        Events.matchFound(object.id as string, matchId, score).catch(() => {});
+        Events.matchFound(object.id as string, matchId, finalScore).catch(() => {});
 
         // Notificar dono
         try {
@@ -153,12 +172,12 @@ export async function GET(request: NextRequest) {
               { name: owner.name, email: owner.email },
               object.title as string,
               matchId,
-              score,
+              finalScore,
               candidate.title as string
             ).catch(() => {});
             sendPushToUser(
               owner.id as string,
-              matchPayload(matchId, object.title as string, score)
+              matchPayload(matchId, object.title as string, finalScore)
             ).catch(() => {});
             Events.ownerNotified(object.id as string, owner.id as string).catch(() => {});
           }

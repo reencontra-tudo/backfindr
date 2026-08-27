@@ -256,3 +256,174 @@ export function hasTextOverlap(
   const canWords = String(candidate.title || '').toLowerCase().split(/\s+/).filter(Boolean);
   return objWords.some(w => w.length > 2 && !isStopword(w) && canWords.includes(w));
 }
+
+// FUNIL DE MATCHING EM ESTAGIOS (27/08/2026)
+//
+// Redesenho aprovado por Marcos, ver comparacao completa na conversa.
+// Substitui o score linear (categoria+distancia+texto+cor somados) como
+// criterio de decisao por estagios eliminatorios, do mais barato pro mais
+// caro:
+//
+//   ESTAGIO 1 (SQL, ja existe nos 3 route.ts, sem mudanca de lugar):
+//     categoria compativel + is_legacy=false + distancia <= raio.
+//
+//   ESTAGIO 2 (aqui embaixo): hasTextOverlap OBRIGATORIO primeiro (elimina
+//     sem nem calcular confianca) -- so depois soma sinais corroborantes
+//     (distancia + cor + marca, categoria excluida por ja ter sido usada
+//     no estagio 1) numa "confianca" que decide DIRETO vs AMBIGUO.
+//
+//   ESTAGIO 3 (semanticMatchScore, promovido de matching/run/route.ts pra
+//     cá): so roda pra quem ficou AMBIGUO no estagio 2 -- antes so existia
+//     no caminho individual, agora formalizado e reaproveitavel nos 3.
+//
+//   ESTAGIO 4 (especie/pet_species): reservado, fora de escopo agora --
+//     o funil ja fica pronto pra receber sem precisar reestruturar de novo.
+//
+// Estimativa real rodada contra a base atual (27/08/2026, script
+// temporario, deletado): de 708 pares que sobrevivem ao estagio 1, 678 sao
+// eliminados aqui por falta de overlap real de texto, 21 viram match
+// direto e so 9 vao pro estagio 3 -- volume seguro pra formalizar LLM nos
+// 3 caminhos (cron incluso) sem repetir o susto dos "668 candidatos".
+
+// Confianca minima do estagio 2 pra virar match direto sem precisar do
+// estagio 3. Constante nomeada e documentada de proposito -- e o ponto
+// mais facil de ficar desalinhado entre os 3 caminhos de novo, mesmo
+// problema ja visto com o score duplicado antes da consolidacao.
+export const STAGE2_DIRECT_MATCH_CONFIDENCE = 40;
+// Abaixo disso, mesmo tendo overlap de texto real, os sinais corroborantes
+// (distancia/cor/marca) sao fracos demais pra justificar o custo do
+// estagio 3 -- elimina de vez em vez de gastar chamada de LLM.
+export const STAGE2_AMBIGUOUS_MIN_CONFIDENCE = 15;
+
+export interface Stage2Options {
+  color?: boolean; // true por padrao (default abaixo) -- so false se o chamador quiser ignorar cor
+  brand?: boolean; // true so no caminho admin, onde marca e coletada
+}
+
+// Soma so os sinais do ESTAGIO 2 (distancia, cor, marca) -- categoria fica
+// de fora de proposito, ja foi usada como filtro eliminatorio no estagio 1
+// e nao deveria contar de novo (peso morto identificado no diagnostico
+// original: par que ja sobreviveu o filtro de categoria ganhava +30 de
+// graca, sem informacao nova).
+export function computeStage2Confidence(
+  obj: Record<string, unknown>,
+  candidate: Record<string, unknown>,
+  options: Stage2Options = {}
+): number {
+  let confidence = 0;
+
+  const lat1 = parseFloat(obj.latitude as string);
+  const lon1 = parseFloat(obj.longitude as string);
+  const lat2 = parseFloat(candidate.latitude as string);
+  const lon2 = parseFloat(candidate.longitude as string);
+  if (!isNaN(lat1) && !isNaN(lat2)) {
+    const distKm = haversineKm(lat1, lon1, lat2, lon2);
+    if (distKm <= 2) confidence += 40;
+    else if (distKm <= 10) confidence += 30;
+    else if (distKm <= 25) confidence += 15;
+    else if (distKm <= 50) confidence += 5;
+  } else {
+    confidence += 15; // sem localizacao, beneficio da duvida (mesmo de hoje)
+  }
+
+  if (options.color !== false && obj.color && candidate.color) {
+    if (normalizarPalavra(obj.color as string) === normalizarPalavra(candidate.color as string)) {
+      confidence += 10;
+    }
+  }
+
+  if (options.brand && obj.brand && candidate.brand && obj.brand === candidate.brand) {
+    confidence += 10;
+  }
+
+  return confidence;
+}
+
+export type Stage2Decision = 'eliminated' | 'ambiguous' | 'direct';
+
+export interface Stage2Result {
+  decision: Stage2Decision;
+  confidence: number;
+  textOverlap: boolean;
+}
+
+// Orquestrador do estagio 2 -- ponto de entrada unico pros 3 route.ts,
+// substitui a linha antiga `score >= threshold && hasTextOverlap(...)`.
+export function classifyStage2(
+  obj: Record<string, unknown>,
+  candidate: Record<string, unknown>,
+  overlapOptions: MatchScoreOptions = {},
+  confidenceOptions: Stage2Options = {}
+): Stage2Result {
+  const textOverlap = hasTextOverlap(obj, candidate, overlapOptions);
+  if (!textOverlap) {
+    return { decision: 'eliminated', confidence: 0, textOverlap: false };
+  }
+  const confidence = computeStage2Confidence(obj, candidate, confidenceOptions);
+  if (confidence >= STAGE2_DIRECT_MATCH_CONFIDENCE) {
+    return { decision: 'direct', confidence, textOverlap: true };
+  }
+  if (confidence >= STAGE2_AMBIGUOUS_MIN_CONFIDENCE) {
+    return { decision: 'ambiguous', confidence, textOverlap: true };
+  }
+  return { decision: 'eliminated', confidence, textOverlap: true };
+}
+
+// ESTAGIO 3 -- validacao semantica via LLM (27/08/2026)
+// Promovido de matching/run/route.ts pra ca -- antes so existia no
+// caminho individual, como um `else if` ad-hoc pra faixa de score 20-39.
+// Agora e um estagio formal do funil, reaproveitavel pelos 3 caminhos:
+// so roda pra quem `classifyStage2` classificou como 'ambiguous'.
+export async function semanticMatchScore(
+  obj: Record<string, unknown>,
+  candidate: Record<string, unknown>
+): Promise<number> {
+  try {
+    const prompt = `Você é um especialista em recuperação de objetos perdidos.
+Avalie se os dois objetos abaixo provavelmente são o mesmo objeto.
+
+OBJETO A (${obj.status === 'lost' ? 'PERDIDO' : 'ACHADO'}):
+Título: ${obj.title}
+Descrição: ${obj.description || '(sem descrição)'}
+Cor: ${obj.color || '(não informada)'}
+Categoria: ${obj.category || obj.type || '(não informada)'}
+
+OBJETO B (${candidate.status === 'lost' ? 'PERDIDO' : 'ACHADO'}):
+Título: ${candidate.title}
+Descrição: ${candidate.description || '(sem descrição)'}
+Cor: ${candidate.color || '(não informada)'}
+Categoria: ${candidate.category || candidate.type || '(não informada)'}
+
+Responda APENAS com um JSON no formato:
+{"score": <número de 0 a 100>, "reason": "<explicação em uma frase>"}
+
+Onde score representa a probabilidade de serem o mesmo objeto:
+0-20: improvável | 21-50: possível | 51-80: provável | 81-100: quase certeza`;
+
+    const response = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        model: 'claude-haiku-4-5-20251001',
+        max_tokens: 150,
+        messages: [{ role: 'user', content: prompt }],
+      }),
+    });
+
+    if (!response.ok) return 0;
+
+    const data = await response.json();
+    const text = data.content?.[0]?.text || '';
+    const clean = text.replace(/```json|```/g, '').trim();
+    const parsed = JSON.parse(clean);
+    return typeof parsed.score === 'number' ? parsed.score : 0;
+  } catch {
+    console.error('[matching] Erro na validação semântica');
+    return 0; // falha silenciosa — não bloqueia o fluxo
+  }
+}
+
+// Threshold pra aceitar o veredito do estagio 3 -- mesmo valor historico
+// que ja existia so no caminho individual (aiScore >= 60), agora
+// compartilhado pelos 3.
+export const STAGE3_SEMANTIC_ACCEPT_THRESHOLD = 60;
