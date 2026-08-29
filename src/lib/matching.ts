@@ -91,6 +91,23 @@ function tokenizar(text: string): string[] {
     .filter(w => !isStopword(w));
 }
 
+// Descrição de Public Signals é sintética (buildPublicSignalDescription):
+// título + " Categoria: X. Local: bairro Y, Cidade, UF. Ocorrência
+// identificada automaticamente...". O "Local:" inclui cidade/estado
+// inteiros, que são IDÊNTICOS em todo objeto da mesma fonte/região —
+// achado real (29/08/2026): 213 candidatos ambíguos numa rodada só, a
+// maioria só por "cascavel" em comum entre objetos sem nenhuma relação
+// real (cidade inteira, não bairro específico — bairro já é tratado à
+// parte, no título, e continua válido como sinal). Corta tudo a partir de
+// " Categoria:" (marcador fixo do template) antes de comparar descrição —
+// descrição de usuário real, que não tem esse marcador, continua
+// completa e sem alteração.
+function stripSyntheticBoilerplate(text: unknown): string {
+  const str = String(text || '');
+  const idx = str.indexOf(' Categoria:');
+  return idx === -1 ? str : str.slice(0, idx);
+}
+
 function expandirTokens(tokens: string[]): Set<string> {
   const expanded = new Set<string>();
   for (const token of tokens) {
@@ -189,8 +206,8 @@ export function calculateMatchScore(
 
   // Descrição — só matching/run/route.ts (options.description = true)
   if (options.description && obj.description && candidate.description) {
-    const w1 = tokenizar(obj.description as string);
-    const w2 = expandirTokens(tokenizar(candidate.description as string));
+    const w1 = tokenizar(stripSyntheticBoilerplate(obj.description));
+    const w2 = expandirTokens(tokenizar(stripSyntheticBoilerplate(candidate.description)));
     const w1Expanded = expandirTokens(w1);
     const common = [...w1Expanded].filter(w => w2.has(w)).length;
     score += Math.min(10, (common / Math.max(w1.length, 1)) * 10);
@@ -238,8 +255,8 @@ export function hasTextOverlap(
       if ([...w1].some(w => w2.has(w))) return true;
     }
     if (options.description && obj.description && candidate.description) {
-      const w1 = tokenizar(obj.description as string);
-      const w2 = expandirTokens(tokenizar(candidate.description as string));
+      const w1 = tokenizar(stripSyntheticBoilerplate(obj.description));
+      const w2 = expandirTokens(tokenizar(stripSyntheticBoilerplate(candidate.description)));
       const w1Expanded = expandirTokens(w1);
       if ([...w1Expanded].some(w => w2.has(w))) return true;
     }
@@ -263,7 +280,7 @@ export function hasTextOverlap(
   // tinha chance de passar pelo gate nos caminhos admin/cron, mesmo o
   // dado já existindo em objects.description.
   if (simpleWordOverlap(obj.title, candidate.title)) return true;
-  if (simpleWordOverlap(obj.description, candidate.description)) return true;
+  if (simpleWordOverlap(stripSyntheticBoilerplate(obj.description), stripSyntheticBoilerplate(candidate.description))) return true;
   return false;
 }
 
