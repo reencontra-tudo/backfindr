@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useCallback } from 'react';
 import Link from 'next/link';
-import { Zap, CheckCircle2, XCircle, Clock, RefreshCw, Loader2, ExternalLink } from 'lucide-react';
+import { Zap, CheckCircle2, XCircle, Clock, RefreshCw, Loader2, ExternalLink, Phone } from 'lucide-react';
 import { api, parseApiError } from '@/lib/api';
 import { toast } from 'sonner';
 
@@ -17,7 +17,31 @@ interface Match {
   lost_category?: string;
   found_category?: string;
   created_at: string;
+  // Contact Resolver (29/08/2026) — true quando o lado é Public Signal com
+  // contato capturado na extração original, e portanto NÃO recebe a
+  // notificação automática de match (essa só existe pra conta de usuário
+  // real). Ver comentário completo em admin/matches/route.ts.
+  lost_needs_contact?: boolean;
+  found_needs_contact?: boolean;
+  latest_contact_channel?: string;
+  latest_contact_status?: string;
+  latest_contact_at?: string;
 }
+
+const CONTACT_CHANNELS = [
+  { value: 'whatsapp', label: 'WhatsApp' },
+  { value: 'ligacao', label: 'Ligação' },
+  { value: 'sms', label: 'SMS' },
+  { value: 'outro', label: 'Outro' },
+];
+
+const CONTACT_STATUSES = [
+  { value: 'conectou', label: 'Conectou' },
+  { value: 'nao_atendeu', label: 'Não atendeu' },
+  { value: 'numero_invalido', label: 'Número inválido' },
+  { value: 'recusou', label: 'Recusou' },
+  { value: 'outro', label: 'Outro' },
+];
 
 const SCORE_COLOR = (score: number) =>
   score >= 80 ? 'text-green-400' : score >= 55 ? 'text-yellow-400' : 'text-red-400';
@@ -35,12 +59,27 @@ export default function AdminMatches() {
   const [filter, setFilter] = useState('pending');
   const [runningAll, setRunningAll] = useState(false);
   const [total, setTotal] = useState(0);
+  // Contact Resolver: qual "lado:objectId" tem o formulário de registro
+  // aberto no momento (null = nenhum). Só um por vez, pra manter simples.
+  const [openContactForm, setOpenContactForm] = useState<string | null>(null);
+  const [contactForm, setContactForm] = useState({ channel: 'whatsapp', status: 'conectou', notes: '' });
+  const [submittingContact, setSubmittingContact] = useState(false);
 
   const load = useCallback(async () => {
     setLoading(true);
     try {
       const params: Record<string, string> = {};
-      if (filter !== 'all') params.status = filter;
+      // "needs_contact" não é um status de verdade — é um filtro à parte
+      // (pelo menos um lado é Public Signal com contato capturado, sem
+      // conta de usuário real pra notificação automática). Sempre
+      // restrito a pending: um match já confirmado/rejeitado não precisa
+      // mais de ação.
+      if (filter === 'needs_contact') {
+        params.status = 'pending';
+        params.needs_contact = 'true';
+      } else if (filter !== 'all') {
+        params.status = filter;
+      }
       const { data } = await api.get('/admin/matches', { params });
       // Normaliza os campos: o banco retorna lost_title, found_title, score
       const items = (data?.items ?? []).map((m: Record<string, unknown>) => ({
@@ -54,6 +93,11 @@ export default function AdminMatches() {
         lost_category: m.lost_category,
         found_category: m.found_category,
         created_at: m.created_at,
+        lost_needs_contact: Boolean(m.lost_needs_contact),
+        found_needs_contact: Boolean(m.found_needs_contact),
+        latest_contact_channel: m.latest_contact_channel,
+        latest_contact_status: m.latest_contact_status,
+        latest_contact_at: m.latest_contact_at,
       }));
       setMatches(items);
       setTotal(data?.total ?? items.length);
@@ -74,6 +118,23 @@ export default function AdminMatches() {
       toast.success(action === 'confirm' ? 'Match confirmado!' : 'Match rejeitado');
       load();
     } catch (e) { toast.error(parseApiError(e)); }
+  };
+
+  const submitContactAttempt = async (matchId: string, objectId: string) => {
+    setSubmittingContact(true);
+    try {
+      await api.post(`/admin/matches/${matchId}/contact-attempts`, {
+        object_id: objectId,
+        channel: contactForm.channel,
+        status: contactForm.status,
+        notes: contactForm.notes || undefined,
+      });
+      toast.success('Tentativa de contato registrada');
+      setOpenContactForm(null);
+      setContactForm({ channel: 'whatsapp', status: 'conectou', notes: '' });
+      load();
+    } catch (e) { toast.error(parseApiError(e)); }
+    finally { setSubmittingContact(false); }
   };
 
   const runAllMatching = async () => {
@@ -125,10 +186,11 @@ export default function AdminMatches() {
 
       {/* Filter */}
       <div className="flex gap-2">
-        {['all','pending','confirmed','rejected'].map(f => (
+        {['all','pending','confirmed','rejected','needs_contact'].map(f => (
           <button key={f} onClick={() => setFilter(f)}
-            className={`px-3 py-2 rounded-xl text-xs font-medium transition-all ${filter === f ? 'bg-teal-500/15 text-teal-400 border border-teal-500/30' : 'bg-white/[0.03] text-white/40 border border-white/[0.07] hover:text-white'}`}>
-            {f === 'all' ? 'Todos' : f === 'pending' ? 'Pendentes' : f === 'confirmed' ? 'Confirmados' : 'Rejeitados'}
+            className={`px-3 py-2 rounded-xl text-xs font-medium transition-all flex items-center gap-1.5 ${filter === f ? 'bg-teal-500/15 text-teal-400 border border-teal-500/30' : 'bg-white/[0.03] text-white/40 border border-white/[0.07] hover:text-white'}`}>
+            {f === 'needs_contact' && <Phone className="w-3 h-3" />}
+            {f === 'all' ? 'Todos' : f === 'pending' ? 'Pendentes' : f === 'confirmed' ? 'Confirmados' : f === 'rejected' ? 'Rejeitados' : 'Precisa de contato manual'}
           </button>
         ))}
         <button onClick={load} className="ml-auto w-9 h-9 flex items-center justify-center text-white/30 hover:text-white rounded-xl border border-white/[0.07] hover:bg-white/[0.04] transition-all">
@@ -206,6 +268,81 @@ export default function AdminMatches() {
                         </div>
                       )}
                     </div>
+
+                    {/* Contact Resolver (29/08/2026) — aparece só quando pelo
+                        menos um lado é Public Signal com contato capturado,
+                        já que esse lado não recebe notificação automática
+                        (achado real: match de 84% entre dois Public Signals
+                        ficou pendente sem ninguém saber, até ser notado por
+                        acaso). Um botão por lado, já que cada lado pode
+                        precisar de contato separado. */}
+                    {(match.lost_needs_contact || match.found_needs_contact) && (
+                      <div className="mb-3 p-3 rounded-xl bg-amber-500/[0.06] border border-amber-500/20">
+                        <div className="flex items-center justify-between flex-wrap gap-2">
+                          <div className="flex items-center gap-1.5 text-amber-400 text-xs font-medium">
+                            <Phone className="w-3.5 h-3.5" />
+                            Precisa de contato manual
+                            {match.latest_contact_status && (
+                              <span className="text-white/40 font-normal">
+                                — última tentativa: {CONTACT_STATUSES.find(s => s.value === match.latest_contact_status)?.label ?? match.latest_contact_status}
+                                {match.latest_contact_at && ` (${new Date(match.latest_contact_at).toLocaleDateString('pt-BR', { day: '2-digit', month: 'short' })})`}
+                              </span>
+                            )}
+                          </div>
+                          <div className="flex gap-2">
+                            {match.lost_needs_contact && match.lost_id && (
+                              <button
+                                onClick={() => setOpenContactForm(openContactForm === `${match.id}:${match.lost_id}` ? null : `${match.id}:${match.lost_id}`)}
+                                className="text-xs px-2.5 py-1 rounded-lg bg-amber-500/10 text-amber-400 border border-amber-500/20 hover:bg-amber-500/20 transition-all">
+                                Registrar (lado perdido)
+                              </button>
+                            )}
+                            {match.found_needs_contact && match.found_id && (
+                              <button
+                                onClick={() => setOpenContactForm(openContactForm === `${match.id}:${match.found_id}` ? null : `${match.id}:${match.found_id}`)}
+                                className="text-xs px-2.5 py-1 rounded-lg bg-amber-500/10 text-amber-400 border border-amber-500/20 hover:bg-amber-500/20 transition-all">
+                                Registrar (lado achado)
+                              </button>
+                            )}
+                          </div>
+                        </div>
+
+                        {[match.lost_id, match.found_id].map(objectId => {
+                          if (!objectId || openContactForm !== `${match.id}:${objectId}`) return null;
+                          return (
+                            <div key={objectId} className="mt-3 pt-3 border-t border-amber-500/10 space-y-2">
+                              <div className="flex gap-2">
+                                <select value={contactForm.channel}
+                                  onChange={e => setContactForm(f => ({ ...f, channel: e.target.value }))}
+                                  className="flex-1 bg-white/[0.04] border border-white/10 rounded-lg px-2 py-1.5 text-xs text-white">
+                                  {CONTACT_CHANNELS.map(c => <option key={c.value} value={c.value}>{c.label}</option>)}
+                                </select>
+                                <select value={contactForm.status}
+                                  onChange={e => setContactForm(f => ({ ...f, status: e.target.value }))}
+                                  className="flex-1 bg-white/[0.04] border border-white/10 rounded-lg px-2 py-1.5 text-xs text-white">
+                                  {CONTACT_STATUSES.map(s => <option key={s.value} value={s.value}>{s.label}</option>)}
+                                </select>
+                              </div>
+                              <textarea value={contactForm.notes}
+                                onChange={e => setContactForm(f => ({ ...f, notes: e.target.value }))}
+                                placeholder="Notas (opcional)"
+                                rows={2}
+                                className="w-full bg-white/[0.04] border border-white/10 rounded-lg px-2 py-1.5 text-xs text-white placeholder:text-white/20 resize-none" />
+                              <div className="flex justify-end gap-2">
+                                <button onClick={() => setOpenContactForm(null)}
+                                  className="text-xs px-3 py-1.5 rounded-lg text-white/40 hover:text-white transition-all">
+                                  Cancelar
+                                </button>
+                                <button onClick={() => submitContactAttempt(match.id, objectId)} disabled={submittingContact}
+                                  className="text-xs px-3 py-1.5 rounded-lg bg-amber-500 text-black font-medium disabled:opacity-60 transition-all">
+                                  Salvar
+                                </button>
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    )}
 
                     <div className="flex items-center justify-between">
                       <p className="text-white/20 text-xs">

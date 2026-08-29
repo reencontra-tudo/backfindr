@@ -40,9 +40,16 @@ export async function GET(request: NextRequest) {
 
   try {
     // Busca objetos lost/stolen sem match recente (última hora)
+    //
+    // is_legacy = false aqui também (29/08/2026) — mesmo fix do admin/
+    // matching/run-all/route.ts. Antes só filtrava do lado do candidato,
+    // deixando a base do loop ser os objetos legado inteiros (93% da
+    // base) — achado real: 386 candidatos ambíguos mandados pro estágio 3
+    // numa rodada só, 0 aceitos, custo de API sem ganho.
     const objects = await query(
       `SELECT * FROM objects
        WHERE status IN ('lost', 'stolen')
+         AND is_legacy = false
          AND NOT EXISTS (
            SELECT 1 FROM matches m
            WHERE m.lost_object_id = id
