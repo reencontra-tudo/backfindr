@@ -27,9 +27,19 @@ export async function POST(req: NextRequest) {
 
   try {
     // Busca todos os objetos perdidos sem match pendente/confirmado
+    //
+    // is_legacy = false aqui também (29/08/2026) — antes só filtrava do
+    // lado do candidato achado, na suposição documentada de que "não afeta
+    // o próprio objeto sendo buscado". Na prática isso deixava a base deste
+    // loop ser os objetos legado do Webjetos inteiros (93% da base), cada
+    // um procurando candidatos não-legado dentro do raio — real: 921 pares
+    // no estágio 1 (vs. ~708 estimado só com não-legado dos dois lados),
+    // 386 candidatos ambíguos mandados pro estágio 3 (LLM) numa única
+    // rodada, 0 aceitos. Custo real de API sem nenhum match a mais.
     const lostObjects = await query(
       `SELECT o.* FROM objects o
        WHERE o.status = 'lost'
+         AND o.is_legacy = false
          AND NOT EXISTS (
            SELECT 1 FROM matches m
            WHERE m.lost_object_id = o.id
