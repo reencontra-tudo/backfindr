@@ -252,9 +252,25 @@ export function hasTextOverlap(
   // par de controle real (mesmo nome, mesma cor). Com "cachorro" virando
   // stopword, manter o limiar em > 3 bloquearia esse match legítimo junto
   // com os falsos positivos.
-  const objWords = String(obj.title || '').toLowerCase().split(/\s+/).filter(Boolean);
-  const canWords = String(candidate.title || '').toLowerCase().split(/\s+/).filter(Boolean);
-  return objWords.some(w => w.length > 2 && !isStopword(w) && canWords.includes(w));
+  //
+  // Descrição incluída aqui (29/08/2026): até então só o título contava
+  // pra admin/cron (só o caminho individual olhava descrição, e mesmo
+  // assim só como pontos extras, não como parte do gate). Investigando o
+  // par Duke/Branca × "Cachorra encontrada" (ambos bairro Neva), a razão
+  // de não terem casado acabou sendo outra (o achado foi ingerido depois
+  // da última rodada de matching) — mas a lacuna em si é real: um objeto
+  // com detalhe distintivo só na descrição (não repetido no título) nunca
+  // tinha chance de passar pelo gate nos caminhos admin/cron, mesmo o
+  // dado já existindo em objects.description.
+  if (simpleWordOverlap(obj.title, candidate.title)) return true;
+  if (simpleWordOverlap(obj.description, candidate.description)) return true;
+  return false;
+}
+
+function simpleWordOverlap(textA: unknown, textB: unknown): boolean {
+  const wordsA = String(textA || '').toLowerCase().split(/\s+/).filter(Boolean);
+  const wordsB = String(textB || '').toLowerCase().split(/\s+/).filter(Boolean);
+  return wordsA.some(w => w.length > 2 && !isStopword(w) && wordsB.includes(w));
 }
 
 // FUNIL DE MATCHING EM ESTAGIOS (27/08/2026)
@@ -339,12 +355,49 @@ export function computeStage2Confidence(
   return confidence;
 }
 
+// Checagem leve de espécie (29/08/2026) -- versão reduzida do pet_species
+// completo (esse continua reservado pro Estágio 4, fora de escopo). Só
+// palavra-chave no título de cada lado; se os dois tiverem um sinal claro
+// e forem espécies diferentes, elimina no Estágio 2, antes do LLM — mesmo
+// nível dos outros filtros baratos. Se qualquer lado não tiver sinal claro
+// (ex: "Perdi meu bichinho"), não elimina, deixa pros estágios seguintes
+// decidirem. Achado real: "Gata Fioninha" batendo com "Cachorro
+// encontrado" só por compartilharem o nome do bairro — nenhum dos dois
+// filtros de texto (overlap genérico, agora com stopwords) pega isso
+// sozinho, porque "Fioninha" e "Cachorro" são palavras reais, só que de
+// espécies diferentes.
+const SPECIES_PATTERNS: Record<string, RegExp> = {
+  cachorro: /cachorr|cadela|canino|vira-?lata|pinscher|labrador|poodle|pastor|buldogue|rottweiler|beagle|d[aá]lmata|husky|shih-?tzu|shitzu|chihuahua|golden retriever/i,
+  gato: /\bgat[oa]s?\b|felino|\bpersa\b|siam[eê]s|angor[áa]|maine coon/i,
+  ave: /calopsita|papagaio|periquito|canario|canário|\barara\b|curi[oó]|cacatua/i,
+};
+
+function detectSpecies(text: unknown): string | null {
+  const str = String(text || '');
+  for (const species of Object.keys(SPECIES_PATTERNS)) {
+    if (SPECIES_PATTERNS[species].test(str)) return species;
+  }
+  return null;
+}
+
+// Exportado pra permitir teste/depuração isolada -- não é usado direto
+// pelos route.ts, que chamam classifyStage2.
+export function hasSpeciesConflict(
+  obj: Record<string, unknown>,
+  candidate: Record<string, unknown>
+): boolean {
+  const s1 = detectSpecies(obj.title);
+  const s2 = detectSpecies(candidate.title);
+  return s1 !== null && s2 !== null && s1 !== s2;
+}
+
 export type Stage2Decision = 'eliminated' | 'ambiguous' | 'direct';
 
 export interface Stage2Result {
   decision: Stage2Decision;
   confidence: number;
   textOverlap: boolean;
+  speciesConflict?: boolean;
 }
 
 // Orquestrador do estagio 2 -- ponto de entrada unico pros 3 route.ts,
@@ -355,6 +408,9 @@ export function classifyStage2(
   overlapOptions: MatchScoreOptions = {},
   confidenceOptions: Stage2Options = {}
 ): Stage2Result {
+  if (hasSpeciesConflict(obj, candidate)) {
+    return { decision: 'eliminated', confidence: 0, textOverlap: false, speciesConflict: true };
+  }
   const textOverlap = hasTextOverlap(obj, candidate, overlapOptions);
   if (!textOverlap) {
     return { decision: 'eliminated', confidence: 0, textOverlap: false };
