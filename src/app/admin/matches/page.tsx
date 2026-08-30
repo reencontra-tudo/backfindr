@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useCallback } from 'react';
 import Link from 'next/link';
-import { Zap, CheckCircle2, XCircle, Clock, RefreshCw, Loader2, ExternalLink, Phone, RotateCcw } from 'lucide-react';
+import { Zap, CheckCircle2, XCircle, Clock, RefreshCw, Loader2, ExternalLink, Phone, RotateCcw, ImageOff } from 'lucide-react';
 import { api, parseApiError } from '@/lib/api';
 import { toast } from 'sonner';
 
@@ -26,6 +26,23 @@ interface Match {
   latest_contact_channel?: string;
   latest_contact_status?: string;
   latest_contact_at?: string;
+  // Prévia visual (30/08/2026) — primeira foto de cada lado, pra comparação
+  // rápida sem precisar abrir o objeto. null = sem foto (placeholder).
+  lost_image?: string | null;
+  found_image?: string | null;
+}
+
+// Extrai a primeira foto de objects.images — mesmo padrão defensivo usado
+// em toda a base (ex: src/app/api/v1/objects/route.ts): o valor pode vir
+// já como array (driver parseou) ou como string JSON crua, dependendo do
+// caminho de leitura.
+function firstImage(images: unknown): string | null {
+  try {
+    const arr = Array.isArray(images) ? images : JSON.parse(String(images ?? '[]'));
+    return Array.isArray(arr) && arr.length > 0 && typeof arr[0] === 'string' ? arr[0] : null;
+  } catch {
+    return null;
+  }
 }
 
 const CONTACT_CHANNELS = [
@@ -42,6 +59,24 @@ const CONTACT_STATUSES = [
   { value: 'recusou', label: 'Recusou' },
   { value: 'outro', label: 'Outro' },
 ];
+
+// Prévia visual (30/08/2026) — miniatura pra comparar os dois lados sem
+// precisar abrir o objeto. object-cover pra não distorcer; placeholder
+// neutro (ícone, sem cor de nenhum lado) quando não há foto, pra não
+// quebrar layout nem sugerir falsamente "tem foto".
+function ObjectThumb({ src }: { src?: string | null }) {
+  if (!src) {
+    return (
+      <div className="w-10 h-10 rounded-lg bg-white/[0.04] border border-white/[0.06] flex items-center justify-center flex-shrink-0">
+        <ImageOff className="w-4 h-4 text-white/15" />
+      </div>
+    );
+  }
+  return (
+    // eslint-disable-next-line @next/next/no-img-element
+    <img src={src} alt="" className="w-10 h-10 rounded-lg object-cover flex-shrink-0 bg-white/[0.04]" />
+  );
+}
 
 const SCORE_COLOR = (score: number) =>
   score >= 80 ? 'text-green-400' : score >= 55 ? 'text-yellow-400' : 'text-red-400';
@@ -98,6 +133,8 @@ export default function AdminMatches() {
         latest_contact_channel: m.latest_contact_channel,
         latest_contact_status: m.latest_contact_status,
         latest_contact_at: m.latest_contact_at,
+        lost_image: firstImage(m.lost_images),
+        found_image: firstImage(m.found_images),
       }));
       setMatches(items);
       setTotal(data?.total ?? items.length);
@@ -239,34 +276,46 @@ export default function AdminMatches() {
                           cai pro <div> estático de antes. */}
                       {match.lost_id ? (
                         <Link href={`/admin/objects/${match.lost_id}`} target="_blank"
-                          className="group bg-red-500/[0.04] border border-red-500/10 rounded-xl p-3 hover:bg-red-500/[0.08] hover:border-red-500/25 transition-all cursor-pointer">
-                          <p className="text-[10px] text-red-400/60 uppercase tracking-wider mb-1 flex items-center gap-1">
-                            Perdido <ExternalLink className="w-2.5 h-2.5 opacity-0 group-hover:opacity-60 transition-opacity" />
-                          </p>
-                          <p className="text-white text-sm font-medium truncate">{match.lost_title}</p>
-                          {match.lost_category && <p className="text-white/30 text-xs truncate">{match.lost_category}</p>}
+                          className="group flex items-center gap-2.5 bg-red-500/[0.04] border border-red-500/10 rounded-xl p-3 hover:bg-red-500/[0.08] hover:border-red-500/25 transition-all cursor-pointer">
+                          <ObjectThumb src={match.lost_image} />
+                          <div className="min-w-0 flex-1">
+                            <p className="text-[10px] text-red-400/60 uppercase tracking-wider mb-1 flex items-center gap-1">
+                              Perdido <ExternalLink className="w-2.5 h-2.5 opacity-0 group-hover:opacity-60 transition-opacity" />
+                            </p>
+                            <p className="text-white text-sm font-medium truncate">{match.lost_title}</p>
+                            {match.lost_category && <p className="text-white/30 text-xs truncate">{match.lost_category}</p>}
+                          </div>
                         </Link>
                       ) : (
-                        <div className="bg-red-500/[0.04] border border-red-500/10 rounded-xl p-3">
-                          <p className="text-[10px] text-red-400/60 uppercase tracking-wider mb-1">Perdido</p>
-                          <p className="text-white text-sm font-medium truncate">{match.lost_title}</p>
-                          {match.lost_category && <p className="text-white/30 text-xs truncate">{match.lost_category}</p>}
+                        <div className="flex items-center gap-2.5 bg-red-500/[0.04] border border-red-500/10 rounded-xl p-3">
+                          <ObjectThumb src={match.lost_image} />
+                          <div className="min-w-0 flex-1">
+                            <p className="text-[10px] text-red-400/60 uppercase tracking-wider mb-1">Perdido</p>
+                            <p className="text-white text-sm font-medium truncate">{match.lost_title}</p>
+                            {match.lost_category && <p className="text-white/30 text-xs truncate">{match.lost_category}</p>}
+                          </div>
                         </div>
                       )}
                       {match.found_id ? (
                         <Link href={`/admin/objects/${match.found_id}`} target="_blank"
-                          className="group bg-teal-500/[0.04] border border-teal-500/10 rounded-xl p-3 hover:bg-teal-500/[0.08] hover:border-teal-500/25 transition-all cursor-pointer">
-                          <p className="text-[10px] text-teal-400/60 uppercase tracking-wider mb-1 flex items-center gap-1">
-                            Achado <ExternalLink className="w-2.5 h-2.5 opacity-0 group-hover:opacity-60 transition-opacity" />
-                          </p>
-                          <p className="text-white text-sm font-medium truncate">{match.found_title}</p>
-                          {match.found_category && <p className="text-white/30 text-xs truncate">{match.found_category}</p>}
+                          className="group flex items-center gap-2.5 bg-teal-500/[0.04] border border-teal-500/10 rounded-xl p-3 hover:bg-teal-500/[0.08] hover:border-teal-500/25 transition-all cursor-pointer">
+                          <ObjectThumb src={match.found_image} />
+                          <div className="min-w-0 flex-1">
+                            <p className="text-[10px] text-teal-400/60 uppercase tracking-wider mb-1 flex items-center gap-1">
+                              Achado <ExternalLink className="w-2.5 h-2.5 opacity-0 group-hover:opacity-60 transition-opacity" />
+                            </p>
+                            <p className="text-white text-sm font-medium truncate">{match.found_title}</p>
+                            {match.found_category && <p className="text-white/30 text-xs truncate">{match.found_category}</p>}
+                          </div>
                         </Link>
                       ) : (
-                        <div className="bg-teal-500/[0.04] border border-teal-500/10 rounded-xl p-3">
-                          <p className="text-[10px] text-teal-400/60 uppercase tracking-wider mb-1">Achado</p>
-                          <p className="text-white text-sm font-medium truncate">{match.found_title}</p>
-                          {match.found_category && <p className="text-white/30 text-xs truncate">{match.found_category}</p>}
+                        <div className="flex items-center gap-2.5 bg-teal-500/[0.04] border border-teal-500/10 rounded-xl p-3">
+                          <ObjectThumb src={match.found_image} />
+                          <div className="min-w-0 flex-1">
+                            <p className="text-[10px] text-teal-400/60 uppercase tracking-wider mb-1">Achado</p>
+                            <p className="text-white text-sm font-medium truncate">{match.found_title}</p>
+                            {match.found_category && <p className="text-white/30 text-xs truncate">{match.found_category}</p>}
+                          </div>
                         </div>
                       )}
                     </div>

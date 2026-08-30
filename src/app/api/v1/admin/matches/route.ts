@@ -52,9 +52,9 @@ export async function GET(req: NextRequest) {
       query(
         `SELECT m.id, m.score, m.status, m.created_at, m.updated_at,
                 lo.id AS lost_id, lo.title AS lost_title, lo.category AS lost_category,
-                lo.source AS lost_source,
+                lo.source AS lost_source, lo.images AS lost_images,
                 fo.id AS found_id, fo.title AS found_title, fo.category AS found_category,
-                fo.source AS found_source,
+                fo.source AS found_source, fo.images AS found_images,
                 (lo.source = 'public_signal' AND le.has_contact_data = true) AS lost_needs_contact,
                 (fo.source = 'public_signal' AND fe.has_contact_data = true) AS found_needs_contact,
                 latest.channel AS latest_contact_channel,
