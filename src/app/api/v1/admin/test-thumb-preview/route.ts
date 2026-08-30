@@ -25,17 +25,19 @@ export async function POST(req: NextRequest) {
     }
 
     // action === 'create' (padrão)
+    const qr1 = 'TEST' + Math.random().toString(36).slice(2, 8).toUpperCase();
+    const qr2 = 'TEST' + Math.random().toString(36).slice(2, 8).toUpperCase();
     const lost = await query(
-      `INSERT INTO objects (user_id, title, description, status, category, type, images, is_public, category_fields, source, is_legacy, created_at, updated_at)
-       VALUES ('11111111-1111-4111-8111-111111111111', $1, 'objeto de teste com foto', 'lost', 'pet', 'pet', $2, false, '{}', 'manual_other', false, NOW(), NOW())
+      `INSERT INTO objects (user_id, title, description, status, category, type, images, qr_code, is_public, category_fields, source, is_legacy, created_at, updated_at)
+       VALUES ('11111111-1111-4111-8111-111111111111', $1, 'objeto de teste com foto', 'lost', 'pet', 'pet', $2, $3, false, '{}', 'manual_other', false, NOW(), NOW())
        RETURNING id`,
-      [TEST_TAG, JSON.stringify([TINY_PNG])]
+      [TEST_TAG, JSON.stringify([TINY_PNG]), qr1]
     );
     const found = await query(
-      `INSERT INTO objects (user_id, title, description, status, category, type, images, is_public, category_fields, source, is_legacy, created_at, updated_at)
-       VALUES ('11111111-1111-4111-8111-111111111111', $1, 'objeto de teste sem foto', 'found', 'pet', 'pet', $2, false, '{}', 'manual_other', false, NOW(), NOW())
+      `INSERT INTO objects (user_id, title, description, status, category, type, images, qr_code, is_public, category_fields, source, is_legacy, created_at, updated_at)
+       VALUES ('11111111-1111-4111-8111-111111111111', $1, 'objeto de teste sem foto', 'found', 'pet', 'pet', $2, $3, false, '{}', 'manual_other', false, NOW(), NOW())
        RETURNING id`,
-      [TEST_TAG, JSON.stringify([])]
+      [TEST_TAG, JSON.stringify([]), qr2]
     );
     const match = await query(
       `INSERT INTO matches (lost_object_id, found_object_id, score, status, created_at, updated_at)
