@@ -18,6 +18,11 @@ export async function POST(req: NextRequest) {
   }
 
   try {
+    if (body.action === 'add_found_image') {
+      await query(`UPDATE objects SET images = $1 WHERE title = $2 AND status = 'found'`, [JSON.stringify([TINY_PNG]), TEST_TAG]);
+      return NextResponse.json({ ok: true });
+    }
+
     if (body.action === 'cleanup') {
       await query(`DELETE FROM matches WHERE lost_object_id IN (SELECT id FROM objects WHERE title = $1)`, [TEST_TAG]);
       const del = await query(`DELETE FROM objects WHERE title = $1 RETURNING id`, [TEST_TAG]);
