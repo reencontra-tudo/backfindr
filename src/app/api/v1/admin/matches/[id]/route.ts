@@ -4,7 +4,17 @@ import { requireAdmin } from '@/lib/adminGuard';
 import { query } from '@/lib/db';
 
 // ─── PATCH /api/v1/admin/matches/[id] ────────────────────────────────────────
-// Body: { status: 'confirmed' | 'rejected' }
+// Body: { status: 'confirmed' | 'rejected' | 'pending' }
+//
+// 'pending' (29/08/2026) — "Desfazer confirmação". Achado real: "Gata Rubi
+// desapareceu no bairro Brasmadeira" × "Cachorro encontrado no bairro
+// Brasmadeira" foi confirmado por engano (antes do fix de espécie), sem
+// nenhuma forma de reverter. Investigado antes de adicionar isto: este
+// endpoint (usado pelo botão do painel admin) só faz UPDATE matches SET
+// status — nunca envia notificação/push/e-mail (isso só acontece no
+// caminho de confirmação do PRÓPRIO usuário, em /api/v1/matches/[id]/
+// route.ts, que é outro código). Reverter aqui é seguro e completo: não
+// há efeito colateral pra desfazer além do campo em si.
 export async function PATCH(req: NextRequest, { params }: { params: { id: string } }) {
   const auth = await requireAdmin(req);
   if (auth instanceof NextResponse) return auth;
@@ -12,8 +22,8 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
   const body = await req.json().catch(() => ({}));
   const { status } = body as { status?: string };
 
-  if (!status || !['confirmed', 'rejected'].includes(status)) {
-    return NextResponse.json({ detail: 'status deve ser confirmed ou rejected' }, { status: 400 });
+  if (!status || !['confirmed', 'rejected', 'pending'].includes(status)) {
+    return NextResponse.json({ detail: 'status deve ser confirmed, rejected ou pending' }, { status: 400 });
   }
 
   try {
