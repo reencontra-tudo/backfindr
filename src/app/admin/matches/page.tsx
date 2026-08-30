@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useCallback } from 'react';
 import Link from 'next/link';
-import { Zap, CheckCircle2, XCircle, Clock, RefreshCw, Loader2, ExternalLink, Phone } from 'lucide-react';
+import { Zap, CheckCircle2, XCircle, Clock, RefreshCw, Loader2, ExternalLink, Phone, RotateCcw } from 'lucide-react';
 import { api, parseApiError } from '@/lib/api';
 import { toast } from 'sonner';
 
@@ -111,11 +111,11 @@ export default function AdminMatches() {
 
   useEffect(() => { load(); }, [load]);
 
-  const handleMatch = async (id: string, action: 'confirm' | 'reject') => {
+  const handleMatch = async (id: string, action: 'confirm' | 'reject' | 'undo') => {
     try {
-      const status = action === 'confirm' ? 'confirmed' : 'rejected';
+      const status = action === 'confirm' ? 'confirmed' : action === 'reject' ? 'rejected' : 'pending';
       await api.patch(`/admin/matches/${id}`, { status });
-      toast.success(action === 'confirm' ? 'Match confirmado!' : 'Match rejeitado');
+      toast.success(action === 'confirm' ? 'Match confirmado!' : action === 'reject' ? 'Match rejeitado' : 'Confirmação desfeita — voltou pra pendente');
       load();
     } catch (e) { toast.error(parseApiError(e)); }
   };
@@ -184,9 +184,11 @@ export default function AdminMatches() {
         ))}
       </div>
 
-      {/* Filter */}
+      {/* Filter — ordem por urgência (29/08/2026): o que precisa de ação
+          agora vem primeiro, "Todos" (visão geral, menos urgente) por
+          último. */}
       <div className="flex gap-2">
-        {['all','pending','confirmed','rejected','needs_contact'].map(f => (
+        {['pending','confirmed','rejected','needs_contact','all'].map(f => (
           <button key={f} onClick={() => setFilter(f)}
             className={`px-3 py-2 rounded-xl text-xs font-medium transition-all flex items-center gap-1.5 ${filter === f ? 'bg-teal-500/15 text-teal-400 border border-teal-500/30' : 'bg-white/[0.03] text-white/40 border border-white/[0.07] hover:text-white'}`}>
             {f === 'needs_contact' && <Phone className="w-3 h-3" />}
@@ -361,9 +363,21 @@ export default function AdminMatches() {
                         </div>
                       )}
                       {match.status !== 'pending' && (
-                        <span className={`text-xs font-medium px-2.5 py-1 rounded-full border ${match.status === 'confirmed' ? 'text-green-400 bg-green-500/10 border-green-500/20' : 'text-red-400 bg-red-500/10 border-red-500/20'}`}>
-                          {match.status === 'confirmed' ? '✓ Confirmado' : '✕ Rejeitado'}
-                        </span>
+                        <div className="flex items-center gap-2">
+                          <span className={`text-xs font-medium px-2.5 py-1 rounded-full border ${match.status === 'confirmed' ? 'text-green-400 bg-green-500/10 border-green-500/20' : 'text-red-400 bg-red-500/10 border-red-500/20'}`}>
+                            {match.status === 'confirmed' ? '✓ Confirmado' : '✕ Rejeitado'}
+                          </span>
+                          {/* Desfazer confirmação/rejeição (29/08/2026) — achado
+                              real: "Gata Rubi" × "Cachorro encontrado" (gato x
+                              cachorro) foi confirmado por engano antes do fix
+                              de espécie, sem forma de reverter. Confirmado no
+                              código que este caminho (admin PATCH) não dispara
+                              notificação nenhuma — reverter é seguro. */}
+                          <button onClick={() => handleMatch(match.id, 'undo')}
+                            className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs text-white/40 border border-white/10 hover:text-white hover:bg-white/[0.06] transition-all">
+                            <RotateCcw className="w-3 h-3" /> Desfazer
+                          </button>
+                        </div>
                       )}
                     </div>
                   </div>
