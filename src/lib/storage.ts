@@ -2,10 +2,11 @@
  * lib/storage.ts
  * Abstração de armazenamento de objetos — Cloudflare R2 (S3-compatible)
  *
- * Variáveis de ambiente necessárias:
- *   R2_ACCOUNT_ID       = 14823c21203d8830e4bed1efcb94c91c
- *   R2_ACCESS_KEY_ID    = 3a3361dc7f089dd85b0a63cec7fb914b
- *   R2_SECRET_ACCESS_KEY= 301c69e6d9b4ee6bf17d3cd2d14a7fcb861eb9aac1af46af78c8acd85bc66106
+ * Variáveis de ambiente necessárias (valores reais SOMENTE no Vercel/segredo
+ * gerenciado — nunca em código-fonte, comentário ou log):
+ *   R2_ACCOUNT_ID
+ *   R2_ACCESS_KEY_ID
+ *   R2_SECRET_ACCESS_KEY
  *   R2_BUCKET_NAME      = backfindr-media
  *   R2_PUBLIC_URL       = https://pub-<hash>.r2.dev  (ou domínio customizado)
  */
