@@ -9,6 +9,14 @@
  *   R2_SECRET_ACCESS_KEY
  *   R2_BUCKET_NAME      = backfindr-media
  *   R2_PUBLIC_URL       = https://pub-<hash>.r2.dev  (ou domínio customizado)
+ *
+ * Token Cloudflare ativo hoje (nome, não valor): "backfindr-r2-manus".
+ * NÃO confie só neste comentário — confira o valor real configurado em
+ * Production no Vercel antes de agir sobre a credencial (rotacionar,
+ * revogar). Este mesmo comentário já documentou um token diferente do que
+ * estava de fato em uso e isso causou confusão num incidente de segurança
+ * (31/08/2026, ver BACKFINDR.md seção 17/18): nome de variável documenta
+ * intenção, não garante realidade.
  */
 
 import {
