@@ -13,14 +13,9 @@ export const metadata = {
 export default function DashboardMapaPage() {
   return (
     <>
-      {/* Preload do Mapbox GL JS */}
-      {/* eslint-disable-next-line @next/next/no-page-custom-font */}
-      <link
-        rel="preload"
-        href="https://api.mapbox.com/mapbox-gl-js/v3.5.2/mapbox-gl.js"
-        as="script"
-        crossOrigin="anonymous"
-      />
+      {/* A biblioteca do Mapbox vem só do pacote npm (import('mapbox-gl') no MapClient).
+          O preload do mapbox-gl.js pelo CDN foi removido: baixava a mesma biblioteca
+          uma segunda vez (~300 KB) sem nunca ser usada — mesma correção do /map (PR #30). */}
       <link
         rel="preload"
         href="https://api.mapbox.com/mapbox-gl-js/v3.5.2/mapbox-gl.css"
