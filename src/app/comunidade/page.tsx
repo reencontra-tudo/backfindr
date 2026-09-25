@@ -68,7 +68,7 @@ export default async function ComunidadePage() {
       '@type': 'Organization',
       name: 'Backfindr',
       url: BASE,
-      logo: { '@type': 'ImageObject', url: `${BASE}/icons/logo-backfindr-white.png` },
+      logo: { '@type': 'ImageObject', url: `${BASE}/icons/logo-backfindr-white-512.png`, width: 512, height: 512 },
     },
     // Artigos indexados diretamente pelo Google
     mainEntity: {

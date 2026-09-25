@@ -291,7 +291,7 @@ export default function PostClient({
           </Link>
           <Link href="/" className="flex items-center gap-2">
             {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src="/icons/logo-backfindr-white.png" alt="Backfindr" className="w-6 h-6" />
+            <img src="/icons/logo-backfindr-white-128.png" alt="Backfindr" width={24} height={24} className="w-6 h-6" />
             <span className="font-bold text-white text-sm">Backfindr</span>
           </Link>
           <button
