@@ -24,14 +24,9 @@ export const metadata: Metadata = {
 export default function MapPage() {
   return (
     <>
-      {/* Preload do Mapbox GL JS para iniciar o download antes do React montar */}
-      {/* eslint-disable-next-line @next/next/no-page-custom-font */}
-      <link
-        rel="preload"
-        href="https://api.mapbox.com/mapbox-gl-js/v3.5.2/mapbox-gl.js"
-        as="script"
-        crossOrigin="anonymous"
-      />
+      {/* A biblioteca do Mapbox vem só do pacote npm (import('mapbox-gl') no client).
+          O preload do mapbox-gl.js pelo CDN foi removido: baixava a mesma biblioteca
+          uma segunda vez (~300 KB) sem nunca ser usada. */}
       <link
         rel="preload"
         href="https://api.mapbox.com/mapbox-gl-js/v3.5.2/mapbox-gl.css"

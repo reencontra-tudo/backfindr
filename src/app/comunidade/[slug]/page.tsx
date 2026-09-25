@@ -117,7 +117,7 @@ export default async function ComunidadePostPage(
       publisher: {
         '@type': 'Organization',
         name: 'Backfindr',
-        logo: { '@type': 'ImageObject', url: `${BASE_URL}/icons/logo-backfindr-white.png` },
+        logo: { '@type': 'ImageObject', url: `${BASE_URL}/icons/logo-backfindr-white-512.png`, width: 512, height: 512 },
       },
       datePublished: post.published_at,
       dateModified: post.updated_at || post.published_at,

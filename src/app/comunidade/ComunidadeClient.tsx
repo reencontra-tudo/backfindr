@@ -209,7 +209,7 @@ export default function ComunidadeClient({
         <div className="max-w-6xl mx-auto px-4 py-4 flex items-center justify-between">
           <Link href="/" className="flex items-center gap-2">
             {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src="/icons/logo-backfindr-white.png" alt="Backfindr" className="w-7 h-7" />
+            <img src="/icons/logo-backfindr-white-128.png" alt="Backfindr" width={28} height={28} className="w-7 h-7" />
             <span className="font-bold text-white">Backfindr</span>
           </Link>
           <nav className="hidden md:flex items-center gap-6 text-sm text-gray-400">

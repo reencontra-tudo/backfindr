@@ -47,7 +47,7 @@ export default function BrandPage() {
         {/* Header */}
         <div className="flex items-center gap-4 mb-2">
           {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src="/icons/logo-backfindr-white.png" alt="Backfindr" className="w-12 h-12 rounded-xl" />
+          <img src="/icons/logo-backfindr-white-128.png" alt="Backfindr" className="w-12 h-12 rounded-xl" />
           <h1 className="text-3xl font-bold">Brand Book</h1>
         </div>
         <p className="text-gray-400 mb-10">
@@ -99,7 +99,7 @@ export default function BrandPage() {
                 <p className="text-teal-400 font-semibold text-sm mb-2">B. Icon + Texto (Horizontal)</p>
                 <div className="flex items-center gap-2 mb-2">
                   {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img src="/icons/logo-backfindr-white.png" alt="icon" className="w-8 h-8" />
+                  <img src="/icons/logo-backfindr-white-128.png" alt="icon" className="w-8 h-8" />
                   <span className="text-xl font-bold">Backfindr</span>
                 </div>
                 <p className="text-gray-400 text-xs">Header do site, rodape de posters, materiais horizontais, banners, navegacao</p>
@@ -108,7 +108,7 @@ export default function BrandPage() {
                 <p className="text-teal-400 font-semibold text-sm mb-2">C. Icon + Texto (Vertical)</p>
                 <div className="flex flex-col items-center gap-1 mb-2">
                   {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img src="/icons/logo-backfindr-white.png" alt="icon" className="w-10 h-10" />
+                  <img src="/icons/logo-backfindr-white-128.png" alt="icon" className="w-10 h-10" />
                   <span className="text-lg font-bold">Backfindr</span>
                 </div>
                 <p className="text-gray-400 text-xs">App icon, avatar de redes sociais, espacos quadrados, splash screens</p>
