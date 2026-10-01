@@ -1,6 +1,6 @@
 # STATUS — Backfindr
-Atualizado: 25/09/2026 20:00 (geração inicial, sessão autônoma)
-Prioridade no portfólio: A definir
+Atualizado: 01/10/2026 07:10
+Prioridade no portfólio: P1 (definido por Marcos em 01/10/2026)
 Fase: em produção (backfindr.com, Vercel; banco Supabase; automações no n8n do Railway `backfindr-n8n`)
 Objetivo atual: reduzir o tempo de abertura do mapa público (/map), hoje 12–15 s no celular
 Próximo passo exato: abrir https://backfindr.com/map no navegador com a aba Performance/Rede (cache limpo, perfil de celular) e anotar o tempo de cada etapa: bundle do mapbox-gl, tiles, `GET /api/v1/objects/map` (medido em 25/09: 0,3–1,7 s, 286 KB) e `GET /api/v1/news` (medido em 25/09: 3,1 s, chamado em `src/app/map/client.tsx:202`); corrigir o maior em branch `perf/mapa-carregamento`
@@ -22,6 +22,7 @@ Bloqueios / dependências externas:
 - Tokens novos do Meta exigem login do Marcos no Business Manager
 - Remover os projetos Railway abandonados exige ordem escrita do Marcos após auditoria (regra de não exclusão)
 Decisões recentes (com data):
+- 01/10/2026: prioridade no portfólio = P1 (definida por Marcos)
 - 25/09/2026: cofre de segredos implantado (`~/bin/cofre`, Keychain); segredos deste projeto só via cofre
 - 16/09/2026: um token R2 por consumidor (`backfindr-r2-manus` no Vercel, `backfindr-autopost-r2` no n8n)
 - 30/08/2026: cadência do AutoPost fica a cada 5 dias
