@@ -1,5 +1,5 @@
 # STATUS — Backfindr
-Atualizado: 01/10/2026 09:30
+Atualizado: 01/10/2026 07:40
 Prioridade no portfólio: P1 (definido por Marcos em 01/10/2026)
 Fase: em produção (backfindr.com, Vercel; banco Supabase; automações no n8n do Railway `backfindr-n8n`)
 Objetivo atual: reduzir o tempo de abertura do mapa público (/map), hoje 12–15 s no celular
@@ -15,7 +15,6 @@ Pendências (em ordem de prioridade):
 - AutoPost: confirmar numa execução real que o upload no R2 voltou a funcionar após a troca de token de 16/09 (não verificado desde então)
 - Workflow "Found Pending" (`hDJeRz5YpWi673u1`): colar o `CRON_SECRET` real no lugar do placeholder (hoje falha com 401 todo dia)
 - BACKFINDR.md não registra a correção de 16/09 (token `backfindr-autopost-r2`) nem os PRs #30/#31
-- Projetos Railway abandonados `radiant-amazement` e `amusing-solace`: desconectados do repo em 01/10; auditoria de exclusão feita (zero dependências) e causa raiz registrada no BACKFINDR.md §18; **mantidos por decisão do Marcos (01/10)** — apagar só com nova ordem
 - 15 commits de 29/07–04/08 só existem em `~/Downloads/backfindr-local/backfindr-main` (GA4 `ocorrencia_publicada`, ShareModal, Google Ads Fase 1): decidir o que aproveitar
 - Env vars: `FACEBOOK_APP_*` ausentes (login Facebook provavelmente quebrado); ~10 vars sem uso no Vercel
 - Tabela `municipalities` sem nenhum município de Rondônia (investigar)
@@ -23,7 +22,7 @@ Bloqueios / dependências externas:
 - Tokens novos do Meta exigem login do Marcos no Business Manager
 - Remover os projetos Railway abandonados exige ordem escrita do Marcos após auditoria (regra de não exclusão)
 Decisões recentes (com data):
-- 01/10/2026: manter os projetos Railway abandonados mais um tempo antes de apagar
+- 01/10/2026: projetos Railway abandonados (radiant-amazement, amusing-solace) APAGADOS por ordem do Marcos, após auditoria e registro da causa raiz (BACKFINDR.md §18)
 - 01/10/2026: prioridade no portfólio = P1 (definida por Marcos)
 - 25/09/2026: cofre de segredos implantado (`~/bin/cofre`, Keychain); segredos deste projeto só via cofre
 - 16/09/2026: um token R2 por consumidor (`backfindr-r2-manus` no Vercel, `backfindr-autopost-r2` no n8n)
