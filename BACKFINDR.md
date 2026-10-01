@@ -406,6 +406,10 @@ git push origin main
 
 ---
 
+### Lição de arquitetura — por que o backend Python foi abandonado (registrada em 01/10/2026)
+Entre 08 e 11/04/2026 o backend FastAPI (código gerado pelo Manus) foi tentado em Railway, Render e Vercel serverless (~60 commits) e **nunca rodou em produção**: imports e dependências quebrados descobertos um por deploy, app caindo por conectar no banco na inicialização (health check desligado para "passar"), Python 3.14 padrão do Render sem pacotes prontos, porta e caminhos de Dockerfile errados, e configs de 3 plataformas conflitando no mesmo monorepo. Em 11/04 o Python foi removido; em 12/04 toda a API foi reescrita como rotas do Next.js na Vercel e funcionou no mesmo dia. Os projetos Railway da tentativa (`radiant-amazement`, `amusing-solace`) ficaram ligados ao repo e falharam a cada push até 01/10/2026, quando foram desconectados (mantidos, sem exclusão, por decisão do Marcos).
+**Regras permanentes:** (1) rodar localmente o mesmo build de produção antes do 1º deploy — código de agente externo é "não testado"; (2) ler o log antes de cada correção, sem commits de "force rebuild"; (3) uma stack e uma plataforma por produto salvo necessidade comprovada; (4) fixar versões de runtime e commitar o lockfile; (5) app sobe sem banco e `/health` informa o banco — nunca desligar health check; (6) ao abandonar infra, desconectar o repo no mesmo dia e registrar aqui. Análise completa: `~/auditoria/auditoria-exclusao-railway-abandonados-01102026.md`.
+
 ## 19. HISTÓRICO DE SESSÕES (resumo)
 
 | Data | Principais entregas |
