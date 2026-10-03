@@ -13,7 +13,13 @@ if (typeof window !== 'undefined' && process.env.NEXT_PUBLIC_POSTHOG_KEY) {
     capture_pageleave: true,
     persistence:       'localStorage',
     autocapture:       true,
-    session_recording: { maskAllInputs: true },
+    // Privacidade (02/10/2026): nenhum texto de tela, atributo de elemento ou
+    // dado pessoal em URL vai para o PostHog — nem no autocapture, nem na
+    // gravação de sessão (que passa a mascarar campos E textos).
+    mask_all_text:                  true,
+    mask_all_element_attributes:    true,
+    mask_personal_data_properties:  true,
+    session_recording: { maskAllInputs: true, maskTextSelector: '*' },
   });
 }
 
@@ -98,8 +104,10 @@ export const analytics = {
     posthog.capture('flow_match_clicked', { flow, object_code: objectCode }),
 
   // Identify
-  identify:      (userId: string, props?: Record<string, unknown>) => {
-    posthog.identify(userId, props);
+  // Só o id interno: e-mail, nome e qualquer outro dado pessoal NÃO vão para o
+  // PostHog (a assinatura não aceita propriedades de propósito).
+  identify:      (userId: string) => {
+    posthog.identify(userId);
   },
   reset:         ()               => posthog.reset(),
 };
