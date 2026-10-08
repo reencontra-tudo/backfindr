@@ -19,6 +19,24 @@ declare global {
   }
 }
 
+// Controle de "já disparado" por objeto na sessão. Tudo em try/catch: storage bloqueado
+// (modo privado, política do navegador) nunca pode quebrar a página nem o evento.
+const GA4_FIRED_KEY_PREFIX = 'bf_ga4_ocorrencia_publicada:';
+function ga4AlreadyFired(objectId: string): boolean {
+  try {
+    return window.sessionStorage.getItem(GA4_FIRED_KEY_PREFIX + objectId) === '1';
+  } catch {
+    return false;
+  }
+}
+function ga4MarkFired(objectId: string): void {
+  try {
+    window.sessionStorage.setItem(GA4_FIRED_KEY_PREFIX + objectId, '1');
+  } catch {
+    /* storage indisponível: sem marca, o evento pode repetir ao recarregar; nada quebra */
+  }
+}
+
 interface ObjectData {
   id: string;
   title: string;
@@ -130,6 +148,12 @@ export default function SucessoPage() {
   // no primeiro render, daí o retry curto.
   useEffect(() => {
     if (!obj || gtagFiredRef.current) return;
+    // Uma vez por objeto por sessão do navegador: recarregar a página (ou voltar a ela)
+    // não conta a conversão de novo. Se o sessionStorage falhar, só o ref acima vale.
+    if (ga4AlreadyFired(id)) {
+      gtagFiredRef.current = true;
+      return;
+    }
 
     let attempts = 0;
     const maxAttempts = 5;
@@ -142,6 +166,7 @@ export default function SucessoPage() {
           send_to: process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID,
         });
         gtagFiredRef.current = true;
+        ga4MarkFired(id);
         return;
       }
       attempts++;
@@ -152,7 +177,7 @@ export default function SucessoPage() {
 
     tryFireEvent();
     return () => clearTimeout(timeoutId);
-  }, [obj]);
+  }, [obj, id]);
 
   if (loading) {
     return (
