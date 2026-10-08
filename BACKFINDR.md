@@ -311,6 +311,7 @@ Estrutura de governança do produto instituída em 29/06/2026.
 - **Public Signals — fonte `google_alert_corroboration`**: estrutura pronta em `src/lib/publicSignals/sources.ts`, array vazio de propósito. Direção definida é alimentar via busca SERP API (Brave Search/SerpAPI) em vez de lista fixa de alertas — ainda não implementado.
 - **Public Signals — Seções 4 e 5 do prompt master**: outreach institucional automatizado e triagem de mensagens de terceiros ("Encontrei") — não iniciados, fora do escopo da Fase 1.
 - **Decisão pendente: ativar sistema de reativação?** Cron `/api/v1/cron/reactivation` existe e envia dicas personalizadas por categoria (v2), mas a tabela `reactivation_emails` que ele grava **nunca foi criada em produção** — parece ter sido escrito mas nunca ligado (sem cron do Vercel, sem workflow n8n disparando). Antes de estender esse fluxo (ex.: lembrete de compartilhar de novo após 3 dias sem match, cogitado na sessão do Loop WhatsApp), decidir: ativar o cron como um todo (criar a tabela, plugar disparo) ou descartar essa peça do sistema
+
 ### 🟢 Baixo
 - Enriquecer as 434 páginas SEO local com eventos anuais regionais (ex.: Festa do Pêssego em Mogi, Festa da Uva em Ribeirão Pires) via UPDATE em tips_content
 - Email reativação para 14 usuários reais de 2026
@@ -606,7 +607,7 @@ Desenho aprovado e implementado (PR #4, commit `f8205b5`), escopo restrito ao fl
 - Não editado — automação viva em produção, mexer sem pedido explícito é risco de derrubar o AutoPost. Ação pendente: mover pro cofre de credenciais + gerar tokens novos, tratando os atuais como comprometidos apesar de funcionando.
 
 **3. Cadência real do AutoPost confirmada e documentação corrigida (seção 12):** node "Cron 4h" (nome desatualizado) está configurado com `daysInterval: 5` — a cada 5 dias, não alterado nesta sessão (cadência real preservada de propósito). A doc antiga dizia "4 posts/dia, 7 nichos" (e um histórico de sessão anterior, 21/07, registrava "2x/dia" — ambos desatualizados). Nichos reais: 6 (pet/celular/veiculo/bicicleta/geral/protect). Sequência real do pipeline também confirmada: texto (gpt-4o-mini) → imagem (gpt-image-1) → upload R2 → publica Instagram → **só depois** auditoria de imagem (gpt-4o-mini vision) → se aprovado, publica Facebook — a auditoria não cobre o Instagram (publica antes de auditar); registrado como observação, não foi pedido para corrigir.
-### Google Ads API — Investigação e Plano (02/08/2026, não implementado)
+
 ### Google Ads API — Investigação, Plano e Fase 1 (02/08/2026)
 
 **Motivação:** campanha "SBF | Pesquisa | Objetos Perdidos | BR" (conta Google Ads `468-452-7429`, ocid `27174836`) travada em "Qualificada (limitada)", zero impressões/cliques, apesar de horas de configuração manual pela UI. Suspeita: janela de datas curta (termina 05/08/2026) e/ou orçamento insuficiente. A conversão `ocorrencia_publicada` já está configurada e vinculada (GA4 propriedade Backfindr, ID `539806265`) — ver evento implementado no commit `4a3b439` acima.
