@@ -42,23 +42,35 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     // falha silenciosa — sitemap ainda retorna páginas estáticas
   }
 
-  // Objetos públicos — SEO de cauda longa por tipo/localização
-  let objectUrls: MetadataRoute.Sitemap = [];
+  // Objetos públicos — SEO de cauda longa por tipo/localização.
+  // A API devolve no máximo 500 itens por página; percorre as páginas até esgotar
+  // (teto de segurança: o sitemap aceita até 50.000 URLs por arquivo).
+  const OBJECTS_PAGE_SIZE = 500;
+  const OBJECTS_MAX_PAGES = 80;
+  const objectUrls: MetadataRoute.Sitemap = [];
+  const seenCodes = new Set<string>();
   try {
-    const res = await fetch(`${BASE}/api/v1/objects/public?limit=500`, {
-      next: { revalidate: 1800 }, // revalida a cada 30min
-    });
-    if (res.ok) {
+    for (let page = 1; page <= OBJECTS_MAX_PAGES; page++) {
+      const res = await fetch(`${BASE}/api/v1/objects/public?limit=${OBJECTS_PAGE_SIZE}&page=${page}`, {
+        next: { revalidate: 1800 }, // revalida a cada 30min
+      });
+      if (!res.ok) break;
       const data = await res.json() as { items: Array<{ unique_code?: string; updated_at?: string; created_at: string }> };
-      objectUrls = (data.items || []).filter(obj => obj.unique_code).map(obj => ({
-        url: `${BASE}/objeto/${obj.unique_code}`,
-        lastModified: new Date(obj.updated_at || obj.created_at),
-        changeFrequency: 'daily' as const,
-        priority: 0.6,
-      }));
+      const items = data.items || [];
+      for (const obj of items) {
+        if (!obj.unique_code || seenCodes.has(obj.unique_code)) continue;
+        seenCodes.add(obj.unique_code);
+        objectUrls.push({
+          url: `${BASE}/objeto/${obj.unique_code}`,
+          lastModified: new Date(obj.updated_at || obj.created_at),
+          changeFrequency: 'daily' as const,
+          priority: 0.6,
+        });
+      }
+      if (items.length < OBJECTS_PAGE_SIZE) break;
     }
   } catch {
-    // falha silenciosa
+    // falha silenciosa: mantém o que já foi lido
   }
 
   return [...STATIC_PAGES, ...communityUrls, ...objectUrls];
