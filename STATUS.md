@@ -1,5 +1,5 @@
 # STATUS — Backfindr
-Atualizado: 09/10/2026 19:47
+Atualizado: 09/10/2026 19:53
 Prioridade no portfólio: P1 (definido por Marcos em 01/10/2026)
 Fase: em produção (backfindr.com, Vercel, banco Supabase, automações no n8n do Railway `backfindr-n8n`). Produção = deployment `dpl_9LdFSc91bFhzv6YU3oPTUf1g2BKn`, Ready, criado em 01/10/2026 09:10, commit 95f7474 [V: `vercel inspect` de 09/10/2026; `/api/health` 200, banco ok, 25 ms, curl de 09/10/2026 22:44Z]. Frente ativa: integração por lotes dos 15 commits locais de 29/07–04/08 + endurecimento de e-mail (PRs #35 a #38).
 Objetivo atual: integrar os 15 commits locais por lotes, sem regressão e com aprovação por lote, e fechar o endurecimento do e-mail antes de o remetente `.com.br` entrar em produção.
@@ -13,10 +13,12 @@ Feito na última sessão (08–09/10/2026):
 - 09/10: issues #39 (sitemap com 500× `/objeto/undefined`) e #40 (`/blog` e posts com canonical = home), só investigação, nada implementado.
 - 09/10: branch descartável `integracao/teste-5a-mais-35` (65e2535; 5a + #35; NUNCA mesclar) com preview READY; nenhum teste real executado.
 - Todos os `tsc` com o mesmo conjunto do baseline (14 erros; 19 se contar os 5 de `.next/types` que o build gera, também na `main`); builds exit 0; testes com stub, sem e-mail real.
+- 09/10: protocolo de organização cumprido: STATUS.md (este PR #41), DECISOES.md B-15 a B-24 e C-01 a C-04 (PR #42, rascunho, empilhado no #34, sem tocá-lo), nota de sessão no BACKFINDR.md do Lote 1 (24329f7 e seguinte), INVENTARIO.md (seção 7), PAINEL-UNICO (seção 14) e reconciliação do quadro; relatório `~/auditoria/produto/backfindr-conformidade-protocolo-09102026.md`.
 - Relatórios: `~/auditoria/produto/backfindr-integracao-*-08102026.md` e `backfindr-cadeia-devolucao-fase1-08102026.md` (fora de repositório).
 Pendências (em ordem de prioridade):
 - Marcos: decidir o M2 (cartão no quadro). O limite por destinatário só pode ser validado depois do M2.
 - Marcos: OK específico por teste real (testes 1 a 3, §6 do relatório) com as duas contas autorizadas; ou rodar `~/auditoria/produto/cadeia-barra-forte-leitura-08102026.sql` / criar papel de banco somente leitura (cartões).
+- Marcos: revisar e mesclar #41 (este STATUS) e #42 (DECISOES; só depois do #34); autorizar apagar a branch `docs/status-integracao-09102026`, publicada por engano com e-mail de terceiro (já substituída por esta; ordem escrita necessária).
 - Marcos: mesclar o PR #36 e depois o #35 (nessa ordem), #37, #38 (depois de sair de rascunho), Lote 4 (ainda não preparado) e, por último, o Lote 1. Nenhum merge feito.
 - Marcos: decidir o que entra no sitemap depois da correção (#39; 486 de 500 objetos são legado) e autorizar os PRs de #39 e #40.
 - Marcos: conferir se a tabela `password_reset_tokens` existe no Supabase (sem DDL no repositório; a rota de redefinição devolve 500 sem ela) [N].
@@ -48,7 +50,7 @@ Decisões recentes (com data):
 - 08/10/2026: integração por lotes com aprovação por lote; Lote 5a = M1 (escape) + M2 mínimo (limite por destinatário e por IP, sem migration; se não houver mecanismo, parar e propor); M3 (limites por IP nas demais rotas públicas de e-mail) como item separado; Lote 2 = GA4 + deduplicação em commit separado, Google Ads fora; Lote 3 preparado sem PR até o OK; Lote 1 publicado, mesclado só depois dos Lotes 2 a 4; ordem de merge registrada: 5a antes do #35 e Lote 1 por último; resgate preservado (Marcos, chat de 08/10/2026).
 - 08/10/2026: autorização de testes com contas reais só para esta frente, só as duas contas indicadas pelo Marcos (a dele e a do achador do caso de referência; os endereços ficam fora do repositório público, no relatório e no chat) entre si; preview usa banco e Resend de produção, então cada teste só roda com o OK específico do Marcos, com registro do que foi gravado e restauração do estado; nenhum e-mail para os 6 usuários nem reenvio; nenhum merge, deploy ou migration (Marcos, chat de 08/10/2026).
 - 08/10/2026: D2 respondida: `backfindr.com.br` Verified no Resend e `backfindr.com` não cadastrado; remetente padrão passa a `noreply@backfindr.com.br` no PR #35 (não mesclado) (Resend, Marcos, 08/10/2026).
-- 08/10/2026: decisões A, B e C do fundador para a cadeia de devolução (achador se cadastra; implementar completo; "sem retorno" com revisão jurídica) tomadas no chat de 08/10/2026; texto proposto de registro no PR de documentação separado (docs/decisoes-integracao-08-09102026), sem tocar no PR #34.
+- 08/10/2026: decisões A, B e C do fundador para a cadeia de devolução (achador se cadastra; implementar completo; "sem retorno" com revisão jurídica) tomadas no chat de 08/10/2026; texto proposto de registro no PR #42 (branch docs/decisoes-integracao-08-09102026), sem tocar no PR #34.
 - 07/10/2026: Manifesto = premissa protegida, discussão NÃO aberta; revogação dos tokens do Meta adiada; nenhum workflow n8n com tokens fixos é aberto sem aviso (Marcos, 07/10/2026).
 - 01/10/2026: prioridade no portfólio = P1; projetos Railway abandonados apagados por ordem do Marcos (BACKFINDR.md §18).
 - 25/09/2026: cofre de segredos (`~/bin/cofre`); segredos deste projeto só via cofre. 16/09/2026: um token R2 por consumidor. 30/08/2026: cadência do AutoPost a cada 5 dias.
