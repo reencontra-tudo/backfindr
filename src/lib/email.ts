@@ -10,7 +10,7 @@ const FROM = 'Backfindr <noreply@backfindr.com>';
 // Todo dado vindo de usuário (nome, título de objeto, etc.) que entra num template
 // passa por esc() (HTML) ou subj() (assunto). Sem isso, um nome ou título com HTML
 // vira conteúdo do e-mail enviado de um domínio verificado (phishing/spam).
-function esc(value: unknown): string {
+export function esc(value: unknown): string {
   return String(value ?? '')
     .replace(/&/g, '&amp;')
     .replace(/</g, '&lt;')
