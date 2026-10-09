@@ -18,6 +18,7 @@
  */
 
 import { useEffect, useState, useRef } from 'react';
+import { APP_URL } from '@/lib/constants';
 import Link from 'next/link';
 import { Share2, Copy, MessageCircle, Instagram, X, ChevronRight } from 'lucide-react';
 import { toast } from 'sonner';
@@ -157,8 +158,8 @@ export default function RecoveredCelebration({
   const canvasRef = useConfetti(visible);
 
   const publicUrl = objectCode
-    ? `https://www.backfindr.com/objeto/${objectCode}`
-    : 'https://www.backfindr.com';
+    ? `${APP_URL}/objeto/${objectCode}`
+    : APP_URL;
 
   const shareText = `🎉 Recuperei meu "${objectTitle}" com o Backfindr! Cadastre seus objetos em backfindr.com e nunca mais perca algo sem chance de recuperar.`;
   const whatsappUrl = `https://wa.me/?text=${encodeURIComponent(shareText)}`;

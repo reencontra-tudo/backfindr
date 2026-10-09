@@ -4,11 +4,11 @@ import type { Metadata } from 'next';
 export const metadata: Metadata = {
   title: 'Pet desaparecido — Backfindr',
   description: 'Registre um alerta de pet desaparecido gratuitamente. A rede Backfindr cruza relatos em tempo real.',
-  alternates: { canonical: 'https://www.backfindr.com/pet' },
+  alternates: { canonical: '/pet' },
   openGraph: {
     title: 'Pet desaparecido — Backfindr',
     description: 'Registre um alerta de pet desaparecido gratuitamente.',
-    url: 'https://www.backfindr.com/pet',
+    url: '/pet',
   },
 };
 
