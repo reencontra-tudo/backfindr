@@ -4,7 +4,7 @@ function getResend() {
   return new Resend(process.env.RESEND_API_KEY ?? '');
 }
 
-const FROM = 'Backfindr <noreply@backfindr.com>';
+const FROM = 'Backfindr <noreply@backfindr.com.br>';
 
 // ─── Proteção contra injeção em e-mail ──────────────────────────────────────
 // Todo dado vindo de usuário (nome, título de objeto, etc.) que entra num template
