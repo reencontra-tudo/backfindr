@@ -49,9 +49,9 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       next: { revalidate: 1800 }, // revalida a cada 30min
     });
     if (res.ok) {
-      const data = await res.json() as { items: Array<{ qr_code: string; updated_at?: string; created_at: string }> };
-      objectUrls = (data.items || []).map(obj => ({
-        url: `${BASE}/objeto/${obj.qr_code}`,
+      const data = await res.json() as { items: Array<{ unique_code?: string; updated_at?: string; created_at: string }> };
+      objectUrls = (data.items || []).filter(obj => obj.unique_code).map(obj => ({
+        url: `${BASE}/objeto/${obj.unique_code}`,
         lastModified: new Date(obj.updated_at || obj.created_at),
         changeFrequency: 'daily' as const,
         priority: 0.6,
