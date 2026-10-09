@@ -1,5 +1,5 @@
 # STATUS — Backfindr
-Atualizado: 09/10/2026 20:13
+Atualizado: 09/10/2026 20:17
 Prioridade no portfólio: P1 (definido por Marcos em 01/10/2026)
 Fase: em produção (backfindr.com, Vercel, banco Supabase, automações no n8n do Railway `backfindr-n8n`). Produção = deployment `dpl_9LdFSc91bFhzv6YU3oPTUf1g2BKn`, Ready, criado em 01/10/2026 09:10, commit 95f7474 [V: `vercel inspect` de 09/10/2026; `/api/health` 200, banco ok, 25 ms, curl de 09/10/2026 22:44Z]. Frente ativa: integração por lotes dos 15 commits locais de 29/07–04/08 + endurecimento de e-mail (PRs #35 a #38).
 Objetivo atual: integrar os 15 commits locais por lotes, sem regressão e com aprovação por lote, e fechar o endurecimento do e-mail antes de o remetente `.com.br` entrar em produção.
@@ -22,7 +22,7 @@ Pendências (em ordem de prioridade):
 - Marcos: revisar e mesclar #41 (este STATUS) e #42 (DECISOES; só depois do #34).
 - Marcos: mesclar o PR #36 e depois o #35 (nessa ordem), #37, #38 (depois de sair de rascunho), Lote 4 (ainda não preparado) e, por último, o Lote 1. Nenhum merge feito.
 - Marcos: revisar o PR #43 (sitemap, rascunho) e autorizar o PR do #40 (canonical do blog).
-- Marcos: rodar a checagem da tabela do fluxo de redefinição de senha (`~/auditoria/produto/backfindr-papel-leitura-supabase-09102026.md`, bloco C) e passar o resultado; o Code registra aqui [N].
+- Marcos: rodar a checagem da tabela do fluxo de redefinição de senha (`~/auditoria/produto/backfindr-papel-leitura-supabase-09102026.md`, BLOCO A, itens A1 e A2) e passar o resultado; o Code registra aqui [N].
 - Marcos: criar o papel de banco somente leitura (SQL e passos no mesmo arquivo); depois o Code lê o banco só por ele.
 - Marcos: escolher as camadas da trava contra escrita em produção pelo servidor local (proposta §E do relatório; nada implementado).
 - Cadeia de devolução ("Encontrei"): Fase 1 entregue, aguarda D1 (tensão decisão A × Manifesto 1 e 4) e D3–D13; D2 foi respondida em 08/10 (ver Decisões). Textos "sem retorno" e contato direto exigem revisão jurídica.
