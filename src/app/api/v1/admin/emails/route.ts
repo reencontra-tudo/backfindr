@@ -59,10 +59,15 @@ export async function POST(req: NextRequest) {
     }
   }
 
-  // Buscar usuários com filtros
-  const conditions: string[] = []; const params: unknown[] = []; let idx = 1;
+  // Regra de uso do legado: registros legados não são base de envio em massa.
+  if (filter?.is_legacy || type === 'webjetos_reativacao') {
+    await query(`UPDATE email_campaigns SET status='failed', updated_at=NOW() WHERE id=$1`, [campaignId]);
+    return NextResponse.json({ detail: 'Envio para registros legados não é permitido.' }, { status: 400 });
+  }
+
+  // Buscar usuários com filtros (legado e conta de sistema ficam sempre de fora)
+  const conditions: string[] = ['is_legacy IS NOT TRUE', 'is_system_account IS NOT TRUE']; const params: unknown[] = []; let idx = 1;
   if (filter?.plan)      { conditions.push(`plan = $${idx}`);       params.push(filter.plan); idx++; }
-  if (filter?.is_legacy) { conditions.push(`is_legacy = $${idx}`);  params.push(filter.is_legacy); idx++; }
   const where = conditions.length > 0 ? `WHERE ${conditions.join(' AND ')}` : '';
   params.push(limit);
   const usersRes = await query(`SELECT id, email, name FROM users ${where} LIMIT $${idx}`, params);
