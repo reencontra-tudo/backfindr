@@ -6,9 +6,32 @@ function getResend() {
 
 const FROM = 'Backfindr <noreply@backfindr.com>';
 
+// ─── Proteção contra injeção em e-mail ──────────────────────────────────────
+// Todo dado vindo de usuário (nome, título de objeto, etc.) que entra num template
+// passa por esc() (HTML) ou subj() (assunto). Sem isso, um nome ou título com HTML
+// vira conteúdo do e-mail enviado de um domínio verificado (phishing/spam).
+export function esc(value: unknown): string {
+  return String(value ?? '')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
+// Assunto é texto puro: sem HTML escapado, mas sem CR/LF nem outros caracteres de controle
+// (evita injeção de cabeçalho e assunto com várias linhas).
+function subj(value: unknown): string {
+  return String(value ?? '')
+    .replace(/[\u0000-\u001F\u007F\u2028\u2029]+/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
 // ─── E-mail de boas-vindas ────────────────────────────────────────────────────
 export async function sendWelcomeEmail(user: { name: string; email: string }) {
-  const firstName = user.name.split(' ')[0];
+  const firstNameRaw = user.name.split(' ')[0];
+  const firstName = esc(firstNameRaw);
   const dashboardUrl = 'https://www.backfindr.com/dashboard/objects/new';
   const faqUrl = 'https://www.backfindr.com/faq';
 
@@ -128,7 +151,7 @@ export async function sendWelcomeEmail(user: { name: string; email: string }) {
     const { error } = await getResend().emails.send({
       from: FROM,
       to: [user.email],
-      subject: `Bem-vindo ao Backfindr, ${firstName}! Registre seu primeiro objeto`,
+      subject: `Bem-vindo ao Backfindr, ${subj(firstNameRaw)}! Registre seu primeiro objeto`,
       html,
     });
 
@@ -149,7 +172,8 @@ export async function sendMatchAlertEmail(
   score?: number,
   matchedTitle?: string
 ) {
-  const firstName = user.name.split(' ')[0];
+  const firstNameRaw = user.name.split(' ')[0];
+  const firstName = esc(firstNameRaw);
   const matchUrl = `https://www.backfindr.com/dashboard/matches`;
   const scoreLabel = score && score >= 80 ? 'Alta' : score && score >= 60 ? 'Média' : 'Moderada';
   const scoreColor = score && score >= 80 ? '#22c55e' : score && score >= 60 ? '#f59e0b' : '#14b8a6';
@@ -197,7 +221,7 @@ export async function sendMatchAlertEmail(
               </h1>
               <p style="color:rgba(255,255,255,0.55);font-size:14px;line-height:1.6;margin:0 0 24px;text-align:center;">
                 A IA do Backfindr identificou uma possível correspondência para<br/>
-                <strong style="color:white;">${objectTitle}</strong>
+                <strong style="color:white;">${esc(objectTitle)}</strong>
               </p>
 
               <!-- Card de match -->
@@ -212,7 +236,7 @@ export async function sendMatchAlertEmail(
                         <td style="width:8px;background:#ef4444;border-radius:4px;" width="8"></td>
                         <td style="padding-left:12px;">
                           <p style="color:rgba(255,255,255,0.4);font-size:11px;margin:0 0 2px;">Seu objeto</p>
-                          <p style="color:white;font-size:14px;font-weight:600;margin:0;">${objectTitle}</p>
+                          <p style="color:white;font-size:14px;font-weight:600;margin:0;">${esc(objectTitle)}</p>
                         </td>
                       </tr>
                     </table>
@@ -228,7 +252,7 @@ export async function sendMatchAlertEmail(
                         <td style="width:8px;background:#22c55e;border-radius:4px;" width="8"></td>
                         <td style="padding-left:12px;">
                           <p style="color:rgba(255,255,255,0.4);font-size:11px;margin:0 0 2px;">Possível correspondência</p>
-                          <p style="color:white;font-size:14px;font-weight:600;margin:0;">${matchedTitle || 'Item encontrado registrado na plataforma'}</p>
+                          <p style="color:white;font-size:14px;font-weight:600;margin:0;">${esc(matchedTitle || 'Item encontrado registrado na plataforma')}</p>
                         </td>
                       </tr>
                     </table>
@@ -290,7 +314,7 @@ export async function sendMatchAlertEmail(
     const { error } = await getResend().emails.send({
       from: FROM,
       to: [user.email],
-      subject: `⚡ Match encontrado para "${objectTitle}" — Backfindr`,
+      subject: `⚡ Match encontrado para "${subj(objectTitle)}" — Backfindr`,
       html,
     });
 
@@ -308,7 +332,8 @@ export async function sendReactivationEmail(
   objectTitle: string,
   personalizedTips?: string[],   // dicas geradas por IA (se disponíveis)
 ) {
-  const firstName = user.name.split(' ')[0];
+  const firstNameRaw = user.name.split(' ')[0];
+  const firstName = esc(firstNameRaw);
   const searchUrl = `https://www.backfindr.com/buscar?keyword=${encodeURIComponent(objectTitle)}`;
   const dashboardUrl = 'https://www.backfindr.com/dashboard';
 
@@ -384,7 +409,7 @@ export async function sendReactivationEmail(
                 Ainda estamos procurando, ${firstName}.
               </h1>
               <p style="color:rgba(255,255,255,0.55);font-size:14px;line-height:1.6;margin:0 0 24px;text-align:center;">
-                Seu alerta para <strong style="color:white;">${objectTitle}</strong> está ativo.<br/>
+                Seu alerta para <strong style="color:white;">${esc(objectTitle)}</strong> está ativo.<br/>
                 Novos itens são registrados todos os dias — o match pode acontecer a qualquer momento.
               </p>
 
@@ -447,7 +472,7 @@ export async function sendReactivationEmail(
     const { error } = await getResend().emails.send({
       from: FROM,
       to: [user.email],
-      subject: `🔍 Ainda estamos procurando por "${objectTitle}" — Backfindr`,
+      subject: `🔍 Ainda estamos procurando por "${subj(objectTitle)}" — Backfindr`,
       html,
     });
 
@@ -462,7 +487,8 @@ export async function sendReactivationEmail(
 
 // ─── E-mail de Guia Educativo: Como Identificar Carros Roubados ──────────────
 export async function sendGuideCarTheftEmail(user: { name: string; email: string }) {
-  const firstName = user.name.split(' ')[0];
+  const firstNameRaw = user.name.split(' ')[0];
+  const firstName = esc(firstNameRaw);
   const dashboardUrl = 'https://www.backfindr.com/dashboard';
 
   const html = `
@@ -600,7 +626,8 @@ export async function sendGuideCarTheftEmail(user: { name: string; email: string
 
 // ─── E-mail de Guia Educativo: Cachorro Perdido ────────────────────────────
 export async function sendGuideLostPetEmail(user: { name: string; email: string }) {
-  const firstName = user.name.split(' ')[0];
+  const firstNameRaw = user.name.split(' ')[0];
+  const firstName = esc(firstNameRaw);
   const dashboardUrl = 'https://www.backfindr.com/dashboard';
 
   const html = `
@@ -767,7 +794,8 @@ export async function sendGuideLostPetEmail(user: { name: string; email: string 
 
 // ─── E-mail de Dica Rápida: Importância de Fotos ──────────────────────────
 export async function sendTipPhotosEmail(user: { name: string; email: string }) {
-  const firstName = user.name.split(' ')[0];
+  const firstNameRaw = user.name.split(' ')[0];
+  const firstName = esc(firstNameRaw);
   const dashboardUrl = 'https://www.backfindr.com/dashboard';
 
   const html = `
@@ -902,7 +930,8 @@ export async function sendTipPhotosEmail(user: { name: string; email: string }) 
 
 // ─── E-mail de incentivo PWA (Lifecycle Dia 3) ────────────────────────────────
 export async function sendPWAIncentiveEmail(user: { name: string; email: string }) {
-  const firstName = user.name.split(' ')[0];
+  const firstNameRaw = user.name.split(' ')[0];
+  const firstName = esc(firstNameRaw);
   const dashboardUrl = 'https://www.backfindr.com/dashboard';
 
   const html = `
@@ -1038,7 +1067,8 @@ export async function sendObjectFoundEmail(
   user: { name: string; email: string },
   obj: { id: string; title: string; category: string; isProtected?: boolean }
 ) {
-  const firstName = user.name.split(' ')[0];
+  const firstNameRaw = user.name.split(' ')[0];
+  const firstName = esc(firstNameRaw);
   const categoryLabel = CATEGORY_LABEL_EMAIL[obj.category] ?? 'objeto';
   const objectUrl = `https://www.backfindr.com/dashboard/objects/${obj.id}`;
   const subject = obj.isProtected
@@ -1086,8 +1116,8 @@ export async function sendObjectFoundEmail(
               </h1>
               <p style="color:rgba(255,255,255,0.55);font-size:14px;line-height:1.6;margin:0 0 24px;text-align:center;">
                 ${obj.isProtected
-                  ? `Alguém escaneou o QR Code do seu objeto <strong style="color:white;">${obj.title}</strong>. Verifique se está tudo bem.`
-                  : `Alguém pode ter encontrado <strong style="color:white;">${obj.title}</strong> e avisou pelo Backfindr.`}
+                  ? `Alguém escaneou o QR Code do seu objeto <strong style="color:white;">${esc(obj.title)}</strong>. Verifique se está tudo bem.`
+                  : `Alguém pode ter encontrado <strong style="color:white;">${esc(obj.title)}</strong> e avisou pelo Backfindr.`}
               </p>
 
               <table width="100%" cellpadding="0" cellspacing="0" style="margin-bottom:24px;">

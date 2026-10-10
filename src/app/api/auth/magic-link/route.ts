@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { query } from '@/lib/db';
 import { Resend } from 'resend';
 import crypto from 'crypto';
+import { esc } from '@/lib/email';
 
 const resend = new Resend(process.env.RESEND_API_KEY);
 const APP_URL = process.env.NEXT_PUBLIC_APP_URL || 'https://www.backfindr.com';
@@ -51,7 +52,7 @@ export async function POST(req: NextRequest) {
     // Verificar se usuário já existe para personalizar o e-mail
     const userResult = await query('SELECT name FROM users WHERE email = $1', [email]);
     const userName = userResult.rows[0]?.name?.split(' ')[0] || null;
-    const greeting = userName ? `Olá, ${userName}!` : 'Olá!';
+    const greeting = userName ? `Olá, ${esc(userName)}!` : 'Olá!';
     const isNewUser = userResult.rows.length === 0;
 
     const magicUrl = `${APP_URL}/api/auth/magic-link/verify?token=${token}`;

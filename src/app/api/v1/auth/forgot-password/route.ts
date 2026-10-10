@@ -2,6 +2,7 @@ export const dynamic = 'force-dynamic';
 import { NextRequest } from 'next/server';
 import crypto from 'crypto';
 import { query } from '@/lib/db';
+import { esc } from '@/lib/email';
 import { successResponse, errorResponse, internalErrorResponse } from '@/lib/response';
 
 export async function POST(request: NextRequest) {
@@ -56,7 +57,7 @@ export async function POST(request: NextRequest) {
             subject: 'Redefinição de senha — Backfindr',
             html: `
               <h2>Redefinição de senha</h2>
-              <p>Olá, ${user.name}!</p>
+              <p>Olá, ${esc(user.name)}!</p>
               <p>Você solicitou a redefinição de sua senha. Clique no link abaixo para criar uma nova senha:</p>
               <a href="${resetUrl}" style="background:#10b981;color:white;padding:12px 24px;border-radius:6px;text-decoration:none;display:inline-block;margin:16px 0;">
                 Redefinir senha
