@@ -29,7 +29,10 @@ export async function POST(
   try {
     // Buscar objeto pelo QR code — incluindo status para distinguir protected
     const objectResult = await query(
-      `SELECT id, user_id, title, status, category FROM objects WHERE qr_code = $1`,
+      `SELECT o.id, o.user_id, o.title, o.status, o.category,
+              (o.is_legacy IS TRUE OR COALESCE(u.is_legacy, false) IS TRUE) AS legacy_blocked
+         FROM objects o LEFT JOIN users u ON u.id = o.user_id
+        WHERE o.qr_code = $1`,
       [params.code]
     );
 
@@ -37,7 +40,7 @@ export async function POST(
       return notFoundResponse();
     }
 
-    const object = objectResult.rows[0] as { id: string; user_id: string | null; title: string; status: string; category: string };
+    const object = objectResult.rows[0] as { id: string; user_id: string | null; title: string; status: string; category: string; legacy_blocked: boolean };
 
     // Cooldown — se o dono já foi notificado recentemente sobre este
     // objeto, não repete. `owner_notified` é o mesmo evento gravado mais
@@ -109,7 +112,9 @@ export async function POST(
     // E-mail é item 4 do fechamento do ciclo de "encontrei" (22/08/2026) —
     // é o canal mais confiável dos três (in-app + push + e-mail), já que
     // push depende de permissão que a maioria dos donos nunca concede.
-    if (object.user_id) {
+    // Barreira de proteção: objeto ou dono legado nunca recebe push nem e-mail (a resposta ao
+    // visitante é a mesma de sempre).
+    if (object.user_id && !object.legacy_blocked) {
       sendPushToUser(
         object.user_id,
         scanPayload(object.title, object.id)
