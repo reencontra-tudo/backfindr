@@ -1,5 +1,5 @@
 # STATUS — Backfindr
-Atualizado: 09/10/2026 21:31
+Atualizado: 09/10/2026 21:50
 Prioridade no portfólio: P1 (definido por Marcos em 01/10/2026)
 Fase: em produção (backfindr.com, Vercel, banco Supabase, automações no n8n do Railway `backfindr-n8n`). Produção = deployment `dpl_9LdFSc91bFhzv6YU3oPTUf1g2BKn`, Ready, criado em 01/10/2026 09:10, commit 95f7474 [V: `vercel inspect` de 09/10/2026; `/api/health` 200, banco ok, 25 ms, curl de 09/10/2026 22:44Z]. Frente ativa: integração por lotes dos 15 commits locais de 29/07–04/08 + endurecimento de e-mail (PRs #35 a #38).
 Objetivo atual: integrar os 15 commits locais por lotes, sem regressão e com aprovação por lote, e fechar o endurecimento do e-mail antes de o remetente `.com.br` entrar em produção.
@@ -23,7 +23,6 @@ Pendências (em ordem de prioridade):
 - Marcos: revisar e mesclar #41 (este STATUS) e #42 (DECISOES; só depois do #34).
 - Marcos: mesclar o PR #36 (**pronto para mesclar**: preview 22 URLs iguais à produção, MERGEABLE/CLEAN; o Code não mescla) e depois o #35 (nessa ordem; o #35 aguarda decisão), #37, #38 (depois de sair de rascunho), Lote 4 (ainda não preparado) e, por último, o Lote 1. Nenhum merge feito.
 - Marcos: revisar o PR #43 (sitemap, rascunho; 3 commits: campo, paginação e robustez — sitemap revalidado a cada 30 min, nunca devolve erro) e autorizar o PR do #40 (canonical do blog).
-- Marcos: rodar o item A2 do BLOCO A (`~/auditoria/produto/backfindr-papel-leitura-supabase-09102026.sql`, só consulta ao catálogo) para conferir as colunas da tabela do fluxo de redefinição de senha; **a existência da tabela foi confirmada pelo Marcos em 09/10/2026** (A1). Colunas: [N] até o A2 (o único esquema já visto no repositório, de 13/04/2026, usa nome de coluna diferente do que a rota usa).
 - Marcos: criar o papel de banco somente leitura (blocos B–E do mesmo arquivo, depois de ler); o Code valida a conexão e que escrever falha, sem imprimir segredo.
 - Marcos: escolher as camadas da trava contra escrita em produção pelo servidor local (proposta §E do relatório; nada implementado).
 - Cadeia de devolução ("Encontrei"): Fase 1 entregue, aguarda D1 (tensão decisão A × Manifesto 1 e 4) e D3–D13; D2 foi respondida em 08/10 (ver Decisões). Textos "sem retorno" e contato direto exigem revisão jurídica.
@@ -44,11 +43,12 @@ Pendências (em ordem de prioridade):
 - BACKFINDR.md não registra a correção de 16/09 (token `backfindr-autopost-r2`) nem os PRs #30/#31 [V: grep em `origin/main` e em `integracao/lote-1-docs`, 09/10/2026: 0 ocorrências nos dois]; entra na nota de sessão do Lote 1.
 Bloqueios / dependências externas:
 - Decisão do Marcos sobre M2, teste real e merges (acima); o Code não executa nada real nem mescla sem isso.
-- Acesso de leitura ao banco de produção: nenhum papel somente leitura configurado; por isso o estado do banco (caso "Barra forte"; colunas da tabela do fluxo de redefinição de senha) está [N] para o Code.
+- Acesso de leitura ao banco de produção: nenhum papel somente leitura configurado; por isso o estado do banco (caso "Barra forte") está [N] para o Code.
 - Logs de runtime da Vercel retêm ≈ 1 h (plano Hobby): não há como reconstruir e-mails ou cliques de dias atrás por esse caminho; o Resend guarda 15 dias.
 - Revisão jurídica dos textos "sem retorno" e de contato direto.
 - Tokens novos do Meta exigem login do Marcos no Business Manager (adiado).
 Decisões recentes (com data):
+- 09/10/2026 (noite): tabela do fluxo de redefinição de senha **verificada e fechada** pelo Marcos (SQL Editor, somente leitura): existe, colunas e índices consistentes com o código; sem item aberto.
 - 09/10/2026 (noite): **resíduo conhecido** — mensagens de commit e versões antigas de arquivos já publicadas nas branches do #36 e dos PRs de documentação continuam legíveis no histórico; não serão recriadas nem reescritas (sem force push) (Marcos, chat de 09/10/2026).
 - 09/10/2026 (noite): **registro de qualidade das verificações do Code** — abrir páginas de objeto e de escaneamento em produção ou em preview (que usa o banco de produção) registra visualizações (evento de escaneamento) nos objetos; conferências em 08/10 (~23:24Z, 3 objetos, produção e preview) e 09/10 (~22:30Z e ~23:12Z) fizeram isso; daqui em diante as comparações não abrem essas páginas. Detalhe nos relatórios locais.
 - 09/10/2026: Lote 3 abre como PR rascunho, sem merge; sitemap e `/blog` viram itens separados (issues #39 e #40); branch descartável `integracao/teste-5a-mais-35` autorizada, nunca será mesclada; trava contra escrita em produção: só proposta; endurecimento dos e-mails de acesso e de redefinição entra na 5a como commit separado (feito, 9b2455f); M2 e testes 1 a 3 aguardam o Marcos (Marcos, chat de 09/10/2026).
