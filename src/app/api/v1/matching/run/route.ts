@@ -5,6 +5,7 @@ import { verifyToken, extractTokenFromHeader } from '@/lib/jwt';
 import { successResponse, unauthorizedResponse, internalErrorResponse } from '@/lib/response';
 import { sendMatchAlertEmail } from '@/lib/email';
 import { sendPushToUser, matchPayload } from '@/lib/pushNotification';
+import { awaitSends } from '@/lib/awaitSends';
 import { Events } from '@/lib/events';
 import {
   calculateMatchScore as calculateMatchScoreBase,
@@ -137,6 +138,7 @@ export async function POST(request: NextRequest) {
     // ── Loop de matching em duas camadas ──────────────────────────────────
     const matches: Record<string, unknown>[] = [];
     const semanticChecks: Promise<void>[] = [];
+    const pendingSends: Promise<unknown>[] = [];
 
     for (const candidate of candidatesResult.rows) {
       const score = calculateMatchScore(object, candidate); // só exibição (coluna score)
@@ -153,14 +155,14 @@ export async function POST(request: NextRequest) {
       );
 
       if (stage2.decision === 'direct') {
-        await processMatch(object, candidate, score, objectId, payload.sub, matches);
+        await processMatch(object, candidate, score, objectId, payload.sub, matches, pendingSends);
       } else if (stage2.decision === 'ambiguous') {
         // Estágio 3 (LLM) — assíncrono em paralelo, mesmo padrão de antes
         const checkPromise = (async () => {
           const aiScore = await semanticMatchScore(object, candidate);
           if (aiScore >= STAGE3_SEMANTIC_ACCEPT_THRESHOLD) {
             const finalScore = Math.round((score + aiScore) / 2);
-            await processMatch(object, candidate, finalScore, objectId, payload.sub, matches);
+            await processMatch(object, candidate, finalScore, objectId, payload.sub, matches, pendingSends);
           }
         })();
         semanticChecks.push(checkPromise);
@@ -170,6 +172,9 @@ export async function POST(request: NextRequest) {
 
     // Aguarda todas as validações semânticas
     await Promise.allSettled(semanticChecks);
+
+    // Espera os envios (e-mail/push) já iniciados antes de responder
+    await awaitSends(pendingSends, 25_000);
 
     // ── Evento: matching concluído ────────────────────────────────────────
     Events.matchingCompleted(objectId, candidatesResult.rows.length).catch(() => {});
@@ -193,7 +198,8 @@ async function processMatch(
   score: number,
   objectId: string,
   userId: unknown,
-  matches: Record<string, unknown>[]
+  matches: Record<string, unknown>[],
+  pendingSends: Promise<unknown>[]
 ) {
   // Evita duplicata
   const existingMatch = await query(
@@ -220,7 +226,7 @@ async function processMatch(
   // ── Evento: match encontrado ──────────────────────────────────────────
   Events.matchFound(objectId, newMatch.id as string, score).catch(() => {});
 
-  // Notificações (fire-and-forget)
+  // Notificações (as promessas vão para pendingSends e são aguardadas pela rota)
   try {
     const lostObj = object.status === 'lost' ? object : candidate;
     const foundObj = object.status === 'found' ? object : candidate;
@@ -235,18 +241,22 @@ async function processMatch(
     if (ownerResult.rows.length > 0) {
       const owner = ownerResult.rows[0];
 
-      sendMatchAlertEmail(
-        { name: owner.name, email: owner.email },
-        lostObj.title as string,
-        newMatch.id,
-        score,
-        foundObj.title as string
-      ).catch(err => console.error('[matching] Falha ao enviar e-mail de match:', err));
+      pendingSends.push(
+        sendMatchAlertEmail(
+          { name: owner.name, email: owner.email },
+          lostObj.title as string,
+          newMatch.id,
+          score,
+          foundObj.title as string
+        ).catch(err => console.error('[matching] Falha ao enviar e-mail de match:', err))
+      );
 
-      sendPushToUser(
-        owner.id as string ?? (userId as string),
-        matchPayload(newMatch.id as string, lostObj.title as string, score)
-      ).catch(err => console.error('[push] match push failed:', err));
+      pendingSends.push(
+        sendPushToUser(
+          owner.id as string ?? (userId as string),
+          matchPayload(newMatch.id as string, lostObj.title as string, score)
+        ).catch(err => console.error('[push] match push failed:', err))
+      );
 
       // ── Evento: dono notificado ─────────────────────────────────────────
       Events.ownerNotified(lostObj.id as string, owner.id as string).catch(() => {});

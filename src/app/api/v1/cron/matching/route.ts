@@ -4,6 +4,7 @@ import { query } from '@/lib/db';
 import { Events } from '@/lib/events';
 import { sendMatchAlertEmail } from '@/lib/email';
 import { sendPushToUser, matchPayload } from '@/lib/pushNotification';
+import { awaitSends } from '@/lib/awaitSends';
 import {
   calculateMatchScore as calculateMatchScoreBase,
   expandCategoryGroup,
@@ -61,6 +62,7 @@ export async function GET(request: NextRequest) {
     );
 
     totalObjects = objects.rows.length;
+    const pendingSends: Promise<unknown>[] = [];
 
     for (const object of objects.rows) {
       // ── Evento: matching iniciado ───────────────────────────────────
@@ -175,17 +177,19 @@ export async function GET(request: NextRequest) {
           );
           if (ownerResult.rows.length > 0) {
             const owner = ownerResult.rows[0];
-            sendMatchAlertEmail(
-              { name: owner.name, email: owner.email },
-              object.title as string,
-              matchId,
-              finalScore,
-              candidate.title as string
-            ).catch(() => {});
-            sendPushToUser(
-              owner.id as string,
-              matchPayload(matchId, object.title as string, finalScore)
-            ).catch(() => {});
+            pendingSends.push(
+              sendMatchAlertEmail(
+                { name: owner.name, email: owner.email },
+                object.title as string,
+                matchId,
+                finalScore,
+                candidate.title as string
+              ).catch(() => {}),
+              sendPushToUser(
+                owner.id as string,
+                matchPayload(matchId, object.title as string, finalScore)
+              ).catch(() => {})
+            );
             Events.ownerNotified(object.id as string, owner.id as string).catch(() => {});
           }
         } catch { /* silencioso */ }
@@ -194,6 +198,9 @@ export async function GET(request: NextRequest) {
       // ── Evento: matching concluído ───────────────────────────────────
       Events.matchingCompleted(object.id as string, candidates.rows.length).catch(() => {});
     }
+
+    // Espera os envios (e-mail/push) já iniciados antes de responder
+    await awaitSends(pendingSends, 30_000);
 
     const durationMs = Date.now() - startedAt.getTime();
     console.log(`[cron/matching] ${totalObjects} objetos, ${totalMatches} matches, ${durationMs}ms`);

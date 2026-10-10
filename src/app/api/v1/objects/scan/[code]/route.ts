@@ -3,6 +3,7 @@ import { NextRequest } from 'next/server';
 import { query } from '@/lib/db';
 import { successResponse, notFoundResponse, internalErrorResponse } from '@/lib/response';
 import { sendPushToUser, scanPayload } from '@/lib/pushNotification';
+import { awaitSends } from '@/lib/awaitSends';
 import { Events } from '@/lib/events';
 
 export async function GET(
@@ -94,13 +95,15 @@ export async function POST(
       [object.user_id, 'QR Code Escaneado', message || `Alguém escaneou o QR Code de "${objTitle}".`, 'qr_scan']
     );
 
-    // Disparar push notification (fire-and-forget) — barreira de proteção: objeto ou dono legado
+    // Disparar push notification — barreira de proteção: objeto ou dono legado
     // nunca recebe push (a resposta ao visitante é a mesma de sempre).
     if (!object.legacy_blocked) {
-      sendPushToUser(
-        object.user_id as string,
-        scanPayload(objTitle, objId)
-      ).catch(err => console.error('[push] scan push failed:', err));
+      await awaitSends([
+        sendPushToUser(
+          object.user_id as string,
+          scanPayload(objTitle, objId)
+        ).catch(err => console.error('[push] scan push failed:', err)),
+      ]);
     }
 
     return successResponse({ message: 'Notification sent' });
