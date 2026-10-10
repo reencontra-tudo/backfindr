@@ -50,7 +50,7 @@ export async function POST(req: NextRequest) {
   if (test_email) {
     try {
       const resend = getResend();
-      await resend.emails.send({ from: 'Backfindr <noreply@backfindr.com>', to: [test_email], subject, html: body_html });
+      await resend.emails.send({ from: 'Backfindr <noreply@backfindr.com.br>', to: [test_email], subject, html: body_html });
       await query(`UPDATE email_campaigns SET status='sent', sent_count=1, sent_at=NOW(), updated_at=NOW() WHERE id=$1`, [campaignId]);
       return NextResponse.json({ sent: 1, failed: 0, campaign_id: campaignId });
     } catch (e) {
@@ -77,7 +77,7 @@ export async function POST(req: NextRequest) {
   for (const user of usersRes.rows) {
     try {
       const personalizedHtml = body_html.replace(/{{name}}/g, user.name ?? 'usuário');
-      await resend.emails.send({ from: 'Backfindr <noreply@backfindr.com>', to: [user.email], subject, html: personalizedHtml });
+      await resend.emails.send({ from: 'Backfindr <noreply@backfindr.com.br>', to: [user.email], subject, html: personalizedHtml });
       sent++;
     } catch { failed++; }
   }
