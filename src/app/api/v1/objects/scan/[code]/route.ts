@@ -67,7 +67,9 @@ export async function POST(
 
     // Buscar objeto
     const objectResult = await query(
-      `SELECT id, user_id FROM objects WHERE qr_code = $1`,
+      `SELECT o.id, o.user_id, (o.is_legacy IS TRUE OR COALESCE(u.is_legacy, false) IS TRUE) AS legacy_blocked
+         FROM objects o LEFT JOIN users u ON u.id = o.user_id
+        WHERE o.qr_code = $1`,
       [params.code]
     );
 
@@ -92,11 +94,14 @@ export async function POST(
       [object.user_id, 'QR Code Escaneado', message || `Alguém escaneou o QR Code de "${objTitle}".`, 'qr_scan']
     );
 
-    // Disparar push notification (fire-and-forget)
-    sendPushToUser(
-      object.user_id as string,
-      scanPayload(objTitle, objId)
-    ).catch(err => console.error('[push] scan push failed:', err));
+    // Disparar push notification (fire-and-forget) — barreira de proteção: objeto ou dono legado
+    // nunca recebe push (a resposta ao visitante é a mesma de sempre).
+    if (!object.legacy_blocked) {
+      sendPushToUser(
+        object.user_id as string,
+        scanPayload(objTitle, objId)
+      ).catch(err => console.error('[push] scan push failed:', err));
+    }
 
     return successResponse({ message: 'Notification sent' });
   } catch (error) {

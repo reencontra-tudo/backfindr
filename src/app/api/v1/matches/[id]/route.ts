@@ -90,9 +90,17 @@ export async function POST(
           ]
         ).catch(err => console.error('[match confirm] notification insert failed:', err));
 
-        // Push notification — fire-and-forget
-        sendPushToUser(otherUserId, matchConfirmedPayload(params.id, objectTitle))
-          .catch(err => console.error('[match confirm] push failed:', err));
+        // Push notification — fire-and-forget. Barreira de proteção: match com objeto legado ou
+        // com usuário legado nunca gera push (a resposta é a mesma de sempre).
+        const legacyCheck = await query(
+          `SELECT (EXISTS (SELECT 1 FROM objects WHERE id = ANY($1::uuid[]) AND is_legacy IS TRUE)
+               OR EXISTS (SELECT 1 FROM users WHERE id = $2 AND is_legacy IS TRUE)) AS blocked`,
+          [[match.lost_object_id, match.found_object_id], otherUserId]
+        ).catch(() => ({ rows: [{ blocked: false }] }));
+        if (!legacyCheck.rows[0]?.blocked) {
+          sendPushToUser(otherUserId, matchConfirmedPayload(params.id, objectTitle))
+            .catch(err => console.error('[match confirm] push failed:', err));
+        }
       }
     }
 
