@@ -1,5 +1,5 @@
 # STATUS — Backfindr
-Atualizado: 09/10/2026 22:01
+Atualizado: 09/10/2026 22:02
 Prioridade no portfólio: P1 (definido por Marcos em 01/10/2026)
 Fase: em produção (backfindr.com, Vercel, banco Supabase, automações no n8n do Railway `backfindr-n8n`). Produção = deployment `dpl_E9Udox98nQauVJGu42PN2g8VxSR6`, Ready, criado em 09/10/2026 21:57 (BRT), da `main` 3112cd3 (merge do PR #36) [V: `vercel inspect` e status do commit, 10/10/2026 00:59Z; `/api/health` 200, banco ok]. **Plano de volta:** promover de volta o deployment anterior `dpl_9LdFSc91bFhzv6YU3oPTUf1g2BKn` (main 95f7474, 01/10/2026, Ready) na Vercel (`vercel promote https://backfindr-jfyv0zelc-marcosmakarara-6287s-projects.vercel.app`), ou reverter o merge 3112cd3. Frente ativa: integração por lotes dos 15 commits locais de 29/07–04/08 + endurecimento de e-mail (PRs #35 a #38).
 Objetivo atual: integrar os 15 commits locais por lotes, sem regressão e com aprovação por lote, e fechar o endurecimento do e-mail antes de o remetente `.com.br` entrar em produção.
@@ -24,6 +24,7 @@ Pendências (em ordem de prioridade):
 - Marcos: revisar e mesclar #41 (este STATUS) e #42 (DECISOES; só depois do #34).
 - Marcos: o PR #36 **já foi mesclado** (09/10); ficam, em ordem, o #35 (aguarda decisão do Marcos), #37, #38 (depois de sair de rascunho), Lote 4 (ainda não preparado) e, por último, o Lote 1. Nenhum merge feito.
 - Marcos: decidir a mitigação do registro de visualizações (análise por leitura de código em `~/auditoria/produto/backfindr-gravacao-em-get-09102026.md`; opções C, A, B) e rodar a consulta somente SELECT `~/auditoria/produto/backfindr-eventos-das-verificacoes-09102026.sql`; o PR #43 só sai de rascunho depois dessa decisão.
+- Code: o PR #38 (Lote 3, rascunho) ficou **em conflito com a `main`** depois do merge do #36 (`src/lib/email.ts` e `src/app/api/auth/magic-link/route.ts`; eu só havia simulado o #36 contra o #35). Resolver atualizando a branch do #38 com um merge da `main` (sem force push) e repetir tsc/build; aguarda a vez na ordem de trabalho.
 - Marcos: revisar o PR #43 (sitemap, rascunho; 3 commits: campo, paginação e robustez — sitemap revalidado a cada 30 min, nunca devolve erro) e autorizar o PR do #40 (canonical do blog).
 - Marcos: criar o papel de banco somente leitura (blocos B–E do mesmo arquivo, depois de ler); o Code valida a conexão e que escrever falha, sem imprimir segredo.
 - Marcos: escolher as camadas da trava contra escrita em produção pelo servidor local (proposta §E do relatório; nada implementado).
