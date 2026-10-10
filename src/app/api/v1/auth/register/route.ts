@@ -5,6 +5,7 @@ import { query } from '@/lib/db';
 import { createAccessToken, createRefreshToken } from '@/lib/jwt';
 import { successResponse, errorResponse, conflictResponse, internalErrorResponse } from '@/lib/response';
 import { sendWelcomeEmail } from '@/lib/email';
+import { consumeSendSlot, clientIpFromHeaders } from '@/lib/sendThrottle';
 
 export async function POST(request: NextRequest) {
   try {
@@ -62,8 +63,18 @@ export async function POST(request: NextRequest) {
 
     const user = result.rows[0];
 
-    // Enviar e-mail de boas-vindas (não bloqueia o cadastro se falhar)
-    sendWelcomeEmail({ name: user.name, email: user.email }).catch(() => {});
+    // Boas-vindas com limite de envios por origem (5 em 24 h). Acima do limite, ou se o controle
+    // estiver indisponível, o cadastro segue normal e só o e-mail não é enviado.
+    const welcomeAllowed = await consumeSendSlot({
+      kind: 'welcome_ip',
+      key: clientIpFromHeaders(request.headers),
+      limit: 5,
+      windowSeconds: 24 * 60 * 60,
+    });
+    if (welcomeAllowed) {
+      // Enviar e-mail de boas-vindas (não bloqueia o cadastro se falhar)
+      sendWelcomeEmail({ name: user.name, email: user.email }).catch(() => {});
+    }
 
     // Gerar tokens
     const accessToken = createAccessToken(user.id, user.email);
