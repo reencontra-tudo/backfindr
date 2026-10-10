@@ -55,6 +55,7 @@ export async function GET(request: NextRequest) {
          LEFT JOIN objects o ON u.id = o.user_id AND o.status != 'deleted'
          WHERE u.created_at >= NOW() - INTERVAL '1 day 1 hour'
          AND u.created_at < NOW() - INTERVAL '1 day'
+         AND u.is_legacy IS NOT TRUE AND u.is_system_account IS NOT TRUE
          AND (SELECT COUNT(*) FROM user_lifecycle_events WHERE user_id = u.id AND event_type = 'day1_reminder') = 0
          GROUP BY u.id, u.email, u.name
          HAVING COUNT(o.id) = 0`
@@ -92,6 +93,7 @@ export async function GET(request: NextRequest) {
          FROM users u
          WHERE u.created_at >= NOW() - INTERVAL '3 days 1 hour'
          AND u.created_at < NOW() - INTERVAL '3 days'
+         AND u.is_legacy IS NOT TRUE AND u.is_system_account IS NOT TRUE
          AND (SELECT COUNT(*) FROM user_lifecycle_events WHERE user_id = u.id AND event_type = 'day3_tips') = 0`
       );
 
@@ -122,6 +124,7 @@ export async function GET(request: NextRequest) {
          FROM users u
          JOIN objects o ON u.id = o.user_id
          WHERE o.status = 'lost'
+         AND o.is_legacy IS NOT TRUE AND u.is_legacy IS NOT TRUE AND u.is_system_account IS NOT TRUE
          AND o.created_at >= NOW() - INTERVAL '7 days 1 hour'
          AND o.created_at < NOW() - INTERVAL '7 days'
          AND (SELECT COUNT(*) FROM user_lifecycle_events 
@@ -158,6 +161,7 @@ export async function GET(request: NextRequest) {
         `SELECT u.id, u.email, u.name
          FROM users u
          WHERE u.last_login < NOW() - INTERVAL '30 days'
+         AND u.is_legacy IS NOT TRUE AND u.is_system_account IS NOT TRUE
          AND (SELECT COUNT(*) FROM user_lifecycle_events WHERE user_id = u.id AND event_type = 'inactivity_30d') = 0
          LIMIT 100`
       );
@@ -209,6 +213,7 @@ export async function GET(request: NextRequest) {
         `SELECT u.id, u.email, u.name
          FROM users u
          WHERE u.is_active = true
+         AND u.is_legacy IS NOT TRUE AND u.is_system_account IS NOT TRUE
          AND (SELECT COUNT(*) FROM user_lifecycle_events 
               WHERE user_id = u.id AND event_type = $1 
               AND created_at >= NOW() - INTERVAL '30 days') = 0

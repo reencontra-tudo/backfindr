@@ -174,6 +174,7 @@ export async function GET(req: NextRequest) {
           SELECT COUNT(*) FROM objects candidates
           WHERE candidates.status IN ('found')
             AND candidates.id != o.id
+            AND candidates.is_legacy IS NOT TRUE
             AND (candidates.category = o.category OR candidates.type = o.category)
         )                                                             AS candidate_count
       FROM objects o
@@ -181,6 +182,7 @@ export async function GET(req: NextRequest) {
       WHERE o.status IN ('lost', 'stolen')
         AND o.created_at BETWEEN NOW() - INTERVAL '72 hours' AND NOW() - INTERVAL '24 hours'
         AND u.email IS NOT NULL
+        AND o.is_legacy IS NOT TRUE AND u.is_legacy IS NOT TRUE AND u.is_system_account IS NOT TRUE
         AND NOT EXISTS (
           SELECT 1 FROM matches m
           WHERE (m.lost_object_id = o.id OR m.found_object_id = o.id)

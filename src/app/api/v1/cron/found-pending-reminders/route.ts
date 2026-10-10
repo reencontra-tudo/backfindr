@@ -55,6 +55,8 @@ export async function GET(request: NextRequest) {
             AND o.found_pending_since <= NOW() - INTERVAL '3 days'
             AND o.found_pending_since >  NOW() - INTERVAL '4 days'
             AND o.user_id IS NOT NULL
+            AND o.is_legacy IS NOT TRUE
+            AND NOT EXISTS (SELECT 1 FROM users ux WHERE ux.id = o.user_id AND (ux.is_legacy IS TRUE OR ux.is_system_account IS TRUE))
             AND (SELECT COUNT(*) FROM user_lifecycle_events
                   WHERE user_id = o.user_id AND object_id = o.id
                     AND event_type = 'found_pending_reminder_d3') = 0
@@ -91,6 +93,8 @@ export async function GET(request: NextRequest) {
             AND o.found_pending_since <= NOW() - INTERVAL '7 days'
             AND o.found_pending_since >  NOW() - INTERVAL '8 days'
             AND o.user_id IS NOT NULL
+            AND o.is_legacy IS NOT TRUE
+            AND NOT EXISTS (SELECT 1 FROM users ux WHERE ux.id = o.user_id AND (ux.is_legacy IS TRUE OR ux.is_system_account IS TRUE))
             AND (SELECT COUNT(*) FROM user_lifecycle_events
                   WHERE user_id = o.user_id AND object_id = o.id
                     AND event_type = 'found_pending_reminder_d7') = 0
