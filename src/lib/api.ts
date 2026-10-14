@@ -17,6 +17,25 @@ api.interceptors.request.use((config: InternalAxiosRequestConfig) => {
   return config;
 });
 
+// Resposta do servidor dizendo que as credenciais são inválidas ou expiradas.
+export const isInvalidSessionError = (e: unknown): boolean =>
+  axios.isAxiosError(e) && e.response?.status === 401;
+
+// Renova a sessão; em falha que não seja 401 (rede, timeout, 5xx) tenta mais uma vez.
+const refreshSession = async (refresh: string) => {
+  let lastError: unknown;
+  for (let attempt = 0; attempt < 2; attempt++) {
+    try {
+      return await axios.post<AuthTokens>(`${API_URL}/api/v1/auth/refresh`, { refresh_token: refresh });
+    } catch (e) {
+      lastError = e;
+      if (isInvalidSessionError(e)) throw e;
+      if (attempt === 0) await new Promise((resolve) => setTimeout(resolve, 1000));
+    }
+  }
+  throw lastError;
+};
+
 let isRefreshing = false;
 let queue: { resolve: (v: string) => void; reject: (e: unknown) => void }[] = [];
 
@@ -40,15 +59,19 @@ api.interceptors.response.use(
       const refresh = Cookies.get('refresh_token');
       if (!refresh) { clearTokens(); if (typeof window !== 'undefined') window.location.href = '/auth/login'; return Promise.reject(error); }
       try {
-        const { data } = await axios.post<AuthTokens>(`${API_URL}/api/v1/auth/refresh`, { refresh_token: refresh });
+        const { data } = await refreshSession(refresh);
         setTokens(data);
         processQueue(null, data.access_token);
         original.headers.Authorization = `Bearer ${data.access_token}`;
         return api(original);
       } catch (e) {
         processQueue(e, null);
-        clearTokens();
-        if (typeof window !== 'undefined') window.location.href = '/auth/login';
+        // A sessão só é encerrada quando o servidor recusa o token (401). Falha de rede,
+        // timeout ou erro 5xx mantém a sessão e os tokens: o próximo pedido tenta de novo.
+        if (isInvalidSessionError(e)) {
+          clearTokens();
+          if (typeof window !== 'undefined') window.location.href = '/auth/login';
+        }
         return Promise.reject(e);
       } finally {
         isRefreshing = false;
