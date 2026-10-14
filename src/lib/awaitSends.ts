@@ -21,3 +21,14 @@ export async function awaitSends(tasks: Array<Promise<unknown>>, maxMs = 10_000)
     if (timer) clearTimeout(timer);
   }
 }
+
+/**
+ * Tempo de espera para rotas longas (matching em lote): o menor entre o teto
+ * pedido e o que sobra do orçamento da função. Assim a espera dos envios nunca
+ * empurra a rota para além do limite de duração (300 s no plano atual, com
+ * margem), mesmo que o processamento já tenha consumido quase todo o tempo.
+ * Sem tempo sobrando, devolve 0 e a rota responde como respondia antes.
+ */
+export function sendWaitBudget(startedAtMs: number, capMs: number, routeLimitMs = 280_000): number {
+  return Math.max(0, Math.min(capMs, routeLimitMs - (Date.now() - startedAtMs)));
+}

@@ -4,7 +4,7 @@ import { query } from '@/lib/db';
 import { Events } from '@/lib/events';
 import { sendMatchAlertEmail } from '@/lib/email';
 import { sendPushToUser, matchPayload } from '@/lib/pushNotification';
-import { awaitSends } from '@/lib/awaitSends';
+import { awaitSends, sendWaitBudget } from '@/lib/awaitSends';
 import {
   calculateMatchScore as calculateMatchScoreBase,
   expandCategoryGroup,
@@ -200,7 +200,7 @@ export async function GET(request: NextRequest) {
     }
 
     // Espera os envios (e-mail/push) já iniciados antes de responder
-    await awaitSends(pendingSends, 30_000);
+    await awaitSends(pendingSends, sendWaitBudget(startedAt.getTime(), 30_000));
 
     const durationMs = Date.now() - startedAt.getTime();
     console.log(`[cron/matching] ${totalObjects} objetos, ${totalMatches} matches, ${durationMs}ms`);

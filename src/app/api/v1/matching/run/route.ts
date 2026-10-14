@@ -5,7 +5,7 @@ import { verifyToken, extractTokenFromHeader } from '@/lib/jwt';
 import { successResponse, unauthorizedResponse, internalErrorResponse } from '@/lib/response';
 import { sendMatchAlertEmail } from '@/lib/email';
 import { sendPushToUser, matchPayload } from '@/lib/pushNotification';
-import { awaitSends } from '@/lib/awaitSends';
+import { awaitSends, sendWaitBudget } from '@/lib/awaitSends';
 import { Events } from '@/lib/events';
 import {
   calculateMatchScore as calculateMatchScoreBase,
@@ -139,6 +139,7 @@ export async function POST(request: NextRequest) {
     const matches: Record<string, unknown>[] = [];
     const semanticChecks: Promise<void>[] = [];
     const pendingSends: Promise<unknown>[] = [];
+    const startedAtMs = Date.now();
 
     for (const candidate of candidatesResult.rows) {
       const score = calculateMatchScore(object, candidate); // só exibição (coluna score)
@@ -174,7 +175,7 @@ export async function POST(request: NextRequest) {
     await Promise.allSettled(semanticChecks);
 
     // Espera os envios (e-mail/push) já iniciados antes de responder
-    await awaitSends(pendingSends, 25_000);
+    await awaitSends(pendingSends, sendWaitBudget(startedAtMs, 25_000));
 
     // ── Evento: matching concluído ────────────────────────────────────────
     Events.matchingCompleted(objectId, candidatesResult.rows.length).catch(() => {});

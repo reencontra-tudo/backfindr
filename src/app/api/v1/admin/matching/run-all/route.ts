@@ -10,7 +10,7 @@ import {
   semanticMatchScore,
   STAGE3_SEMANTIC_ACCEPT_THRESHOLD,
 } from '@/lib/matching';
-import { awaitSends } from '@/lib/awaitSends';
+import { awaitSends, sendWaitBudget } from '@/lib/awaitSends';
 
 const MAX_RADIUS_KM = 50;
 
@@ -54,6 +54,7 @@ export async function POST(req: NextRequest) {
     let totalCreated = 0;
     let totalChecked = 0;
     const pendingSends: Promise<unknown>[] = [];
+    const startedAtMs = Date.now();
     // Estágio 3 formalizado aqui pela primeira vez (27/08/2026) — antes só
     // existia no caminho individual. Contadores pra reportar o custo real,
     // não só o resultado final.
@@ -188,7 +189,7 @@ export async function POST(req: NextRequest) {
     }
 
     // Espera os e-mails já iniciados antes de responder
-    await awaitSends(pendingSends, 30_000);
+    await awaitSends(pendingSends, sendWaitBudget(startedAtMs, 30_000));
 
     return NextResponse.json({
       message: `Matching completo. ${totalCreated} match(es) criado(s) de ${totalChecked} candidatos verificados (${totalAmbiguous} ambíguo(s) enviado(s) ao estágio 3, ${totalSemanticAccepted} confirmado(s) pela IA).`,
