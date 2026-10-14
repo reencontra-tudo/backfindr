@@ -6,6 +6,7 @@ import { createAccessToken, createRefreshToken } from '@/lib/jwt';
 import { successResponse, errorResponse, conflictResponse, internalErrorResponse } from '@/lib/response';
 import { sendWelcomeEmail } from '@/lib/email';
 import { consumeSendSlot, clientIpFromHeaders } from '@/lib/sendThrottle';
+import { awaitSends } from '@/lib/awaitSends';
 
 export async function POST(request: NextRequest) {
   try {
@@ -72,8 +73,9 @@ export async function POST(request: NextRequest) {
       windowSeconds: 24 * 60 * 60,
     });
     if (welcomeAllowed) {
-      // Enviar e-mail de boas-vindas (não bloqueia o cadastro se falhar)
-      sendWelcomeEmail({ name: user.name, email: user.email }).catch(() => {});
+      // Enviar e-mail de boas-vindas (uma falha não derruba o cadastro); a rota espera o envio
+      // terminar antes de responder, para a função serverless não encerrá-lo no meio.
+      await awaitSends([sendWelcomeEmail({ name: user.name, email: user.email }).catch(() => {})]);
     }
 
     // Gerar tokens

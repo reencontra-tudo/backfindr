@@ -4,6 +4,7 @@ import { query } from '@/lib/db';
 import { verifyToken, extractTokenFromHeader } from '@/lib/jwt';
 import { successResponse, unauthorizedResponse, notFoundResponse, internalErrorResponse } from '@/lib/response';
 import { sendPushToUser, matchConfirmedPayload } from '@/lib/pushNotification';
+import { awaitSends } from '@/lib/awaitSends';
 
 export async function POST(
   request: NextRequest,
@@ -90,7 +91,7 @@ export async function POST(
           ]
         ).catch(err => console.error('[match confirm] notification insert failed:', err));
 
-        // Push notification — fire-and-forget. Barreira de proteção: match com objeto legado ou
+        // Push notification. Barreira de proteção: match com objeto legado ou
         // com usuário legado nunca gera push (a resposta é a mesma de sempre).
         const legacyCheck = await query(
           `SELECT (EXISTS (SELECT 1 FROM objects WHERE id = ANY($1::uuid[]) AND is_legacy IS TRUE)
@@ -98,8 +99,10 @@ export async function POST(
           [[match.lost_object_id, match.found_object_id], otherUserId]
         ).catch(() => ({ rows: [{ blocked: false }] }));
         if (!legacyCheck.rows[0]?.blocked) {
-          sendPushToUser(otherUserId, matchConfirmedPayload(params.id, objectTitle))
-            .catch(err => console.error('[match confirm] push failed:', err));
+          await awaitSends([
+            sendPushToUser(otherUserId, matchConfirmedPayload(params.id, objectTitle))
+              .catch(err => console.error('[match confirm] push failed:', err)),
+          ]);
         }
       }
     }

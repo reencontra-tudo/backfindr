@@ -10,6 +10,7 @@ import {
   semanticMatchScore,
   STAGE3_SEMANTIC_ACCEPT_THRESHOLD,
 } from '@/lib/matching';
+import { awaitSends, sendWaitBudget } from '@/lib/awaitSends';
 
 const MAX_RADIUS_KM = 50;
 
@@ -52,6 +53,8 @@ export async function POST(req: NextRequest) {
 
     let totalCreated = 0;
     let totalChecked = 0;
+    const pendingSends: Promise<unknown>[] = [];
+    const startedAtMs = Date.now();
     // Estágio 3 formalizado aqui pela primeira vez (27/08/2026) — antes só
     // existia no caminho individual. Contadores pra reportar o custo real,
     // não só o resultado final.
@@ -169,19 +172,24 @@ export async function POST(req: NextRequest) {
           );
           if (ownerResult.rows.length > 0) {
             const owner = ownerResult.rows[0];
-            sendMatchAlertEmail(
-              { name: owner.name, email: owner.email },
-              object.title as string,
-              matchResult.rows[0]?.id ?? '',
-              finalScore,
-              candidate.title as string
-            ).catch(err => console.error('[admin/matching] Falha ao enviar e-mail de match:', err));
+            pendingSends.push(
+              sendMatchAlertEmail(
+                { name: owner.name, email: owner.email },
+                object.title as string,
+                matchResult.rows[0]?.id ?? '',
+                finalScore,
+                candidate.title as string
+              ).catch(err => console.error('[admin/matching] Falha ao enviar e-mail de match:', err))
+            );
           }
         } catch (emailErr) {
           console.error('[admin/matching] Erro ao buscar dono para notificação:', emailErr);
         }
       }
     }
+
+    // Espera os e-mails já iniciados antes de responder
+    await awaitSends(pendingSends, sendWaitBudget(startedAtMs, 30_000));
 
     return NextResponse.json({
       message: `Matching completo. ${totalCreated} match(es) criado(s) de ${totalChecked} candidatos verificados (${totalAmbiguous} ambíguo(s) enviado(s) ao estágio 3, ${totalSemanticAccepted} confirmado(s) pela IA).`,

@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { query } from '@/lib/db';
 import { createAccessToken, createRefreshToken } from '@/lib/jwt';
 import { sendWelcomeEmail } from '@/lib/email';
+import { awaitSends } from '@/lib/awaitSends';
 
 export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url);
@@ -94,11 +95,13 @@ export async function GET(request: NextRequest) {
     const accessToken = createAccessToken(user.id, user.email);
     const refreshToken = createRefreshToken(user.id, user.email);
 
-    // Disparar e-mail de boas-vindas para novos usuários (fire-and-forget)
+    // Disparar e-mail de boas-vindas para novos usuários (a rota espera o envio terminar antes de redirecionar)
     if (isNewUser) {
-      sendWelcomeEmail({ name: user.name, email: user.email }).catch((err) => {
-        console.warn('[auth] Falha ao enviar e-mail de boas-vindas para:', user.email, err);
-      });
+      await awaitSends([
+        sendWelcomeEmail({ name: user.name, email: user.email }).catch((err) => {
+          console.warn('[auth] Falha ao enviar e-mail de boas-vindas para:', user.email, err);
+        }),
+      ]);
     }
 
     // Redirecionar para página intermediária que salva tokens via js-cookie (cliente)

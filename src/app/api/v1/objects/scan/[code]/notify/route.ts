@@ -5,6 +5,7 @@ import { successResponse, notFoundResponse, internalErrorResponse } from '@/lib/
 import { sendPushToUser, scanPayload } from '@/lib/pushNotification';
 import { sendObjectFoundEmail } from '@/lib/email';
 import { Events, recordEvent } from '@/lib/events';
+import { awaitSends } from '@/lib/awaitSends';
 
 // Mitigação de segurança (item 3b do ciclo found→returned, 25/08/2026):
 // esta rota é pública e sem autenticação nenhuma — qualquer um que escaneie
@@ -105,7 +106,7 @@ export async function POST(
       }).catch(err => console.error('[events] ownerNotified failed:', err));
     }
 
-    // Disparar push notification e e-mail (fire-and-forget) — só quando o
+    // Disparar push notification e e-mail — só quando o
     // objeto tem dono real. Objetos legados/sem dono (user_id null, ex:
     // import Webjetos) não têm pra quem mandar nada disso.
     //
@@ -115,12 +116,12 @@ export async function POST(
     // Barreira de proteção: objeto ou dono legado nunca recebe push nem e-mail (a resposta ao
     // visitante é a mesma de sempre).
     if (object.user_id && !object.legacy_blocked) {
-      sendPushToUser(
+      const pushTask = sendPushToUser(
         object.user_id,
         scanPayload(object.title, object.id)
       ).catch(err => console.error('[push] notify push failed:', err));
 
-      query(`SELECT name, email FROM users WHERE id = $1`, [object.user_id])
+      const emailTask = query(`SELECT name, email FROM users WHERE id = $1`, [object.user_id])
         .then((userResult) => {
           const owner = userResult.rows[0] as { name: string; email: string } | undefined;
           if (!owner?.email) return;
@@ -132,6 +133,10 @@ export async function POST(
           });
         })
         .catch(err => console.error('[email] notify email failed:', err));
+
+      // Espera os envios terminarem antes de responder (a função serverless
+      // pode encerrar o que ficar pendente depois da resposta).
+      await awaitSends([pushTask, emailTask]);
     }
 
     return successResponse({ message: 'Owner notified successfully' });
