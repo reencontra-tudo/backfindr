@@ -6,7 +6,7 @@ import { successResponse, unauthorizedResponse, internalErrorResponse } from '@/
 import { sendMatchAlertEmail } from '@/lib/email';
 import { sendPushToUser, matchPayload } from '@/lib/pushNotification';
 import { awaitSends, sendWaitBudget } from '@/lib/awaitSends';
-import { Events } from '@/lib/events';
+import { Events, recordEvent } from '@/lib/events';
 import {
   calculateMatchScore as calculateMatchScoreBase,
   expandCategoryGroup,
@@ -233,34 +233,47 @@ async function processMatch(
     const foundObj = object.status === 'found' ? object : candidate;
 
     const ownerResult = await query(
-      `SELECT u.name, u.email FROM users u
-       JOIN objects o ON o.user_id = u.id
-       WHERE o.id = $1`,
+      `SELECT u.id, u.name, u.email,
+              (o.is_legacy IS TRUE OR COALESCE(u.is_legacy, false) IS TRUE) AS legacy_blocked
+         FROM users u
+         JOIN objects o ON o.user_id = u.id
+        WHERE o.id = $1`,
       [lostObj.id]
     );
 
     if (ownerResult.rows.length > 0) {
       const owner = ownerResult.rows[0];
 
-      pendingSends.push(
-        sendMatchAlertEmail(
-          { name: owner.name, email: owner.email },
-          lostObj.title as string,
-          newMatch.id,
-          score,
-          foundObj.title as string
-        ).catch(err => console.error('[matching] Falha ao enviar e-mail de match:', err))
-      );
+      // Barreira de proteção: objeto ou dono legado nunca recebe e-mail nem push.
+      if (!owner.legacy_blocked) {
+        pendingSends.push(
+          sendMatchAlertEmail(
+            { name: owner.name, email: owner.email },
+            lostObj.title as string,
+            newMatch.id,
+            score,
+            foundObj.title as string
+          ).catch(err => console.error('[matching] Falha ao enviar e-mail de match:', err))
+        );
 
-      pendingSends.push(
-        sendPushToUser(
-          owner.id as string ?? (userId as string),
-          matchPayload(newMatch.id as string, lostObj.title as string, score)
-        ).catch(err => console.error('[push] match push failed:', err))
-      );
+        // O push vai para o dono do objeto perdido (antes, como o id do dono
+        // não vinha na consulta, ia para quem disparou o matching).
+        pendingSends.push(
+          sendPushToUser(
+            owner.id as string,
+            matchPayload(newMatch.id as string, lostObj.title as string, score)
+          ).catch(err => console.error('[push] match push failed:', err))
+        );
+      }
 
       // ── Evento: dono notificado ─────────────────────────────────────────
-      Events.ownerNotified(lostObj.id as string, owner.id as string).catch(() => {});
+      // Gravado exatamente como antes (sem user_id), para não mudar o que já é registrado.
+      recordEvent({
+        object_id: lostObj.id as string,
+        type: 'owner_notified',
+        title: 'Dono notificado',
+        source: 'system',
+      }).catch(() => {});
     }
   } catch (emailErr) {
     console.error('[matching] Erro ao buscar dono para notificação:', emailErr);
