@@ -61,7 +61,7 @@ function LoginForm() {
       await login(data.email, data.password);
       const { user: loggedUser } = useAuthStore.getState();
       if (loggedUser) {
-        analytics.identify(loggedUser.id, { email: loggedUser.email, name: loggedUser.name });
+        analytics.identify(loggedUser.id);
       }
       analytics.login('email');
       toast.success('Bem-vindo de volta!');

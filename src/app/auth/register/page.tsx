@@ -101,7 +101,7 @@ function RegisterForm() {
       const result = await registerUser({ name: data.name, email: data.email, password: data.password, phone: data.phone });
       const { user: newUser } = useAuthStore.getState();
       if (newUser) {
-        analytics.identify(newUser.id, { email: newUser.email, name: newUser.name });
+        analytics.identify(newUser.id);
       }
       analytics.signUp('email');
       if (typeof window !== 'undefined' && (window as any).fbq) {
