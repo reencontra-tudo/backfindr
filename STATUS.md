@@ -4,6 +4,7 @@ Prioridade no portfólio: P1 (definido por Marcos em 01/10/2026)
 Fase: em produção (backfindr.com, Vercel; banco Supabase; automações no n8n do Railway `backfindr-n8n`)
 Objetivo atual: reduzir o tempo de abertura do mapa público (/map), hoje 12–15 s no celular
 Próximo passo exato: abrir https://backfindr.com/map no navegador com a aba Performance/Rede (cache limpo, perfil de celular) e anotar o tempo de cada etapa: bundle do mapbox-gl, tiles, `GET /api/v1/objects/map` (medido em 25/09: 0,3–1,7 s, 286 KB) e `GET /api/v1/news` (medido em 25/09: 3,1 s, chamado em `src/app/map/client.tsx:202`); corrigir o maior em branch `perf/mapa-carregamento`
+Decisões e trabalho de produto/comunicação/posicionamento: ver `DECISOES.md` (criado em 07/10/2026; registrar lá toda decisão antes de encerrar a sessão)
 Feito na última sessão:
 - 01/10: repo desconectado dos 4 serviços dos projetos Railway abandonados (estado anterior em ~/auditoria/railway-desconexao-01102026.json)
 - 25/09: PR #30 mergeado — logo da comunidade de 3,6 MB trocado por versão de 10 KB; removido o preload duplicado do mapbox-gl no /map
