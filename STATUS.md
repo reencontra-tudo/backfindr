@@ -1,29 +1,24 @@
 # STATUS — Backfindr
-Atualizado: 01/10/2026 07:40
+Atualizado: 26/10/2026 13:55
 Prioridade no portfólio: P1 (definido por Marcos em 01/10/2026)
-Fase: em produção (backfindr.com, Vercel; banco Supabase; automações no n8n do Railway `backfindr-n8n`)
-Objetivo atual: reduzir o tempo de abertura do mapa público (/map), hoje 12–15 s no celular
-Próximo passo exato: abrir https://backfindr.com/map no navegador com a aba Performance/Rede (cache limpo, perfil de celular) e anotar o tempo de cada etapa: bundle do mapbox-gl, tiles, `GET /api/v1/objects/map` (medido em 25/09: 0,3–1,7 s, 286 KB) e `GET /api/v1/news` (medido em 25/09: 3,1 s, chamado em `src/app/map/client.tsx:202`); corrigir o maior em branch `perf/mapa-carregamento`
+Fase: em produção (backfindr.com, Vercel; banco Supabase; automações no n8n); `main` = 92d4deb (14/10/2026); deploy de produção mais recente Ready, criado em 14/10/2026 (`vercel inspect`, 26/10/2026)
+Objetivo atual: fechar a integração por lotes dos trabalhos pendentes e a cadeia de devolução "Encontrei", conforme as decisões do responsável
+Próximo passo exato: o Marcos responde as decisões D1 e D4 da cadeia "Encontrei" (cartão correspondente no quadro privado); só depois a sessão atualiza este arquivo e abre o PR da etapa seguinte
 Feito na última sessão:
-- 01/10: repo desconectado dos 4 serviços dos projetos Railway abandonados (estado anterior em ~/auditoria/railway-desconexao-01102026.json)
-- 25/09: PR #30 mergeado — logo da comunidade de 3,6 MB trocado por versão de 10 KB; removido o preload duplicado do mapbox-gl no /map
-- 25/09: PR #31 mergeado — mesma correção do preload em /dashboard/mapa
-- Deploy de produção no Vercel concluído (36e0a4e); `/api/health` 200 com banco ok (25/09 19:51)
+- 09/10 a 14/10/2026: mesclados #36 (e-mail), #44 (limite de boas-vindas por origem), #45 (registros legados fora dos envios), #35 (remetente `.com.br`), #47 e #46 (avisos de match e envios aguardados antes de responder); testes reais 1 e 2 concluídos e confirmados pelo Marcos (fonte: PRs públicos e verificação de 14/10/2026)
+- 26/10/2026: PRs em rascunho para revisão: #49 (BACKFINDR.md) e este STATUS genérico; nenhum commit novo na `main` desde 14/10/2026 (`gh`, 26/10/2026)
 Pendências (em ordem de prioridade):
-- Mapa ainda lento (12–15 s) — ver próximo passo; fora do escopo do #30: CSS do Mapbox só pré-carregado, PNGs de 4–6 MB em /public, rastreadores
-- 🔴 5 tokens do Meta em texto puro nos nodes do workflow n8n "Backfindr AutoPost — Facebook" (`urluPuyxe4ccY9ZE`): mover para credencial do n8n e gerar tokens novos (BACKFINDR.md §17)
-- AutoPost: confirmar numa execução real que o upload no R2 voltou a funcionar após a troca de token de 16/09 (não verificado desde então)
-- Workflow "Found Pending" (`hDJeRz5YpWi673u1`): colar o `CRON_SECRET` real no lugar do placeholder (hoje falha com 401 todo dia)
-- BACKFINDR.md não registra a correção de 16/09 (token `backfindr-autopost-r2`) nem os PRs #30/#31
-- 15 commits de 29/07–04/08 só existem em `~/Downloads/backfindr-local/backfindr-main` (GA4 `ocorrencia_publicada`, ShareModal, Google Ads Fase 1): decidir o que aproveitar
-- Env vars: `FACEBOOK_APP_*` ausentes (login Facebook provavelmente quebrado); ~10 vars sem uso no Vercel
-- Tabela `municipalities` sem nenhum município de Rondônia (investigar)
+- Decisões do Marcos sobre a cadeia "Encontrei" (detalhe no quadro privado)
+- PRs abertos revisáveis: #33, #34, #37, #38 (rascunho), #41, #42 (rascunho), #43 (rascunho), #48 (rascunho); ordem de merge decidida pelo Marcos
+- Desempenho do mapa público (12–15 s no celular; medição de 25/09/2026, não verificada hoje)
+- Pendências de segurança e de configuração: o detalhe fica no quadro privado e na versão local deste arquivo, não neste repositório público
 Bloqueios / dependências externas:
-- Tokens novos do Meta exigem login do Marcos no Business Manager
-- Remover os projetos Railway abandonados exige ordem escrita do Marcos após auditoria (regra de não exclusão)
+- Decisões do Marcos; nenhum merge ou publicação sem ordem escrita
 Decisões recentes (com data):
-- 01/10/2026: projetos Railway abandonados (radiant-amazement, amusing-solace) APAGADOS por ordem do Marcos, após auditoria e registro da causa raiz (BACKFINDR.md §18)
+- 26/10/2026: o STATUS público é genérico (sem detalhe de falhas não corrigidas, dados de terceiros, IDs de infraestrutura ou caminhos pessoais); a versão detalhada fica local e no quadro privado (aprovação do Marcos, D1)
+- 09/10/2026: o legado do Webjetos é intencional e permanece em sitemap, mapa e busca (DECISOES B-25)
 - 01/10/2026: prioridade no portfólio = P1 (definida por Marcos)
-- 25/09/2026: cofre de segredos implantado (`~/bin/cofre`, Keychain); segredos deste projeto só via cofre
-- 16/09/2026: um token R2 por consumidor (`backfindr-r2-manus` no Vercel, `backfindr-autopost-r2` no n8n)
-- 30/08/2026: cadência do AutoPost fica a cada 5 dias
+- 30/08/2026: cadência do AutoPost a cada 5 dias
+
+## Registros superados (preservados no histórico do Git)
+- SUPERADO em 26/10/2026 por esta versão genérica: o STATUS de 01/10/2026 (objetivo "reduzir o tempo de abertura do mapa", pendências de configuração e de credenciais, caminhos de máquina); o texto completo continua no histórico do repositório e na versão local.
