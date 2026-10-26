@@ -1,7 +1,9 @@
 # BACKFINDR — Documento Mestre
 > Arquivo único de referência. Toda sessão deve começar lendo este arquivo COMPLETO.
-> Localização canônica: `~/Downloads/backfindr-local/backfindr-main/BACKFINDR.md`
-> Última atualização: 2026-08-22
+> Localização canônica: `~/backfindr/BACKFINDR.md` (clone de `reencontra-tudo/backfindr`, branch `main`; definido em 26/10/2026).
+> ~~Localização canônica anterior: `~/Downloads/backfindr-local/backfindr-main/BACKFINDR.md`~~ — **SUPERADO em 26/10/2026** por `~/backfindr` (a cópia antiga tem o último commit em 04/08/2026; `~/backfindr` = `origin/main` 92d4deb, 14/10/2026; fonte: `git log`/`gh api`, 26/10/2026).
+> ~~Última atualização anterior: 2026-08-22~~ (SUPERADO em 26/10/2026)
+> Última atualização: 2026-10-26 (revisão administrativa: cabeçalho, §6, §17 e §18; as demais seções são de 22/08/2026 ou anteriores e **não foram reverificadas**).
 > **REGRA DE MANUTENÇÃO: nunca usar `cat >>`. Sempre reescrever via Python.**
 
 ---
@@ -99,8 +101,9 @@ Projeto anterior: Webjetos (2015) — migração planejada
 ## 6. AMBIENTE LOCAL
 
 ```bash
-bash ~/Downloads/iniciar-backfindr.sh
-cd ~/Downloads/backfindr-local/backfindr-main && pnpm dev  # porta 3003
+cd ~/backfindr && pnpm dev  # porta 3003  (caminho único desde 26/10/2026)
+# SUPERADO em 26/10/2026: `bash ~/Downloads/iniciar-backfindr.sh` (o script não existe em ~/Downloads, verificado em 26/10/2026)
+# SUPERADO em 26/10/2026: `cd ~/Downloads/backfindr-local/backfindr-main && pnpm dev` (clone de 04/08/2026)
 # Admin: localhost:3003/admin/dashboard — admin@backfindr.com / admin123
 ```
 
@@ -280,7 +283,34 @@ Estrutura de governança do produto instituída em 29/06/2026.
 
 ---
 
-## 17. PRIORIDADES ABERTAS (29/06/2026 — fonte única de verdade)
+## 17. PRIORIDADES ABERTAS (atualizado em 26/10/2026)
+
+> ~~Título anterior: «17. PRIORIDADES ABERTAS (29/06/2026 — fonte única de verdade)»~~ — **SUPERADO em 26/10/2026**: as pendências que dependem do Marcos estão no quadro privado "Central M2RPrime — Pendências" (fonte única desde 03/10/2026); este §17 registra o estado técnico do produto.
+> Os itens das seções "Alto", "Médio", "Baixo" e "Resolvidos" abaixo são registros de 29/06 a 22/08/2026 e **não foram reverificados em 26/10/2026**: tratar como hipótese até conferir na fonte.
+
+### 17.0 Registro de 08 a 14/10/2026 (fonte: registros internos do projeto e PRs públicos; PRs e produção reverificados em 26/10/2026)
+
+Estado em 26/10/2026: `main` = 92d4deb (14/10); deploy de produção mais recente Ready, criado em 14/10 (`vercel inspect`, 26/10/2026). Nenhum commit novo no GitHub depois de 14/10/2026.
+
+| Data | PR / ação | Resultado |
+|---|---|---|
+| 09/10 | #36 (mesclado, 3112cd3) | endurecimento dos templates de e-mail (escape de HTML) |
+| 10/10 | #44 (mesclado, ada1bbd) | limite de envio de boas-vindas por origem; tabela nova `send_throttle_events` (migration 017) e variável de ambiente do segredo do limite criadas antes do merge |
+| 10/10 | #45 (mesclado, 935b60e) | registros legados fora do envio em massa e das rotinas agendadas; barreira de e-mail/push no aviso "Encontrei" e na confirmação de match |
+| 10/10 | #35 (mesclado, 2486acb) | remetente de todos os e-mails passa a `noreply@backfindr.com.br` (domínio Verified na Resend) |
+| 10/10 e 14/10 | Teste real 1 (link de acesso) e Teste 2 ("Encontrei") | e-mail e push entregues, confirmados pelo Marcos; Teste 3 não executado |
+| 14/10 | #47 (mesclado, caf9b37) | push do matching individual vai ao dono do objeto perdido; dono legado não recebe envio |
+| 14/10 | #46 (mesclado, 92d4deb) | envios de e-mail/push são aguardados antes de responder (espera limitada a 280 s; Hobby + Fluid = 300 s) |
+| 14/10 | PR #48 (rascunho) | correção em andamento; sem detalhe aqui |
+| 14/10 | Folha de decisão D1–D13 da cadeia de devolução "Encontrei" | entregue; aguarda decisão do Marcos (D2 superada: o domínio `.com.br` entrega) |
+
+Regra permanente (DECISOES B-25, 09/10/2026): o legado do Webjetos é intencional e permanece em sitemap, mapa e busca; nada o remove, oculta ou rebaixa.
+
+PRs abertos em 26/10/2026 (`gh pr list`): #33, #34, #37, #38 (rascunho), #41, #42 (rascunho), #43 (rascunho), #48 (rascunho). Itens técnicos em aberto (o detalhe de outros ajustes fica no quadro privado): decisões da cadeia "Encontrei" (D1, D3–D7, D13); sitemap (#43); canonical (#38 e issue #40); privacidade/PostHog (#33); texto padronizado dos avisos; desempenho do mapa (12–15 s no celular, medição de 25/09/2026, não verificada hoje).
+
+Relatórios de apoio ficam fora do repositório.
+
+### 17.1 Itens anteriores (29/06 a 22/08/2026, preservados)
 
 ### 🔴 Alto
 - **5 tokens Meta hardcoded em texto puro nos nodes HTTP do workflow n8n "Backfindr AutoPost — Facebook" (achado 31/08/2026, NÃO corrigido)** — 4 tokens de página do Facebook (pet/celular/veiculo/bicicleta, mais o compartilhado geral+protect) e 1 token de usuário do Instagram estão escritos direto nos parâmetros dos nodes `HTTP Request1`, `HTTP Request4`, `HTTP Request5`, em vez de estarem no cofre de credenciais do n8n. **Confirmados válidos e funcionando** (execução real de 28/08/2026 retornou `post_id`) — a doc antiga (seção 12) dizia que expiravam ~30/07/2026, essa data estava errada/desatualizada. Tratar como comprometidos mesmo funcionando: mover pro cofre de credenciais do n8n + gerar tokens novos. Não editado ainda — é automação viva em produção (posta a cada 5 dias), mexer sem pedido explícito é risco de derrubar o AutoPost.
@@ -369,7 +399,18 @@ Estrutura de governança do produto instituída em 29/06/2026.
 
 ## 18. PROTOCOLO DE SESSÃO
 
-### Início obrigatório
+### Início obrigatório (caminho único desde 26/10/2026)
+```bash
+git -C ~/backfindr log --oneline -10
+cat ~/backfindr/BACKFINDR.md
+cat ~/backfindr/STATUS.md
+```
+- Prefira `git -C ~/backfindr` a `cd`, para evitar efeitos colaterais da configuração do shell.
+- O `STATUS.md` da `main` pode estar mais antigo que o de um PR de STATUS aberto: conferir `gh pr list -R reencontra-tudo/backfindr` e o painel do portfólio antes de reconstruir o estado.
+
+> ~~`cd ~/Downloads/backfindr-local/backfindr-main` + `cat BACKFINDR.md` + `git log`~~ — **SUPERADO em 26/10/2026** por `~/backfindr` (o clone antigo tem o último commit em 04/08/2026 e 15 commits que já estão publicados na branch `resgate/15-commits-locais-2026-10-07`; fonte: `git log` local e `gh api`, 26/10/2026).
+
+Texto original preservado (SUPERADO):
 ```bash
 cd ~/Downloads/backfindr-local/backfindr-main
 cat BACKFINDR.md
@@ -378,7 +419,7 @@ git log --oneline -10
 
 ### Princípios obrigatórios
 
-- O repositório oficial é `~/Downloads/backfindr-oficial`.
+- O repositório oficial é `reencontra-tudo/backfindr`; o clone de trabalho é `~/backfindr`. ~~O repositório oficial é `~/Downloads/backfindr-oficial`.~~ **SUPERADO em 26/10/2026** (esse clone tem o último commit em 30/08/2026; `~/backfindr` = `origin/main` 92d4deb).
 - Antes de qualquer alteração estrutural, consultar o `BACKFINDR.md`.
 - Nenhuma alteração pode ser realizada sem avaliar risco de regressão.
 - Nunca sobrescrever arquivos existentes sem inspecionar seu conteúdo.
@@ -394,8 +435,19 @@ git log --oneline -10
 
 ### Fim — atualizar este arquivo
 ```bash
+# editar ~/backfindr/BACKFINDR.md reescrevendo via Python (nunca `cat >>`), numa branch nova:
+git -C ~/backfindr switch -c docs/backfindr-md-AAAAMMDD
+git -C ~/backfindr add BACKFINDR.md
+git -C ~/backfindr commit -m "docs: BACKFINDR.md atualizado AAAA-MM-DD"
+# push, PR e merge só com ordem escrita do Marcos
+```
+
+> ~~Roteiro anterior: reescrever `~/Downloads/backfindr-local/backfindr-main/BACKFINDR.md`, `git commit` e `git push origin main`~~ — **SUPERADO em 26/10/2026**: caminho antigo substituído por `~/backfindr`; e `git push origin main` contraria a regra de nunca publicar sem ordem escrita do responsável.
+
+Texto original preservado (SUPERADO):
+```bash
 python3 << PYEOF2
-path = '/Users/macos/Downloads/backfindr-local/backfindr-main/BACKFINDR.md'
+path = '~/Downloads/backfindr-local/backfindr-main/BACKFINDR.md'  # expandir com os.path.expanduser
 with open(path, 'w') as f:
     f.write("""conteudo_novo""")
 PYEOF2
