@@ -288,9 +288,9 @@ Estrutura de governança do produto instituída em 29/06/2026.
 > ~~Título anterior: «17. PRIORIDADES ABERTAS (29/06/2026 — fonte única de verdade)»~~ — **SUPERADO em 26/10/2026**: as pendências que dependem do Marcos estão no quadro privado "Central M2RPrime — Pendências" (fonte única desde 03/10/2026); este §17 registra o estado técnico do produto.
 > Os itens das seções "Alto", "Médio", "Baixo" e "Resolvidos" abaixo são registros de 29/06 a 22/08/2026 e **não foram reverificados em 26/10/2026**: tratar como hipótese até conferir na fonte.
 
-### 17.0 Registro de 08 a 14/10/2026 (fonte: `PAINEL-UNICO.md` §14 e `STATUS.md` do PR #41; PRs e produção reverificados em 26/10/2026)
+### 17.0 Registro de 08 a 14/10/2026 (fonte: registros internos do projeto e PRs públicos; PRs e produção reverificados em 26/10/2026)
 
-Estado em 26/10/2026: `main` = 92d4deb (14/10); produção = `dpl_AjetrLjELRmiUpD1MhCJftT9yu86`, Ready, criada em 14/10 17:34 BRT (`vercel inspect`, 26/10/2026). Nenhum commit novo no GitHub depois de 14/10/2026.
+Estado em 26/10/2026: `main` = 92d4deb (14/10); deploy de produção mais recente Ready, criado em 14/10 (`vercel inspect`, 26/10/2026). Nenhum commit novo no GitHub depois de 14/10/2026.
 
 | Data | PR / ação | Resultado |
 |---|---|---|
@@ -301,15 +301,14 @@ Estado em 26/10/2026: `main` = 92d4deb (14/10); produção = `dpl_AjetrLjELRmiUp
 | 10/10 e 14/10 | Teste real 1 (link de acesso) e Teste 2 ("Encontrei") | e-mail e push entregues, confirmados pelo Marcos; Teste 3 não executado |
 | 14/10 | #47 (mesclado, caf9b37) | push do matching individual vai ao dono do objeto perdido; dono legado não recebe envio |
 | 14/10 | #46 (mesclado, 92d4deb) | envios de e-mail/push são aguardados antes de responder (espera limitada a 280 s; Hobby + Fluid = 300 s) |
-| 14/10 | Chave de push (VAPID) corrigida em Production e Preview | só o formato da chave privada mudou; redeploy `dpl_AjetrLjE…`; valores nunca registrados |
-| 14/10 | PR #48 (rascunho) | ajuste na manutenção da sessão em falha de rede |
+| 14/10 | PR #48 (rascunho) | correção em andamento; sem detalhe aqui |
 | 14/10 | Folha de decisão D1–D13 da cadeia de devolução "Encontrei" | entregue; aguarda decisão do Marcos (D2 superada: o domínio `.com.br` entrega) |
 
 Regra permanente (DECISOES B-25, 09/10/2026): o legado do Webjetos é intencional e permanece em sitemap, mapa e busca; nada o remove, oculta ou rebaixa.
 
-PRs abertos em 26/10/2026 (`gh pr list`): #33, #34, #37, #38 (rascunho), #41, #42 (rascunho), #43 (rascunho), #48 (rascunho). Itens técnicos em aberto, sem detalhe de falhas ainda não corrigidas (o detalhe fica no quadro privado): decisões da cadeia "Encontrei" (D1, D3–D7, D13); sitemap (#43); canonical (#38 e issue #40); privacidade/PostHog (#33); ajustes de sessão e de segurança de login; texto padronizado dos avisos; mapa lento (12–15 s no celular, medição de 25/09/2026, não verificada hoje).
+PRs abertos em 26/10/2026 (`gh pr list`): #33, #34, #37, #38 (rascunho), #41, #42 (rascunho), #43 (rascunho), #48 (rascunho). Itens técnicos em aberto (o detalhe de outros ajustes fica no quadro privado): decisões da cadeia "Encontrei" (D1, D3–D7, D13); sitemap (#43); canonical (#38 e issue #40); privacidade/PostHog (#33); texto padronizado dos avisos; desempenho do mapa (12–15 s no celular, medição de 25/09/2026, não verificada hoje).
 
-Relatórios de apoio ficam **fora de repositório**, só no Mac do Marcos: `~/auditoria/produto/` (por exemplo `backfindr-cadeia-devolucao-fase1-08102026.md`, `backfindr-testes-reais-10102026.md`, `cadeia-folha-de-decisao-08102026.md`).
+Relatórios de apoio ficam fora do repositório.
 
 ### 17.1 Itens anteriores (29/06 a 22/08/2026, preservados)
 
@@ -406,8 +405,8 @@ git -C ~/backfindr log --oneline -10
 cat ~/backfindr/BACKFINDR.md
 cat ~/backfindr/STATUS.md
 ```
-- Use `git -C ~/backfindr` em vez de `cd`: no Mac do Marcos, entrar na pasta pelo shell dispara um `git pull` automático.
-- O `STATUS.md` da `main` pode estar mais antigo que o de um PR de STATUS aberto: conferir `gh pr list -R reencontra-tudo/backfindr` e o `~/PAINEL.md` antes de reconstruir o estado.
+- Prefira `git -C ~/backfindr` a `cd`, para evitar efeitos colaterais da configuração do shell.
+- O `STATUS.md` da `main` pode estar mais antigo que o de um PR de STATUS aberto: conferir `gh pr list -R reencontra-tudo/backfindr` e o painel do portfólio antes de reconstruir o estado.
 
 > ~~`cd ~/Downloads/backfindr-local/backfindr-main` + `cat BACKFINDR.md` + `git log`~~ — **SUPERADO em 26/10/2026** por `~/backfindr` (o clone antigo tem o último commit em 04/08/2026 e 15 commits que já estão publicados na branch `resgate/15-commits-locais-2026-10-07`; fonte: `git log` local e `gh api`, 26/10/2026).
 
@@ -443,12 +442,12 @@ git -C ~/backfindr commit -m "docs: BACKFINDR.md atualizado AAAA-MM-DD"
 # push, PR e merge só com ordem escrita do Marcos
 ```
 
-> ~~Roteiro anterior: reescrever `/Users/macos/Downloads/backfindr-local/backfindr-main/BACKFINDR.md`, `git commit` e `git push origin main`~~ — **SUPERADO em 26/10/2026**: caminho antigo substituído por `~/backfindr`; e `git push origin main` contraria a regra de nunca publicar sem ordem escrita (CLAUDE.md global).
+> ~~Roteiro anterior: reescrever `~/Downloads/backfindr-local/backfindr-main/BACKFINDR.md`, `git commit` e `git push origin main`~~ — **SUPERADO em 26/10/2026**: caminho antigo substituído por `~/backfindr`; e `git push origin main` contraria a regra de nunca publicar sem ordem escrita (CLAUDE.md global).
 
 Texto original preservado (SUPERADO):
 ```bash
 python3 << PYEOF2
-path = '/Users/macos/Downloads/backfindr-local/backfindr-main/BACKFINDR.md'
+path = '~/Downloads/backfindr-local/backfindr-main/BACKFINDR.md'  # expandir com os.path.expanduser
 with open(path, 'w') as f:
     f.write("""conteudo_novo""")
 PYEOF2
