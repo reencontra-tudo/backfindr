@@ -442,7 +442,7 @@ git -C ~/backfindr commit -m "docs: BACKFINDR.md atualizado AAAA-MM-DD"
 # push, PR e merge só com ordem escrita do Marcos
 ```
 
-> ~~Roteiro anterior: reescrever `~/Downloads/backfindr-local/backfindr-main/BACKFINDR.md`, `git commit` e `git push origin main`~~ — **SUPERADO em 26/10/2026**: caminho antigo substituído por `~/backfindr`; e `git push origin main` contraria a regra de nunca publicar sem ordem escrita (CLAUDE.md global).
+> ~~Roteiro anterior: reescrever `~/Downloads/backfindr-local/backfindr-main/BACKFINDR.md`, `git commit` e `git push origin main`~~ — **SUPERADO em 26/10/2026**: caminho antigo substituído por `~/backfindr`; e `git push origin main` contraria a regra de nunca publicar sem ordem escrita do responsável.
 
 Texto original preservado (SUPERADO):
 ```bash
