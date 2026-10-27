@@ -1,10 +1,13 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
+import { requireAdmin } from '@/lib/adminGuard';
 
 export const dynamic = 'force-dynamic';
 
 const N8N_URL = process.env.NEXT_PUBLIC_N8N_URL ?? 'https://n8n-production-b99a.up.railway.app';
 
-export async function GET() {
+export async function GET(req: NextRequest) {
+  const auth = await requireAdmin(req);
+  if (auth instanceof NextResponse) return auth;
   try {
     const controller = new AbortController();
     const timeout = setTimeout(() => controller.abort(), 5000);
