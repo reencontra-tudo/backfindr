@@ -5,7 +5,7 @@ Princípios: uma pergunta de um toque; **nunca obrigatória** para o dono ("Pref
 ```
 ┌──────────────────────────────────────────────┐
 │ Quer excluir esta ocorrência?              ✕ │
-│ “Honda CG 150 preta”                         │
+│ “Bicicleta azul aro 26”                      │
 │ Se quiser, conte o motivo — é opcional e     │
 │ ajuda a melhorar o Backfindr.                │
 │ [ Encontrei ou recuperei o item            ] │

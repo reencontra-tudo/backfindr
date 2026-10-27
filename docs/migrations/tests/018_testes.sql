@@ -165,13 +165,13 @@ DECLARE u uuid; a uuid; b uuid; achadas int; vis int;
 BEGIN
   SELECT v::uuid INTO u FROM _t WHERE k = 'u';
   INSERT INTO public.objects (id, user_id, title, description, status, category, type, qr_code) VALUES
-    (gen_random_uuid(), u, 'GOV-TESTE Moto Honda CG 150 preta', 'furtada na avenida', 'stolen', 'vehicle', 'vehicle', 'GT910001') RETURNING id INTO a;
+    (gen_random_uuid(), u, 'GOV-TESTE Bicicleta azul aro 26', 'descricao de teste', 'stolen', 'vehicle', 'vehicle', 'GT910001') RETURNING id INTO a;
   INSERT INTO public.objects (id, user_id, title, description, status, category, type, qr_code) VALUES
-    (gen_random_uuid(), u, 'GOV-TESTE moto honda cg 150 preta ', 'furtada na avenida', 'stolen', 'vehicle', 'vehicle', 'GT910002') RETURNING id INTO b;
+    (gen_random_uuid(), u, 'GOV-TESTE bicicleta azul aro 26 ', 'descricao de teste', 'stolen', 'vehicle', 'vehicle', 'GT910002') RETURNING id INTO b;
   -- a MESMA consulta usada pela rota /api/v1/objects/[v_id]/similar (ver src/lib/governance.ts)
   SELECT count(*) INTO achadas FROM public.objects_active o
    WHERE o.user_id = u AND o.id <> a AND o.category = 'vehicle'
-     AND (lower(btrim(o.title)) = lower(btrim('GOV-TESTE Moto Honda CG 150 preta')) OR similarity(o.title, 'GOV-TESTE Moto Honda CG 150 preta') >= 0.6);
+     AND (lower(btrim(o.title)) = lower(btrim('GOV-TESTE Bicicleta azul aro 26')) OR similarity(o.title, 'GOV-TESTE Bicicleta azul aro 26') >= 0.6);
   UPDATE public.objects SET deleted_at = now(), deleted_by = u, deleted_reason = 'duplicada' WHERE objects.id = b;
   SELECT count(*) INTO vis FROM public.objects_active WHERE objects_active.id IN (a, b);
   IF achadas < 1 OR vis <> 1 THEN RAISE EXCEPTION 'T7 falhou: duplicatas achadas=% visíveis depois=%', achadas, vis; END IF;
@@ -238,7 +238,7 @@ END $$;
 DO $$
 DECLARE r jsonb; ant uuid; leg uuid; antes_leg int; depois_leg int; resumo int; del_aud int; nao_leg int;
 BEGIN
-  SELECT o.id INTO ant FROM public.objects o WHERE o.title = 'GOV-TESTE moto honda cg 150 preta ';           -- duplicada excluída em T7
+  SELECT o.id INTO ant FROM public.objects o WHERE o.title = 'GOV-TESTE bicicleta azul aro 26 ';           -- duplicada excluída em T7
   SELECT o.id INTO leg FROM public.objects o WHERE o.is_legacy ORDER BY o.id LIMIT 1;
   UPDATE public.objects SET deleted_at = now() - interval '100 days' WHERE objects.id IN (ant, leg);        -- ambos "vencidos"
   r := audit.purge_deleted(false);                                                                          -- purge_enabled = false

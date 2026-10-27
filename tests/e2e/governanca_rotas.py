@@ -40,7 +40,7 @@ def mk(titulo, code, cat="vehicle", status="stolen"):
     oid = str(uuid.uuid4())
     sql(f"INSERT INTO objects (id,user_id,title,description,status,category,type,qr_code,is_public) VALUES ('{oid}','{own}','{titulo}','teste','{status}','{cat}','{cat}','{code}',true)")
     return oid
-o1, o2, o3, o4, o5 = (mk(t, c) for t, c in (("GOV-E2E Moto Honda CG preta", "E2E00001"), ("GOV-E2E moto honda cg preta ", "E2E00002"), ("GOV-E2E objeto 3", "E2E00003"), ("GOV-E2E objeto 4", "E2E00004"), ("GOV-E2E objeto 5", "E2E00005")))
+o1, o2, o3, o4, o5 = (mk(t, c) for t, c in (("GOV-E2E Bicicleta azul aro 26", "E2E00001"), ("GOV-E2E bicicleta azul aro 26 ", "E2E00002"), ("GOV-E2E objeto 3", "E2E00003"), ("GOV-E2E objeto 4", "E2E00004"), ("GOV-E2E objeto 5", "E2E00005")))
 T, TA, TS = token(own), token(adm), token(sup)
 
 # ── dono: leitura, exclusão com motivo, desfazer
@@ -103,7 +103,8 @@ check("fim da impersonação registrado", sql(f"select count(*) from audit.accou
 s, _ = call("POST", "/api/v1/admin/impersonate/end", T); check("fim sem sessão de impersonação → 400", s == 400, s)
 
 # ── nenhum DELETE físico saiu das rotas novas
-check("nenhuma ocorrência de teste foi apagada fisicamente pelas rotas", sql("select count(*) from audit.row_changes where table_name='objects' and operation='DELETE' and old_row->>'title' like 'GOV-E2E%'") == "0")
+ids_sql = ",".join(f"'{x}'" for x in (o1, o2, o3, o4, o5))
+check("nenhuma ocorrência de teste foi apagada fisicamente pelas rotas", sql(f"select count(*) from audit.row_changes where table_name='objects' and operation='DELETE' and row_id in ({ids_sql})") == "0")
 
 # ── limpeza dos dados de teste
 sql("update objects set deleted_at=null where title like 'GOV-E2E%'"); sql("delete from objects where title like 'GOV-E2E%'"); sql("delete from users where name like 'GOV-E2E%'")
