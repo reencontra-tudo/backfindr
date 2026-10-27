@@ -87,7 +87,7 @@ export async function GET(request: NextRequest) {
       `SELECT id, title, description, status, category, type, location, latitude, longitude,
               qr_code, images, color, brand, breed, is_legacy, source, user_id,
               reward_amount, reward_description, category_fields, created_at, updated_at
-       FROM objects
+       FROM objects_active
        ${whereClause}
        ORDER BY created_at DESC
        LIMIT $${params.length + 1} OFFSET $${params.length + 2}`,
@@ -95,7 +95,7 @@ export async function GET(request: NextRequest) {
     );
 
     const countResult = await query(
-      `SELECT COUNT(*) as count FROM objects ${whereClause}`,
+      `SELECT COUNT(*) as count FROM objects_active ${whereClause}`,
       params
     );
     const total = parseInt(countResult.rows[0].count);
@@ -144,7 +144,7 @@ export async function POST(request: NextRequest) {
 
     // Contar objetos ativos do usuário (excluindo deletados/arquivados)
     const countResult = await query(
-      `SELECT COUNT(*) as count FROM objects WHERE user_id = $1 AND status != 'deleted'`,
+      `SELECT COUNT(*) as count FROM objects_active WHERE user_id = $1 AND status != 'deleted'`,
       [payload.sub]
     );
     const currentCount = parseInt(countResult.rows[0].count);

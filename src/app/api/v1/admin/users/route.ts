@@ -46,7 +46,7 @@ export async function GET(req: NextRequest) {
     } else if (filter === 'verified') {
       conditions.push(`u.is_verified = true`);
     } else if (filter === 'legacy') {
-      conditions.push(`EXISTS (SELECT 1 FROM objects o WHERE o.user_id = u.id AND o.is_legacy = true)`);
+      conditions.push(`EXISTS (SELECT 1 FROM objects_active o WHERE o.user_id = u.id AND o.is_legacy = true)`);
     } else if (filter === 'inactive') {
       conditions.push(`u.updated_at < NOW() - INTERVAL '90 days'`);
     }
@@ -57,7 +57,7 @@ export async function GET(req: NextRequest) {
       query(`SELECT COUNT(*) FROM users u ${where}`, params),
       query(
         `SELECT u.id, u.email, u.name, u.phone, u.plan, u.is_verified, u.avatar_url, u.created_at, u.updated_at,
-                (SELECT COUNT(*) FROM objects o WHERE o.user_id = u.id) AS objects_count
+                (SELECT COUNT(*) FROM objects_active o WHERE o.user_id = u.id) AS objects_count
          FROM users u ${where}
          ORDER BY u.created_at DESC
          LIMIT $${idx} OFFSET $${idx + 1}`,

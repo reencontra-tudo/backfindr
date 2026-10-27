@@ -141,7 +141,7 @@ export async function GET(req: NextRequest) {
         `SELECT o.id, o.title, o.category, o.status, o.is_boosted, o.is_public,
                 o.created_at,
                 u.name AS owner_username, u.email AS owner_email, u.plan AS owner_plan
-         FROM objects o
+         FROM objects_active o
          LEFT JOIN users u ON u.id = o.user_id
          ${where}
          ORDER BY o.created_at DESC
@@ -289,7 +289,7 @@ export async function GET(req: NextRequest) {
                 o.title AS obj_title, o.category AS obj_category,
                 u.name AS owner_username, u.email AS owner_email
          FROM occurrences oc
-         LEFT JOIN objects o ON o.id = oc.object_id
+         LEFT JOIN objects_active o ON o.id = oc.object_id
          LEFT JOIN users u   ON u.id = oc.user_id
          ${where}
          ORDER BY oc.created_at DESC

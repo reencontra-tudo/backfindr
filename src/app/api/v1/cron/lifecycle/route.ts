@@ -52,7 +52,7 @@ export async function GET(request: NextRequest) {
       const day1Result = await query(
         `SELECT u.id, u.email, u.name, COUNT(o.id) as object_count
          FROM users u
-         LEFT JOIN objects o ON u.id = o.user_id AND o.status != 'deleted'
+         LEFT JOIN objects_active o ON u.id = o.user_id AND o.status != 'deleted'
          WHERE u.created_at >= NOW() - INTERVAL '1 day 1 hour'
          AND u.created_at < NOW() - INTERVAL '1 day'
          AND u.is_legacy IS NOT TRUE AND u.is_system_account IS NOT TRUE
@@ -122,7 +122,7 @@ export async function GET(request: NextRequest) {
       const reactivationResult = await query(
         `SELECT DISTINCT u.id, u.email, u.name, o.title
          FROM users u
-         JOIN objects o ON u.id = o.user_id
+         JOIN objects_active o ON u.id = o.user_id
          WHERE o.status = 'lost'
          AND o.is_legacy IS NOT TRUE AND u.is_legacy IS NOT TRUE AND u.is_system_account IS NOT TRUE
          AND o.created_at >= NOW() - INTERVAL '7 days 1 hour'
@@ -142,7 +142,7 @@ export async function GET(request: NextRequest) {
           // Registrar evento
           await query(
             `INSERT INTO user_lifecycle_events (user_id, object_id, event_type, created_at)
-             VALUES ($1, (SELECT id FROM objects WHERE user_id = $1 AND title = $2 LIMIT 1), 'reactivation_7d', NOW())`,
+             VALUES ($1, (SELECT id FROM objects_active WHERE user_id = $1 AND title = $2 LIMIT 1), 'reactivation_7d', NOW())`,
             [row.id, row.title]
           ).catch(() => {});
 

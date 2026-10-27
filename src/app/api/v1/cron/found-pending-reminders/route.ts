@@ -50,7 +50,7 @@ export async function GET(request: NextRequest) {
     try {
       const d3Result = await query(
         `SELECT o.id, o.user_id, o.title
-           FROM objects o
+           FROM objects_active o
           WHERE o.found_pending_confirmation = true
             AND o.found_pending_since <= NOW() - INTERVAL '3 days'
             AND o.found_pending_since >  NOW() - INTERVAL '4 days'
@@ -88,7 +88,7 @@ export async function GET(request: NextRequest) {
     try {
       const d7Result = await query(
         `SELECT o.id, o.user_id, o.title
-           FROM objects o
+           FROM objects_active o
           WHERE o.found_pending_confirmation = true
             AND o.found_pending_since <= NOW() - INTERVAL '7 days'
             AND o.found_pending_since >  NOW() - INTERVAL '8 days'

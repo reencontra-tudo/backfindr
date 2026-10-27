@@ -36,8 +36,8 @@ export async function POST(
     const matchResult = await query(
       `SELECT m.id, m.lost_object_id, m.found_object_id, lo.user_id as lost_user_id, fo.user_id as found_user_id
        FROM matches m
-       LEFT JOIN objects lo ON m.lost_object_id = lo.id
-       LEFT JOIN objects fo ON m.found_object_id = fo.id
+       LEFT JOIN objects_active lo ON m.lost_object_id = lo.id
+       LEFT JOIN objects_active fo ON m.found_object_id = fo.id
        WHERE m.id = $1`,
       [params.id]
     );
@@ -73,7 +73,7 @@ export async function POST(
         : match.found_object_id;
 
       const objResult = await query(
-        `SELECT title FROM objects WHERE id = $1`,
+        `SELECT title FROM objects_active WHERE id = $1`,
         [myObjectId]
       );
       const objectTitle = objResult.rows[0]?.title ?? 'objeto';
@@ -94,7 +94,7 @@ export async function POST(
         // Push notification. Barreira de proteção: match com objeto legado ou
         // com usuário legado nunca gera push (a resposta é a mesma de sempre).
         const legacyCheck = await query(
-          `SELECT (EXISTS (SELECT 1 FROM objects WHERE id = ANY($1::uuid[]) AND is_legacy IS TRUE)
+          `SELECT (EXISTS (SELECT 1 FROM objects_active WHERE id = ANY($1::uuid[]) AND is_legacy IS TRUE)
                OR EXISTS (SELECT 1 FROM users WHERE id = $2 AND is_legacy IS TRUE)) AS blocked`,
           [[match.lost_object_id, match.found_object_id], otherUserId]
         ).catch(() => ({ rows: [{ blocked: false }] }));

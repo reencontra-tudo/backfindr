@@ -85,7 +85,7 @@ export async function POST(req: NextRequest) {
 
     // Verificar se o objeto pertence ao usuário
     const objResult = await query(
-      `SELECT id, title FROM objects WHERE id = $1 AND user_id = $2`,
+      `SELECT id, title FROM objects_active WHERE id = $1 AND user_id = $2`,
       [object_id, payload.sub]
     );
     if (objResult.rows.length === 0) return errorResponse('Objeto não encontrado', 404);

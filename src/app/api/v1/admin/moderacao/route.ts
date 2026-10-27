@@ -26,7 +26,7 @@ export async function GET(req: NextRequest) {
   try {
     const [countRes, rowsRes, pendingRes] = await Promise.all([
       query(`SELECT COUNT(*) FROM reports r ${where}`, params),
-      query(`SELECT r.id, r.type, r.reason, r.status, r.created_at, o.title AS object_title, u.email AS reporter_email FROM reports r LEFT JOIN objects o ON o.id = r.object_id LEFT JOIN users u ON u.id = r.reporter_id ${where} ORDER BY r.created_at DESC LIMIT $${idx} OFFSET $${idx+1}`, [...params, size, offset]),
+      query(`SELECT r.id, r.type, r.reason, r.status, r.created_at, o.title AS object_title, u.email AS reporter_email FROM reports r LEFT JOIN objects_active o ON o.id = r.object_id LEFT JOIN users u ON u.id = r.reporter_id ${where} ORDER BY r.created_at DESC LIMIT $${idx} OFFSET $${idx+1}`, [...params, size, offset]),
       query(`SELECT COUNT(*) FROM reports WHERE status = 'pending'`),
     ]);
     return NextResponse.json({ items: rowsRes.rows, total: parseInt(countRes.rows[0].count, 10), pending: parseInt(pendingRes.rows[0].count, 10), page, size });

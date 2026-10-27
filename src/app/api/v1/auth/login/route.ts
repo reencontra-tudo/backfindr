@@ -21,7 +21,7 @@ export async function POST(request: NextRequest) {
     // algum motivo conferisse — reforço em código além da constraint de
     // schema (ver src/db/migrations/006_public_signals.sql).
     const result = await query(
-      `SELECT id, email, password, name FROM users
+      `SELECT id, email, password, name FROM users_active
        WHERE email = $1 AND is_system_account = false`,
       [username.toLowerCase()]
     );

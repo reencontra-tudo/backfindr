@@ -50,7 +50,7 @@ export async function POST(req: NextRequest) {
     );
 
     // Verificar se usuário já existe para personalizar o e-mail
-    const userResult = await query('SELECT name FROM users WHERE email = $1', [email]);
+    const userResult = await query('SELECT name FROM users_active WHERE email = $1', [email]);
     const userName = userResult.rows[0]?.name?.split(' ')[0] || null;
     const greeting = userName ? `Olá, ${esc(userName)}!` : 'Olá!';
     const isNewUser = userResult.rows.length === 0;

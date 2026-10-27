@@ -1,6 +1,8 @@
 export const dynamic = 'force-dynamic';
 import { NextRequest } from 'next/server';
 import { query } from '@/lib/db';
+import { withActor, logEvent } from '@/lib/audit';
+import { actorFromPayload, newRequestId, resolveDeletion, retentionDays, restorableUntil } from '@/lib/governance';
 import { verifyToken, extractTokenFromHeader } from '@/lib/jwt';
 import { successResponse, errorResponse, unauthorizedResponse, notFoundResponse, internalErrorResponse } from '@/lib/response';
 import { Events } from '@/lib/events';
@@ -69,7 +71,7 @@ export async function GET(
               qr_code, images, color, brand, breed, is_legacy, source, user_id,
               reward_amount, reward_description, found_pending_confirmation, found_pending_since,
               created_at, updated_at
-       FROM objects WHERE id = $1 AND user_id = $2`,
+       FROM objects_active WHERE id = $1 AND user_id = $2`,
       [params.id, payload.sub]
     );
     if (result.rows.length === 0) return notFoundResponse();
@@ -103,12 +105,13 @@ export async function PATCH(
 
     // Buscar status atual antes do update (para evento statusChanged)
     const currentResult = await query(
-      'SELECT status FROM objects WHERE id = $1 AND user_id = $2',
+      'SELECT status FROM objects_active WHERE id = $1 AND user_id = $2',
       [params.id, payload.sub]
     );
     const previousStatus = currentResult.rows[0]?.status as string | undefined;
 
-    const result = await query(
+    const actor = actorFromPayload(payload, 'PATCH /api/v1/objects/[id]', newRequestId(request.headers));
+    const result = await withActor(actor, (q) => q(
       `UPDATE objects
        SET title = COALESCE($1, title),
            description = COALESCE($2, description),
@@ -128,7 +131,7 @@ export async function PATCH(
            -- escopo — ver backlog de status em BACKFINDR.md seção 17).
            resolved_at = CASE WHEN $3 = 'returned' THEN NOW() ELSE resolved_at END,
            updated_at = NOW()
-       WHERE id = $11 AND user_id = $12
+       WHERE id = $11 AND user_id = $12 AND deleted_at IS NULL
        RETURNING id, title, description, status, category, type, location, latitude, longitude,
                  qr_code, images, color, brand, breed, is_legacy, source, user_id,
                  reward_amount, reward_description, found_pending_confirmation, found_pending_since,
@@ -139,7 +142,7 @@ export async function PATCH(
        reward_description !== undefined ? reward_description : null,
        params.id, payload.sub,
        typeof found_pending_confirmation === 'boolean' ? found_pending_confirmation : null]
-    );
+    ));
     if (result.rows.length === 0) return notFoundResponse();
 
     // ── Eventos de status ──────────────────────────────────────────────
@@ -165,12 +168,40 @@ export async function DELETE(
     if (!token) return unauthorizedResponse();
     const payload = verifyToken(token);
     if (!payload) return unauthorizedResponse();
-    const result = await query(
-      `DELETE FROM objects WHERE id = $1 AND user_id = $2 RETURNING id`,
-      [params.id, payload.sub]
-    );
-    if (result.rows.length === 0) return notFoundResponse();
-    return successResponse({ message: 'Object deleted successfully' });
+
+    // Exclusão LÓGICA com motivo (migração 018): a linha fica na lixeira pelo prazo de retenção e pode ser restaurada.
+    // O corpo é opcional (clientes antigos): sem motivo → 'nao_informado'. O motivo nunca é obrigatório para o dono.
+    let body: { reason?: unknown; reason_text?: unknown } | null = null;
+    try { body = await request.json(); } catch { body = null; }
+    const decision = resolveDeletion('owner', body);
+    if (!decision.ok) return errorResponse(`Motivo inválido (${decision.error})`, 400);
+
+    const actor = actorFromPayload(payload, 'DELETE /api/v1/objects/[id]', newRequestId(request.headers));
+    const days = retentionDays();
+    const row = await withActor(actor, async (q) => {
+      const r = await q(
+        `UPDATE objects
+            SET deleted_at = NOW(), deleted_by = $3, deleted_reason = $4, deleted_reason_text = $5, updated_at = NOW()
+          WHERE id = $1 AND user_id = $2 AND deleted_at IS NULL
+        RETURNING id, status, category, deleted_at`,
+        [params.id, payload.sub, payload.sub, decision.reason, decision.reasonText]
+      );
+      if (r.rows.length > 0) {
+        const o = r.rows[0] as { id: string; status: string; category: string };
+        await logEvent(q, 'object_deleted', actor, o.id, {
+          reason: decision.reason, status: o.status, category: o.category, retention_days: days,
+        });
+      }
+      return r.rows[0] as { id: string; status: string; category: string; deleted_at: Date } | undefined;
+    });
+    if (!row) return notFoundResponse();
+    return successResponse({
+      message: 'Object deleted successfully',
+      deleted: true,
+      reason: decision.reason,
+      retention_days: days,
+      restorable_until: restorableUntil(new Date(row.deleted_at), days).toISOString(),
+    });
   } catch (error) {
     return internalErrorResponse(error);
   }

@@ -188,7 +188,7 @@ export async function POST(req: NextRequest) {
     const totalUpdated = Object.values(results).reduce((a, b) => a + b, 0);
 
     const remainingRes = await query(
-      `SELECT COUNT(*) FROM objects WHERE is_legacy = true AND category = 'other'`
+      `SELECT COUNT(*) FROM objects_active WHERE is_legacy = true AND category = 'other'`
     );
     const remaining = parseInt(remainingRes.rows[0].count, 10);
 

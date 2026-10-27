@@ -4,6 +4,8 @@ import { useParams, useRouter } from 'next/navigation';
 import { ArrowLeft, Save, Trash2, ExternalLink, Package, MapPin, User, QrCode } from 'lucide-react';
 import { api, parseApiError } from '@/lib/api';
 import { ImageLightbox, useLightbox } from '@/components/ImageLightbox';
+import AdminDeleteReasonModal from '@/components/admin/AdminDeleteReasonModal';
+import { analytics } from '@/providers/PostHogProvider';
 import { toast } from 'sonner';
 
 const STATUS_OPTIONS = [
@@ -76,13 +78,15 @@ export default function AdminObjectDetailPage() {
     finally { setSaving(false); }
   };
 
-  const handleDelete = async () => {
-    if (!confirm('Remover este objeto permanentemente?')) return;
+  const [showDelete, setShowDelete] = useState(false);
+  const handleDelete = () => setShowDelete(true);
+  const confirmDelete = async (reason: string, reasonText: string | null) => {
     try {
-      await api.delete(`/admin/objects/${id}`);
-      toast.success('Objeto removido');
-      router.push('/admin/objects');
-    } catch (e) { toast.error(parseApiError(e)); }
+      await api.delete(`/admin/objects/${id}`, { data: { reason, reason_text: reasonText ?? undefined } });
+    } catch (e) { throw new Error(parseApiError(e)); }
+    analytics.ocorrenciaExcluida(reason, null, null, 'admin');
+    toast.success('Ocorrência enviada para a lixeira');
+    router.push('/admin/objects');
   };
 
   if (loading) return (
@@ -99,6 +103,7 @@ export default function AdminObjectDetailPage() {
 
   return (
     <>
+      <AdminDeleteReasonModal open={showDelete} title={undefined} onClose={() => setShowDelete(false)} onConfirm={confirmDelete} />
       {lightbox && <ImageLightbox images={lightbox.images} initialIndex={lightbox.index} onClose={closeLightbox} />}
     <div className="p-4 md:p-6 space-y-5 max-w-2xl mx-auto">
       {/* Header */}

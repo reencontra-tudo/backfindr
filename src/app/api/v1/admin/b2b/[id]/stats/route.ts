@@ -40,7 +40,7 @@ export async function GET(
         COUNT(*) FILTER (WHERE o.status = 'returned') AS returned_objects,
         COUNT(DISTINCT u.id) AS total_users
        FROM users u
-       LEFT JOIN objects o ON o.owner_id = u.id
+       LEFT JOIN objects_active o ON o.owner_id = u.id
        WHERE u.b2b_partner_id = $1`,
       [partnerId]
     );

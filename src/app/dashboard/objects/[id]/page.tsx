@@ -9,6 +9,9 @@ import {
   AlertTriangle, Clock, Package, ExternalLink, Copy, Gift, Zap, Star, Info, Loader2
 } from 'lucide-react';
 import RecoveredCelebration from '@/components/RecoveredCelebration';
+import DeleteOccurrenceModal, { type DeleteModalResult } from '@/components/object-detail/DeleteOccurrenceModal';
+import { analytics } from '@/providers/PostHogProvider';
+import { undoMessage } from '@/lib/governance';
 import LocationMap from '@/components/LocationMap';
 import BoostRenewalSuggestion from '@/components/BoostRenewalSuggestion';
 import ActivityCenterCard from '@/components/object-detail/ActivityCenterCard';
@@ -338,6 +341,7 @@ export default function ObjectDetailPage() {
   const [obj, setObj] = useState<RegisteredObject | null>(null);
   const [loading, setLoading] = useState(true);
   const [deleting, setDeleting] = useState(false);
+  const [showDelete, setShowDelete] = useState(false);
   const [boostLoading, setBoostLoading] = useState<string | null>(null);
   const [posterLoading, setPosterLoading] = useState<'square' | 'vertical' | 'a4' | null>(null);
   const [activeBoost, setActiveBoost] = useState<{ id: string; type: string; expires_at: string } | null>(null);
@@ -394,17 +398,44 @@ export default function ObjectDetailPage() {
       .finally(() => setLoading(false));
   }, [id, router]);
 
-  const handleDelete = async () => {
-    if (!confirm('Tem certeza que deseja excluir este objeto? Esta ação não pode ser desfeita.')) return;
-    setDeleting(true);
-    try {
-      await objectsApi.delete(id);
-      toast.success('Objeto excluído.');
-      router.push('/dashboard/objects');
-    } catch (err) {
-      toast.error(parseApiError(err));
-      setDeleting(false);
+  // Exclusão com motivo (modal próprio no lugar do confirm() nativo). Excluir = exclusão LÓGICA: vai para a lixeira
+  // e pode ser desfeita; "recuperado" e "pausar" resolvem sem excluir. Ver src/lib/governance.ts.
+  const handleDelete = () => setShowDelete(true);
+
+  const handleDeleteDone = (r: DeleteModalResult) => {
+    setShowDelete(false);
+    const category = obj?.category ?? null;
+    if (r.kind === 'recovered') {
+      analytics.ocorrenciaRecuperada(null, category, obj?.status ?? null);
+      setObj((o) => (o ? { ...o, status: 'returned' as ObjectStatus } : o));
+      setShowRecoveredModal(true);
+      return;
     }
+    if (r.kind === 'paused') {
+      analytics.ocorrenciaPausada(true, category);
+      toast.success('Ocorrência pausada. Você pode reativá-la quando quiser.');
+      router.push('/dashboard/objects');
+      return;
+    }
+    analytics.ocorrenciaExcluida(r.reason ?? 'nao_informado', category, obj?.status ?? null, 'dono');
+    setDeleting(true);
+    toast.success(undoMessage(), {
+      duration: 12000,
+      action: {
+        label: 'Desfazer',
+        onClick: async () => {
+          try {
+            await objectsApi.restore(id);
+            analytics.ocorrenciaRestaurada(category);
+            toast.success('Ocorrência restaurada.');
+            router.push(`/dashboard/objects/${id}`);
+          } catch (err) {
+            toast.error(parseApiError(err));
+          }
+        },
+      },
+    });
+    router.push('/dashboard/objects');
   };
 
   const handleShare = () => {
@@ -1049,6 +1080,15 @@ export default function ObjectDetailPage() {
             onRenew={() => handleBoost(activeBoost.type as '7d' | '30d' | 'alert')}
           />
         )}
+
+        {/* ── Modal de exclusão com motivo (substitui o confirm() nativo) ── */}
+        <DeleteOccurrenceModal
+          objectId={id}
+          title={obj?.title ?? ''}
+          open={showDelete}
+          onClose={() => setShowDelete(false)}
+          onDone={handleDeleteDone}
+        />
 
         {/* ── Modal de Celebração — Objeto Recuperado ── */}
         {showRecoveredModal && obj && (

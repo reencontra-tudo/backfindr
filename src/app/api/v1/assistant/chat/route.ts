@@ -646,7 +646,7 @@ async function fetchUserData(userId: string) {
   const [objectsResult, notifResult, matchResult, userResult] = await Promise.all([
     query(
       `SELECT title, status, category, created_at, qr_code, reward_amount, description
-       FROM objects WHERE user_id = $1 ORDER BY created_at DESC LIMIT 20`,
+       FROM objects_active WHERE user_id = $1 ORDER BY created_at DESC LIMIT 20`,
       [userId]
     ),
     query(
@@ -658,8 +658,8 @@ async function fetchUserData(userId: string) {
       `SELECT m.id, m.score, m.status, m.created_at,
               lo.title as lost_title, fo.title as found_title
        FROM matches m
-       LEFT JOIN objects lo ON m.lost_object_id = lo.id
-       LEFT JOIN objects fo ON m.found_object_id = fo.id
+       LEFT JOIN objects_active lo ON m.lost_object_id = lo.id
+       LEFT JOIN objects_active fo ON m.found_object_id = fo.id
        WHERE lo.user_id = $1 OR fo.user_id = $1
        ORDER BY m.created_at DESC LIMIT 10`,
       [userId]

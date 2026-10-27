@@ -21,7 +21,7 @@ export async function GET(req: NextRequest) {
       query(
         `SELECT 'object_registered' AS type,
                 o.title AS label, o.status, o.category, o.created_at AS ts
-         FROM objects o
+         FROM objects_active o
          ORDER BY o.created_at DESC LIMIT 5`
       ),
       // Matches confirmados
@@ -30,8 +30,8 @@ export async function GET(req: NextRequest) {
                 CONCAT(lo.title, ' × ', fo.title) AS label,
                 m.score, m.updated_at AS ts
          FROM matches m
-         LEFT JOIN objects lo ON lo.id = m.lost_object_id
-         LEFT JOIN objects fo ON fo.id = m.found_object_id
+         LEFT JOIN objects_active lo ON lo.id = m.lost_object_id
+         LEFT JOIN objects_active fo ON fo.id = m.found_object_id
          WHERE m.status = 'confirmed'
          ORDER BY m.updated_at DESC LIMIT 5`
       ),

@@ -17,7 +17,7 @@ export async function GET(
       `SELECT id, title, description, status, category, type, location, latitude, longitude,
               qr_code, images, color, brand, breed, user_id, is_legacy, source,
               reward_amount, reward_description, created_at, updated_at
-       FROM objects
+       FROM objects_active
        WHERE ${isUUID ? 'id::text = $1 OR qr_code = $1' : 'qr_code = $1'}`,
       [params.code]
     );
@@ -69,7 +69,7 @@ export async function POST(
     // Buscar objeto
     const objectResult = await query(
       `SELECT o.id, o.user_id, (o.is_legacy IS TRUE OR COALESCE(u.is_legacy, false) IS TRUE) AS legacy_blocked
-         FROM objects o LEFT JOIN users u ON u.id = o.user_id
+         FROM objects_active o LEFT JOIN users u ON u.id = o.user_id
         WHERE o.qr_code = $1`,
       [params.code]
     );
@@ -82,7 +82,7 @@ export async function POST(
 
     // Buscar título do objeto para a notificação
     const objDetail = await query(
-      `SELECT id, title FROM objects WHERE qr_code = $1`,
+      `SELECT id, title FROM objects_active WHERE qr_code = $1`,
       [params.code]
     );
     const objTitle = (objDetail.rows[0] as { id: string; title: string } | undefined)?.title ?? 'objeto';

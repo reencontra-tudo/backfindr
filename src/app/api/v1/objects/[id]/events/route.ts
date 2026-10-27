@@ -20,7 +20,7 @@ export async function GET(
 
     // Verifica que o objeto pertence ao usuário
     const ownerCheck = await query(
-      'SELECT id FROM objects WHERE id = $1 AND user_id = $2',
+      'SELECT id FROM objects_active WHERE id = $1 AND user_id = $2',
       [objectId, payload.sub]
     );
     if (ownerCheck.rows.length === 0)

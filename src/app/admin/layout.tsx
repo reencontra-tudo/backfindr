@@ -8,7 +8,7 @@ import {
   Building2, Box, QrCode, Truck, Store, MapPin,
   CreditCard, TrendingUp, Mail, Send, Megaphone,
   FileBarChart, Server, Users2, LogOut, Menu, X,
-  ChevronRight, Bell, Activity, LayoutGrid, Palette, MessageSquare, Radar,
+  ChevronRight, Bell, Activity, LayoutGrid, Palette, MessageSquare, Radar, Trash2,
 } from 'lucide-react';
 import { useAuthStore } from '@/hooks/useAuth';
 import { usePushNotifications } from '@/hooks/usePushNotifications';
@@ -40,6 +40,7 @@ const NAV = [
     color: 'teal',
     items: [
       { href: '/admin/objects',     icon: Package,  label: 'Objetos',      badge: null,              superOnly: false },
+      { href: '/admin/lixeira',     icon: Trash2,   label: 'Lixeira',      badge: null,              superOnly: false },
       { href: '/admin/users',       icon: Users,    label: 'Usuários',     badge: null,              superOnly: false },
       { href: '/admin/matches',     icon: Zap,      label: 'Matches IA',   badge: 'pending_matches', superOnly: false },
       { href: '/admin/publicacoes', icon: Megaphone,label: 'Publicações',  badge: null,              superOnly: false },
