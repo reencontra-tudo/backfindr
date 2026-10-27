@@ -40,7 +40,7 @@ export async function POST(req: NextRequest) {
   try {
     const rowsRes = await query(
       `SELECT o.id AS object_id, e.extracted_fields, e.source_url, e.source_type
-         FROM objects o
+         FROM objects_active o
          JOIN public_signal_evidence e ON e.object_id = o.id
         WHERE o.source = 'public_signal'
           AND o.description LIKE $1`,

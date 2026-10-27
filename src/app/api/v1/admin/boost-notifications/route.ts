@@ -42,7 +42,7 @@ export async function POST(req: NextRequest) {
       const result = await query(
         `SELECT o.id as object_id, o.title, o.created_at,
                 u.id as user_id, u.email, u.name
-         FROM objects o
+         FROM objects_active o
          JOIN users u ON o.user_id = u.id
          WHERE o.status IN ('lost', 'stolen')
            AND (o.is_boosted = false OR o.boost_expires_at < NOW())
@@ -114,7 +114,7 @@ export async function GET(req: NextRequest) {
     for (const day of NOTIFICATION_DAYS) {
       const result = await query(
         `SELECT COUNT(*) as count
-         FROM objects o
+         FROM objects_active o
          WHERE o.status IN ('lost', 'stolen')
            AND (o.is_boosted = false OR o.boost_expires_at < NOW())
            AND o.created_at <= NOW() - INTERVAL '${day} days'

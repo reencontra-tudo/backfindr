@@ -7,6 +7,8 @@ import {
   User, Zap
 } from 'lucide-react';
 import { api, parseApiError } from '@/lib/api';
+import AdminDeleteReasonModal from '@/components/admin/AdminDeleteReasonModal';
+import { analytics } from '@/providers/PostHogProvider';
 import { toast } from 'sonner';
 
 interface Obj {
@@ -144,18 +146,25 @@ export default function AdminObjects() {
 
   useEffect(() => { load(); }, [load]);
 
+  const [delTarget, setDelTarget] = useState<string | null>(null);
   const handleAction = async (objId: string, action: string) => {
-    if (action === 'delete') {
-      if (!confirm('Excluir este objeto permanentemente?')) return;
-      try { await api.delete(`/admin/objects/${objId}`); toast.success('Objeto excluído'); load(); }
-      catch (e) { toast.error(parseApiError(e)); }
-    }
+    if (action === 'delete') setDelTarget(objId);   // abre o modal com motivo obrigatório
+  };
+  const confirmDelete = async (reason: string, reasonText: string | null) => {
+    if (!delTarget) return;
+    try { await api.delete(`/admin/objects/${delTarget}`, { data: { reason, reason_text: reasonText ?? undefined } }); }
+    catch (e) { throw new Error(parseApiError(e)); }
+    analytics.ocorrenciaExcluida(reason, null, null, 'admin');
+    toast.success('Ocorrência enviada para a lixeira');
+    setDelTarget(null);
+    load();
   };
 
   const pages = Math.ceil(total / PER_PAGE);
 
   return (
     <div className="p-5 md:p-7 max-w-7xl mx-auto space-y-5">
+      <AdminDeleteReasonModal open={!!delTarget} onClose={() => setDelTarget(null)} onConfirm={confirmDelete} />
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-white text-xl font-bold tracking-tight">Objetos</h1>

@@ -93,12 +93,12 @@ export async function GET(req: NextRequest) {
       query(`SELECT COUNT(*)::int AS count FROM users WHERE created_at >= NOW() - INTERVAL '${interval}'`),
       query(`SELECT COUNT(*)::int AS count FROM users WHERE created_at >= NOW() - INTERVAL '${interval}' * 2 AND created_at < NOW() - INTERVAL '${interval}'`),
       query(`SELECT COUNT(*)::int AS count FROM objects`),
-      query(`SELECT COUNT(*)::int AS count FROM objects WHERE created_at >= NOW() - INTERVAL '${interval}'`),
-      query(`SELECT COUNT(*)::int AS count FROM objects WHERE created_at >= NOW() - INTERVAL '${interval}' * 2 AND created_at < NOW() - INTERVAL '${interval}'`),
+      query(`SELECT COUNT(*)::int AS count FROM objects_active WHERE created_at >= NOW() - INTERVAL '${interval}'`),
+      query(`SELECT COUNT(*)::int AS count FROM objects_active WHERE created_at >= NOW() - INTERVAL '${interval}' * 2 AND created_at < NOW() - INTERVAL '${interval}'`),
       query(`SELECT COUNT(*)::int AS count FROM matches`),
       query(`SELECT COUNT(*)::int AS count FROM matches WHERE created_at >= NOW() - INTERVAL '${interval}'`),
       query(`SELECT COUNT(*)::int AS count FROM matches WHERE status = 'confirmed'`),
-      query(`SELECT COUNT(*)::int AS count FROM objects WHERE status = 'returned'`),
+      query(`SELECT COUNT(*)::int AS count FROM objects_active WHERE status = 'returned'`),
       query(`SELECT COUNT(*)::int AS count FROM notifications WHERE type IN ('qr_scan', 'scan')`),
       query(`SELECT COUNT(*)::int AS count FROM notifications WHERE type IN ('qr_scan', 'scan') AND created_at >= NOW() - INTERVAL '${interval}'`),
 
@@ -119,7 +119,7 @@ export async function GET(req: NextRequest) {
       query(`
         SELECT TO_CHAR(DATE_TRUNC('${granularity}', created_at), '${dateFormat}') AS label,
                COUNT(*)::int AS value
-        FROM objects
+        FROM objects_active
         WHERE created_at >= NOW() - INTERVAL '${interval}'
         GROUP BY DATE_TRUNC('${granularity}', created_at)
         ORDER BY DATE_TRUNC('${granularity}', created_at)
@@ -147,27 +147,27 @@ export async function GET(req: NextRequest) {
       query(`
         SELECT COUNT(DISTINCT o.user_id)::int AS count
         FROM matches m
-        JOIN objects o ON o.id = m.lost_object_id OR o.id = m.found_object_id
+        JOIN objects_active o ON o.id = m.lost_object_id OR o.id = m.found_object_id
       `),
-      query(`SELECT COUNT(DISTINCT user_id)::int AS count FROM objects WHERE status = 'returned'`),
+      query(`SELECT COUNT(DISTINCT user_id)::int AS count FROM objects_active WHERE status = 'returned'`),
 
       // Distribuição
       query(`SELECT plan, COUNT(*)::int AS count FROM users GROUP BY plan ORDER BY count DESC`),
       query(`
         SELECT COALESCE(category, type, 'other') AS label, COUNT(*)::int AS count
-        FROM objects
+        FROM objects_active
         GROUP BY COALESCE(category, type, 'other')
         ORDER BY count DESC
         LIMIT 8
       `),
-      query(`SELECT status, COUNT(*)::int AS count FROM objects GROUP BY status ORDER BY count DESC`),
+      query(`SELECT status, COUNT(*)::int AS count FROM objects_active GROUP BY status ORDER BY count DESC`),
       query(`SELECT status, COUNT(*)::int AS count FROM matches GROUP BY status ORDER BY count DESC`),
 
       // Retenção semanal (usuários que criaram objetos nas últimas 8 semanas)
       query(`
         SELECT TO_CHAR(DATE_TRUNC('week', created_at), 'DD/MM') AS week,
                COUNT(DISTINCT user_id)::int AS active_users
-        FROM objects
+        FROM objects_active
         WHERE created_at >= NOW() - INTERVAL '8 weeks'
         GROUP BY DATE_TRUNC('week', created_at)
         ORDER BY DATE_TRUNC('week', created_at)
@@ -178,7 +178,7 @@ export async function GET(req: NextRequest) {
         SELECT TO_CHAR(created_at, 'Dy') AS dow,
                EXTRACT(DOW FROM created_at)::int AS dow_num,
                COUNT(*)::int AS count
-        FROM objects
+        FROM objects_active
         WHERE created_at >= NOW() - INTERVAL '90 days'
         GROUP BY TO_CHAR(created_at, 'Dy'), EXTRACT(DOW FROM created_at)
         ORDER BY dow_num
@@ -188,7 +188,7 @@ export async function GET(req: NextRequest) {
       query(`
         SELECT EXTRACT(HOUR FROM created_at)::int AS hour,
                COUNT(*)::int AS count
-        FROM objects
+        FROM objects_active
         WHERE created_at >= NOW() - INTERVAL '30 days'
         GROUP BY EXTRACT(HOUR FROM created_at)
         ORDER BY hour

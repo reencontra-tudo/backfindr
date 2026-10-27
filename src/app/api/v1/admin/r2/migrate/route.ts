@@ -39,7 +39,7 @@ export async function POST(request: NextRequest) {
   // Contar total pendente (imagens que ainda são Base64)
   const countResult = await query(`
     SELECT COUNT(*) as total
-    FROM objects
+    FROM objects_active
     WHERE images IS NOT NULL
       AND images != '[]'
       AND images != 'null'
@@ -58,7 +58,7 @@ export async function POST(request: NextRequest) {
   // Buscar objetos com imagens Base64
   const objectsResult = await query(`
     SELECT id, images
-    FROM objects
+    FROM objects_active
     WHERE images IS NOT NULL
       AND images != '[]'
       AND images != 'null'
@@ -127,7 +127,7 @@ export async function POST(request: NextRequest) {
   // Contar quantos ainda faltam
   const remainingResult = await query(`
     SELECT COUNT(*) as total
-    FROM objects
+    FROM objects_active
     WHERE images IS NOT NULL
       AND images != '[]'
       AND images != 'null'
@@ -159,9 +159,9 @@ export async function GET(request: NextRequest) {
   if (guard instanceof NextResponse) return guard;
 
   const [base64Count, r2Count, totalCount] = await Promise.all([
-    query(`SELECT COUNT(*) as n FROM objects WHERE images::text LIKE '%data:image%'`),
-    query(`SELECT COUNT(*) as n FROM objects WHERE images::text LIKE '%http%' AND images::text NOT LIKE '%data:image%' AND images != '[]'`),
-    query(`SELECT COUNT(*) as n FROM objects WHERE images IS NOT NULL AND images != '[]' AND images != 'null'`),
+    query(`SELECT COUNT(*) as n FROM objects_active WHERE images::text LIKE '%data:image%'`),
+    query(`SELECT COUNT(*) as n FROM objects_active WHERE images::text LIKE '%http%' AND images::text NOT LIKE '%data:image%' AND images != '[]'`),
+    query(`SELECT COUNT(*) as n FROM objects_active WHERE images IS NOT NULL AND images != '[]' AND images != 'null'`),
   ]);
 
   return NextResponse.json({

@@ -7,7 +7,7 @@
 /** Prazo padrão de retenção na lixeira (dias). Configurável por GOV_RETENTION_DAYS; a limpeza definitiva é separada e desligada. */
 export const RETENTION_DAYS_DEFAULT = 90;
 
-export function retentionDays(raw: string | undefined | null = process.env.GOV_RETENTION_DAYS): number {
+export function retentionDays(raw: string | undefined | null = process.env.GOV_RETENTION_DAYS ?? process.env.NEXT_PUBLIC_GOV_RETENTION_DAYS): number {
   const n = Number.parseInt(String(raw ?? ''), 10);
   return Number.isFinite(n) && n >= 1 && n <= 3650 ? n : RETENTION_DAYS_DEFAULT;
 }
@@ -61,6 +61,22 @@ export const ADMIN_REASONS = [
 ] as const;
 
 export const REASON_TEXT_MAX = 200;
+
+/** Passo do modal de exclusão para cada motivo (lógica pura e testável; a tela só desenha). */
+export type ModalStep = 'confirm' | 'text' | 'recovered' | 'duplicates' | 'edit' | 'pause' | 'privacy';
+export function modalStepFor(code: string): ModalStep {
+  const r = OWNER_REASONS.find((x) => x.code === code);
+  if (!r) return 'confirm';
+  switch (r.action) {
+    case 'mark_recovered': return 'recovered';
+    case 'review_duplicates': return 'duplicates';
+    case 'edit': return 'edit';
+    case 'pause': return 'pause';
+    case 'privacy_request': return 'privacy';
+    default: return r.allowsText ? 'text' : 'confirm';
+  }
+}
+
 
 export type DeletionRole = 'owner' | 'admin';
 export type DeletionResolution =
@@ -128,6 +144,11 @@ export function actorFromPayload(payload: PayloadLike | null | undefined, origin
     return { id: payload.impersonated_by, type: 'impersonacao', impersonatedId: payload.sub, origin, requestId };
   }
   return { id: payload.sub, type: admin ? 'admin' : 'usuario', impersonatedId: null, origin, requestId };
+}
+
+/** Ator das rotas de admin (requireAdmin já validou o papel). */
+export function adminActor(adminId: string, origin: string, requestId: string | null = null): AuditActor {
+  return { id: adminId, type: 'admin', impersonatedId: null, origin, requestId };
 }
 
 export function newRequestId(headers?: { get(name: string): string | null }): string {

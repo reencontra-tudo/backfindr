@@ -59,6 +59,15 @@ export const analytics = {
   // Objetos
   objectCreated: (category: string, status: string) =>
     posthog.capture('object_created', { category, status }),
+  // Governança (exclusão com motivo): só códigos, nunca texto livre nem dado pessoal
+  ocorrenciaExcluida: (reason: string, category: string | null, status: string | null, by: 'dono' | 'admin' = 'dono') =>
+    posthog.capture('ocorrencia_excluida', { reason, category, status, by }),
+  ocorrenciaPausada: (paused: boolean, category: string | null) =>
+    posthog.capture(paused ? 'ocorrencia_pausada' : 'ocorrencia_reativada', { category }),
+  ocorrenciaRecuperada: (helped: string | null, category: string | null, previousStatus: string | null) =>
+    posthog.capture('ocorrencia_recuperada', { helped, category, previous_status: previousStatus }),
+  ocorrenciaRestaurada: (category: string | null) =>
+    posthog.capture('ocorrencia_restaurada', { category }),
   objectViewed:  (code: string, category: string) =>
     posthog.capture('object_viewed', { code, category }),
   qrScanned:     (code: string, location?: string) =>

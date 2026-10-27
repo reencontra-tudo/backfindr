@@ -38,7 +38,7 @@ export async function POST(req: NextRequest) {
     // 386 candidatos ambíguos mandados pro estágio 3 (LLM) numa única
     // rodada, 0 aceitos. Custo real de API sem nenhum match a mais.
     const lostObjects = await query(
-      `SELECT o.* FROM objects o
+      `SELECT o.* FROM objects_active o
        WHERE o.status = 'lost'
          AND o.is_legacy = false
          AND NOT EXISTS (
@@ -87,7 +87,7 @@ export async function POST(req: NextRequest) {
       // matches do diagnóstico eram 100% webjetos×webjetos.
       if (hasLocation) {
         candidateQuery = `
-          SELECT * FROM objects
+          SELECT * FROM objects_active
           WHERE status = 'found'
             AND id != $1
             AND latitude IS NOT NULL AND longitude IS NOT NULL
@@ -107,7 +107,7 @@ export async function POST(req: NextRequest) {
           : [object.id, lat, lon, MAX_RADIUS_KM];
       } else if (categoryGroup) {
         candidateQuery = `
-          SELECT * FROM objects
+          SELECT * FROM objects_active
           WHERE status = 'found' AND id != $1
             AND is_legacy = false
             AND (category = ANY($2) OR type = ANY($2))
@@ -166,7 +166,7 @@ export async function POST(req: NextRequest) {
         try {
           const ownerResult = await query(
             `SELECT u.name, u.email FROM users u
-             JOIN objects o ON o.user_id = u.id
+             JOIN objects_active o ON o.user_id = u.id
              WHERE o.id = $1`,
             [object.id]
           );

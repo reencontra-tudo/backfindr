@@ -24,7 +24,7 @@ export async function POST(request: NextRequest, { params }: { params: { id: str
 
     const actor = actorFromPayload(payload, 'POST /api/v1/objects/[id]/recovered', newRequestId(request.headers));
     const row = await withActor(actor, async (q) => {
-      const prev = await q(`SELECT status FROM objects WHERE id = $1 AND user_id = $2 AND deleted_at IS NULL`, [params.id, payload.sub]);
+      const prev = await q(`SELECT status FROM objects_active WHERE id = $1 AND user_id = $2 AND deleted_at IS NULL`, [params.id, payload.sub]);
       if (prev.rows.length === 0) return undefined;
       const previousStatus = prev.rows[0].status as string;
       const r = await q(

@@ -32,14 +32,14 @@ export async function GET() {
   try {
     const [objectsRes, returnedRes, recentRes] = await Promise.all([
       query(`SELECT COUNT(*) AS count FROM objects`),
-      query(`SELECT COUNT(*) AS count FROM objects WHERE status = 'returned'`),
+      query(`SELECT COUNT(*) AS count FROM objects_active WHERE status = 'returned'`),
       query(`
         SELECT
           title,
           category,
           location,
           updated_at
-        FROM objects
+        FROM objects_active
         WHERE status = 'returned'
           AND updated_at > NOW() - INTERVAL '30 days'
         ORDER BY updated_at DESC

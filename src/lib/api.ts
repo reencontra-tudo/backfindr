@@ -93,7 +93,13 @@ export const objectsApi = {
     return api.post('/objects', payload);
   },
   update: (id: string, payload: object) => api.patch(`/objects/${id}`, payload),
-  delete: (id: string) => api.delete(`/objects/${id}`),
+  /** Exclusão lógica com motivo opcional (dono). Sem corpo = 'nao_informado'. */
+  delete: (id: string, body?: { reason?: string; reason_text?: string }) =>
+    api.delete(`/objects/${id}`, body ? { data: body } : undefined),
+  restore: (id: string) => api.post(`/objects/${id}/restore`),
+  pause: (id: string, paused: boolean) => api.post(`/objects/${id}/pause`, { paused }),
+  recovered: (id: string, helped?: 'sim' | 'nao') => api.post(`/objects/${id}/recovered`, helped ? { helped } : {}),
+  similar: (id: string) => api.get(`/objects/${id}/similar`),
   uploadImages: (id: string, images: string[]) => api.post(`/objects/${id}/images`, { images }),
   deleteImages: (id: string) => api.delete(`/objects/${id}/images`),
   scan: (code: string) => api.get(`/objects/scan/${code}`),

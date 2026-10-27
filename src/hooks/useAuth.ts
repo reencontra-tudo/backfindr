@@ -129,6 +129,13 @@ export const useAuthStore = create<AuthState>()(
        * Para a impersonation e restaura a sessão original do super_admin.
        */
       stopImpersonation: () => {
+        // Registra o fim na trilha de auditoria (melhor esforço; não bloqueia a saída da impersonação).
+        try {
+          const impToken = Cookies.get('access_token');
+          if (impToken) {
+            void fetch('/api/v1/admin/impersonate/end', { method: 'POST', headers: { Authorization: `Bearer ${impToken}` } }).catch(() => {});
+          }
+        } catch { /* ignora */ }
         const originalToken   = sessionStorage.getItem('impersonation_original_token');
         const originalRefresh = sessionStorage.getItem('impersonation_original_refresh');
         const originalUserStr = sessionStorage.getItem('impersonation_original_user');

@@ -28,7 +28,7 @@ export async function GET(
       `SELECT
         o.id, o.title, o.status, o.category, o.created_at,
         u.name AS owner_name
-       FROM objects o
+       FROM objects_active o
        JOIN users u ON u.id = o.owner_id
        WHERE u.b2b_partner_id = $1
        ORDER BY o.created_at DESC
@@ -37,7 +37,7 @@ export async function GET(
     );
 
     const countRes = await query(
-      `SELECT COUNT(*) AS total FROM objects o
+      `SELECT COUNT(*) AS total FROM objects_active o
        JOIN users u ON u.id = o.owner_id
        WHERE u.b2b_partner_id = $1`,
       [partnerId]

@@ -201,7 +201,7 @@ export async function GET(request: NextRequest) {
         color, brand, breed, images,
         is_legacy, source, reward_amount, reward_description,
         is_boosted, boost_expires_at, created_at, updated_at
-      FROM objects
+      FROM objects_active
       ${whereClause}
       ${orderBy}
       ${paginationClause}
