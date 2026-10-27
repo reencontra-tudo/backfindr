@@ -4,6 +4,7 @@ import { query } from '@/lib/db';
 import { Resend } from 'resend';
 import crypto from 'crypto';
 import { esc } from '@/lib/email';
+import { consumeEmailRequestSlots } from '@/lib/sendThrottle';
 
 const resend = new Resend(process.env.RESEND_API_KEY);
 const APP_URL = process.env.NEXT_PUBLIC_APP_URL || 'https://www.backfindr.com';
@@ -18,6 +19,11 @@ export async function POST(req: NextRequest) {
 
     if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
       return NextResponse.json({ error: 'E-mail inválido.' }, { status: 400 });
+    }
+
+    // Limite por IP e por e-mail ANTES de qualquer escrita ou envio (nada é invalidado nem enviado se estourar).
+    if (!(await consumeEmailRequestSlots('magic_link', req.headers, email))) {
+      return NextResponse.json({ error: 'Muitas solicitações. Aguarde alguns minutos e tente novamente.' }, { status: 429 });
     }
 
     // Garantir que a tabela de tokens existe

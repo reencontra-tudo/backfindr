@@ -3,6 +3,7 @@ import { NextRequest } from 'next/server';
 import crypto from 'crypto';
 import { query } from '@/lib/db';
 import { esc } from '@/lib/email';
+import { consumeEmailRequestSlots } from '@/lib/sendThrottle';
 import { successResponse, errorResponse, internalErrorResponse } from '@/lib/response';
 
 export async function POST(request: NextRequest) {
@@ -12,6 +13,15 @@ export async function POST(request: NextRequest) {
 
     if (!email) {
       return errorResponse('Email is required', 400);
+    }
+
+    // Limite por IP e por e-mail ANTES de consultar o banco: conta existente ou não, a resposta é a mesma, e nenhum
+    // token é sobrescrito nem e-mail enviado quando o limite estoura.
+    if (typeof email !== 'string') {
+      return errorResponse('Email is required', 400);
+    }
+    if (!(await consumeEmailRequestSlots('forgot_password', request.headers, email))) {
+      return errorResponse('Too many requests. Please wait a few minutes and try again.', 429);
     }
 
     // Verificar se o usuário existe
