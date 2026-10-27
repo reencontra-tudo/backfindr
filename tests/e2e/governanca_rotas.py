@@ -13,6 +13,9 @@ def sql(q):
     if r.returncode: raise RuntimeError(r.stderr)
     return r.stdout.strip()
 
+def REF(uid):
+    return f"(select audit_ref::text from users where id='{uid}')"
+
 def token(uid, extra=None):
     payload = {"sub": uid, "email": f"{uid[:8]}@example.invalid", **(extra or {})}
     js = f"console.log(require('jsonwebtoken').sign({json.dumps(payload)}, process.argv[1], {{algorithm:'HS256',expiresIn:'1h'}}))"
@@ -48,7 +51,7 @@ s, _ = call("GET", f"/api/v1/objects/{o3}", T); check("GET do dono (visão objec
 s, d = call("DELETE", f"/api/v1/objects/{o3}", T, {"reason": "desisti"}); check("DELETE do dono com motivo → 200 e prazo de restauração", s == 200 and (d.get("data") or d).get("retention_days") == 90, (s, d))
 check("linha continua na tabela base (lixeira) com motivo", sql(f"select deleted_reason||'|'||(deleted_at is not null) from objects where id='{o3}'") == "desisti|true")
 s, _ = call("GET", f"/api/v1/objects/{o3}", T); check("excluída some para o dono (404)", s == 404, s)
-check("auditoria do UPDATE: ator=usuario, origem=rota, requisição", sql(f"select count(*) from audit.row_changes where table_name='objects' and row_id='{o3}' and operation='UPDATE' and actor_type='usuario' and actor_id='{own}' and origin='DELETE /api/v1/objects/[id]' and coalesce(request_id,'')<>''") == "1")
+check("auditoria do UPDATE: ator=usuario, origem=rota, requisição", sql(f"select count(*) from audit.row_changes where table_name='objects' and row_id='{o3}' and operation='UPDATE' and actor_type='usuario' and actor_id={REF(own)} and origin='DELETE /api/v1/objects/[id]' and coalesce(request_id,'')<>''") == "1")
 check("evento de conta object_deleted gravado (sem texto livre)", sql(f"select count(*) from audit.account_events where event_type='object_deleted' and target_id='{o3}' and details ? 'reason' and not details ? 'reason_text'") == "1")
 s, _ = call("POST", f"/api/v1/objects/{o3}/restore", T); check("Desfazer (restore) → 200", s == 200, s)
 s, _ = call("GET", f"/api/v1/objects/{o3}", T); check("restaurada volta para o dono (200)", s == 200, s)
@@ -84,7 +87,7 @@ s, d = call("DELETE", f"/api/v1/admin/objects/{o1}", TA); check("admin sem motiv
 s, d = call("DELETE", f"/api/v1/admin/objects/{o1}", TA, {"reason": "desisti"}); check("admin com motivo do dono → 400", s == 400, s)
 s, d = call("DELETE", f"/api/v1/admin/objects/{o1}", T, {"reason": "adm_duplicidade"}); check("usuário comum no endpoint admin → negado", s in (401, 403), s)
 s, d = call("DELETE", f"/api/v1/admin/objects/{o1}", TA, {"reason": "adm_duplicidade"}); check("admin com motivo da lista → 200", s == 200, (s, d))
-check("auditoria: ator=admin, origem admin", sql(f"select count(*) from audit.row_changes where table_name='objects' and row_id='{o1}' and operation='UPDATE' and actor_type='admin' and actor_id='{adm}' and origin='DELETE /api/v1/admin/objects/[id]'") == "1")
+check("auditoria: ator=admin, origem admin", sql(f"select count(*) from audit.row_changes where table_name='objects' and row_id='{o1}' and operation='UPDATE' and actor_type='admin' and actor_id={REF(adm)} and origin='DELETE /api/v1/admin/objects/[id]'") == "1")
 s, d = call("GET", "/api/v1/admin/objects/trash", TA); itens = d.get("items", [])
 check("lixeira do admin lista a ocorrência com motivo", s == 200 and any(i["id"] == o1 and i["deleted_reason"] == "adm_duplicidade" for i in itens), (s, str(d)[:200]))
 s, _ = call("GET", f"/api/v1/admin/objects/{o1}", TA); check("detalhe admin de excluída → 404 (não vaza pela visão)", s == 404, s)
@@ -95,17 +98,55 @@ s, d = call("GET", "/api/v1/admin/stats", TA); check("estatísticas do admin fun
 
 # ── impersonação
 s, d = call("POST", "/api/v1/admin/impersonate", TS, {"user_id": own}); imp = (d.get("access_token") or (d.get("data") or {}).get("access_token")); check("impersonar (super_admin) → token", s == 200 and bool(imp), (s, str(d)[:120]))
-check("início da impersonação registrado (admin e alvo)", sql(f"select count(*) from audit.account_events where event_type='impersonation_start' and actor_id='{sup}' and target_id='{own}' and actor_type='impersonacao'") == "1")
+check("início da impersonação registrado (admin e alvo)", sql(f"select count(*) from audit.account_events where event_type='impersonation_start' and actor_id={REF(sup)} and target_id={REF(own)} and actor_type='impersonacao'") == "1")
 s, _ = call("DELETE", f"/api/v1/objects/{o4}", imp, {"reason": "desisti"}); check("exclusão feita em impersonação → 200", s == 200, s)
-check("auditoria: ator_type=impersonacao, ator=admin, alvo=dono", sql(f"select count(*) from audit.row_changes where table_name='objects' and row_id='{o4}' and operation='UPDATE' and actor_type='impersonacao' and actor_id='{sup}' and impersonated_id='{own}'") == "1")
+check("auditoria: ator_type=impersonacao, ator=admin, alvo=dono", sql(f"select count(*) from audit.row_changes where table_name='objects' and row_id='{o4}' and operation='UPDATE' and actor_type='impersonacao' and actor_id={REF(sup)} and impersonated_id={REF(own)}") == "1")
 s, _ = call("POST", "/api/v1/admin/impersonate/end", imp); check("fim da impersonação → 200", s == 200, s)
-check("fim da impersonação registrado", sql(f"select count(*) from audit.account_events where event_type='impersonation_end' and actor_id='{sup}' and target_id='{own}'") == "1")
+check("fim da impersonação registrado", sql(f"select count(*) from audit.account_events where event_type='impersonation_end' and actor_id={REF(sup)} and target_id={REF(own)}") == "1")
 s, _ = call("POST", "/api/v1/admin/impersonate/end", T); check("fim sem sessão de impersonação → 400", s == 400, s)
 
 # ── nenhum DELETE físico saiu das rotas novas
 ids_sql = ",".join(f"'{x}'" for x in (o1, o2, o3, o4, o5))
 check("nenhuma ocorrência de teste foi apagada fisicamente pelas rotas", sql(f"select count(*) from audit.row_changes where table_name='objects' and operation='DELETE' and row_id in ({ids_sql})") == "0")
 
+# ── anonimização (rota admin), login da conta anon e job de remoção de arquivos
+import os, tempfile, pathlib
+oa = mk("GOV-E2E ocorrência a anonimizar", "E2E00009")
+sql(f"update objects set images='[\"https://pub-teste.r2.dev/objects/{oa}/foto1.jpg\"]'::jsonb, location='Rua Teste, 1 - São Luís - MA', description='descrição pessoal e2e', latitude=-2.53, longitude=-44.30, license_plate='E2E1A23' where id='{oa}'")
+s, d = call("POST", f"/api/v1/admin/objects/{oa}/anonymize", TA, {}); check("anonimizar sem motivo/confirmação → 400", s == 400, s)
+s, d = call("POST", f"/api/v1/admin/objects/{oa}/anonymize", TA, {"reason": "pedido_lgpd", "confirm": True, "confirm_text": "anonimizar"}); check("palavra de confirmação errada → 400", s == 400, s)
+s, d = call("POST", f"/api/v1/admin/objects/{oa}/anonymize", TA, {"reason": "desisti", "confirm": True, "confirm_text": "ANONIMIZAR"}); check("motivo fora da lista de anonimização → 400", s == 400, s)
+s, d = call("POST", f"/api/v1/admin/objects/{oa}/anonymize", T, {"reason": "pedido_lgpd", "confirm": True, "confirm_text": "ANONIMIZAR"}); check("usuário comum não anonimiza pela rota admin", s in (401, 403), s)
+s, d = call("POST", f"/api/v1/admin/objects/{oa}/anonymize", TA, {"reason": "pedido_lgpd", "confirm": True, "confirm_text": "ANONIMIZAR"}); check("admin anonimiza com motivo + confirmação → 200 e macro-região Nordeste", s == 200 and d.get("anonymized") and d.get("macro_region") == "Nordeste", (s, d))
+check("linha: título genérico, dono=conta anon, sem local/foto/placa/descrição", sql(f"select title||'|'||(user_id='00000000-0000-4000-8000-0000000a0909')||'|'||(location is null and latitude is null and description is null and license_plate is null)||'|'||images::text from objects where id='{oa}'") == "Ocorrência anonimizada|true|true|[]")
+s, _ = call("GET", f"/api/v1/objects/{oa}", T); check("dono não vê mais a ocorrência anonimizada (404)", s == 404, s)
+s, _ = call("POST", f"/api/v1/objects/{oa}/restore", T); check("dono não consegue restaurar anonimizada (404)", s == 404, s)
+s, _ = call("POST", f"/api/v1/admin/objects/{oa}/restore", TA); check("admin não consegue restaurar anonimizada (404)", s == 404, s)
+s, d = call("GET", "/api/v1/admin/objects/trash", TA); check("lixeira lista a anonimizada, marcada como anonimizada", any(i["id"] == oa and i.get("anonymized_at") for i in d.get("items", [])), str(d)[:120])
+check("trilha: evento object_anonymized com ator admin pseudonimizado", sql(f"select count(*) from audit.account_events where event_type='object_anonymized' and target_id='{oa}' and actor_type='admin' and actor_id={REF(adm)}") == "1")
+check("trilha sem conteúdo (rua, placa, descrição, foto)", sql("select count(*) from audit.row_changes where old_row::text ~* 'Rua Teste|E2E1A23|descrição pessoal e2e|foto1' or new_row::text ~* 'Rua Teste|E2E1A23|descrição pessoal e2e|foto1'") == "0")
+s, d = call("POST", f"/api/v1/admin/objects/{oa}/anonymize", TA, {"reason": "pedido_lgpd", "confirm": True, "confirm_text": "ANONIMIZAR"}); check("repetir é idempotente (200, already)", s == 200 and d.get("already"), (s, d))
+leg = sql("select id from objects where is_legacy limit 1")
+s, d = call("POST", f"/api/v1/admin/objects/{leg}/anonymize", TA, {"reason": "pedido_lgpd", "confirm": True, "confirm_text": "ANONIMIZAR"}); check("legado RECUSADO (409)", s == 409, (s, d))
+check("legado intacto (não anonimizado)", sql(f"select anonymized_at is null from objects where id='{leg}'") == "t")
+# conta
+vic = str(uuid.uuid4()); sql(f"insert into users (id,name,email,password,plan,phone) values ('{vic}','GOV-E2E vitima','{vic[:8]}-vitima@example.invalid','x','free','98900000000')")
+vo = mk("GOV-E2E da vitima", "E2E00010"); sql(f"update objects set user_id='{vic}' where id='{vo}'")
+s, d = call("POST", f"/api/v1/admin/users/{vic}/anonymize", TA, {"reason": "pedido_lgpd", "confirm": True, "confirm_text": "ANONIMIZAR"}); check("anonimizar conta: admin comum (não super) → negado", s in (401, 403), s)
+s, d = call("POST", f"/api/v1/admin/users/{vic}/anonymize", TS, {"reason": "pedido_lgpd", "confirm": True, "confirm_text": "ANONIMIZAR"}); check("anonimizar conta: super_admin → 200", s == 200 and d.get("anonymized") and d.get("objects") == 1, (s, d))
+check("conta anonimizada: sem nome, e-mail, telefone; mapa audit_ref anulado; ocorrência anonimizada", sql(f"select (name='Usuário anonimizado')||'|'||(phone is null)||'|'||(audit_ref is null)||'|'||(select (anonymized_at is not null) from objects where id='{vo}') from users where id='{vic}'") == "true|true|true|true")
+s, _ = call("POST", "/api/v1/auth/login", None, {"username": "anon@invalid.backfindr.internal", "password": "!sem-login"}); check("conta anon NÃO loga (401)", s == 401, s)
+s, _ = call("POST", "/api/v1/auth/login", None, {"username": f"anon-{vic.replace('-', '')}@invalid.backfindr.internal", "password": "x"}); check("conta anonimizada NÃO loga (401)", s == 401, s)
+# job de remoção de arquivos (desligado por padrão; modo de teste local)
+d_arq = tempfile.mkdtemp(prefix="gov-arquivos-teste-")
+alvo = pathlib.Path(d_arq) / "objects" / oa; alvo.mkdir(parents=True); (alvo / "foto1.jpg").write_bytes(b"conteudo-de-teste")
+env = {**os.environ, "DATABASE_URL": os.environ.get("GOV_TEST_DATABASE_URL", "postgresql://postgres:x@localhost:55433/postgres"), "GOV_STORAGE_MODE": "local-test", "GOV_TEST_STORAGE_DIR": d_arq}
+job = [ "node", os.path.join(PROJ, "docs/migrations/tools/gov-remove-pending-files.mjs") ]
+r = subprocess.run(job, capture_output=True, text=True, cwd=PROJ, env={**env, "GOV_FILE_REMOVAL_ENABLED": "false"}); check("job DESLIGADO por padrão: não remove nada", "DESLIGADO" in r.stdout and (alvo / "foto1.jpg").exists() and sql(f"select status from audit.files_pending_removal where object_id='{oa}'") == "pending", r.stdout + r.stderr)
+r = subprocess.run(job, capture_output=True, text=True, cwd=PROJ, env={**env, "GOV_FILE_REMOVAL_ENABLED": "true"}); check("job ligado (armazenamento de teste): arquivo removido", not (alvo / "foto1.jpg").exists(), r.stdout + r.stderr)
+check("fila marcada como removida, com data", sql(f"select status||'|'||(removed_at is not null) from audit.files_pending_removal where object_id='{oa}'") == "removed|true")
+check("trilha registra CAMINHO e data (sem conteúdo)", sql(f"select count(*) from audit.account_events where event_type='files_removed' and target_id='{oa}' and details->'arquivos'->0->>'path'='objects/{oa}/foto1.jpg' and details->'arquivos'->0 ? 'removed_at' and details::text not like '%conteudo-de-teste%'") == "1")
+
 # ── limpeza dos dados de teste
-sql("update objects set deleted_at=null where title like 'GOV-E2E%'"); sql("delete from objects where title like 'GOV-E2E%'"); sql("delete from users where name like 'GOV-E2E%'")
+ids_extra = ",".join(f"'{x}'" for x in (oa, vo)); sql(f"delete from objects where id in ({ids_extra}) or title like 'GOV-E2E%'"); sql(f"delete from users where id in ('{own}','{adm}','{sup}','{vic}') or name like 'GOV-E2E%'")
 print(f"\nRESULTADO: {ok} OK, {fail} falhas"); sys.exit(1 if fail else 0)

@@ -34,11 +34,34 @@ Confirmação (último passo):
 ```
 Cartões, QR Codes e posts que você já compartilhou deixarão de funcionar.
 Quem abrir o link vai ver que a ocorrência não está mais disponível.
-A ocorrência fica na lixeira por 90 dias e você pode desfazer logo depois de excluir.
+Você pode desfazer logo depois de excluir.
+Ao fim de 90 dias a ocorrência é anonimizada, não apagada: ficam só dados genéricos,
+sem como identificar você. Em pedido de apagamento (LGPD), a anonimização é na hora.
 [ Cancelar ]                              [ Excluir ]
 ```
-Depois de excluir: aviso "Excluído. Você pode desfazer agora; a ocorrência fica na lixeira por 90 dias." com ação **Desfazer** (restaura a ocorrência idêntica).
+Depois de excluir: aviso "Excluído. Você pode desfazer agora; ao fim de 90 dias a ocorrência é anonimizada." com ação **Desfazer** (restaura a ocorrência idêntica; depois de anonimizada não há como restaurar).
 
 Admin: lista fixa de motivos **obrigatória** (denúncia procedente, duplicidade, dado incorreto ou impróprio, solicitação do titular, spam ou teste, outro com texto) e página **Lixeira** com Restaurar.
 
 O motivo vai para três lugares: `objects.deleted_reason` (e texto curto opcional), a trilha de auditoria (`audit.account_events`, só códigos) e um evento de produto (`ocorrencia_excluida`, só códigos e categoria, sem dado pessoal).
+
+## Admin — "Anonimizar agora" (irreversível, na Lixeira)
+```
+┌──────────────────────────────────────────────┐
+│ Anonimizar agora (irreversível)              │
+│ A ocorrência passa a ter só dados genéricos  │
+│ (categoria, status, ano e trimestre,         │
+│ macro-região). Título, descrição, local,     │
+│ coordenadas, fotos, QR e dono são removidos  │
+│ e não há como desfazer. Cópias fora do       │
+│ Backfindr (posts, prints) não são afetadas.  │
+│ ( ) Pedido de apagamento do titular (LGPD)   │
+│ ( ) Solicitação do titular por canal oficial │
+│ ( ) Dado pessoal de terceiros na ocorrência  │
+│ ( ) Outro (registrar na auditoria)           │
+│ [ ] Entendo que isso é irreversível.         │
+│ Digite ANONIMIZAR para liberar o botão: [   ]│
+│ [ Cancelar ]                    [ Anonimizar ]│
+└──────────────────────────────────────────────┘
+```
+O botão só habilita com motivo + caixa marcada + palavra digitada; ocorrências legadas não mostram o botão (e o servidor recusa).

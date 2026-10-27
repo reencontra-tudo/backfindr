@@ -22,7 +22,7 @@ export async function POST(request: NextRequest, { params }: { params: { id: str
       const r = await q(
         `UPDATE objects
             SET deleted_at = NULL, deleted_by = NULL, deleted_reason = NULL, deleted_reason_text = NULL, updated_at = NOW()
-          WHERE id = $1 AND user_id = $2 AND deleted_at IS NOT NULL
+          WHERE id = $1 AND user_id = $2 AND deleted_at IS NOT NULL AND anonymized_at IS NULL
             AND deleted_at > NOW() - make_interval(days => $3::int)
         RETURNING id, status, category`,
         [params.id, payload.sub, days]

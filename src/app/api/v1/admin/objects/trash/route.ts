@@ -7,6 +7,7 @@ import { retentionDays } from '@/lib/governance';
 /**
  * GET /api/v1/admin/objects/trash?limit=&offset= — lixeira: ocorrências excluídas (lógica) ainda dentro da retenção.
  * Lê a tabela base de propósito (objects_active esconde os excluídos). Não expõe e-mail do dono.
+ * Itens já anonimizados aparecem sem conteúdo (título genérico) e não podem ser restaurados.
  */
 export async function GET(req: NextRequest) {
   const auth = await requireAdmin(req);
@@ -18,7 +19,7 @@ export async function GET(req: NextRequest) {
   try {
     const res = await query(
       `SELECT o.id, o.title, o.status, o.category, o.is_legacy, o.deleted_at, o.deleted_by, o.deleted_reason, o.deleted_reason_text,
-              o.deleted_at + make_interval(days => $3::int) AS purge_after, o.created_at
+              o.deleted_at + make_interval(days => $3::int) AS anonymize_after, o.anonymized_at, o.macro_region, o.created_at
          FROM objects o
         WHERE o.deleted_at IS NOT NULL
         ORDER BY o.deleted_at DESC

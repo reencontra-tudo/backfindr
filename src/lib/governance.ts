@@ -170,8 +170,30 @@ export const SIMILAR_OBJECTS_SQL = `
 // ─── Textos honestos do modal (sem pressão emocional nem falsa urgência) ────────
 export const SHARE_WARNING =
   'Cartões, QR Codes e posts que você já compartilhou deixarão de funcionar. Quem abrir o link vai ver que a ocorrência não está mais disponível.';
+export function retentionNotice(days: number = retentionDays()): string {
+  return `Ao fim de ${days} dias a ocorrência é anonimizada, não apagada: ficam só dados genéricos, sem como identificar você. Em pedido de apagamento (LGPD), a anonimização é na hora.`;
+}
 export function undoMessage(days: number = retentionDays()): string {
-  return `Excluído. Você pode desfazer agora; a ocorrência fica na lixeira por ${days} dias.`;
+  return `Excluído. Você pode desfazer agora; ao fim de ${days} dias a ocorrência é anonimizada.`;
+}
+
+// ─── Anonimização (admin: "Anonimizar agora"; fim da retenção é rotina do sistema) ─────────────────────────
+/** Motivos que o admin pode escolher (fim_retencao é só da rotina do sistema). Tudo é irreversível. */
+export const ANON_REASONS = [
+  { code: 'pedido_lgpd', label: 'Pedido de apagamento do titular (LGPD)' },
+  { code: 'adm_solicitacao_titular', label: 'Solicitação do titular por canal oficial' },
+  { code: 'adm_dado_pessoal_terceiros', label: 'Dado pessoal de terceiros na ocorrência' },
+  { code: 'adm_outro', label: 'Outro (registrar na auditoria)' },
+] as const;
+/** Palavra que o admin digita para liberar o botão (proteção contra clique acidental). */
+export const ANON_CONFIRM_WORD = 'ANONIMIZAR';
+export type AnonResolution = { ok: true; reason: string } | { ok: false; error: 'reason_required' | 'reason_invalid' | 'confirmation_required' };
+export function resolveAnonymization(input: { reason?: unknown; confirm?: unknown; confirm_text?: unknown } | null | undefined): AnonResolution {
+  const raw = typeof input?.reason === 'string' ? input.reason.trim() : '';
+  if (!raw) return { ok: false, error: 'reason_required' };
+  if (!ANON_REASONS.some((r) => r.code === raw)) return { ok: false, error: 'reason_invalid' };
+  if (input?.confirm !== true || input?.confirm_text !== ANON_CONFIRM_WORD) return { ok: false, error: 'confirmation_required' };
+  return { ok: true, reason: raw };
 }
 
 /** Eventos de produto (PostHog) — só códigos, sem dado pessoal. */

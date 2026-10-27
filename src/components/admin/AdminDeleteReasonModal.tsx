@@ -35,7 +35,7 @@ export default function AdminDeleteReasonModal({ open, title, onClose, onConfirm
       <div role="dialog" aria-modal="true" aria-labelledby="adm-del-title" className="w-full max-w-md bg-[#0b1220] border border-white/10 rounded-2xl p-5 space-y-4">
         <h2 id="adm-del-title" className="text-white font-semibold">Excluir ocorrência (admin)</h2>
         {title && <p className="text-white/50 text-xs truncate">“{title}”</p>}
-        <p className="text-white/70 text-sm">O motivo é obrigatório e fica registrado na auditoria. A ocorrência vai para a lixeira por {days} dias e pode ser restaurada.</p>
+        <p className="text-white/70 text-sm">O motivo é obrigatório e fica registrado na auditoria. A ocorrência vai para a lixeira por {days} dias e pode ser restaurada; depois disso é anonimizada (não apagada).</p>
         <fieldset className="space-y-1">
           <legend className="sr-only">Motivo</legend>
           {ADMIN_REASONS.map((r) => (

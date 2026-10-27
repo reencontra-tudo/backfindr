@@ -5,6 +5,7 @@ import {
   resolveDeletion, normalizeReasonText, retentionDays, restorableUntil, RETENTION_DAYS_DEFAULT, REASON_TEXT_MAX,
   OWNER_REASONS, OWNER_DELETE_CODES, ADMIN_REASONS, modalStepFor, actorFromPayload, adminActor, normalizeHelped,
   shouldAlertOnChange, newRequestId, SIMILAR_OBJECTS_SQL, SHARE_WARNING,
+  ANON_REASONS, ANON_CONFIRM_WORD, resolveAnonymization, retentionNotice, undoMessage,
 } from '../src/lib/governance.ts';
 
 test('dono: motivo nunca é obrigatório (vazio → nao_informado)', () => {
@@ -102,4 +103,30 @@ test('consulta de duplicatas usa a visão sem excluídos e é parametrizada; avi
   assert.match(SIMILAR_OBJECTS_SQL, /\$1/); assert.match(SIMILAR_OBJECTS_SQL, /\$4/);
   assert.match(SHARE_WARNING, /deixarão de funcionar/);
   assert.doesNotMatch(SHARE_WARNING, /urgente|última chance|agora ou nunca/i);
+});
+
+test('anonimização (admin): motivo da lista + confirmação digitada; fim_retencao não é escolha de admin', () => {
+  assert.deepEqual(resolveAnonymization({}), { ok: false, error: 'reason_required' });
+  assert.deepEqual(resolveAnonymization({ reason: 'desisti', confirm: true, confirm_text: ANON_CONFIRM_WORD }), { ok: false, error: 'reason_invalid' });
+  assert.deepEqual(resolveAnonymization({ reason: 'fim_retencao', confirm: true, confirm_text: ANON_CONFIRM_WORD }), { ok: false, error: 'reason_invalid' });
+  assert.deepEqual(resolveAnonymization({ reason: 'pedido_lgpd', confirm: true, confirm_text: 'anonimizar' }), { ok: false, error: 'confirmation_required' });
+  assert.deepEqual(resolveAnonymization({ reason: 'pedido_lgpd', confirm: 'true', confirm_text: ANON_CONFIRM_WORD }), { ok: false, error: 'confirmation_required' });
+  for (const r of ANON_REASONS) assert.equal(resolveAnonymization({ reason: r.code, confirm: true, confirm_text: ANON_CONFIRM_WORD }).ok, true, r.code);
+});
+
+test('os motivos de anonimização do app cabem no CHECK da migração 018', async () => {
+  const { readFileSync } = await import('node:fs');
+  const sql = readFileSync(new URL('../docs/migrations/018_governanca_auditoria_exclusao_logica.sql', import.meta.url), 'utf8');
+  const i = sql.indexOf('anonymized_reason IS NULL OR anonymized_reason IN (');
+  const bloco = sql.slice(i, sql.indexOf('))$f$', i));
+  const codes = [...bloco.matchAll(/'([a-z_]+)'/g)].map((m) => m[1]);
+  for (const r of ANON_REASONS) assert.ok(codes.includes(r.code), `${r.code} ausente do CHECK`);
+  assert.ok(codes.includes('fim_retencao'));
+});
+
+test('texto da retenção diz anonimização (não apagamento) e menciona a LGPD na hora', () => {
+  assert.match(retentionNotice(90), /Ao fim de 90 dias a ocorrência é anonimizada, não apagada/);
+  assert.match(retentionNotice(90), /LGPD.*na hora/);
+  assert.match(undoMessage(30), /30 dias.*anonimizada/);
+  assert.doesNotMatch(retentionNotice(90), /excluída definitivamente|apagada para sempre/i);
 });

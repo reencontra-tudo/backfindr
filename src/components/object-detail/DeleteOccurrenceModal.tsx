@@ -12,7 +12,7 @@ import Link from 'next/link';
 import { X, Loader2 } from 'lucide-react';
 import { objectsApi, parseApiError } from '@/lib/api';
 import {
-  OWNER_REASONS, REASON_TEXT_MAX, SHARE_WARNING, modalStepFor, retentionDays, type ModalStep,
+  OWNER_REASONS, REASON_TEXT_MAX, SHARE_WARNING, modalStepFor, retentionDays, retentionNotice, type ModalStep,
 } from '@/lib/governance';
 
 export interface DeleteModalResult {
@@ -193,7 +193,7 @@ export default function DeleteOccurrenceModal({ objectId, title, open, onClose, 
         {step === 'confirm' && (
           <div className="space-y-3">
             <p className="text-white/80 text-sm">{SHARE_WARNING}</p>
-            <p className="text-white/60 text-xs">A ocorrência fica na lixeira por {days} dias e você pode desfazer logo depois de excluir.</p>
+            <p className="text-white/60 text-xs">Você pode desfazer logo depois de excluir. {retentionNotice(days)}</p>
             <div className="flex gap-3 justify-between pt-1">
               <button onClick={onClose} disabled={busy} className={`${secondary} flex-1`}>Cancelar</button>
               <button onClick={() => doDelete(reason)} disabled={busy} className={`${danger} flex-1`}>{busy ? 'Excluindo…' : 'Excluir'}</button>

@@ -14,7 +14,7 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
       const r = await q(
         `UPDATE objects
             SET deleted_at = NULL, deleted_by = NULL, deleted_reason = NULL, deleted_reason_text = NULL, updated_at = NOW()
-          WHERE id = $1 AND deleted_at IS NOT NULL
+          WHERE id = $1 AND deleted_at IS NOT NULL AND anonymized_at IS NULL
         RETURNING id`,
         [params.id]
       );
