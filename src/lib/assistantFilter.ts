@@ -32,6 +32,11 @@ const CONTATO = new RegExp(
   `${ANTES}(?:telefone|n[úu]mero|e-?mail|contato|whatsapp|dados|informa[çc][õo]es\\s+pessoais)${DEPOIS}`,
   'iu'
 );
+// Só o P4 aceita "informações" sozinha como palavra de contato (decisão do Marcos, 28/10/2026).
+const CONTATO_P4 = new RegExp(
+  `${ANTES}(?:telefone|n[úu]mero|e-?mail|contato|whatsapp|dados|informa[çc][õo]es)${DEPOIS}`,
+  'iu'
+);
 const JANELA_CONTATO = 60;
 const JANELA_NEGACAO = 45;
 
@@ -48,6 +53,7 @@ interface Padrao {
   id: string;
   re: RegExp;
   exigeContato?: boolean;
+  contatoRe?: RegExp; // lista de palavras de contato própria do padrão (padrão: CONTATO)
   negacao?: boolean;
   contato: boolean; // pertence ao grupo de contato (T1) ou só a "garantir" (T2)
 }
@@ -81,7 +87,7 @@ const PADROES: Padrao[] = [
     contato: true,
     exigeContato: true,
     re: new RegExp(
-      `${ANTES}n[ãa]o\\s+(?:aparece|aparecem|ser[áa]\\s+(?:exibid|mostrad|divulgad|vist)[oa]s?|[ée]\\s+(?:exibid|mostrad|divulgad|vist)[oa]s?|fica(?:m)?\\s+vis[ií]ve(?:l|is))${DEPOIS}|${ANTES}ningu[ée]m\\s+(?:ver[áa]|v[êe]|consegue\\s+ver|tem\\s+acesso)${DEPOIS}`,
+      `${ANTES}n[ãa]o\\s+(?:aparece|aparecem|ser[áa]\\s+(?:exibid|mostrad|divulgad|vist)[oa]s?|[ée]\\s+(?:exibid|mostrad|divulgad|vist)[oa]s?|fica(?:m)?\\s+vis[ií]ve(?:l|is))${DEPOIS}|${ANTES}n[ãa]o\\s+(?:[ée]|s[ãa]o|foi|foram)\\s+compartilhad[oa]s?${DEPOIS}|${ANTES}ningu[ée]m\\s+(?:ver[áa]|v[êe]|consegue\\s+ver|tem\\s+acesso)${DEPOIS}`,
       'giu'
     ),
   },
@@ -89,6 +95,7 @@ const PADROES: Padrao[] = [
     id: 'P4',
     contato: true,
     exigeContato: true,
+    contatoRe: CONTATO_P4,
     re: new RegExp(`${ANTES}(?:protegid[oa]s?|ocult[oa]s?|preservad[oa]s?)${DEPOIS}`, 'giu'),
   },
   {
@@ -134,7 +141,7 @@ function acharPadroes(texto: string): { id: string; idx: number }[] {
       const fim = ini + m[0].length;
       if (p.exigeContato) {
         const janela = texto.slice(Math.max(0, ini - JANELA_CONTATO), fim + JANELA_CONTATO);
-        if (!CONTATO.test(janela)) continue;
+        if (!(p.contatoRe ?? CONTATO).test(janela)) continue;
       }
       if (p.negacao) {
         const antes = texto.slice(Math.max(0, ini - JANELA_NEGACAO - 20), ini);
