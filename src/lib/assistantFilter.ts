@@ -37,6 +37,8 @@ const CONTATO_P4 = new RegExp(
   `${ANTES}(?:telefone|n[úu]mero|e-?mail|contato|whatsapp|dados|informa[çc][õo]es)${DEPOIS}`,
   'iu'
 );
+// "protegido" logo depois de objeto/item/bem qualifica o bem (status), não é promessa sobre contato.
+const APOS_BEM = new RegExp(`${ANTES}(?:objetos?|itens?|item|bem|bens)\\s+$`, 'iu');
 const JANELA_CONTATO = 60;
 const JANELA_NEGACAO = 45;
 
@@ -54,6 +56,7 @@ interface Padrao {
   re: RegExp;
   exigeContato?: boolean;
   contatoRe?: RegExp; // lista de palavras de contato própria do padrão (padrão: CONTATO)
+  ignorarSeApos?: RegExp; // ignora o achado quando o texto imediatamente antes casa (ex.: "objeto protegido")
   negacao?: boolean;
   contato: boolean; // pertence ao grupo de contato (T1) ou só a "garantir" (T2)
 }
@@ -96,6 +99,7 @@ const PADROES: Padrao[] = [
     contato: true,
     exigeContato: true,
     contatoRe: CONTATO_P4,
+    ignorarSeApos: APOS_BEM,
     re: new RegExp(`${ANTES}(?:protegid[oa]s?|ocult[oa]s?|preservad[oa]s?)${DEPOIS}`, 'giu'),
   },
   {
@@ -139,6 +143,7 @@ function acharPadroes(texto: string): { id: string; idx: number }[] {
       }
       const ini = m.index;
       const fim = ini + m[0].length;
+      if (p.ignorarSeApos && p.ignorarSeApos.test(texto.slice(Math.max(0, ini - 15), ini))) continue;
       if (p.exigeContato) {
         const janela = texto.slice(Math.max(0, ini - JANELA_CONTATO), fim + JANELA_CONTATO);
         if (!(p.contatoRe ?? CONTATO).test(janela)) continue;
