@@ -2,6 +2,7 @@ export const dynamic = 'force-dynamic';
 import { NextRequest, NextResponse } from 'next/server';
 import { query } from '@/lib/db';
 import { verifyToken, extractTokenFromHeader } from '@/lib/jwt';
+import { aplicarFiltroDeLinguagem } from '@/lib/assistantFilter';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 interface Message {
@@ -655,7 +656,21 @@ async function getOpenAIResponse(messages: Message[], systemPrompt: string): Pro
     }
     const data = await response.json();
     const raw = data.choices[0]?.message?.content ?? 'Desculpe, não consegui processar sua mensagem.';
-    return sanitizeUrls(raw);
+    // Filtro de linguagem ANTES do sanitizeUrls. O registro não leva texto da pessoa nem da resposta.
+    const filtrado = aplicarFiltroDeLinguagem(raw);
+    if (filtrado.disparou) {
+      console.warn(
+        JSON.stringify({
+          evento: 'assistente_filtro',
+          padroes: filtrado.padroes,
+          acao: filtrado.acao,
+          n_frases: filtrado.nFrases,
+        })
+      );
+    }
+    // O texto fixo T3 já traz só rotas válidas e termina com "." colado na URL; o sanitizeUrls
+    // trataria esse ponto como parte do caminho e trocaria a URL pela home. Por isso T3 não passa por ele.
+    return filtrado.acao === 'resposta' ? filtrado.texto : sanitizeUrls(filtrado.texto);
   } finally {
     clearTimeout(timeout);
   }
