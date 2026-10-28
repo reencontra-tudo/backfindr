@@ -234,7 +234,7 @@ const FLOWS: Record<string, { text: string; buttons?: { label: string; action: s
 
   // ── Prevenir / QR Code ──
   prevent: {
-    text: 'Dá pra se proteger antes 👍\n\nCrie um QR Code em menos de 1 min — é gratuito 👇\n\n' + APP_URL + '/proteger\n\nSe alguém escanear o código, você é avisado.',
+    text: 'Dá pra se preparar antes 👍\n\nSe quiser, gere um QR Code gratuito para colar no item 👇\n\n' + APP_URL + '/proteger\n\nSe alguém escanear o código, você é avisado.',
   },
 
   // ── Como funciona ──
