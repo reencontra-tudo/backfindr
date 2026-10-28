@@ -34,7 +34,7 @@ export const metadata: Metadata = {
     template: '%s | Backfindr',
   },
   description:
-    'Plataforma global de recuperação de objetos perdidos com QR Code único, IA de matching e chat mediado para devolução segura.',
+    'Plataforma global de recuperação de objetos perdidos com IA de matching e chat mediado para devolução segura.',
   keywords: ['objeto perdido', 'achado', 'recuperação', 'pet perdido', 'QR Code', 'rastreamento'],
   authors: [{ name: 'Backfindr' }],
   creator: 'Backfindr',
@@ -44,7 +44,7 @@ export const metadata: Metadata = {
 
   openGraph: {
     title: 'Backfindr — Recupere o que perdeu',
-    description: 'Plataforma global de objetos perdidos com QR Code e IA.',
+    description: 'Plataforma global de objetos perdidos.',
     url: 'https://backfindr.com',
     siteName: 'Backfindr',
     locale: 'pt_BR',
@@ -55,7 +55,7 @@ export const metadata: Metadata = {
   twitter: {
     card: 'summary_large_image',
     title: 'Backfindr — Recupere o que perdeu',
-    description: 'Plataforma global de objetos perdidos com QR Code e IA.',
+    description: 'Plataforma global de objetos perdidos.',
     images: ['/icons/og-image.png'],
   },
 
@@ -101,7 +101,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
                   '@id': 'https://backfindr.com/#website',
                   url: 'https://backfindr.com',
                   name: 'Backfindr',
-                  description: 'Plataforma global de recuperação de objetos perdidos com QR Code único, IA de matching e chat mediado.',
+                  description: 'Plataforma global de recuperação de objetos perdidos com IA de matching e chat mediado.',
                   inLanguage: 'pt-BR',
                   potentialAction: {
                     '@type': 'SearchAction',

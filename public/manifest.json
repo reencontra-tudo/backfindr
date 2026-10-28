@@ -1,7 +1,7 @@
 {
   "name": "Backfindr",
   "short_name": "Backfindr",
-  "description": "Recupere o que você perdeu. Plataforma global de objetos perdidos com QR Code e IA.",
+  "description": "Recupere o que você perdeu. Plataforma global de objetos perdidos.",
   "start_url": "/",
   "scope": "/",
   "display": "standalone",

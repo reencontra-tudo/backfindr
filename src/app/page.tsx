@@ -422,7 +422,7 @@ export default function HomePage() {
                 <span className="text-3xl">🔒</span>
                 <div>
                   <p className="text-base font-bold text-white leading-tight">Quero me prevenir</p>
-                  <p className="text-xs text-white/45 mt-1 leading-tight">Criar QR grátis</p>
+                  <p className="text-xs text-white/45 mt-1 leading-tight">Preparar-se antes (opcional)</p>
                 </div>
                 <ArrowRight className="h-4 w-4 text-blue-400 opacity-0 group-hover:opacity-100 transition-opacity" />
               </Link>
@@ -666,7 +666,7 @@ export default function HomePage() {
                 <span className="text-3xl mb-4">🔒</span>
                 <h3 className="text-base font-bold text-white mb-2">Quero me prevenir</h3>
                 <p className="text-sm text-white/45 leading-relaxed flex-1 mb-5">
-                  Crie um QR antes da perda e aumente sua chance de retorno.
+                  Segundo passo, opcional: gere um QR Code para identificar o que você quer proteger antes de qualquer perda.
                 </p>
                 <Link
                   href="/flow/protect"
@@ -706,7 +706,7 @@ export default function HomePage() {
               Do registro ao reencontro
             </h2>
             <p className="mx-auto mb-14 max-w-2xl text-center text-sm text-white/42 md:text-base">
-              Quando algo se perde, o tempo pesa. O QR transforma um objeto comum em um ponto de retorno.
+              Quando algo se perde, o tempo pesa. Registre o que perdeu, foi roubado ou encontrou num só lugar e deixe o Backfindr procurar possíveis correspondências.
             </p>
           </FadeIn>
 
@@ -728,7 +728,7 @@ export default function HomePage() {
                 img: '/img_step3.png',
                 number: '3',
                 title: 'Converse com segurança',
-                desc: 'As mensagens passam pela plataforma, sem expor telefone ou e-mail.',
+                desc: 'Quando há uma possível correspondência, a conversa acontece pelo chat da plataforma.',
               },
             ].map((step, index) => (
               <FadeIn key={step.number} delay={index * 100}>
@@ -772,11 +772,10 @@ export default function HomePage() {
             <p className="mb-4 text-center text-xs font-semibold uppercase tracking-[0.22em] text-white/28">pessoas já estão recuperando o que parecia perdido</p>
           </FadeIn>
 
-          <div className="mb-10 grid gap-6 text-center md:grid-cols-3">
+          <div className="mb-10 grid grid-cols-2 gap-6 text-center">
             {[
               { value: publicStats.total_objects,    suffix: '+', label: 'objetos registrados' },
               { value: publicStats.returned_objects,   suffix: '+', label: 'recuperações confirmadas' },
-              { value: publicStats.recovery_rate_pct,  suffix: '%', label: 'mais chance com QR' },
             ].map((stat, index) => (
               <FadeIn key={stat.label} delay={index * 100}>
                 <div className="rounded-3xl border border-white/[0.08] bg-white/[0.03] px-5 py-7">
@@ -815,7 +814,7 @@ export default function HomePage() {
                 <div className="mb-5 inline-flex items-center gap-2 rounded-full border border-amber-500/25 bg-amber-500/10 px-3 py-1.5">
                   <Heart className="h-3.5 w-3.5 text-amber-400" />
                   <span className="text-[11px] font-semibold uppercase tracking-[0.18em] text-amber-300">
-                    proteção para pets
+                    para pets
                   </span>
                 </div>
                 <h2 className="mb-3 text-3xl font-extrabold leading-tight text-white md:text-4xl">
@@ -850,7 +849,7 @@ export default function HomePage() {
                     href="/auth/register"
                     className="inline-flex items-center justify-center gap-2 rounded-2xl border border-amber-500/25 bg-amber-500/10 px-4 py-3.5 text-center text-sm font-bold text-amber-300 transition-all hover:bg-amber-500/15"
                   >
-                    🛡️ Cadastrar meu pet
+                    🐶 Cadastrar meu pet
                   </Link>
                   <Link
                     href="/flow/pet"
