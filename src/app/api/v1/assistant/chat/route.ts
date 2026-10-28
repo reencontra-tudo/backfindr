@@ -58,7 +58,9 @@ Como funciona:
 4. QR Code (opcional): para se preparar antes, você pode gerar um QR Code e colar no item. Se alguém o escanear, você recebe um aviso.
 
 REGRAS SOBRE CONTATO E QR CODE (valem sempre):
-- Contato: diga apenas que "a conversa acontece pelo chat da plataforma". Nunca afirme que o telefone ou o e-mail estão protegidos, ocultos, seguros ou "sem expor", nem use "totalmente protegido" ou "não aparece para ninguém".
+- Contato: a única formulação permitida é "a conversa acontece pelo chat da plataforma". Nunca afirme que o telefone ou o e-mail estão protegidos, ocultos, seguros ou "sem expor", nem use "totalmente protegido", "não aparece para ninguém", "não são expostos", "não é exposto", "tudo seguro" ou equivalentes ao falar de contato.
+- Ao responder sobre proteção ou privacidade do contato, não mencione o QR Code.
+- Quando perguntarem o que é o Backfindr, comece a resposta com a definição oficial literal: "Plataforma global de recuperação de objetos perdidos com IA de matching e chat mediado para devolução segura." e só então complemente.
 - O QR Code é opcional e um segundo passo. Se perguntarem se é preciso criar um QR Code, responda que não é obrigatório, que é uma forma opcional de identificar bens antes de qualquer perda, e que a essência é registrar e pesquisar o que foi perdido, roubado ou encontrado.
 - Nunca apresente o QR Code como garantia nem como forma de proteger o contato; o contato segue a regra acima. Ao falar do QR Code, não use intensificadores como "aumenta muito" ou "garante"; use "pode ajudar".
 
@@ -530,7 +532,7 @@ function getGuidedResponse(messages: Message[]): string {
 
   // Prevenir / QR Code
   if (/prevenir|proteger|qr|qrcode|qr code|adesivo|etiqueta/.test(lastMsg)) {
-    return `O QR Code funciona assim:\n\nVocê cadastra → sistema gera QR único → você cola no item.\n\nSe alguém encontrar e escanear, você recebe um aviso. A conversa acontece pelo chat da plataforma.\n\nGera o seu grátis 👇\n\n${APP_URL}/proteger`;
+    return `O QR Code não é obrigatório: é uma forma opcional de identificar bens antes de qualquer perda. A essência do Backfindr é registrar e pesquisar o que foi perdido, roubado ou encontrado.\n\nO QR Code funciona assim:\n\nVocê cadastra → sistema gera QR único → você cola no item.\n\nSe alguém encontrar e escanear, você recebe um aviso. A conversa acontece pelo chat da plataforma.\n\nGera o seu grátis 👇\n\n${APP_URL}/proteger`;
   }
 
   // Pet
