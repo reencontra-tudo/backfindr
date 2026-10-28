@@ -346,6 +346,9 @@ const FLOWS: Record<string, { text: string; buttons?: { label: string; action: s
   privacy_help: {
     text: 'A conversa acontece pelo chat da plataforma.\n\nA página pública do objeto mostra apenas informações básicas do item.',
   },
+  abroad: {
+    text: 'Sim. O Backfindr pode ser usado em qualquer lugar do mundo: quem perdeu e quem achou registram a ocorrência de onde estiverem. A divulgação hoje está concentrada no Brasil, mas não há restrição de uso por país.',
+  },
   map_help: {
     text: 'No mapa ao vivo você vê:\n\n🔴 Pin vermelho = objeto perdido\n🟢 Pin verde = objeto achado\n🟡 Pin amarelo = objeto roubado\n\nClique em qualquer pin para ver os detalhes. Ative sua localização para ver ocorrências próximas de você.\n\nFunciona sem login 👍',
   },
@@ -602,6 +605,9 @@ function detectIntent(text: string): string | null {
   if (/como.*(ver|buscar|encontrar|achar|procurar).*(perdid|achad|objeto|item|coisa|pet|celular|carro)/.test(t)
     || /(perdid|achad|objeto|item).*(onde|como).*(ver|buscar|achar|encontrar)/.test(t)
     || /onde.*(ver|achar|encontrar|buscar).*(perdid|achad|objeto|item|coisa)/.test(t)) return 'browse_found';
+
+  // Fora do Brasil
+  if (/fora do brasil|outros? pa[ií]s|exterior|internacional|fora do pa[ií]s/.test(t)) return 'abroad';
 
   // Desconfiança
   if (/\b(funciona mesmo|é confiável|é seguro|é verdade|é real|tem resultado|resolve mesmo|acreditar)\b/.test(t)) return 'trust';
