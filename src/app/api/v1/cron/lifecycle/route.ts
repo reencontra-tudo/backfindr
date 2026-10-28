@@ -64,8 +64,8 @@ export async function GET(request: NextRequest) {
       for (const user of day1Result.rows) {
         try {
           await sendPushToUser(user.id, {
-            title: '📱 Proteja seu primeiro objeto',
-            body: 'Sabia que você pode proteger suas chaves ou carteira de graça? Gere seu primeiro QR Code em 2 minutos.',
+            title: 'Precisa de ajuda para começar?',
+            body: 'Registre o que perdeu ou encontrou. Se quiser se preparar antes, também é possível gerar um QR Code.',
             url: '/dashboard/objects/new',
             tag: 'day1_reminder',
           });

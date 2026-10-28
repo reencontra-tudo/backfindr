@@ -80,23 +80,23 @@ function ModeSelector({ onSelect }: { onSelect: (mode: 'protect' | 'report') => 
       </div>
 
       <div className="space-y-4">
-        {/* Opção 1: Proteger preventivamente */}
+        {/* Opção 1: Registrar ocorrência (função principal) */}
         <button
           type="button"
-          onClick={() => onSelect('protect')}
+          onClick={() => onSelect('report')}
           className="w-full p-5 rounded-2xl border border-blue-500/30 bg-blue-500/5 hover:bg-blue-500/10 hover:border-blue-500/50 transition-all text-left group"
         >
           <div className="flex items-start gap-4">
             <div className="w-11 h-11 rounded-xl bg-blue-500/20 border border-blue-500/30 flex items-center justify-center flex-shrink-0 mt-0.5 group-hover:bg-blue-500/30 transition-colors">
-              <Shield className="w-5 h-5 text-blue-400" />
+              <Search className="w-5 h-5 text-blue-400" />
             </div>
             <div className="flex-1">
-              <p className="font-semibold text-white text-base mb-1">🛡️ Proteger um objeto</p>
+              <p className="font-semibold text-white text-base mb-1">🔍 Registrar uma ocorrência</p>
               <p className="text-slate-400 text-sm leading-relaxed">
-                Tenho o objeto agora e quero gerar um QR Code para colar nele. Se alguém encontrar no futuro, me avisa automaticamente.
+                Perdi um objeto, fui roubado ou encontrei algo e quero devolver.
               </p>
               <div className="mt-3 flex flex-wrap gap-2">
-                {['Celular', 'Carteira', 'Chaves', 'Mochila', 'Pet', 'Veículo'].map(item => (
+                {['Perdi algo', 'Fui roubado', 'Encontrei algo'].map(item => (
                   <span key={item} className="text-xs text-blue-400/70 bg-blue-500/10 border border-blue-500/20 px-2 py-0.5 rounded-full">{item}</span>
                 ))}
               </div>
@@ -104,24 +104,23 @@ function ModeSelector({ onSelect }: { onSelect: (mode: 'protect' | 'report') => 
             <ChevronRight className="w-5 h-5 text-blue-400 flex-shrink-0 mt-3 group-hover:translate-x-0.5 transition-transform" />
           </div>
         </button>
-
-        {/* Opção 2: Reportar ocorrência */}
+        {/* Opção 2: Proteger preventivamente (QR, opcional) */}
         <button
           type="button"
-          onClick={() => onSelect('report')}
+          onClick={() => onSelect('protect')}
           className="w-full p-5 rounded-2xl border border-white/10 bg-white/[0.02] hover:bg-white/[0.04] hover:border-white/20 transition-all text-left group"
         >
           <div className="flex items-start gap-4">
             <div className="w-11 h-11 rounded-xl bg-white/5 border border-white/10 flex items-center justify-center flex-shrink-0 mt-0.5 group-hover:bg-white/10 transition-colors">
-              <Search className="w-5 h-5 text-slate-400" />
+              <Shield className="w-5 h-5 text-slate-400" />
             </div>
             <div className="flex-1">
-              <p className="font-semibold text-white text-base mb-1">🔍 Reportar uma ocorrência</p>
+              <p className="font-semibold text-white text-base mb-1">🛡️ Proteger um objeto</p>
               <p className="text-slate-400 text-sm leading-relaxed">
-                Perdi um objeto, fui roubado ou encontrei algo de outra pessoa e quero devolver.
+                Se quiser se preparar antes, gere um QR Code para colar no objeto. Se alguém o escanear, você é avisado.
               </p>
               <div className="mt-3 flex flex-wrap gap-2">
-                {['Perdi algo', 'Fui roubado', 'Encontrei algo'].map(item => (
+                {['Celular', 'Carteira', 'Chaves', 'Mochila', 'Pet', 'Veículo'].map(item => (
                   <span key={item} className="text-xs text-slate-500 bg-white/5 border border-white/10 px-2 py-0.5 rounded-full">{item}</span>
                 ))}
               </div>
@@ -129,6 +128,7 @@ function ModeSelector({ onSelect }: { onSelect: (mode: 'protect' | 'report') => 
             <ChevronRight className="w-5 h-5 text-slate-500 flex-shrink-0 mt-3 group-hover:translate-x-0.5 transition-transform" />
           </div>
         </button>
+
       </div>
     </div>
   );

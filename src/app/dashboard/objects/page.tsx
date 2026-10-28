@@ -265,7 +265,7 @@ export default function ObjectsPage() {
           <p className="text-slate-500 text-sm mb-6">
             {search || statusFilter
               ? 'Tente outros filtros ou termos de busca.'
-              : 'Proteja seus pertences com QR Code ou registre uma ocorrência.'}
+              : 'Registre o que perdeu, foi roubado ou encontrou. Se quiser se preparar antes, gere um QR Code.'}
           </p>
           {!search && !statusFilter && (
             <Link

@@ -35,7 +35,7 @@ const STATUS_MESSAGES: Record<string, { headline: string; sub: string }> = {
   lost:      { headline: 'Alerta publicado na rede!',      sub: 'Você será notificado assim que alguém encontrar.' },
   found:     { headline: 'Achado registrado!',             sub: 'Se o dono procurar, a gente conecta vocês automaticamente.' },
   stolen:    { headline: 'Registro de furto publicado!',   sub: 'Sua ocorrência está visível para toda a rede.' },
-  protected: { headline: 'Objeto protegido com QR Code!', sub: 'Cole o QR Code no objeto físico. Se alguém encontrar e escanear, você será notificado imediatamente.' },
+  protected: { headline: 'Objeto protegido com QR Code!', sub: 'Cole o QR Code no objeto físico. Se alguém encontrar e escanear, você será notificado.' },
 };
 
 // Extrai cidade/bairro do objeto para o texto magnético
@@ -308,7 +308,7 @@ export default function SucessoPage() {
               </div>
               <div>
                 <p className="text-white text-sm font-medium">Ative as notificações</p>
-                <p className="text-white/40 text-xs">Alerta imediato quando alguém escanear o QR ou encontrar um match.</p>
+                <p className="text-white/40 text-xs">Aviso quando alguém escanear o QR ou houver uma possível correspondência.</p>
               </div>
             </div>
             <div className="flex items-start gap-3">
