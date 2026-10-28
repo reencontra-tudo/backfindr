@@ -706,7 +706,7 @@ export default function HomePage() {
               Do registro ao reencontro
             </h2>
             <p className="mx-auto mb-14 max-w-2xl text-center text-sm text-white/42 md:text-base">
-              Quando algo se perde, o tempo pesa. Registre o que perdeu, foi roubado ou encontrou num só lugar e deixe o Backfindr procurar possíveis correspondências.
+              Quando algo se perde, o tempo pesa. Registre num só lugar o que perdeu, o que foi roubado ou o que encontrou e deixe o Backfindr procurar possíveis correspondências.
             </p>
           </FadeIn>
 
