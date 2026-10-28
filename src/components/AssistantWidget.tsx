@@ -234,7 +234,7 @@ const FLOWS: Record<string, { text: string; buttons?: { label: string; action: s
 
   // ── Prevenir / QR Code ──
   prevent: {
-    text: 'Dá pra se proteger antes 👍\n\nCrie um QR Code em menos de 1 min — é gratuito 👇\n\n' + APP_URL + '/proteger\n\nSe o objeto for encontrado, o achador te contacta direto.',
+    text: 'Dá pra se proteger antes 👍\n\nCrie um QR Code em menos de 1 min — é gratuito 👇\n\n' + APP_URL + '/proteger\n\nSe alguém escanear o código, você é avisado.',
   },
 
   // ── Como funciona ──
@@ -329,7 +329,7 @@ const FLOWS: Record<string, { text: string; buttons?: { label: string; action: s
 
   // ── Help de funcionalidades ──
   qr_help: {
-    text: 'O QR Code funciona assim:\n\n1. Você cadastra o objeto\n2. O sistema gera um QR único e permanente\n3. Você imprime ou usa um adesivo e cola no item\n4. Se alguém encontrar e escanear com qualquer câmera, **você recebe notificação imediata**\n\nSeu número nunca é exposto — contato via chat protegido 🔒\n\nPara gerar o seu: Dashboard → objeto → "Imprimir QR"',
+    text: 'O QR Code funciona assim:\n\n1. Você cadastra o objeto\n2. O sistema gera um QR único e permanente\n3. Você imprime e cola no item\n4. Se alguém encontrar e escanear com qualquer câmera, **você recebe uma notificação**\n\nSeu número nunca é exposto — contato via chat protegido 🔒\n\nPara gerar o seu: Dashboard → objeto → "Imprimir QR"',
   },
   match_help: {
     text: 'Para confirmar um match:\n\n1. Clique no match pendente\n2. Veja as informações do objeto do outro lado\n3. Se parecer o seu, clique em "Confirmar"\n4. O outro usuário também precisa confirmar\n5. Depois da confirmação dos dois lados, o contato direto é liberado 🤝\n\nDúvida? 👇',
@@ -361,7 +361,7 @@ const FLOWS: Record<string, { text: string; buttons?: { label: string; action: s
     text: 'O plano Grátis resolve pra maioria das pessoas:\n\n✅ Até 3 objetos cadastrados\n✅ QR Code permanente para cada objeto\n✅ Busca na rede\n✅ Notificações de match\n\nSe precisar de mais de 3 objetos ou quiser matching automático com IA rodando 24h, aí vale ver o Pro.\n\nVer planos 👇\n\nhttps://backfindr.com/pricing',
   },
   plan_pro: {
-    text: 'O Pro adiciona:\n\n🚀 Até 50 objetos cadastrados\n🤖 Matching automático com IA (24h por dia)\n🔔 Notificações push + e-mail em tempo real\n🎨 QR Code personalizado\n📧 Suporte por e-mail\n\nR$ 29/mês — sem fidelidade.\n\nhttps://backfindr.com/pricing',
+    text: 'O Pro adiciona:\n\n🚀 Até 50 objetos cadastrados\n🤖 Matching automático com IA (24h por dia)\n🔔 Notificações push + e-mail em tempo real\n📧 Suporte por e-mail\n\nR$ 29/mês — sem fidelidade.\n\nhttps://backfindr.com/pricing',
   },
   plan_business: {
     text: 'Para empresas (hotéis, escolas, condomínios):\n\n🏢 Até 500 objetos\n⚡ Matching prioritário\n📲 Push + e-mail + SMS\n👥 Até 5 usuários\n🔗 API de integração\n\nR$ 149/mês. Para falar com a equipe:\nbusiness@backfindr.com',
@@ -424,7 +424,6 @@ function getContextualOpening(pathname: string): ContextualOpening {
       text: 'Quer registrar um novo objeto ou tem dúvida sobre algum cadastrado?',
       buttons: [
         { label: '➕ Registrar novo', action: 'nav_new' },
-        { label: '❓ Como funciona o QR?', action: 'qr_help' },
         { label: '💡 Como melhorar meu cadastro?', action: 'improve_listing' },
       ],
     };
