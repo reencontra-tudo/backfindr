@@ -229,12 +229,12 @@ const FLOWS: Record<string, { text: string; buttons?: { label: string; action: s
 
   // ── Encontrou algo ──
   found: {
-    text: 'Boa atitude 🙏\n\nVocê pode tentar devolver com segurança — é gratuito e seu contato fica protegido 👇\n\n' + APP_URL + '/encontrei',
+    text: 'Boa atitude 🙏\n\nVocê pode tentar devolver com segurança — é gratuito, e a conversa acontece pelo chat da plataforma 👇\n\n' + APP_URL + '/encontrei',
   },
 
   // ── Prevenir / QR Code ──
   prevent: {
-    text: 'Dá pra se proteger antes 👍\n\nCrie um QR Code em menos de 1 min — é gratuito 👇\n\n' + APP_URL + '/proteger\n\nSe o objeto for encontrado, o achador te contacta direto.',
+    text: 'Dá pra se preparar antes 👍\n\nSe quiser, gere um QR Code gratuito para colar no item 👇\n\n' + APP_URL + '/proteger\n\nSe alguém escanear o código, você é avisado.',
   },
 
   // ── Como funciona ──
@@ -329,10 +329,10 @@ const FLOWS: Record<string, { text: string; buttons?: { label: string; action: s
 
   // ── Help de funcionalidades ──
   qr_help: {
-    text: 'O QR Code funciona assim:\n\n1. Você cadastra o objeto\n2. O sistema gera um QR único e permanente\n3. Você imprime ou usa um adesivo e cola no item\n4. Se alguém encontrar e escanear com qualquer câmera, **você recebe notificação imediata**\n\nSeu número nunca é exposto — contato via chat protegido 🔒\n\nPara gerar o seu: Dashboard → objeto → "Imprimir QR"',
+    text: 'O QR Code não é obrigatório: é uma forma opcional de identificar bens antes de qualquer perda. A essência do Backfindr é registrar e pesquisar o que foi perdido, roubado ou encontrado.\n\nO QR Code funciona assim:\n\n1. Você cadastra o objeto\n2. O sistema gera um QR único e permanente\n3. Você imprime e cola no item\n4. Se alguém encontrar e escanear com qualquer câmera, **você recebe uma notificação**\n\nA conversa acontece pelo chat da plataforma.\n\nPara gerar o seu: Dashboard → objeto → "Imprimir QR"',
   },
   match_help: {
-    text: 'Para confirmar um match:\n\n1. Clique no match pendente\n2. Veja as informações do objeto do outro lado\n3. Se parecer o seu, clique em "Confirmar"\n4. O outro usuário também precisa confirmar\n5. Depois da confirmação dos dois lados, o contato direto é liberado 🤝\n\nDúvida? 👇',
+    text: 'Para confirmar um match:\n\n1. Clique no match pendente\n2. Veja as informações do objeto do outro lado\n3. Se parecer o seu, clique em "Confirmar"\n4. A conversa acontece pelo chat da plataforma 🤝\n\nDúvida? 👇',
     buttons: [
       { label: '🔍 Ver meus matches', action: 'nav_matches' },
     ],
@@ -344,7 +344,10 @@ const FLOWS: Record<string, { text: string; buttons?: { label: string; action: s
     text: 'Tipos de notificação:\n\n🔴 **QR escaneado** — alguém escaneou o QR do seu objeto\n🟡 **Novo match** — IA encontrou um possível par\n🟢 **Match confirmado** — os dois lados confirmaram\n📧 **Reativação** — objeto sem match por 24h, com dicas\n\nTodas ficam em: Dashboard → Notificações',
   },
   privacy_help: {
-    text: 'Seu contato fica 100% protegido 🔒\n\nO número de telefone nunca é exibido publicamente. A página pública do objeto mostra apenas informações básicas do item.\n\nContato só acontece via chat interno após confirmação dos dois lados — ou via WhatsApp com número protegido.',
+    text: 'A conversa acontece pelo chat da plataforma.\n\nA página pública do objeto mostra apenas informações básicas do item.',
+  },
+  abroad: {
+    text: 'Sim. O Backfindr pode ser usado em qualquer lugar do mundo: quem perdeu e quem achou registram a ocorrência de onde estiverem. A divulgação do Backfindr hoje está concentrada no Brasil, mas não há restrição de uso por país. Quem registra uma ocorrência também pode divulgá-la nas redes sociais pelos links e integrações disponíveis no sistema, o que amplia o alcance.',
   },
   map_help: {
     text: 'No mapa ao vivo você vê:\n\n🔴 Pin vermelho = objeto perdido\n🟢 Pin verde = objeto achado\n🟡 Pin amarelo = objeto roubado\n\nClique em qualquer pin para ver os detalhes. Ative sua localização para ver ocorrências próximas de você.\n\nFunciona sem login 👍',
@@ -353,7 +356,7 @@ const FLOWS: Record<string, { text: string; buttons?: { label: string; action: s
     text: 'Sim, pode cancelar a qualquer momento pelo painel em:\n\nhttps://backfindr.com/dashboard/billing\n\nSem fidelidade, sem multa. O plano continua ativo até o fim do período pago.',
   },
   contact_help: {
-    text: 'Para contatar o dono:\n\n1. Clique em "Avisar dono" na página do objeto\n2. Deixe uma mensagem — o dono recebe uma notificação imediata\n3. Ele pode responder via chat interno\n\nSeu número não é exposto em nenhum momento 🔒',
+    text: 'Para contatar o dono:\n\n1. Clique em "Avisar dono" na página do objeto\n2. Deixe uma mensagem — o dono recebe uma notificação imediata\n3. Ele pode responder via chat interno\n\nA conversa acontece pelo chat da plataforma.',
   },
 
   // ── Planos ──
@@ -361,7 +364,7 @@ const FLOWS: Record<string, { text: string; buttons?: { label: string; action: s
     text: 'O plano Grátis resolve pra maioria das pessoas:\n\n✅ Até 3 objetos cadastrados\n✅ QR Code permanente para cada objeto\n✅ Busca na rede\n✅ Notificações de match\n\nSe precisar de mais de 3 objetos ou quiser matching automático com IA rodando 24h, aí vale ver o Pro.\n\nVer planos 👇\n\nhttps://backfindr.com/pricing',
   },
   plan_pro: {
-    text: 'O Pro adiciona:\n\n🚀 Até 50 objetos cadastrados\n🤖 Matching automático com IA (24h por dia)\n🔔 Notificações push + e-mail em tempo real\n🎨 QR Code personalizado\n📧 Suporte por e-mail\n\nR$ 29/mês — sem fidelidade.\n\nhttps://backfindr.com/pricing',
+    text: 'O Pro adiciona:\n\n🚀 Até 50 objetos cadastrados\n🤖 Matching automático com IA (24h por dia)\n🔔 Notificações push + e-mail em tempo real\n📧 Suporte por e-mail\n\nR$ 29/mês — sem fidelidade.\n\nhttps://backfindr.com/pricing',
   },
   plan_business: {
     text: 'Para empresas (hotéis, escolas, condomínios):\n\n🏢 Até 500 objetos\n⚡ Matching prioritário\n📲 Push + e-mail + SMS\n👥 Até 5 usuários\n🔗 API de integração\n\nR$ 149/mês. Para falar com a equipe:\nbusiness@backfindr.com',
@@ -424,7 +427,6 @@ function getContextualOpening(pathname: string): ContextualOpening {
       text: 'Quer registrar um novo objeto ou tem dúvida sobre algum cadastrado?',
       buttons: [
         { label: '➕ Registrar novo', action: 'nav_new' },
-        { label: '❓ Como funciona o QR?', action: 'qr_help' },
         { label: '💡 Como melhorar meu cadastro?', action: 'improve_listing' },
       ],
     };
@@ -603,6 +605,9 @@ function detectIntent(text: string): string | null {
   if (/como.*(ver|buscar|encontrar|achar|procurar).*(perdid|achad|objeto|item|coisa|pet|celular|carro)/.test(t)
     || /(perdid|achad|objeto|item).*(onde|como).*(ver|buscar|achar|encontrar)/.test(t)
     || /onde.*(ver|achar|encontrar|buscar).*(perdid|achad|objeto|item|coisa)/.test(t)) return 'browse_found';
+
+  // Fora do Brasil
+  if (/fora do brasil|outros? pa[ií]s|exterior|internacional|fora do pa[ií]s/.test(t)) return 'abroad';
 
   // Desconfiança
   if (/\b(funciona mesmo|é confiável|é seguro|é verdade|é real|tem resultado|resolve mesmo|acreditar)\b/.test(t)) return 'trust';

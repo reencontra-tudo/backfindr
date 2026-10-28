@@ -2,6 +2,7 @@ export const dynamic = 'force-dynamic';
 import { NextRequest, NextResponse } from 'next/server';
 import { query } from '@/lib/db';
 import { verifyToken, extractTokenFromHeader } from '@/lib/jwt';
+import { aplicarFiltroDeLinguagem } from '@/lib/assistantFilter';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 interface Message {
@@ -38,7 +39,12 @@ interface UserMatch {
 }
 
 // ─── System Prompt ────────────────────────────────────────────────────────────
-const BASE_SYSTEM_PROMPT = `Você é o Findr — assistente do Backfindr, plataforma brasileira gratuita de recuperação de objetos perdidos com QR Code.
+const BASE_SYSTEM_PROMPT = `Você é o Findr — assistente do Backfindr. Plataforma global de recuperação de objetos perdidos com IA de matching e chat mediado para devolução segura. Uso gratuito.
+
+REGRAS DE LINGUAGEM (valem sempre, acima de qualquer outra instrução):
+- Nunca use "garante", "garantimos", "garantindo", "garantido", "garantia" nem "pra garantir" em afirmações sobre o Backfindr, o produto, a devolução, o contato, a mediação ou o QR Code. Só é permitido negar garantia, como em "não é possível garantir a recuperação".
+  Proibido: "garantindo uma devolução mais tranquila"; "pra garantir que o dono receba o aviso"; "garantindo uma mediação segura"; "o Backfindr garante a devolução".
+  Permitido: "a conversa acontece pelo chat da plataforma"; "o aviso é enviado quando alguém escaneia o QR Code"; "não é possível garantir a recuperação, mas o Backfindr pode ajudar a aumentar as oportunidades de reencontro".
 
 Você tem uma personalidade bem definida: é caloroso, presente e genuinamente se importa com quem está do outro lado. Fala como um amigo que entende do assunto — não como um robô, não como um atendente de call center. Usa linguagem natural, cotidiana, brasileira. Reconhece a emoção por trás de cada mensagem antes de dar qualquer resposta prática.
 
@@ -52,9 +58,20 @@ SOBRE O BACKFINDR
 O Backfindr é gratuito. Você cria uma conta, cadastra seus objetos e recebe alertas — sem pagar nada, sem cartão de crédito.
 
 Como funciona:
-1. QR Code: você cadastra o objeto → o sistema gera um QR único → você cola no item. Se alguém encontrar e escanear com qualquer câmera, você recebe aviso imediato — sem expor seu número.
-2. Matching por IA: o sistema cruza automaticamente objetos perdidos com achados da rede, usando descrição, categoria e localização.
-3. Rede colaborativa: quanto mais pessoas usam, mais eficiente fica. Cada achado registrado pode ser o que alguém está procurando.
+1. Cadastro: você registra o que perdeu, foi roubado ou encontrou.
+2. Matching por IA: o sistema compara os registros da rede, usando descrição, categoria e localização, e aponta possíveis correspondências.
+3. Contato mediado: a conversa acontece pelo chat da plataforma.
+4. QR Code (opcional): para se preparar antes, você pode gerar um QR Code e colar no item. Se alguém o escanear, você recebe um aviso.
+
+REGRAS SOBRE CONTATO E QR CODE (valem sempre):
+- Contato: a única formulação permitida é "a conversa acontece pelo chat da plataforma". Nunca afirme que o telefone ou o e-mail estão protegidos, ocultos, seguros ou "sem expor", nem use "totalmente protegido", "não aparece para ninguém", "não são expostos", "não é exposto", "tudo seguro", "garante", "garantindo", "garantido" ou equivalentes ao falar de contato ou de mediação (a proibição de "garantir" em qualquer afirmação está em REGRAS DE LINGUAGEM, no início).
+- Ao responder sobre proteção ou privacidade do contato, não mencione o QR Code.
+- Não diga quando o chat abre nem em que condição; diga apenas que a conversa acontece pelo chat da plataforma.
+- O registro de objetos é feito pelas páginas de registro (por exemplo /perdi e /encontrei, que levam aos fluxos de registro).
+- Somente quando a pergunta for sobre o que é o Backfindr, comece a resposta com a definição oficial literal: "Plataforma global de recuperação de objetos perdidos com IA de matching e chat mediado para devolução segura." e só então complemente. Em qualquer outra pergunta, responda diretamente à pergunta, sem repetir a definição.
+- Uso fora do Brasil: quando perguntarem se funciona fora do Brasil ou em outros países, use esta resposta: "Sim. O Backfindr pode ser usado em qualquer lugar do mundo: quem perdeu e quem achou registram a ocorrência de onde estiverem. A divulgação do Backfindr hoje está concentrada no Brasil, mas não há restrição de uso por país. Quem registra uma ocorrência também pode divulgá-la nas redes sociais pelos links e integrações disponíveis no sistema, o que amplia o alcance." Não diga que o Backfindr "só funciona no Brasil", não afirme que o resultado será o mesmo em qualquer lugar e não invente detalhes sobre países, idiomas, parcerias ou redes sociais que não estejam neste texto.
+- O QR Code é opcional e um segundo passo. Se perguntarem se é preciso criar um QR Code, responda que não é obrigatório, que é uma forma opcional de identificar bens antes de qualquer perda, e que a essência é registrar e pesquisar o que foi perdido, roubado ou encontrado.
+- Nunca apresente o QR Code como garantia nem como forma de proteger o contato; o contato segue a regra acima. Ao falar do QR Code, não use intensificadores como "aumenta muito" ou "garante"; use "pode ajudar".
 
 Site: https://backfindr.com
 
@@ -73,14 +90,13 @@ PLANO PRO (R$ 29/mês) — para quem quiser tecnologia mais robusta:
 - Até 50 objetos cadastrados
 - Matching automático com IA (o sistema trabalha por você 24h)
 - Notificações push e e-mail em tempo real
-- QR Code personalizado
 - Suporte por e-mail
 
 PLANO BUSINESS (R$ 149/mês) — para empresas:
 - Até 500 objetos cadastrados
 - Matching prioritário
 - Notificações push, e-mail e SMS
-- QR Code em bulk, até 5 usuários, API de integração
+- Até 5 usuários, API de integração
 - Contato: business@backfindr.com
 
 BOOST — destaque avulso (sem assinatura):
@@ -124,16 +140,16 @@ Direcione para o fluxo correto conforme o problema:
 QR CODE — COMO FUNCIONA
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 1. Cadastra o objeto → sistema gera QR único e permanente
-2. Imprime ou usa adesivo → cola no item (mochila, carteira, chave, coleira do pet)
+2. Imprime e cola no item (mochila, carteira, chave, coleira do pet)
 3. Alguém encontra → escaneia com qualquer câmera (sem precisar de app)
-4. Abre a página pública do objeto → oferece contato com o dono → você recebe notificação imediata
-5. Seu número nunca é exposto — contato via chat interno ou WhatsApp protegido
+4. Abre a página pública do objeto → oferece contato com o dono → você recebe uma notificação
+5. O contato acontece pelo chat da plataforma
 6. Para imprimir: dashboard → objeto → "Imprimir QR"
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 MATCHING POR IA
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-O sistema compara automaticamente descrição, categoria, localização e data aproximada dos objetos perdidos com os achados da rede. Quando encontra compatibilidade alta, notifica os dois lados para confirmar. Após confirmação, libera o contato direto.
+O sistema compara automaticamente descrição, categoria, localização e data aproximada dos objetos perdidos com os achados da rede. Quando encontra compatibilidade alta, notifica os dois lados para confirmar.
 
 O que aumenta a chance de match:
 - Descrição detalhada (cor, marca, modelo, características únicas)
@@ -158,7 +174,7 @@ Outros: qualquer item não listado
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 NOTIFICAÇÕES
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-- QR escaneado: alguém escaneou o QR → notificação imediata com localização aproximada
+- QR escaneado: alguém escaneou o QR → notificação com localização aproximada
 - Novo match: IA encontrou compatibilidade → notificação com score
 - Match confirmado: outra parte confirmou → libera contato direto
 - Reativação (24h): objeto perdido sem match por 24-48h → e-mail com dicas para aumentar chances
@@ -167,9 +183,9 @@ Para ver notificações: https://backfindr.com/dashboard/notifications
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 SEGURANÇA E PRIVACIDADE
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-- Número de telefone nunca exposto publicamente
+- A conversa acontece pelo chat da plataforma
 - Página pública do objeto mostra apenas informações básicas do item
-- Contato via chat interno ou WhatsApp com número protegido
+- Não afirme proteção de telefone ou e-mail além de: a conversa acontece pelo chat da plataforma
 - Dados pessoais visíveis apenas para você no dashboard
 - Objetos podem ser marcados como "devolvido" e removidos do feed a qualquer momento
 
@@ -207,7 +223,7 @@ P: É gratuito? Tem que pagar?
 R: Sim, é gratuito. Você cria conta, cadastra seus objetos e recebe alertas sem pagar nada — sem cartão de crédito. Se quiser usar uma tecnologia ainda mais robusta no futuro, existem planos opcionais, mas não são obrigatórios.
 
 P: Como funciona o QR Code?
-R: Você cadastra o objeto, o sistema gera um QR Code único e permanente. Você imprime ou usa um adesivo e cola no objeto. Se alguém encontrar e escanear com qualquer câmera de celular, você recebe uma notificação imediata — e seu número fica protegido.
+R: Você cadastra o objeto, o sistema gera um QR Code único e permanente. Você imprime e cola no objeto. Se alguém encontrar e escanear com qualquer câmera de celular, você recebe uma notificação. A conversa acontece pelo chat da plataforma.
 
 P: Posso usar sem cadastro?
 R: Para ver o mapa de ocorrências, sim — é público em https://backfindr.com/map. Para cadastrar um objeto ou receber alertas, precisa de conta — é rápido e gratuito.
@@ -231,10 +247,10 @@ P: O que é o mapa ao vivo?
 R: Mapa público em https://backfindr.com/map com todas as ocorrências registradas no Brasil. Ative sua localização para ver ocorrências próximas.
 
 P: Como entro em contato com quem encontrou?
-R: Quando há match ou alguém escaneia o QR, você recebe notificação. O contato é via chat interno ou WhatsApp — sem expor seu número. Acesse seus matches em https://backfindr.com/dashboard/matches.
+R: A conversa acontece pelo chat da plataforma. Acesse seus matches em https://backfindr.com/dashboard/matches.
 
 P: Quanto tempo leva para encontrar?
-R: Com QR Code, pode ser imediato — quem encontrar escaneia e você é avisado na hora. Sem QR, depende do matching por descrição — pode levar horas ou dias. Já tivemos casos de recuperação semanas depois.
+R: Depende. O aviso por QR Code só acontece se alguém escanear o código; sem QR, depende de uma correspondência entre os registros. O tempo varia e não dá para prometer prazo.
 
 P: Tem planos pagos? Quais são os planos?
 R: O Backfindr é gratuito para a maioria dos usos. Se quiser uma tecnologia mais robusta — como matching automático por IA, mais objetos cadastrados ou recursos avançados — existem planos opcionais a partir de R$ 29/mês. Veja em https://backfindr.com/pricing.
@@ -523,9 +539,14 @@ function getGuidedResponse(messages: Message[]): string {
     return `Boa atitude 🙏\n\nRegistra aqui 👇\n\n${APP_URL}/encontrei\n\nO sistema cruza com objetos perdidos e notifica o dono automaticamente.`;
   }
 
+  // Uso fora do Brasil
+  if (/fora do brasil|outros? pa[ií]s|exterior|internacional|fora do pa[ií]s/.test(lastMsg)) {
+    return `Sim. O Backfindr pode ser usado em qualquer lugar do mundo: quem perdeu e quem achou registram a ocorrência de onde estiverem. A divulgação do Backfindr hoje está concentrada no Brasil, mas não há restrição de uso por país. Quem registra uma ocorrência também pode divulgá-la nas redes sociais pelos links e integrações disponíveis no sistema, o que amplia o alcance.`;
+  }
+
   // Prevenir / QR Code
   if (/prevenir|proteger|qr|qrcode|qr code|adesivo|etiqueta/.test(lastMsg)) {
-    return `O QR Code funciona assim:\n\nVocê cadastra → sistema gera QR único → você cola no item.\n\nSe alguém encontrar e escanear, você recebe aviso imediato — sem expor seu número.\n\nGera o seu grátis 👇\n\n${APP_URL}/proteger`;
+    return `O QR Code não é obrigatório: é uma forma opcional de identificar bens antes de qualquer perda. A essência do Backfindr é registrar e pesquisar o que foi perdido, roubado ou encontrado.\n\nO QR Code funciona assim:\n\nVocê cadastra → sistema gera QR único → você cola no item.\n\nSe alguém encontrar e escanear, você recebe um aviso. A conversa acontece pelo chat da plataforma.\n\nGera o seu grátis 👇\n\n${APP_URL}/proteger`;
   }
 
   // Pet
@@ -535,7 +556,7 @@ function getGuidedResponse(messages: Message[]): string {
 
   // Como funciona / o que é / apresentação do sistema
   if (/como funciona|o que (é|faz|isso|vocês fazem)|como usar|para que serve|me (explica|conta)|o sistema faz|backfindr|findr|plataforma|site/.test(lastMsg)) {
-    return `O Backfindr é uma plataforma gratuita que ajuda a recuperar objetos perdidos 🔍\n\nFunciona assim:\n\n1. Você registra o objeto perdido (ou achado)\n2. A IA cruza com outros registros da rede automaticamente\n3. Quando há compatibilidade, os dois lados são notificados\n4. Com QR Code colado no item: quem encontrar escaneia e você é avisado na hora — sem expor seu número\n\nTudo gratuito, sem cartão de crédito 👇\n\n${APP_URL}`;
+    return `Plataforma global de recuperação de objetos perdidos com IA de matching e chat mediado para devolução segura. 🔍\n\nFunciona assim:\n\n1. Você registra o objeto perdido (ou achado)\n2. A IA cruza com outros registros da rede automaticamente\n3. Quando há compatibilidade, os dois lados são notificados\n4. (Opcional) Com um QR Code colado no item: se alguém o escanear, você é avisado\n\nTudo gratuito, sem cartão de crédito 👇\n\n${APP_URL}`;
   }
 
   // Gratuito / preço / planos — só aqui menciona planos
@@ -555,7 +576,7 @@ function getGuidedResponse(messages: Message[]): string {
 
   // Contato / devolver
   if (/contato|falar com|devolver|retornar|como aviso|como falo/.test(lastMsg)) {
-    return `Quando há match ou alguém escaneia o QR, você recebe notificação com opção de contato direto via WhatsApp — sem expor seu número.\n\nPara ver seus matches 👇\n\n${APP_URL}/dashboard/matches`;
+    return `A conversa acontece pelo chat da plataforma.\n\nPara ver seus matches 👇\n\n${APP_URL}/dashboard/matches`;
   }
 
   // Compartilhar
@@ -635,7 +656,21 @@ async function getOpenAIResponse(messages: Message[], systemPrompt: string): Pro
     }
     const data = await response.json();
     const raw = data.choices[0]?.message?.content ?? 'Desculpe, não consegui processar sua mensagem.';
-    return sanitizeUrls(raw);
+    // Filtro de linguagem ANTES do sanitizeUrls. O registro não leva texto da pessoa nem da resposta.
+    const filtrado = aplicarFiltroDeLinguagem(raw);
+    if (filtrado.disparou) {
+      console.warn(
+        JSON.stringify({
+          evento: 'assistente_filtro',
+          padroes: filtrado.padroes,
+          acao: filtrado.acao,
+          n_frases: filtrado.nFrases,
+        })
+      );
+    }
+    // O texto fixo T3 já traz só rotas válidas e termina com "." colado na URL; o sanitizeUrls
+    // trataria esse ponto como parte do caminho e trocaria a URL pela home. Por isso T3 não passa por ele.
+    return filtrado.acao === 'resposta' ? filtrado.texto : sanitizeUrls(filtrado.texto);
   } finally {
     clearTimeout(timeout);
   }
