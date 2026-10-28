@@ -15,7 +15,7 @@ export async function GET(
     const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(params.code);
     const result = await query(
       `SELECT id, title, description, status, category, type, location, latitude, longitude,
-              qr_code, images, color, brand, breed, user_id, is_legacy, source,
+              qr_code, images, color, brand, breed, is_legacy, source,
               reward_amount, reward_description, created_at, updated_at
        FROM objects
        WHERE ${isUUID ? 'id::text = $1 OR qr_code = $1' : 'qr_code = $1'}`,
@@ -45,7 +45,7 @@ export async function GET(
     return successResponse({
       id: row.id, title: row.title, description: row.description || '',
       status: row.status, category: row.category || row.type || 'other',
-      unique_code: row.qr_code, owner_id: row.user_id, photos, location,
+      unique_code: row.qr_code, photos, location,
       color: row.color, brand: row.brand, pet_breed: row.breed,
       is_legacy: row.is_legacy, source: row.source,
       reward_amount: row.reward_amount ? parseFloat(String(row.reward_amount)) : null,
