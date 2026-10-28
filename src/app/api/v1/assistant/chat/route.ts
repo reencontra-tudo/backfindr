@@ -62,7 +62,7 @@ REGRAS SOBRE CONTATO E QR CODE (valem sempre):
 - Ao responder sobre proteção ou privacidade do contato, não mencione o QR Code.
 - O registro de objetos é feito pelas páginas de registro (por exemplo /perdi e /encontrei); a conversa pelo chat da plataforma acontece depois, quando há uma possível correspondência.
 - Somente quando a pergunta for sobre o que é o Backfindr, comece a resposta com a definição oficial literal: "Plataforma global de recuperação de objetos perdidos com IA de matching e chat mediado para devolução segura." e só então complemente. Em qualquer outra pergunta, responda diretamente à pergunta, sem repetir a definição.
-- Uso fora do Brasil: quando perguntarem se funciona fora do Brasil ou em outros países, use esta resposta: "Sim. O Backfindr pode ser usado em qualquer lugar do mundo: quem perdeu e quem achou registram a ocorrência de onde estiverem. A divulgação hoje está concentrada no Brasil, mas não há restrição de uso por país." Não diga que o Backfindr "só funciona no Brasil", não afirme que o resultado será o mesmo em qualquer lugar e não invente detalhes sobre países, idiomas ou parcerias que não estejam neste texto.
+- Uso fora do Brasil: quando perguntarem se funciona fora do Brasil ou em outros países, use esta resposta: "Sim. O Backfindr pode ser usado em qualquer lugar do mundo: quem perdeu e quem achou registram a ocorrência de onde estiverem. A divulgação do Backfindr hoje está concentrada no Brasil, mas não há restrição de uso por país. Quem registra uma ocorrência também pode divulgá-la nas redes sociais pelos links e integrações disponíveis no sistema, o que amplia o alcance." Não diga que o Backfindr "só funciona no Brasil", não afirme que o resultado será o mesmo em qualquer lugar e não invente detalhes sobre países, idiomas, parcerias ou redes sociais que não estejam neste texto.
 - O QR Code é opcional e um segundo passo. Se perguntarem se é preciso criar um QR Code, responda que não é obrigatório, que é uma forma opcional de identificar bens antes de qualquer perda, e que a essência é registrar e pesquisar o que foi perdido, roubado ou encontrado.
 - Nunca apresente o QR Code como garantia nem como forma de proteger o contato; o contato segue a regra acima. Ao falar do QR Code, não use intensificadores como "aumenta muito" ou "garante"; use "pode ajudar".
 
@@ -534,7 +534,7 @@ function getGuidedResponse(messages: Message[]): string {
 
   // Uso fora do Brasil
   if (/fora do brasil|outros? pa[ií]s|exterior|internacional|fora do pa[ií]s/.test(lastMsg)) {
-    return `Sim. O Backfindr pode ser usado em qualquer lugar do mundo: quem perdeu e quem achou registram a ocorrência de onde estiverem. A divulgação hoje está concentrada no Brasil, mas não há restrição de uso por país.`;
+    return `Sim. O Backfindr pode ser usado em qualquer lugar do mundo: quem perdeu e quem achou registram a ocorrência de onde estiverem. A divulgação do Backfindr hoje está concentrada no Brasil, mas não há restrição de uso por país. Quem registra uma ocorrência também pode divulgá-la nas redes sociais pelos links e integrações disponíveis no sistema, o que amplia o alcance.`;
   }
 
   // Prevenir / QR Code
