@@ -208,6 +208,9 @@ export async function POST(request: NextRequest) {
     Events.objectCreated(newObject.id as string, payload.sub).catch(() => {});
     Events.objectPublished(newObject.id as string).catch(() => {});
     Events.objectIndexed(newObject.id as string).catch(() => {});
+    if (newObject.status === 'protected') {
+      Events.qrGenerated(newObject.id as string, payload.sub, { via: 'create_protected' }).catch(() => {});
+    }
 
     // ── Enfileirar posts sociais automáticos (fire-and-forget) ────────────
     enqueueSocialPosts({
