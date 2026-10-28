@@ -4,6 +4,8 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
+    "prebuild": "node tools/check-public-claims.mjs",
+    "check:claims": "node tools/check-public-claims.mjs",
     "build": "next build",
     "start": "next start",
     "lint": "next lint"

@@ -166,6 +166,22 @@ Evidência bruta da descoberta de ocorrências públicas (Public Signals) — nu
 | 5 | QR físico (adesivo/tag/placa/coleira) | R$19,90–R$49,90 |
 | 6 | B2B / Condomínios / Intelligence Hub | R$599–2.999/mês / R$2–5/unid / R$2k–15k |
 
+> **Nota de 28/10/2026:** as linhas 2 a 5 (Assinatura Proteção, Backfindr Auto, Backfindr Pet + Coleira QR, QR físico) **não estão ativas**: sem produto em `src/` nesta data (verificado por busca no código). Nada foi removido; as linhas continuam como registro de intenção.
+
+---
+
+## 9-B. REGISTRO DE AFIRMAÇÕES PÚBLICAS
+
+Todo número ou comparação em texto público (site, e-mails, assistente, anúncios) precisa de uma linha aqui, com fonte, data e responsável. O script `tools/check-public-claims.mjs` apenas **avisa** (não quebra o build) sobre porcentagem, "mais chance", "garantido", "imediato", "adesivo" e "parceiro" em texto público sem linha correspondente, e sobre QR Code em título, descrição, H1 ou JSON-LD.
+
+<!-- registro-afirmacoes:inicio -->
+| Afirmação | Onde aparece | Fonte | Data | Responsável | Validade |
+|---|---|---|---|---|---|
+| 94% — mais chance com QR | Home, bloco de estatísticas (`src/app/page.tsx`, valor vindo de `src/app/api/v1/stats/public/route.ts`). O mesmo número no bloco de pets foi retirado em 28/10/2026 | Valor fixo no código, sem cálculo; a fonte citada pelo fundador ainda não está documentada | 28/10/2026 | Responsável pelo produto (documentar a fonte) | Não validada |
+| 12.847 objetos e 3.291 recuperações (totais públicos) | Home, bloco de estatísticas (`src/app/page.tsx`, `src/app/api/v1/stats/public/route.ts`) | Contagem do banco quando maior; valores mínimos fixos no código (piso) quando a contagem é menor | 28/10/2026 | Responsável pelo produto (decidir manter o piso) | Não validada (o piso não tem fonte documentada) |
+| Recuperações recentes (lista de casos com título, cidade e horas) | Home (`src/app/page.tsx`, `src/app/api/v1/stats/public/route.ts`) | Objetos devolvidos nos últimos 30 dias; sem nenhum, usa uma lista de exemplos fixa, sem rótulo de exemplo | 28/10/2026 | Responsável pelo produto | Não validada |
+<!-- registro-afirmacoes:fim -->
+
 ---
 
 ## 10. SISTEMA VIVO — STATUS COMPLETO ✅
