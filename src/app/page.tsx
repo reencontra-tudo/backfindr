@@ -728,7 +728,7 @@ export default function HomePage() {
                 img: '/img_step3.png',
                 number: '3',
                 title: 'Converse com segurança',
-                desc: 'Quando há uma possível correspondência, a conversa acontece pelo chat da plataforma.',
+                desc: 'A conversa acontece pelo chat da plataforma.',
               },
             ].map((step, index) => (
               <FadeIn key={step.number} delay={index * 100}>
