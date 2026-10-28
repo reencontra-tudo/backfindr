@@ -74,7 +74,7 @@ export default function ProtectFlowClient() {
                 O que você quer<br />proteger?
               </h1>
               <p className="text-white/40 text-sm leading-relaxed">
-                Selecione os itens. Vamos gerar um QR Code gratuito para cada um.
+                Selecione os itens. Você gera o QR Code de cada item e imprime para colar no objeto.
               </p>
             </div>
 
