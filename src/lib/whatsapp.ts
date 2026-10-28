@@ -74,7 +74,7 @@ export function msgConviteMorador(params: {
     `Cadastre-se gratuitamente para:\n` +
     `• Receber alertas quando encomendas chegarem\n` +
     `• Participar da rede de achados e perdidos\n` +
-    `• Proteger seus objetos com QR Code\n\n` +
+    `• Proteger seus objetos com QR Code (opcional)\n\n` +
     `👉 ${params.linkCadastro}\n\n` +
     `_Leva menos de 2 minutos. É gratuito._`
   );

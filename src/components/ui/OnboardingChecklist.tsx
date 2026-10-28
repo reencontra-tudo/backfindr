@@ -93,7 +93,7 @@ interface Step {
   desc: string;
   href?: string;
   cta: string;
-  check: (ctx: { objectsCount: number; hasPush: boolean; hasLostObject: boolean }) => boolean;
+  check: (ctx: { objectsCount: number; hasPush: boolean; hasLostObject: boolean; hasProtectedObject: boolean }) => boolean;
   /** Se true, o passo só aparece quando há objeto perdido */
   onlyForLost?: boolean;
 }
@@ -101,8 +101,8 @@ interface Step {
 const STEPS: Step[] = [
   {
     id: 'register_object',
-    label: 'Registre ou proteja um objeto',
-    desc: 'Gere um QR Code preventivo ou registre uma ocorrência.',
+    label: 'Registre uma ocorrência ou cadastre um objeto',
+    desc: 'Registre o que perdeu, foi roubado ou encontrou. Se quiser se preparar antes, também é possível gerar um QR Code.',
     href: '/dashboard/objects/new',
     cta: 'Começar agora',
     check: ({ objectsCount }) => objectsCount > 0,
@@ -117,10 +117,10 @@ const STEPS: Step[] = [
   {
     id: 'share_qr',
     label: 'Cole o QR Code no objeto',
-    desc: 'Imprima ou salve o QR e cole no objeto físico para facilitar a devolução.',
+    desc: 'Imprima ou salve o QR e cole no objeto físico, para que quem o encontre possa avisar você.',
     href: '/dashboard/objects',
     cta: 'Ver meus objetos',
-    check: ({ objectsCount }) => objectsCount > 0,
+    check: ({ hasProtectedObject }) => hasProtectedObject,
     onlyForLost: false,
   },
 ];
@@ -154,17 +154,16 @@ export default function OnboardingChecklist({ objectsCount, objectStatuses = [],
   // Há pelo menos um objeto perdido ou roubado?
   const hasLostObject = objectStatuses.some(s => s === 'lost' || s === 'stolen');
 
-  // Filtrar passos: o passo de QR Code aparece se o usuário tem objetos que ainda estão com ele
-  // (protected = QR preventivo, found = achou e tem o objeto, returned, ou nenhum objeto ainda)
+  // O QR Code é opcional: o passo "Cole o QR Code" só aparece (e só conta como concluído)
+  // quando o usuário tem ao menos um objeto com status protected.
+  const hasProtectedObject = objectStatuses.some(s => s === 'protected');
+
   const visibleSteps = STEPS.filter(step => {
-    if (step.id === 'share_qr') {
-      const hasPhysicalObject = objectStatuses.some(s => s === 'protected' || s === 'found' || s === 'returned');
-      return objectsCount === 0 || hasPhysicalObject;
-    }
+    if (step.id === 'share_qr') return hasProtectedObject;
     return true;
   });
 
-  const ctx = { objectsCount, hasPush, hasLostObject };
+  const ctx = { objectsCount, hasPush, hasLostObject, hasProtectedObject };
   const completed = visibleSteps.filter(s => s.check(ctx)).length;
   const allDone = completed === visibleSteps.length;
 

@@ -92,16 +92,9 @@ export async function sendWelcomeEmail(user: { name: string; email: string }) {
                     <table width="100%" cellpadding="0" cellspacing="0">
                       <tr>
                         <td style="padding:8px 0;vertical-align:top;">
-                          <span style="font-size:20px;margin-right:12px;">📱</span>
-                          <span style="color:white;font-size:14px;font-weight:600;">Instalar o App</span><br/>
-                          <span style="color:rgba(255,255,255,0.4);font-size:13px;">Adicione à tela inicial para receber alertas em tempo real quando seu objeto for encontrado.</span>
-                        </td>
-                      </tr>
-                      <tr>
-                        <td style="padding:8px 0;vertical-align:top;">
-                          <span style="font-size:20px;margin-right:12px;">🔒</span>
-                          <span style="color:white;font-size:14px;font-weight:600;">Proteger seus objetos</span><br/>
-                          <span style="color:rgba(255,255,255,0.4);font-size:13px;">Gere um QR Code único para mochila, carteira, pet ou documento.</span>
+                          <span style="font-size:20px;margin-right:12px;">📝</span>
+                          <span style="color:white;font-size:14px;font-weight:600;">Registrar uma ocorrência</span><br/>
+                          <span style="color:rgba(255,255,255,0.4);font-size:13px;">Registre o que perdeu, foi roubado ou encontrou.</span>
                         </td>
                       </tr>
                       <tr>
@@ -116,6 +109,20 @@ export async function sendWelcomeEmail(user: { name: string; email: string }) {
                           <span style="font-size:20px;margin-right:12px;">🤝</span>
                           <span style="color:white;font-size:14px;font-weight:600;">Devolver o que achou</span><br/>
                           <span style="color:rgba(255,255,255,0.4);font-size:13px;">Registre o achado e conecte-se ao dono com privacidade garantida.</span>
+                        </td>
+                      </tr>
+                      <tr>
+                        <td style="padding:8px 0;vertical-align:top;">
+                          <span style="font-size:20px;margin-right:12px;">🔒</span>
+                          <span style="color:white;font-size:14px;font-weight:600;">Preparar-se antes (opcional)</span><br/>
+                          <span style="color:rgba(255,255,255,0.4);font-size:13px;">Gere um QR Code para o que quiser identificar, como mochila, carteira, pet ou documento.</span>
+                        </td>
+                      </tr>
+                      <tr>
+                        <td style="padding:8px 0;vertical-align:top;">
+                          <span style="font-size:20px;margin-right:12px;">📱</span>
+                          <span style="color:white;font-size:14px;font-weight:600;">Instalar o App</span><br/>
+                          <span style="color:rgba(255,255,255,0.4);font-size:13px;">Adicione à tela inicial para receber alertas em tempo real quando seu objeto for encontrado.</span>
                         </td>
                       </tr>
                     </table>
