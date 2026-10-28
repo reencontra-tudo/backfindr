@@ -229,7 +229,7 @@ const FLOWS: Record<string, { text: string; buttons?: { label: string; action: s
 
   // ── Encontrou algo ──
   found: {
-    text: 'Boa atitude 🙏\n\nVocê pode tentar devolver com segurança — é gratuito e seu contato fica protegido 👇\n\n' + APP_URL + '/encontrei',
+    text: 'Boa atitude 🙏\n\nVocê pode tentar devolver com segurança — é gratuito, e a conversa acontece pelo chat da plataforma 👇\n\n' + APP_URL + '/encontrei',
   },
 
   // ── Prevenir / QR Code ──
@@ -329,7 +329,7 @@ const FLOWS: Record<string, { text: string; buttons?: { label: string; action: s
 
   // ── Help de funcionalidades ──
   qr_help: {
-    text: 'O QR Code funciona assim:\n\n1. Você cadastra o objeto\n2. O sistema gera um QR único e permanente\n3. Você imprime e cola no item\n4. Se alguém encontrar e escanear com qualquer câmera, **você recebe uma notificação**\n\nSeu número nunca é exposto — contato via chat protegido 🔒\n\nPara gerar o seu: Dashboard → objeto → "Imprimir QR"',
+    text: 'O QR Code funciona assim:\n\n1. Você cadastra o objeto\n2. O sistema gera um QR único e permanente\n3. Você imprime e cola no item\n4. Se alguém encontrar e escanear com qualquer câmera, **você recebe uma notificação**\n\nA conversa acontece pelo chat da plataforma.\n\nPara gerar o seu: Dashboard → objeto → "Imprimir QR"',
   },
   match_help: {
     text: 'Para confirmar um match:\n\n1. Clique no match pendente\n2. Veja as informações do objeto do outro lado\n3. Se parecer o seu, clique em "Confirmar"\n4. O outro usuário também precisa confirmar\n5. Depois da confirmação dos dois lados, o contato direto é liberado 🤝\n\nDúvida? 👇',
@@ -344,7 +344,7 @@ const FLOWS: Record<string, { text: string; buttons?: { label: string; action: s
     text: 'Tipos de notificação:\n\n🔴 **QR escaneado** — alguém escaneou o QR do seu objeto\n🟡 **Novo match** — IA encontrou um possível par\n🟢 **Match confirmado** — os dois lados confirmaram\n📧 **Reativação** — objeto sem match por 24h, com dicas\n\nTodas ficam em: Dashboard → Notificações',
   },
   privacy_help: {
-    text: 'Seu contato fica 100% protegido 🔒\n\nO número de telefone nunca é exibido publicamente. A página pública do objeto mostra apenas informações básicas do item.\n\nContato só acontece via chat interno após confirmação dos dois lados — ou via WhatsApp com número protegido.',
+    text: 'A conversa acontece pelo chat da plataforma.\n\nA página pública do objeto mostra apenas informações básicas do item.',
   },
   map_help: {
     text: 'No mapa ao vivo você vê:\n\n🔴 Pin vermelho = objeto perdido\n🟢 Pin verde = objeto achado\n🟡 Pin amarelo = objeto roubado\n\nClique em qualquer pin para ver os detalhes. Ative sua localização para ver ocorrências próximas de você.\n\nFunciona sem login 👍',
@@ -353,7 +353,7 @@ const FLOWS: Record<string, { text: string; buttons?: { label: string; action: s
     text: 'Sim, pode cancelar a qualquer momento pelo painel em:\n\nhttps://backfindr.com/dashboard/billing\n\nSem fidelidade, sem multa. O plano continua ativo até o fim do período pago.',
   },
   contact_help: {
-    text: 'Para contatar o dono:\n\n1. Clique em "Avisar dono" na página do objeto\n2. Deixe uma mensagem — o dono recebe uma notificação imediata\n3. Ele pode responder via chat interno\n\nSeu número não é exposto em nenhum momento 🔒',
+    text: 'Para contatar o dono:\n\n1. Clique em "Avisar dono" na página do objeto\n2. Deixe uma mensagem — o dono recebe uma notificação imediata\n3. Ele pode responder via chat interno\n\nA conversa acontece pelo chat da plataforma.',
   },
 
   // ── Planos ──

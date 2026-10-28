@@ -57,6 +57,11 @@ Como funciona:
 3. Contato mediado: quando há uma possível correspondência, a conversa acontece pelo chat da plataforma.
 4. QR Code (opcional): para se preparar antes, você pode gerar um QR Code e colar no item. Se alguém o escanear, você recebe um aviso.
 
+REGRAS SOBRE CONTATO E QR CODE (valem sempre):
+- Contato: diga apenas que "a conversa acontece pelo chat da plataforma". Nunca afirme que o telefone ou o e-mail estão protegidos, ocultos, seguros ou "sem expor", nem use "totalmente protegido" ou "não aparece para ninguém".
+- O QR Code é opcional e um segundo passo. Se perguntarem se é preciso criar um QR Code, responda que não é obrigatório, que é uma forma opcional de identificar bens antes de qualquer perda, e que a essência é registrar e pesquisar o que foi perdido, roubado ou encontrado.
+- Nunca apresente o QR Code como garantia nem como forma de proteger o contato; o contato segue a regra acima. Ao falar do QR Code, não use intensificadores como "aumenta muito" ou "garante"; use "pode ajudar".
+
 Site: https://backfindr.com
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -127,7 +132,7 @@ QR CODE — COMO FUNCIONA
 2. Imprime e cola no item (mochila, carteira, chave, coleira do pet)
 3. Alguém encontra → escaneia com qualquer câmera (sem precisar de app)
 4. Abre a página pública do objeto → oferece contato com o dono → você recebe uma notificação
-5. Seu número nunca é exposto — contato via chat interno ou WhatsApp protegido
+5. O contato acontece pelo chat da plataforma
 6. Para imprimir: dashboard → objeto → "Imprimir QR"
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -167,9 +172,9 @@ Para ver notificações: https://backfindr.com/dashboard/notifications
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 SEGURANÇA E PRIVACIDADE
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-- Número de telefone nunca exposto publicamente
+- A conversa acontece pelo chat da plataforma
 - Página pública do objeto mostra apenas informações básicas do item
-- Contato via chat interno ou WhatsApp com número protegido
+- Não afirme proteção de telefone ou e-mail além de: a conversa acontece pelo chat da plataforma
 - Dados pessoais visíveis apenas para você no dashboard
 - Objetos podem ser marcados como "devolvido" e removidos do feed a qualquer momento
 
@@ -207,7 +212,7 @@ P: É gratuito? Tem que pagar?
 R: Sim, é gratuito. Você cria conta, cadastra seus objetos e recebe alertas sem pagar nada — sem cartão de crédito. Se quiser usar uma tecnologia ainda mais robusta no futuro, existem planos opcionais, mas não são obrigatórios.
 
 P: Como funciona o QR Code?
-R: Você cadastra o objeto, o sistema gera um QR Code único e permanente. Você imprime e cola no objeto. Se alguém encontrar e escanear com qualquer câmera de celular, você recebe uma notificação — e seu número fica protegido.
+R: Você cadastra o objeto, o sistema gera um QR Code único e permanente. Você imprime e cola no objeto. Se alguém encontrar e escanear com qualquer câmera de celular, você recebe uma notificação. A conversa acontece pelo chat da plataforma.
 
 P: Posso usar sem cadastro?
 R: Para ver o mapa de ocorrências, sim — é público em https://backfindr.com/map. Para cadastrar um objeto ou receber alertas, precisa de conta — é rápido e gratuito.
@@ -231,7 +236,7 @@ P: O que é o mapa ao vivo?
 R: Mapa público em https://backfindr.com/map com todas as ocorrências registradas no Brasil. Ative sua localização para ver ocorrências próximas.
 
 P: Como entro em contato com quem encontrou?
-R: Quando há match ou alguém escaneia o QR, você recebe notificação. O contato é via chat interno ou WhatsApp — sem expor seu número. Acesse seus matches em https://backfindr.com/dashboard/matches.
+R: Quando há match ou alguém escaneia o QR, você recebe notificação. A conversa acontece pelo chat da plataforma. Acesse seus matches em https://backfindr.com/dashboard/matches.
 
 P: Quanto tempo leva para encontrar?
 R: Depende. O aviso por QR Code só acontece se alguém escanear o código; sem QR, depende de uma correspondência entre os registros. O tempo varia e não dá para prometer prazo.
@@ -525,7 +530,7 @@ function getGuidedResponse(messages: Message[]): string {
 
   // Prevenir / QR Code
   if (/prevenir|proteger|qr|qrcode|qr code|adesivo|etiqueta/.test(lastMsg)) {
-    return `O QR Code funciona assim:\n\nVocê cadastra → sistema gera QR único → você cola no item.\n\nSe alguém encontrar e escanear, você recebe um aviso — sem expor seu número.\n\nGera o seu grátis 👇\n\n${APP_URL}/proteger`;
+    return `O QR Code funciona assim:\n\nVocê cadastra → sistema gera QR único → você cola no item.\n\nSe alguém encontrar e escanear, você recebe um aviso. A conversa acontece pelo chat da plataforma.\n\nGera o seu grátis 👇\n\n${APP_URL}/proteger`;
   }
 
   // Pet
@@ -535,7 +540,7 @@ function getGuidedResponse(messages: Message[]): string {
 
   // Como funciona / o que é / apresentação do sistema
   if (/como funciona|o que (é|faz|isso|vocês fazem)|como usar|para que serve|me (explica|conta)|o sistema faz|backfindr|findr|plataforma|site/.test(lastMsg)) {
-    return `O Backfindr é uma plataforma gratuita que ajuda a recuperar objetos perdidos 🔍\n\nFunciona assim:\n\n1. Você registra o objeto perdido (ou achado)\n2. A IA cruza com outros registros da rede automaticamente\n3. Quando há compatibilidade, os dois lados são notificados\n4. (Opcional) Com um QR Code colado no item: se alguém o escanear, você é avisado — sem expor seu número\n\nTudo gratuito, sem cartão de crédito 👇\n\n${APP_URL}`;
+    return `Plataforma global de recuperação de objetos perdidos com IA de matching e chat mediado para devolução segura. 🔍\n\nFunciona assim:\n\n1. Você registra o objeto perdido (ou achado)\n2. A IA cruza com outros registros da rede automaticamente\n3. Quando há compatibilidade, os dois lados são notificados\n4. (Opcional) Com um QR Code colado no item: se alguém o escanear, você é avisado\n\nTudo gratuito, sem cartão de crédito 👇\n\n${APP_URL}`;
   }
 
   // Gratuito / preço / planos — só aqui menciona planos
@@ -555,7 +560,7 @@ function getGuidedResponse(messages: Message[]): string {
 
   // Contato / devolver
   if (/contato|falar com|devolver|retornar|como aviso|como falo/.test(lastMsg)) {
-    return `Quando há match ou alguém escaneia o QR, você recebe notificação com opção de contato direto via WhatsApp — sem expor seu número.\n\nPara ver seus matches 👇\n\n${APP_URL}/dashboard/matches`;
+    return `Quando há match ou alguém escaneia o QR, você recebe notificação. A conversa acontece pelo chat da plataforma.\n\nPara ver seus matches 👇\n\n${APP_URL}/dashboard/matches`;
   }
 
   // Compartilhar
