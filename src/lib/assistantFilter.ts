@@ -148,6 +148,7 @@ function acharPadroes(texto: string): { id: string; idx: number }[] {
 }
 
 const TEM_URL = /https?:\/\//i;
+const FRASE_FIXA = /a conversa acontece pelo chat da plataforma/gi;
 const CONECTIVO_NO_INICIO = new RegExp(
   `^(?:assim|ent[ãa]o|portanto|por\\s+isso|dessa\\s+forma|desse\\s+modo|al[ée]m\\s+disso|ou\\s+seja|isso|mas|por[ée]m|e|tamb[ée]m|logo|nesse\\s+caso|com\\s+isso)${DEPOIS}`,
   'iu'
@@ -206,8 +207,8 @@ export function aplicarFiltroDeLinguagem(raw: string): ResultadoFiltro {
   }
   const texto = saida.trim();
 
-  // frase fixa repetida
-  const repeticoes = texto.split(T1).length - 1;
+  // frase fixa repetida (também quando o modelo já tinha dito o mesmo, com outras maiúsculas ou prefixo)
+  const repeticoes = (texto.match(FRASE_FIXA) || []).length;
   if (repeticoes > 1) return recuar(padroes, nFrases);
 
   // sobras: além da frase trocada/removida, precisam restar pelo menos 2 frases da resposta original

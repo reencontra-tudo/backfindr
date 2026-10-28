@@ -120,6 +120,12 @@ confere(aplicarFiltroDeLinguagem(DEFINICAO + ' Veja https://backfindr.com/perdi'
   confere(r.acao === 'frase' && !/garant/i.test(r.texto) && r.texto.includes('Quanto antes fizer, melhor.'), 'P5 remove a frase (T2)', r.texto);
 }
 
+{
+  // a frase marcada já continha a parte permitida: sobra uma só ocorrência, sem recuo
+  const r = aplicarFiltroDeLinguagem('Olá. A conversa acontece pelo chat da plataforma, então seu contato pessoal não fica exposto diretamente. Quer ajuda? Fale comigo.');
+  confere(r.acao === 'frase' && r.texto === `Olá. ${T1} Quer ajuda? Fale comigo.`, 'uma só ocorrência da frase fixa: sem recuo', r.texto);
+}
+
 // ── 5. Recuos para a resposta inteira (T3) ───────────────────────────────────
 const RECUOS = [
   ['mais de uma frase marcada', 'Olá. Seu telefone não aparece para ninguém. Seu contato fica protegido. Fale comigo.'],
@@ -127,6 +133,8 @@ const RECUOS = [
   ['primeira frase em resposta curta', 'Seu contato fica protegido. Obrigado.'],
   ['frase fixa repetida', `${T1} Seu telefone não aparece para ninguém. Quer ajuda? Fale comigo.`],
   ['restam menos de 2 frases', 'Olá. Seu contato pessoal não fica exposto diretamente.'],
+  ['frase fixa repetida com outras maiúsculas e prefixo', 'Olá, tudo bem. No Backfindr, a conversa acontece pelo chat da plataforma. Seu telefone não aparece para ninguém. Quer ajuda? Fale comigo.'],
+  ['frase fixa repetida (modelo já tinha dito em outra frase)', 'Olá. A conversa acontece pelo chat da plataforma. Seu contato pessoal não fica exposto diretamente. Quer ajuda? Fale comigo.'],
   ['conectivo solto logo depois', 'Olá, tudo bem. Seu contato pessoal não fica exposto diretamente. Assim, a conversa fica tranquila. Quer ajuda?'],
   ['termina com conectivo', 'Olá, tudo bem. Seu contato fica protegido. Quer ajuda? Posso te ajudar, mas'],
 ];
