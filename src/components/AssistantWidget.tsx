@@ -332,7 +332,7 @@ const FLOWS: Record<string, { text: string; buttons?: { label: string; action: s
     text: 'O QR Code não é obrigatório: é uma forma opcional de identificar bens antes de qualquer perda. A essência do Backfindr é registrar e pesquisar o que foi perdido, roubado ou encontrado.\n\nO QR Code funciona assim:\n\n1. Você cadastra o objeto\n2. O sistema gera um QR único e permanente\n3. Você imprime e cola no item\n4. Se alguém encontrar e escanear com qualquer câmera, **você recebe uma notificação**\n\nA conversa acontece pelo chat da plataforma.\n\nPara gerar o seu: Dashboard → objeto → "Imprimir QR"',
   },
   match_help: {
-    text: 'Para confirmar um match:\n\n1. Clique no match pendente\n2. Veja as informações do objeto do outro lado\n3. Se parecer o seu, clique em "Confirmar"\n4. O outro usuário também precisa confirmar\n5. Depois da confirmação dos dois lados, o contato direto é liberado 🤝\n\nDúvida? 👇',
+    text: 'Para confirmar um match:\n\n1. Clique no match pendente\n2. Veja as informações do objeto do outro lado\n3. Se parecer o seu, clique em "Confirmar"\n4. A conversa acontece pelo chat da plataforma 🤝\n\nDúvida? 👇',
     buttons: [
       { label: '🔍 Ver meus matches', action: 'nav_matches' },
     ],
