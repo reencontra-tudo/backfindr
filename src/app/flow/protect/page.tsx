@@ -3,7 +3,7 @@ import ProtectFlowClient from './client';
 
 export const metadata: Metadata = {
   title: 'Quero me prevenir — Backfindr',
-  description: 'Gere um QR Code gratuito para seus pertences. Se alguém encontrar, entra em contato sem ver seu número.',
+  description: 'Gere um QR Code para imprimir e colar nos seus pertences. Se alguém o escanear, você é avisado, sem mostrar seu número.',
   robots: 'noindex',
 };
 

@@ -579,7 +579,7 @@ export default function HomePage() {
                     className="inline-flex items-center gap-2 rounded-2xl bg-teal-500 px-8 py-4 text-sm font-bold text-white transition-all hover:bg-teal-400"
                     style={{ boxShadow: '0 0 0 1px rgba(20,184,166,.34), 0 14px 40px rgba(20,184,166,.22)' }}
                   >
-                    Quero me proteger agora
+                    Ver como me preparar
                     <ArrowRight className="h-4 w-4" />
                   </Link>
                   <Link
@@ -672,7 +672,7 @@ export default function HomePage() {
                   href="/flow/protect"
                   className="inline-flex items-center gap-2 rounded-xl border border-blue-500/30 bg-blue-500/[0.1] px-4 py-2.5 text-sm font-semibold text-blue-300 transition-all hover:bg-blue-500/[0.18]"
                 >
-                  Criar meu QR grátis <ArrowRight className="h-3.5 w-3.5" />
+                  Cadastrar meu objeto <ArrowRight className="h-3.5 w-3.5" />
                 </Link>
               </div>
             </FadeIn>
@@ -703,7 +703,7 @@ export default function HomePage() {
           <FadeIn>
             <p className="mb-3 text-center text-xs font-semibold uppercase tracking-[0.22em] text-white/28">como a backfindr funciona</p>
             <h2 className="mb-4 text-center text-3xl font-extrabold text-white md:text-4xl">
-              Crie, cole e seja avisado
+              Do registro ao reencontro
             </h2>
             <p className="mx-auto mb-14 max-w-2xl text-center text-sm text-white/42 md:text-base">
               Quando algo se perde, o tempo pesa. O QR transforma um objeto comum em um ponto de retorno.
@@ -715,20 +715,20 @@ export default function HomePage() {
               {
                 img: '/img_step1.png',
                 number: '1',
-                title: 'Crie seu QR',
-                desc: 'Cadastre item ou pet em segundos e gere um identificador único.',
+                title: 'Conte o que aconteceu',
+                desc: 'Perdeu, achou ou foi roubado? Faça o registro do objeto ou do pet.',
               },
               {
                 img: '/img_step2.png',
                 number: '2',
-                title: 'Cole e proteja',
-                desc: 'Use na mochila, carteira, documento, chaveiro ou coleira.',
+                title: 'Veja as correspondências',
+                desc: 'O Backfindr compara os registros e aponta possíveis correspondências no mapa.',
               },
               {
                 img: '/img_step3.png',
                 number: '3',
-                title: 'Receba o alerta',
-                desc: 'Quem encontrar escaneia e a conexão começa com privacidade.',
+                title: 'Converse com segurança',
+                desc: 'As mensagens passam pela plataforma, sem expor telefone ou e-mail.',
               },
             ].map((step, index) => (
               <FadeIn key={step.number} delay={index * 100}>
@@ -751,12 +751,13 @@ export default function HomePage() {
 
           <FadeIn delay={300}>
             <div className="mt-10 text-center">
+              <p className="mb-5 text-sm text-white/42">Quer se preparar antes? Gere e imprima um QR Code do seu objeto.</p>
               <Link
                 href="/auth/register"
                 className="inline-flex items-center gap-2 rounded-2xl bg-teal-500 px-8 py-4 text-sm font-bold text-white transition-all hover:bg-teal-400"
                 style={{ boxShadow: '0 0 0 1px rgba(20,184,166,.34), 0 14px 40px rgba(20,184,166,.18)' }}
               >
-                Criar meu QR grátis
+                Cadastrar meu objeto
                 <ArrowRight className="h-4 w-4" />
               </Link>
             </div>
@@ -826,19 +827,19 @@ export default function HomePage() {
                   Perdeu, achou ou quer proteger — a rede Backfindr ajuda nos três casos.
                 </p>
                 <p className="mb-7 max-w-md text-sm leading-relaxed text-white/40 md:text-base">
-                  Aja agora se o desaparecimento já é real, ou cole um QR na coleira antes que aconteça.
+                  Aja agora se o desaparecimento já é real. Se quiser se preparar antes, gere um QR Code para imprimir e usar na identificação do seu pet.
                 </p>
 
                 <div className="mb-8 grid grid-cols-2 gap-3">
                   {[
-                    { value: '94%', label: 'mais chance com QR' },
+                    { label: 'Um QR Code pode facilitar a devolução de um item perdido, caso alguém o encontre e escaneie o código.' },
                     { value: '<2h', label: 'tempo médio de retorno' },
                     { value: '0 custo', label: 'para começar' },
                     { value: '1 clique', label: 'para gerar o código' },
                   ].map((item) => (
                     <div key={item.label} className="rounded-2xl border border-white/[0.08] bg-white/[0.03] p-4">
-                      <p className="text-xl font-extrabold text-amber-400">{item.value}</p>
-                      <p className="mt-1 text-[11px] text-white/40">{item.label}</p>
+                      {item.value && <p className="text-xl font-extrabold text-amber-400">{item.value}</p>}
+                      <p className={item.value ? 'mt-1 text-[11px] text-white/40' : 'text-[11px] leading-relaxed text-white/40'}>{item.label}</p>
                     </div>
                   ))}
                 </div>
@@ -849,7 +850,7 @@ export default function HomePage() {
                     href="/auth/register"
                     className="inline-flex items-center justify-center gap-2 rounded-2xl border border-amber-500/25 bg-amber-500/10 px-4 py-3.5 text-center text-sm font-bold text-amber-300 transition-all hover:bg-amber-500/15"
                   >
-                    🛡️ Proteger meu pet
+                    🛡️ Cadastrar meu pet
                   </Link>
                   <Link
                     href="/flow/pet"
@@ -870,7 +871,7 @@ export default function HomePage() {
             <div className="relative h-80 min-h-[320px] md:h-full">
               <Image
                 src="/img_pet.png"
-                alt="Pet protegido com QR"
+                alt="Foto de um pet"
                 fill
                 className="object-cover object-center"
               />
@@ -935,7 +936,7 @@ export default function HomePage() {
                 className="inline-flex items-center gap-2 rounded-2xl bg-teal-500 px-8 py-4 text-base font-bold text-white transition-all hover:bg-teal-400"
                 style={{ boxShadow: '0 0 0 1px rgba(20,184,166,.34), 0 14px 40px rgba(20,184,166,.22)' }}
               >
-                Criar meu QR agora
+                Cadastrar meu objeto
                 <ArrowRight className="h-5 w-5" strokeWidth={2.5} />
               </Link>
               <Link

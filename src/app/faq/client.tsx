@@ -15,16 +15,8 @@ const SECTIONS = [
         a: 'O Backfindr é uma plataforma de recuperação de objetos perdidos. Você registra seus itens, recebe um QR Code único para cada um, e quando alguém encontrar e escanear o código, você é notificado imediatamente — sem expor seus dados pessoais.',
       },
       {
-        q: 'Como o QR Code funciona na prática?',
-        a: 'Você imprime ou salva o QR Code e cola no objeto (coleira do pet, carteira, mochila, etc.). Qualquer pessoa com um celular pode escanear o código sem precisar ter conta no Backfindr. Ao escanear, ela vê uma página pública com informações básicas do objeto e pode iniciar o contato de forma segura.',
-      },
-      {
         q: 'Preciso instalar algum aplicativo?',
         a: 'Não. O Backfindr funciona completamente pelo navegador, tanto para quem registra objetos quanto para quem escaneia o QR Code. Para receber notificações push, recomendamos adicionar o site à tela inicial do celular (funciona como um app).',
-      },
-      {
-        q: 'O QR Code expira?',
-        a: 'Não. O QR Code é permanente em todos os planos. Se alguém encontrar seu item e escanear meses ou anos depois, você ainda recebe o aviso.',
       },
       {
         q: 'O que é o matching por IA?',
@@ -38,10 +30,6 @@ const SECTIONS = [
       {
         q: 'Quem encontrar meu objeto vai ver meu telefone ou e-mail?',
         a: 'Não. A página pública do objeto mostra apenas o nome do item, uma descrição e uma foto. O contato é feito por um chat mediado dentro da plataforma — seus dados pessoais nunca são expostos.',
-      },
-      {
-        q: 'Posso confiar em quem escaneia o QR?',
-        a: 'O chat mediado protege sua identidade. Você decide se quer compartilhar mais informações após conversar com a pessoa. A plataforma registra todas as interações para segurança de ambos os lados.',
       },
       {
         q: 'Meus dados são vendidos para terceiros?',
@@ -99,16 +87,33 @@ const SECTIONS = [
         a: 'Verifique a pasta de spam. Se não encontrar, tente reenviar pela tela de login. Se o problema persistir, entre em contato pelo e-mail suporte@backfindr.com.',
       },
       {
-        q: 'O QR Code não está sendo reconhecido.',
-        a: 'Certifique-se de que o QR Code está impresso ou exibido com boa resolução e sem distorções. Tente escanear com a câmera nativa do celular (iOS ou Android) antes de usar um app de terceiros.',
-      },
-      {
         q: 'Não estou recebendo notificações.',
         a: 'Para receber notificações push, você precisa ter o site adicionado à tela inicial do celular (como PWA) e ter concedido permissão de notificações. No iOS: Safari > Compartilhar > Adicionar à Tela de Início. No Android: Chrome > Menu > Adicionar à tela inicial.',
       },
       {
         q: 'Como excluo minha conta?',
         a: 'Acesse Configurações > Conta > Excluir conta. Todos os seus dados e objetos serão removidos permanentemente em até 30 dias.',
+      },
+    ],
+  },
+  {
+    title: 'QR Code (opcional)',
+    items: [
+      {
+        q: 'Como o QR Code funciona na prática?',
+        a: 'Você imprime ou salva o QR Code e cola no objeto (coleira do pet, carteira, mochila, etc.). Qualquer pessoa com um celular pode escanear o código sem precisar ter conta no Backfindr. Ao escanear, ela vê uma página pública com informações básicas do objeto e pode iniciar o contato de forma segura.',
+      },
+      {
+        q: 'O QR Code expira?',
+        a: 'Não. O QR Code é permanente em todos os planos. Se alguém encontrar seu item e escanear meses ou anos depois, você ainda recebe o aviso.',
+      },
+      {
+        q: 'Posso confiar em quem escaneia o QR?',
+        a: 'O chat mediado protege sua identidade. Você decide se quer compartilhar mais informações após conversar com a pessoa. A plataforma registra todas as interações para segurança de ambos os lados.',
+      },
+      {
+        q: 'O QR Code não está sendo reconhecido.',
+        a: 'Certifique-se de que o QR Code está impresso ou exibido com boa resolução e sem distorções. Tente escanear com a câmera nativa do celular (iOS ou Android) antes de usar um app de terceiros.',
       },
     ],
   },
