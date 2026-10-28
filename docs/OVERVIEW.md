@@ -154,3 +154,11 @@ Todos os domínios estão com **Valid Configuration** no Vercel e certificados S
 | `VAPID_PRIVATE_KEY` | Chave privada VAPID |
 | `ADMIN_IDS` | IDs de usuários administradores (separados por vírgula) |
 | `NEXT_PUBLIC_API_URL` | URL base da API (ex: `https://www.backfindr.app`) |
+
+## Medição do uso do QR Code (eventos)
+O uso do QR é medido em `object_events`, sem coluna nova:
+- `qr_generated`: objeto criado no modo "Proteger" (status `protected`).
+- `qr_downloaded` e `qr_printed`: dono baixou ou imprimiu o QR, a etiqueta ou o cartaz (`metadata.format` diz qual).
+- `qr_scanned`: alguém abriu ou escaneou o QR. **Para contar escaneamento de pessoa, use somente o `qr_scanned` com `metadata.via`** (gravado no aviso ao dono, `POST /api/v1/objects/scan/[code]/notify`). O `qr_scanned` gravado ao abrir a página (`GET`) conta qualquer abertura, inclusive robôs, pré-visualização de link e verificações internas, e **superestima** os escaneamentos reais.
+- Os eventos `qr_generated`, `qr_downloaded` e `qr_printed` não são gravados para dono legado.
+- O limiar para o QR voltar a ter destaque no site é decisão do responsável pelo produto; não está definido aqui.

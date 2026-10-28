@@ -2,6 +2,7 @@ export const dynamic = 'force-dynamic';
 import { NextRequest } from 'next/server';
 import { query } from '@/lib/db';
 import { verifyToken, extractTokenFromHeader } from '@/lib/jwt';
+import { Events } from '@/lib/events';
 import { successResponse, unauthorizedResponse, internalErrorResponse } from '@/lib/response';
 
 export async function GET(
@@ -75,6 +76,44 @@ export async function GET(
         next_matching_at: nextMatchingAt,
       },
     });
+  } catch (error) {
+    return internalErrorResponse(error);
+  }
+}
+
+// Registro de uso do QR pelo dono (baixar ou imprimir). Só o dono autenticado; dono legado não grava.
+export async function POST(
+  request: NextRequest,
+  { params }: { params: { id: string } }
+) {
+  try {
+    const authHeader = request.headers.get('authorization');
+    const token = extractTokenFromHeader(authHeader);
+    if (!token) return unauthorizedResponse();
+
+    const payload = verifyToken(token);
+    if (!payload) return unauthorizedResponse();
+
+    const body = await request.json().catch(() => ({} as Record<string, unknown>));
+    const action = body?.action;
+    if (action !== 'qr_downloaded' && action !== 'qr_printed') {
+      return successResponse({ detail: 'Ação inválida' }, 400);
+    }
+    const format = typeof body?.format === 'string' ? body.format.slice(0, 40) : undefined;
+
+    const { id: objectId } = params;
+    const ownerCheck = await query(
+      'SELECT id FROM objects WHERE id = $1 AND user_id = $2',
+      [objectId, payload.sub]
+    );
+    if (ownerCheck.rows.length === 0)
+      return successResponse({ detail: 'Object not found' }, 404);
+
+    const metadata = { format };
+    if (action === 'qr_downloaded') await Events.qrDownloaded(objectId, payload.sub, metadata);
+    else await Events.qrPrinted(objectId, payload.sub, metadata);
+
+    return successResponse({ ok: true });
   } catch (error) {
     return internalErrorResponse(error);
   }
