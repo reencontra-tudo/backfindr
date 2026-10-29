@@ -68,7 +68,7 @@ export async function sendWelcomeEmail(user: { name: string; email: string }) {
                 Bem-vindo, ${firstName}! 🎉
               </h1>
               <p style="color:rgba(255,255,255,0.55);font-size:15px;line-height:1.6;margin:0 0 24px;">
-                Sua conta foi criada com sucesso. Agora você faz parte da maior rede de recuperação de objetos perdidos do Brasil.
+                Sua conta foi criada com sucesso. Agora você faz parte da rede de recuperação de objetos perdidos do Backfindr.
               </p>
 
               <!-- CTA principal -->
