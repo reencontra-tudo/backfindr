@@ -17,7 +17,7 @@
 
 ## O que é o Backfindr
 
-O Backfindr é uma plataforma SaaS de recuperação ativa de objetos perdidos. Diferente de simples "achados e perdidos", a plataforma combina QR Codes permanentes, matching por IA e chat mediado para fechar o ciclo completo de perda → encontro → devolução.
+O Backfindr é uma ferramenta que auxilia e aproxima quem perdeu e quem achou, com correspondência por IA, chat mediado e, como recurso opcional, QR Code, para fechar o ciclo completo de perda → encontro → devolução.
 
 ---
 
