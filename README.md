@@ -1,6 +1,6 @@
 # Backfindr — Handoff para Desenvolvedor
 
-Plataforma global de recuperação de objetos perdidos com QR Code, IA de matching e chat mediado.
+Plataforma global de recuperação de objetos perdidos com IA de matching e chat mediado para devolução segura.
 
 ---
 

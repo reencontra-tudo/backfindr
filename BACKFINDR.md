@@ -46,7 +46,7 @@ Projeto anterior: Webjetos (2015) — migração planejada
 
 **Filosofia oficial:** "O Backfindr existe para aumentar as oportunidades de reencontro."
 
-**Posicionamento:** sistema vivo de recuperação patrimonial (não plataforma de perdidos e achados)
+**Posicionamento:** o Backfindr é definido pelo que faz, não por rótulo. É uma ferramenta inteligente que auxilia, aproxima e viabiliza o encontro e a devolução de objetos e coisas perdidos, roubados ou achados, para quem perdeu e para quem achou. Conecta as duas pontas, intermedeia o contato pelo chat da plataforma e usa IA para apontar possíveis correspondências. Funciona como infraestrutura de colaboração entre desconhecidos, apoiada em confiança e voltada à reconexão. Não é um espaço físico e não guarda nem armazena objetos. É um serviço privado e independente de órgãos públicos. Nenhum rótulo, inclusive 'achados e perdidos', é vetado ou obrigatório; vale a descrição fiel da função. O QR Code é um recurso opcional, um segundo passo para identificar e proteger bens.
 
 **Princípio de monetização:** "O usuário nunca compra antes de acreditar."
 
@@ -55,7 +55,7 @@ Projeto anterior: Webjetos (2015) — migração planejada
 1. **Marketplace de Recompensas** — usuário paga probabilidade de recuperação, não mídia
 2. **Motor de Distribuição** — divulgação user-funded (redes sociais, push, grupos, ads)
 3. **Intelligence Hub** — banco de ocorrências como produto B2B (seguradoras, prefeituras, condomínios)
-4. **QR Code é o DNA do Objeto** — produto físico de entrada, status `protected` = prevenção
+4. **QR Code** — recurso opcional para identificar e proteger bens; status `protected` = prevenção
 5. **Modelo de receita:** Impulsos avulsos / Assinatura preventiva / Auto / Pet / QR físico / B2B
 
 **Regra permanente de produto — responder antes de qualquer feature:**
