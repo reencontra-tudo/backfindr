@@ -19,7 +19,8 @@ export const FROM_ADDRESS = 'Backfindr <noreply@backfindr.com.br>';
 export type SendResult =
   | { ok: true; id: string }
   | { ok: false; status: 'skipped'; reason: SkipReason }
-  | { ok: false; status: 'failed'; error: string };
+  /** rateLimited: o Resend recusou por limite de requisições (vale tentar de novo); cota diária/mensal não conta. */
+  | { ok: false; status: 'failed'; error: string; rateLimited?: boolean };
 
 export interface DeliverOptions {
   to: string;
@@ -32,6 +33,8 @@ export interface DeliverOptions {
   recipient?: Omit<EmailRecipient, 'email'>;
   campaignId?: string | null;
   lifecycleEvent?: string | null;
+  /** Chamado logo antes da chamada ao Resend (só se a regra permitiu o envio). Serve para espaçar envios em lote. */
+  beforeSend?: () => Promise<void>;
 }
 
 function appUrl(): string {
@@ -89,6 +92,7 @@ async function deliver(opts: DeliverOptions): Promise<SendResult> {
 
   let id: string;
   try {
+    if (opts.beforeSend) await opts.beforeSend();
     const resend = new Resend(process.env.RESEND_API_KEY ?? '');
     const { data, error } = await resend.emails.send({
       from: FROM_ADDRESS,
@@ -101,7 +105,8 @@ async function deliver(opts: DeliverOptions): Promise<SendResult> {
     if (error || !data?.id) {
       const msg = error ? `${error.name ?? 'erro'}: ${error.message ?? ''}`.trim() : 'resposta sem id';
       console.error(`[email] Resend recusou o envio (origem=${opts.source}):`, msg);
-      return { ok: false, status: 'failed', error: msg };
+      const rateLimited = !!error && (error.name === 'rate_limit_exceeded' || (error.statusCode === 429 && !/quota/.test(error.name ?? '')));
+      return { ok: false, status: 'failed', error: msg, ...(rateLimited ? { rateLimited: true } : {}) };
     }
     id = data.id;
   } catch (err) {

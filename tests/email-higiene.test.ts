@@ -309,14 +309,36 @@ describe.skipIf(!TEST_DB)('higiene de e-mail', () => {
 
     const url = (t?: string) => `http://localhost/api/v1/email/unsubscribe${t === undefined ? '' : `?t=${encodeURIComponent(t)}`}`;
 
-    it('token válido: grava supressão "unsubscribe", responde 200 e é idempotente', async () => {
+    it('GET com token válido NÃO suprime ninguém: só mostra a confirmação com um botão que envia POST', async () => {
+      const u = await mkUser({ email: 'so-olhando@teste.local', optIn: true });
+      const token = createUnsubscribeToken(u.email, u.id)!;
+      for (let i = 0; i < 3; i++) {
+        const r = await GET(new NextRequest(url(token)));
+        expect(r.status).toBe(200);
+        const html = await r.text();
+        expect(html).toContain('Cancelar inscrição?');
+        expect(html).toContain('<form method="POST"');
+        expect(html).toContain(`action="/api/v1/email/unsubscribe?t=${encodeURIComponent(token)}"`);
+        expect(html).not.toContain('Inscrição cancelada');
+      }
+      expect(await count('email_suppressions')).toBe(0);
+      expect((await pool.query(`SELECT marketing_opt_in FROM email_preferences WHERE user_id = $1`, [u.id])).rows[0].marketing_opt_in).toBe(true);
+      expect(await canSendEmail({ email: u.email }, 'service')).toMatchObject({ allowed: true });
+      expect(await canSendEmail({ email: u.email }, 'marketing')).toMatchObject({ allowed: true });
+    });
+
+    it('POST do botão da página (confirm=1): grava a supressão, mostra "Inscrição cancelada" e é idempotente', async () => {
       const u = await mkUser({ email: 'sai@teste.local', optIn: true });
       const token = createUnsubscribeToken(u.email, u.id)!;
-      const r1 = await GET(new NextRequest(url(token)));
+      const submit = () => POST(new NextRequest(url(token), {
+        method: 'POST',
+        headers: { 'content-type': 'application/x-www-form-urlencoded' },
+        body: 'confirm=1',
+      }));
+      const r1 = await submit();
       expect(r1.status).toBe(200);
       expect(await r1.text()).toContain('Inscrição cancelada');
-      const r2 = await GET(new NextRequest(url(token)));
-      expect(r2.status).toBe(200);
+      expect((await submit()).status).toBe(200);
       const rows = (await pool.query(`SELECT reason, user_id, email_hash FROM email_suppressions`)).rows;
       expect(rows).toHaveLength(1);
       expect(rows[0]).toMatchObject({ reason: 'unsubscribe', user_id: u.id, email_hash: hashEmail('sai@teste.local') });
@@ -324,7 +346,7 @@ describe.skipIf(!TEST_DB)('higiene de e-mail', () => {
       expect(await canSendEmail({ email: u.email }, 'service')).toMatchObject({ allowed: false });
     });
 
-    it('POST one-click também grava', async () => {
+    it('POST one-click do cabeçalho List-Unsubscribe-Post grava e responde JSON', async () => {
       const u = await mkUser();
       const r = await POST(new NextRequest(url(createUnsubscribeToken(u.email, u.id)!), { method: 'POST', body: 'List-Unsubscribe=One-Click' }));
       expect(r.status).toBe(200);
@@ -340,6 +362,7 @@ describe.skipIf(!TEST_DB)('higiene de e-mail', () => {
       for (const bad of [`${b64}.${sig.slice(0, -2)}xx`, `${fake}.${sig}`, 'lixo', `${b64}`, '']) {
         const r = await GET(new NextRequest(url(bad)));
         expect(r.status, bad).toBe(400);
+        expect(await r.text(), bad).not.toContain('<form');
         const p = await POST(new NextRequest(url(bad), { method: 'POST' }));
         expect(p.status, bad).toBe(400);
       }
@@ -353,7 +376,9 @@ describe.skipIf(!TEST_DB)('higiene de e-mail', () => {
       expect(verifyUnsubscribeToken(old)).toEqual({ ok: false, error: 'expired' });
       const r = await GET(new NextRequest(url(old)));
       expect(r.status).toBe(400);
-      expect(await r.text()).toContain('expirou');
+      const html = await r.text();
+      expect(html).toContain('expirou');
+      expect(html).not.toContain('<form');
       const p = await POST(new NextRequest(url(old), { method: 'POST' }));
       expect(await p.json()).toEqual({ ok: false, error: 'expired' });
       expect(await count('email_suppressions')).toBe(0);
@@ -370,7 +395,7 @@ describe.skipIf(!TEST_DB)('higiene de e-mail', () => {
     it('token com campanha grava a origem da campanha', async () => {
       const u = await mkUser();
       const camp = randomUUID();
-      await GET(new NextRequest(url(createUnsubscribeToken(u.email, u.id, camp)!)));
+      await POST(new NextRequest(url(createUnsubscribeToken(u.email, u.id, camp)!), { method: 'POST', body: 'List-Unsubscribe=One-Click' }));
       expect((await pool.query(`SELECT source FROM email_suppressions`)).rows[0].source).toBe(`unsubscribe_campaign:${camp}`);
     });
   });
@@ -548,6 +573,64 @@ describe.skipIf(!TEST_DB)('higiene de e-mail', () => {
       sendMock.mockClear();
       await post(base);
       expect(sendMock.mock.calls.find((c) => c[0].to[0] === ok.email)?.[0].html).toContain('&lt;b&gt;x&lt;/b&gt;');
+    });
+
+    describe('ritmo de envio e nova tentativa em limite de requisições (429)', () => {
+      const rate = { name: 'rate_limit_exceeded', statusCode: 429, message: 'Too many requests' };
+      const okRes = () => ({ data: { id: `re_${randomUUID()}` }, error: null });
+
+      it('mantém no mínimo 600 ms entre inícios de envio', async () => {
+        await mkUser({ optIn: true });
+        await mkUser({ optIn: true });
+        await mkUser({ optIn: true });
+        const times: number[] = [];
+        sendMock.mockImplementation(async () => { times.push(Date.now()); return okRes(); });
+        const res = await (await post(base)).json();
+        expect(res).toMatchObject({ sent: 3, failed: 0 });
+        expect(times).toHaveLength(3);
+        for (let i = 1; i < times.length; i++) expect(times[i] - times[i - 1], `intervalo ${i}`).toBeGreaterThanOrEqual(590);
+      });
+
+      it('erro 429 de limite: uma nova tentativa depois de 1 s, e conta como enviado se passar', async () => {
+        await mkUser({ optIn: true });
+        const times: number[] = [];
+        sendMock.mockImplementation(async () => { times.push(Date.now()); return times.length === 1 ? { data: null, error: rate } : okRes(); });
+        const res = await (await post(base)).json();
+        expect(res).toMatchObject({ sent: 1, failed: 0 });
+        expect(times).toHaveLength(2);
+        expect(times[1] - times[0]).toBeGreaterThanOrEqual(990);
+        expect(await count('email_messages', 'campaign_id = $1', [res.campaign_id])).toBe(1);
+      });
+
+      it('429 persistente: só UMA nova tentativa e depois falha', async () => {
+        await mkUser({ optIn: true });
+        sendMock.mockResolvedValue({ data: null, error: rate });
+        const res = await (await post(base)).json();
+        expect(res).toMatchObject({ sent: 0, failed: 1 });
+        expect(sendMock).toHaveBeenCalledTimes(2);
+      });
+
+      it('erro que não é limite (validação) e cota diária (também 429) não são repetidos', async () => {
+        await mkUser({ optIn: true });
+        sendMock.mockResolvedValue({ data: null, error: { name: 'validation_error', statusCode: 422, message: 'x' } });
+        expect(await (await post(base)).json()).toMatchObject({ failed: 1 });
+        expect(sendMock).toHaveBeenCalledTimes(1);
+        sendMock.mockReset();
+        sendMock.mockResolvedValue({ data: null, error: { name: 'daily_quota_exceeded', statusCode: 429, message: 'cota' } });
+        expect(await (await post(base)).json()).toMatchObject({ failed: 1 });
+        expect(sendMock).toHaveBeenCalledTimes(1);
+      });
+
+      it('destinatário recusado por regra não chama o Resend e não espera', async () => {
+        await mkUser({ optIn: true });
+        for (let i = 0; i < 4; i++) await mkUser(); // sem opt-in: ignorados
+        sendMock.mockImplementation(async () => okRes());
+        const t0 = Date.now();
+        const res = await (await post(base)).json();
+        expect(res).toMatchObject({ sent: 1, skipped: 4, failed: 0 });
+        expect(sendMock).toHaveBeenCalledTimes(1);
+        expect(Date.now() - t0).toBeLessThan(550);
+      });
     });
 
     it('campanha de reativação do Webjetos continua bloqueada', async () => {

@@ -1,10 +1,21 @@
 export const dynamic = 'force-dynamic';
+// Com 600 ms entre envios, 60 s comportam ~90 envios; o laço para antes do limite (ver TIME_BUDGET_MS).
+export const maxDuration = 60;
 import { NextRequest, NextResponse } from 'next/server';
 import { requireAdmin } from '@/lib/adminGuard';
 import { query } from '@/lib/db';
 import { z } from 'zod';
 import { esc } from '@/lib/email';
-import { deliverEmail } from '@/lib/emailSend';
+import { deliverEmail, type SendResult } from '@/lib/emailSend';
+
+// Limite do Resend: 2 envios por segundo. Intervalo mínimo entre inícios de envio e uma única nova tentativa
+// em erro de limite de requisições (429 rate_limit_exceeded).
+const MIN_SEND_INTERVAL_MS = 600;
+const RATE_LIMIT_RETRY_DELAY_MS = 1000;
+// Margem para a resposta caber em maxDuration: para de iniciar envios depois disso.
+const TIME_BUDGET_MS = 50_000;
+
+const sleep = (ms: number) => new Promise<void>((resolve) => setTimeout(resolve, ms));
 
 const CampaignSchema = z.object({
   type:       z.enum(['webjetos_reativacao', 'custom', 'transacional']),
@@ -165,10 +176,24 @@ export async function POST(req: NextRequest) {
   params.push(limit);
   const usersRes = await query(`SELECT id, email, name, is_legacy, is_system_account FROM users ${where} LIMIT $${idx}`, params);
 
-  let sent = 0; let failed = 0; let skipped = 0;
-  for (const user of usersRes.rows) {
+  let sent = 0; let failed = 0; let skipped = 0; let notAttempted = 0;
+  const startedAt = Date.now();
+  let lastCallAt = 0;
+  // Espaça só as chamadas de fato ao Resend (recusa por regra não chama e não espera).
+  const pace = async () => {
+    const wait = lastCallAt + MIN_SEND_INTERVAL_MS - Date.now();
+    if (wait > 0) await sleep(wait);
+    lastCallAt = Date.now();
+  };
+
+  for (let i = 0; i < usersRes.rows.length; i++) {
+    if (Date.now() - startedAt > TIME_BUDGET_MS) {
+      notAttempted = usersRes.rows.length - i;
+      break;
+    }
+    const user = usersRes.rows[i];
     const personalizedHtml = body_html.replace(/{{name}}/g, esc(user.name ?? 'usuário'));
-    const result = await deliverEmail({
+    const attempt = (): Promise<SendResult> => deliverEmail({
       to: user.email,
       subject,
       html: personalizedHtml,
@@ -176,7 +201,14 @@ export async function POST(req: NextRequest) {
       source: 'campaign',
       recipient: { id: user.id, is_legacy: user.is_legacy === true, is_system_account: user.is_system_account === true },
       campaignId,
+      beforeSend: pace,
     });
+    let result = await attempt();
+    // Uma única nova tentativa, só para limite de requisições.
+    if (!result.ok && result.status === 'failed' && result.rateLimited) {
+      await sleep(RATE_LIMIT_RETRY_DELAY_MS);
+      result = await attempt();
+    }
     if (result.ok) sent++;
     else if (result.status === 'skipped') skipped++;
     else failed++;
@@ -188,5 +220,5 @@ export async function POST(req: NextRequest) {
   } catch {
     await query(`UPDATE email_campaigns SET status='sent', sent_count=$1, failed_count=$2, sent_at=NOW(), updated_at=NOW() WHERE id=$3`, [sent, failed, campaignId]);
   }
-  return NextResponse.json({ sent, failed, skipped, campaign_id: campaignId });
+  return NextResponse.json({ sent, failed, skipped, ...(notAttempted ? { not_attempted: notAttempted } : {}), campaign_id: campaignId });
 }
