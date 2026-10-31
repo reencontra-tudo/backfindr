@@ -2,7 +2,6 @@
 
 import { useEffect, useState, useCallback } from 'react';
 import Link from 'next/link';
-import Image from 'next/image';
 import {
   Package, CheckCircle2, AlertTriangle,
   Plus, ArrowRight, Zap, QrCode, Star, CreditCard,
@@ -20,11 +19,7 @@ import OnboardingTour, { TourStep } from '@/components/ui/OnboardingTour';
 import CondominioContextBanner from '@/components/CondominioContextBanner';
 import ActivitySummary from '@/components/activity/ActivitySummary';
 import PushPromptCard from '@/components/PushPromptCard';
-
-const EMOJI: Record<string, string> = {
-  phone:'📱',wallet:'👛',keys:'🔑',bag:'🎒',pet:'🐾',
-  bike:'🚲',document:'📄',jewelry:'💍',electronics:'💻',clothing:'👕',other:'📦',
-};
+import ObjectThumb from '@/components/ObjectThumb';
 
 const STATUS_COLOR: Record<string, string> = {
   lost:'text-red-400 bg-red-500/10 border-red-500/20',
@@ -380,25 +375,16 @@ export default function DashboardPage() {
           ) : (
             <div className="space-y-2">
               {objects.map(obj => {
-                const thumb = obj.photos?.[0];
                 return (
                   <Link key={obj.id} href={`/dashboard/objects/${obj.id}`}
                     className="flex items-center gap-3 p-3 bg-white/[0.03] border border-white/[0.06] hover:border-white/[0.12] rounded-xl transition-all group">
-                    {/* Thumbnail: foto real ou emoji fallback */}
-                    <div className="w-12 h-12 rounded-xl overflow-hidden bg-white/[0.06] flex items-center justify-center flex-shrink-0">
-                      {thumb ? (
-                        <Image
-                          src={thumb}
-                          alt={obj.title}
-                          width={48}
-                          height={48}
-                          className="w-full h-full object-cover"
-                          unoptimized
-                        />
-                      ) : (
-                        <span className="text-xl">{EMOJI[obj.category] ?? '📦'}</span>
-                      )}
-                    </div>
+                    <ObjectThumb
+                      photoUrl={obj.photos?.[0]}
+                      category={obj.category}
+                      size="sm"
+                      alt={obj.title}
+                      className="w-12 h-12 rounded-xl bg-white/[0.06]"
+                    />
                     <div className="flex-1 min-w-0">
                       <p className="text-white text-sm font-medium truncate group-hover:text-teal-300 transition-colors">
                         {obj.title}

@@ -13,6 +13,7 @@ import { RegisteredObject } from '@/types';
 import ShareModal from '@/components/ShareModal';
 import { ImageLightbox, useLightbox } from '@/components/ImageLightbox';
 import RecoveredCelebration from '@/components/RecoveredCelebration';
+import ObjectThumb from '@/components/ObjectThumb';
 
 
 const CATEGORY_EMOJI: Record<string, string> = {
@@ -226,12 +227,7 @@ export default function ScanPage() {
             className="absolute inset-0 w-full h-full object-cover cursor-zoom-in"
           />
         ) : (
-          <div className="absolute inset-0 bg-gradient-to-br from-[#0d1f1a] via-[#0a1510] to-[#0a0a0f] flex items-center justify-center">
-            <div className="text-center">
-              <div className="text-7xl mb-3 opacity-60">{CATEGORY_EMOJI[obj.category] ?? '📦'}</div>
-              <p className="text-slate-600 text-xs tracking-wide uppercase">Sem foto</p>
-            </div>
-          </div>
+          <ObjectThumb category={obj.category} size="hero" className="absolute inset-0" />
         )}
 
         {/* Gradiente dramático de baixo para cima */}
