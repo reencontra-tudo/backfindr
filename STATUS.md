@@ -20,7 +20,7 @@ Pendências (em ordem de prioridade):
 Bloqueios / dependências externas:
 - Decisões do Marcos; nenhum merge ou publicação sem ordem escrita
 Decisões recentes (com data):
-- 31/10/2026: regra central de e-mail em três categorias e consentimento de marketing (Q-18 e Q-19); Q-20 (comunicação com a base legada só por aceite do próprio usuário) e Q-21 foram decididas em 31/10/2026; a Q-22 aguarda a confirmação do alcance (`DECISOES.md`)
+- 31/10/2026: regra central de e-mail em três categorias e consentimento de marketing (Q-18 e Q-19); Q-20 (comunicação com a base legada só por aceite do próprio usuário; mantida) e Q-21 foram decididas em 31/10/2026; a Q-22 aguarda a confirmação do alcance e a Q-23 (emenda futura da Q-20, com revisão jurídica) fica como decisão futura (`DECISOES.md`)
 - 28/10/2026: o QR Code é um segundo passo opcional, não o protagonista; definição oficial do Backfindr e versões curtas; filtro de linguagem do assistente (decisões Q-01 a Q-15 em `DECISOES.md`)
 - 26/10/2026: o STATUS público é genérico (sem detalhe de falhas não corrigidas, dados de terceiros, IDs de infraestrutura ou caminhos pessoais); a versão detalhada fica local e no quadro privado (aprovação do Marcos)
 - 09/10/2026: o legado do Webjetos é intencional e permanece em sitemap, mapa e busca (decisão registrada em 09/10/2026)
