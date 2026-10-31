@@ -1,5 +1,5 @@
 # STATUS — Backfindr
-Atualizado: 28/10/2026
+Atualizado: 31/10/2026
 Prioridade no portfólio: P1 (definido por Marcos em 01/10/2026)
 Fase: em produção (backfindr.com; hospedagem Vercel; banco Supabase; automações de publicação). Em 28/10/2026 a `main` recebeu o ajuste do QR Code como segundo passo (plataforma logada, site público e assistente), a medição de uso do QR, o registro de afirmações públicas e o filtro de linguagem do assistente; os deploys de produção terminaram sem erro
 Objetivo atual: levar à `main` o registro de decisões (`DECISOES.md`) e este STATUS atualizado, e seguir as decisões pendentes do responsável
@@ -9,6 +9,7 @@ Feito na última sessão:
 - 26 a 27/10/2026: mesclados #49 (BACKFINDR.md), #50 (STATUS genérico) e #52 a #55 (correções internas e ajuste do limite de envio de e-mails)
 - 28/10/2026: mesclados #56 a #61 (QR Code como segundo passo, medição de uso, registro de afirmações públicas e filtro de linguagem do assistente), na ordem autorizada pelo Marcos, com merge commit e sem apagar branches; verificação por leitura em produção após cada deploy (`gh` e Vercel, 28/10/2026)
 - PR #41 (STATUS antigo) fechado sem merge
+- 31/10/2026: PR #70 (rascunho, aguardando aprovação) com envio de e-mail central, regra de quem recebe, descadastro, webhook do Resend e tela de resultados; migrations 020 a 022 entregues e não aplicadas; nada mesclado nem publicado
 Pendências (em ordem de prioridade):
 - Decisões do Marcos sobre a cadeia "Encontrei" (detalhe no quadro privado)
 - Limiar de destaque do QR Code (Q-10) e pendências da decisão Q-13 (assistente e textos públicos); detalhe no quadro privado
