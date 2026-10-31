@@ -3,7 +3,23 @@ import { NextRequest, NextResponse } from 'next/server';
 const COOKIE_NAME = 'bf_acquisition';
 const COOKIE_MAX_AGE = 60 * 60 * 24 * 90; // 90 dias
 
+// Páginas de sucesso de login que, em versões antigas, recebiam os tokens na query. Hoje os tokens
+// vão em cookie; se um link antigo chegar com eles, a query é descartada (os valores são ignorados)
+// por redirect no servidor, antes de qualquer renderização, para que PostHog, GA4, Clarity e
+// gravação de sessão nunca vejam a URL com token.
+const LEGACY_TOKEN_QUERY_PATHS = ['/auth/google-success', '/auth/magic-success'];
+const TOKEN_QUERY_PARAMS = ['access_token', 'refresh_token'];
+
 export function middleware(request: NextRequest) {
+  if (
+    LEGACY_TOKEN_QUERY_PATHS.includes(request.nextUrl.pathname) &&
+    TOKEN_QUERY_PARAMS.some((p) => request.nextUrl.searchParams.has(p))
+  ) {
+    const clean = request.nextUrl.clone();
+    TOKEN_QUERY_PARAMS.forEach((p) => clean.searchParams.delete(p));
+    return NextResponse.redirect(clean);
+  }
+
   const response = NextResponse.next();
 
   // First-touch attribution: só grava se ainda não existir o cookie

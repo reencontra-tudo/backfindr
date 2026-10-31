@@ -1,7 +1,7 @@
 'use client';
 import { Suspense, useEffect } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { setTokens } from '@/lib/api';
+import Cookies from 'js-cookie';
 import { useAuthStore } from '@/hooks/useAuth';
 import { getPostLoginRedirect } from '@/lib/redirectByRole';
 
@@ -11,13 +11,11 @@ function GoogleSuccessContent() {
   const { fetchMe } = useAuthStore();
 
   useEffect(() => {
-    const accessToken = searchParams.get('access_token');
-    const refreshToken = searchParams.get('refresh_token');
+    // Os tokens chegam em cookie, gravado pelo callback OAuth. A URL não os carrega mais; links
+    // antigos com tokens na query são limpos no middleware antes de a página renderizar.
     const isNew = searchParams.get('new') === '1';
 
-    if (accessToken && refreshToken) {
-      // Salvar tokens via js-cookie (mesmo mecanismo do login normal)
-      setTokens({ access_token: accessToken, refresh_token: refreshToken, token_type: 'Bearer' });
+    if (Cookies.get('access_token') && Cookies.get('refresh_token')) {
       // Para usuários existentes, marcar o WelcomeModal como já exibido
       // para evitar que apareça em novos dispositivos/browsers
       if (!isNew && typeof window !== 'undefined') {
