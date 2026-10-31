@@ -304,6 +304,8 @@ Estrutura de governança do produto instituída em 29/06/2026.
 > ~~Título anterior: «17. PRIORIDADES ABERTAS (29/06/2026 — fonte única de verdade)»~~ — **SUPERADO em 26/10/2026**: as pendências que dependem do Marcos estão no quadro privado "Central M2RPrime — Pendências" (fonte única desde 03/10/2026); este §17 registra o estado técnico do produto.
 > Os itens das seções "Alto", "Médio", "Baixo" e "Resolvidos" abaixo são registros de 29/06 a 22/08/2026 e **não foram reverificados em 26/10/2026**: tratar como hipótese até conferir na fonte.
 
+> **Nota de 31/10/2026:** o parágrafo «Estado em 26/10/2026» abaixo está **SUPERADO em 31/10/2026**: a `main` está no commit `12fd96a` (PRs #56 a #70 mesclados entre 28 e 31/10/2026). O estado atual está no `STATUS.md`; o texto original foi mantido.
+
 ### 17.0 Registro de 08 a 14/10/2026 (fonte: registros internos do projeto e PRs públicos; PRs e produção reverificados em 26/10/2026)
 
 Estado em 26/10/2026: `main` = 92d4deb (14/10); deploy de produção mais recente Ready, criado em 14/10 (`vercel inspect`, 26/10/2026). Nenhum commit novo no GitHub depois de 14/10/2026.
