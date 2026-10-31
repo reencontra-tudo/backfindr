@@ -9,6 +9,7 @@ Feito na última sessão:
 - 26 a 27/10/2026: mesclados #49 (BACKFINDR.md), #50 (STATUS genérico) e #52 a #55 (correções internas e ajuste do limite de envio de e-mails)
 - 28/10/2026: mesclados #56 a #61 (QR Code como segundo passo, medição de uso, registro de afirmações públicas e filtro de linguagem do assistente), na ordem autorizada pelo Marcos, com merge commit e sem apagar branches; verificação por leitura em produção após cada deploy (`gh` e Vercel, 28/10/2026)
 - PR #41 (STATUS antigo) fechado sem merge
+- 31/10/2026: PR #68 (rascunho, aguardando aprovação) com o componente de miniatura por categoria para objetos sem foto; nada mesclado nem publicado
 - 31/10/2026: PR #70 (rascunho, aguardando aprovação) com envio de e-mail central, regra de quem recebe, descadastro, webhook do Resend e tela de resultados; migrations 020 a 022 entregues e não aplicadas; nada mesclado nem publicado
 Pendências (em ordem de prioridade):
 - Decisões do Marcos sobre a cadeia "Encontrei" (detalhe no quadro privado)

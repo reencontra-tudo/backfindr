@@ -8,6 +8,7 @@ import { toast } from 'sonner';
 import { api, parseApiError } from '@/lib/api';
 import { RegisteredObject } from '@/types';
 import RecoveredCelebration from '@/components/RecoveredCelebration';
+import ObjectThumb from '@/components/ObjectThumb';
 
 const CATEGORY_EMOJI: Record<string, string> = {
   phone: '📱', wallet: '👛', keys: '🔑', bag: '🎒', pet: '🐾',
@@ -309,9 +310,11 @@ export default function PublicObjectClient({ obj }: { obj: RegisteredObject }) {
                       className="w-20 h-20 rounded-xl object-cover border border-white/[0.08] flex-shrink-0 cursor-zoom-in"
                     />
                   ) : (
-                    <div className="w-20 h-20 rounded-xl bg-white/[0.06] border border-white/[0.08] flex items-center justify-center text-4xl flex-shrink-0">
-                      {CATEGORY_EMOJI[obj.category] ?? '📦'}
-                    </div>
+                    <ObjectThumb
+                      category={obj.category}
+                      size="md"
+                      className="w-20 h-20 rounded-xl border border-white/[0.08]"
+                    />
                   )}
                   <div className="flex-1 min-w-0">
                     <p className="text-white/40 text-xs mb-1">{CATEGORY_LABEL[obj.category]}</p>

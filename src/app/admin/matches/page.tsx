@@ -2,9 +2,10 @@
 
 import { useEffect, useState, useCallback } from 'react';
 import Link from 'next/link';
-import { Zap, CheckCircle2, XCircle, Clock, RefreshCw, Loader2, ExternalLink, Phone, RotateCcw, ImageOff } from 'lucide-react';
+import { Zap, CheckCircle2, XCircle, Clock, RefreshCw, Loader2, ExternalLink, Phone, RotateCcw } from 'lucide-react';
 import { api, parseApiError } from '@/lib/api';
 import { toast } from 'sonner';
+import CategoryThumb from '@/components/ObjectThumb';
 
 interface Match {
   id: string;
@@ -61,16 +62,12 @@ const CONTACT_STATUSES = [
 ];
 
 // Prévia visual (30/08/2026) — miniatura pra comparar os dois lados sem
-// precisar abrir o objeto. object-cover pra não distorcer; placeholder
-// neutro (ícone, sem cor de nenhum lado) quando não há foto, pra não
-// quebrar layout nem sugerir falsamente "tem foto".
-function ObjectThumb({ src }: { src?: string | null }) {
+// precisar abrir o objeto. object-cover pra não distorcer; sem foto, mostra
+// o ícone da categoria (mesmo componente do resto do app), sem cor de nenhum
+// lado, pra não quebrar layout nem sugerir falsamente "tem foto".
+function ObjectThumb({ src, category }: { src?: string | null; category?: string | null }) {
   if (!src) {
-    return (
-      <div className="w-10 h-10 rounded-lg bg-white/[0.04] border border-white/[0.06] flex items-center justify-center flex-shrink-0">
-        <ImageOff className="w-4 h-4 text-white/15" />
-      </div>
-    );
+    return <CategoryThumb category={category} size="sm" className="w-10 h-10 rounded-lg border border-white/[0.06]" />;
   }
   return (
     // eslint-disable-next-line @next/next/no-img-element
@@ -277,7 +274,7 @@ export default function AdminMatches() {
                       {match.lost_id ? (
                         <Link href={`/admin/objects/${match.lost_id}`} target="_blank"
                           className="group flex items-center gap-2.5 bg-red-500/[0.04] border border-red-500/10 rounded-xl p-3 hover:bg-red-500/[0.08] hover:border-red-500/25 transition-all cursor-pointer">
-                          <ObjectThumb src={match.lost_image} />
+                          <ObjectThumb src={match.lost_image} category={match.lost_category} />
                           <div className="min-w-0 flex-1">
                             <p className="text-[10px] text-red-400/60 uppercase tracking-wider mb-1 flex items-center gap-1">
                               Perdido <ExternalLink className="w-2.5 h-2.5 opacity-0 group-hover:opacity-60 transition-opacity" />
@@ -288,7 +285,7 @@ export default function AdminMatches() {
                         </Link>
                       ) : (
                         <div className="flex items-center gap-2.5 bg-red-500/[0.04] border border-red-500/10 rounded-xl p-3">
-                          <ObjectThumb src={match.lost_image} />
+                          <ObjectThumb src={match.lost_image} category={match.lost_category} />
                           <div className="min-w-0 flex-1">
                             <p className="text-[10px] text-red-400/60 uppercase tracking-wider mb-1">Perdido</p>
                             <p className="text-white text-sm font-medium truncate">{match.lost_title}</p>
@@ -299,7 +296,7 @@ export default function AdminMatches() {
                       {match.found_id ? (
                         <Link href={`/admin/objects/${match.found_id}`} target="_blank"
                           className="group flex items-center gap-2.5 bg-teal-500/[0.04] border border-teal-500/10 rounded-xl p-3 hover:bg-teal-500/[0.08] hover:border-teal-500/25 transition-all cursor-pointer">
-                          <ObjectThumb src={match.found_image} />
+                          <ObjectThumb src={match.found_image} category={match.found_category} />
                           <div className="min-w-0 flex-1">
                             <p className="text-[10px] text-teal-400/60 uppercase tracking-wider mb-1 flex items-center gap-1">
                               Achado <ExternalLink className="w-2.5 h-2.5 opacity-0 group-hover:opacity-60 transition-opacity" />
@@ -310,7 +307,7 @@ export default function AdminMatches() {
                         </Link>
                       ) : (
                         <div className="flex items-center gap-2.5 bg-teal-500/[0.04] border border-teal-500/10 rounded-xl p-3">
-                          <ObjectThumb src={match.found_image} />
+                          <ObjectThumb src={match.found_image} category={match.found_category} />
                           <div className="min-w-0 flex-1">
                             <p className="text-[10px] text-teal-400/60 uppercase tracking-wider mb-1">Achado</p>
                             <p className="text-white text-sm font-medium truncate">{match.found_title}</p>
