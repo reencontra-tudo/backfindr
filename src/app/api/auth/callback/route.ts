@@ -4,6 +4,7 @@ import { query } from '@/lib/db';
 import { createAccessToken, createRefreshToken } from '@/lib/jwt';
 import { sendWelcomeEmail } from '@/lib/email';
 import { awaitSends } from '@/lib/awaitSends';
+import { setAuthCookies } from '@/lib/authCookies';
 
 export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url);
@@ -104,14 +105,14 @@ export async function GET(request: NextRequest) {
       ]);
     }
 
-    // Redirecionar para página intermediária que salva tokens via js-cookie (cliente)
-    // Isso garante compatibilidade com todos os browsers, incluindo mobile
+    // Os tokens vão em Set-Cookie na própria resposta do redirect, nunca na URL (a URL é capturada
+    // por analytics, gravação de sessão, logs e histórico). A página de sucesso só lê os cookies.
     const successUrl = new URL(`${appUrl}/auth/google-success`);
-    successUrl.searchParams.set('access_token', accessToken);
-    successUrl.searchParams.set('refresh_token', refreshToken);
     // Apenas novos usuários devem ver o WelcomeModal
     if (isNewUser) successUrl.searchParams.set('new', '1');
-    return NextResponse.redirect(successUrl.toString());
+    const response = NextResponse.redirect(successUrl.toString());
+    setAuthCookies(response, { accessToken, refreshToken });
+    return response;
   } catch (err) {
     console.error('Google OAuth error:', err);
     return NextResponse.redirect(`${appUrl}/auth/login?error=oauth_failed`);
