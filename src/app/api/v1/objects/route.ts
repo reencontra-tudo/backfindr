@@ -5,6 +5,8 @@ import { verifyToken, extractTokenFromHeader } from '@/lib/jwt';
 import { successResponse, unauthorizedResponse, internalErrorResponse } from '@/lib/response';
 import { enqueueSocialPosts } from '@/lib/socialPost';
 import { Events } from '@/lib/events';
+import { SYSTEM_ACCOUNT_ID } from '@/lib/systemAccount';
+import { findSimilarObjects, SIMILAR_OBJECT_ERROR } from '@/lib/similarObjects';
 
 // Limites de objetos por plano
 const PLAN_MAX_OBJECTS: Record<string, number> = {
@@ -165,11 +167,37 @@ export async function POST(request: NextRequest) {
     // ──────────────────────────────────────────────────────────────────────
 
     const body = await request.json();
-    const { title, description, status, type, category, location, images, reward_amount, reward_description, ...categoryFields } = body;
+    const { title, description, status, type, category, location, images, reward_amount, reward_description, confirm_duplicate, ...categoryFields } = body;
     let { latitude, longitude } = body;
 
     if (!title || (!type && !category)) {
       return successResponse({ detail: 'Title and type/category are required' }, 400);
+    }
+
+    // ── Aviso de objeto parecido (nunca bloqueia: confirm_duplicate: true cria) ──
+    // Só objetos do próprio usuário, mesma categoria. Conta de sistema não passa por aqui.
+    if (confirm_duplicate !== true && payload.sub !== SYSTEM_ACCOUNT_ID && typeof title === 'string') {
+      try {
+        const similar = await findSimilarObjects(query, {
+          userId: payload.sub,
+          category: category || type,
+          title,
+          description,
+        });
+        if (similar.length > 0) {
+          return successResponse(
+            {
+              error: SIMILAR_OBJECT_ERROR,
+              detail: 'Você já tem um objeto parecido com este.',
+              similar_objects: similar,
+            },
+            409
+          );
+        }
+      } catch (err) {
+        // Falha na checagem não pode impedir o cadastro: segue sem aviso.
+        console.error('Similar-object check failed, continuing without warning:', err);
+      }
     }
 
     // Geocoding fallback: se não tem lat/lng mas tem endereço, geocodificar via Mapbox
