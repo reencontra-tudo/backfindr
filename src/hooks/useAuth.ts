@@ -1,7 +1,7 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { User } from '@/types';
-import { authApi, setTokens, clearTokens, parseApiError } from '@/lib/api';
+import { authApi, setTokens, clearTokens, parseApiError, isInvalidSessionError } from '@/lib/api';
 import Cookies from 'js-cookie';
 
 interface AuthState {
@@ -58,7 +58,11 @@ export const useAuthStore = create<AuthState>()(
 
       fetchMe: async () => {
         try { const { data } = await authApi.me(); set({ user: data, isAuthenticated: true }); }
-        catch { clearTokens(); set({ user: null, isAuthenticated: false }); }
+        catch (e) {
+          // Só encerra a sessão quando o servidor recusa as credenciais (401). Falha de rede,
+          // timeout ou erro 5xx mantém a sessão e os tokens; a próxima chamada tenta de novo.
+          if (isInvalidSessionError(e)) { clearTokens(); set({ user: null, isAuthenticated: false }); }
+        }
       },
 
       clearError: () => set({ error: null }),
