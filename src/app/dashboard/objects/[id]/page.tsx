@@ -19,6 +19,7 @@ import { objectsApi, parseApiError } from '@/lib/api';
 import { ImageLightbox, useLightbox } from '@/components/ImageLightbox';
 import { RegisteredObject, ObjectStatus } from '@/types';
 import Cookies from 'js-cookie';
+import ObjectThumb from '@/components/ObjectThumb';
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
@@ -538,7 +539,7 @@ export default function ObjectDetailPage() {
                   >
                     <ChevronLeft className="w-4 h-4" />
                   </Link>
-                  <span className="text-lg flex-shrink-0">{CATEGORY_EMOJI[obj.category] ?? '📦'}</span>
+                  <ObjectThumb category={obj.category} size="sm" className="w-8 h-8 rounded-lg" />
                   <h1 className="font-display text-xl sm:text-2xl font-bold text-white leading-tight break-words drop-shadow-lg">
                     {obj.title}
                   </h1>
@@ -558,7 +559,7 @@ export default function ObjectDetailPage() {
                 </Link>
                 <div className="min-w-0">
                   <div className="flex items-center gap-2 mb-1 flex-wrap">
-                    <span className="text-xl sm:text-2xl flex-shrink-0">{CATEGORY_EMOJI[obj.category] ?? '📦'}</span>
+                    <ObjectThumb category={obj.category} size="sm" className="w-9 h-9 rounded-lg" />
                     <h1 className="font-display text-lg sm:text-xl font-bold text-white leading-tight break-words">{obj.title}</h1>
                   </div>
                   <StatusBadge status={obj.status} />

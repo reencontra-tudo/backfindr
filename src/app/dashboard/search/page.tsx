@@ -8,6 +8,7 @@ import { formatDistanceToNow } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { objectsApi, parseApiError } from '@/lib/api';
 import { RegisteredObject } from '@/types';
+import ObjectThumb from '@/components/ObjectThumb';
 
 const CATEGORIES = [
   { value: '', label: 'Todas', highlight: false },
@@ -22,12 +23,6 @@ const CATEGORIES = [
   { value: 'electronics', label: '💻 Eletrônico', highlight: false },
   { value: 'other', label: '📦 Outro', highlight: false },
 ];
-
-const EMOJI: Record<string, string> = {
-  phone: '📱', wallet: '👛', keys: '🔑', bag: '🎒', pet: '🐾',
-  bike: '🚲', vehicle: '🚗', document: '📄', jewelry: '💍',
-  electronics: '💻', clothing: '👕', other: '📦', animal: '🐾',
-};
 
 const STATUS_CONFIG: Record<string, { label: string; color: string }> = {
   lost:     { label: 'Perdido',    color: 'text-red-400 bg-red-500/10 border-red-500/20' },
@@ -212,18 +207,13 @@ export default function SearchPage() {
                   target="_blank"
                   className="group bg-white/[0.03] border border-white/[0.07] hover:border-teal-500/30 rounded-2xl overflow-hidden transition-all"
                 >
-                  {obj.photos?.[0] ? (
-                    // eslint-disable-next-line @next/next/no-img-element
-                    <img
-                      src={obj.photos[0]}
-                      alt={obj.title}
-                      className="w-full h-36 object-cover border-b border-white/[0.06]"
-                    />
-                  ) : (
-                    <div className="w-full h-36 bg-white/[0.04] border-b border-white/[0.06] flex items-center justify-center text-4xl">
-                      {EMOJI[obj.category] ?? '📦'}
-                    </div>
-                  )}
+                  <ObjectThumb
+                    photoUrl={obj.photos?.[0]}
+                    category={obj.category}
+                    size="lg"
+                    alt={obj.title}
+                    className="w-full h-36 border-b border-white/[0.06]"
+                  />
                   <div className="p-4">
                     <div className="flex items-start justify-between gap-2 mb-2">
                       <p className="text-white font-medium text-sm leading-tight group-hover:text-teal-300 transition-colors line-clamp-2">
