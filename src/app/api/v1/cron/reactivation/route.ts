@@ -203,6 +203,7 @@ export async function GET(req: NextRequest) {
     }
 
     let sent = 0;
+    let skipped = 0;
     const errors: string[] = [];
 
     for (const row of rows) {
@@ -210,11 +211,18 @@ export async function GET(req: NextRequest) {
         // Gera dicas personalizadas por categoria (zero custo, zero latência)
         const tips = generatePersonalizedTips(row);
 
-        await sendReactivationEmail(
+        const result = await sendReactivationEmail(
           { name: row.user_name, email: row.user_email },
           row.object_title,
           tips,
         );
+
+        // Recusa por regra (marketing sem opt-in, legado, suprimido) não é falha e não grava o envio.
+        if (!result.ok) {
+          if (result.status === 'skipped') skipped++;
+          else errors.push(`usuário ${row.user_id}: ${result.error}`);
+          continue;
+        }
 
         // Registra o envio para não duplicar
         await query(
@@ -233,6 +241,7 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({
       success: true,
       sent,
+      skipped,
       failed: errors.length,
       total: rows.length,
       errors: errors.slice(0, 10),

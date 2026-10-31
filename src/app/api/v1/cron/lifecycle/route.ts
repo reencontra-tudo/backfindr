@@ -10,6 +10,7 @@ import {
   sendPWAIncentiveEmail,
 } from '@/lib/email';
 import { sendPushToUser } from '@/lib/pushNotification';
+import type { SendResult } from '@/lib/emailSend';
 
 /**
  * Rota de Cron Job para automação de Lifecycle Marketing
@@ -44,6 +45,7 @@ export async function GET(request: NextRequest) {
       reactivation_7days: 0,
       inactivity_30days: 0,
       educational_guides: 0,
+      skipped: 0,
       errors: [] as string[],
     };
 
@@ -99,7 +101,13 @@ export async function GET(request: NextRequest) {
 
       for (const user of day3Result.rows) {
         try {
-          await sendPWAIncentiveEmail(user);
+          const sent = await sendPWAIncentiveEmail(user);
+          // Só registra o evento se o e-mail realmente saiu (recusa por regra conta como ignorado).
+          if (!sent.ok) {
+            if (sent.status === 'skipped') results.skipped++;
+            else results.errors.push(`Falha ao enviar dia 3 (usuário ${user.id}): ${sent.error}`);
+            continue;
+          }
 
           // Registrar evento
           await query(
@@ -134,10 +142,15 @@ export async function GET(request: NextRequest) {
 
       for (const row of reactivationResult.rows) {
         try {
-          await sendReactivationEmail(
+          const sent = await sendReactivationEmail(
             { name: row.name, email: row.email },
             row.title
           );
+          if (!sent.ok) {
+            if (sent.status === 'skipped') results.skipped++;
+            else results.errors.push(`Falha ao enviar reativação (usuário ${row.id}): ${sent.error}`);
+            continue;
+          }
 
           // Registrar evento
           await query(
@@ -195,7 +208,7 @@ export async function GET(request: NextRequest) {
     try {
       // Determinar qual guia enviar baseado no dia do mês
       const dayOfMonth = now.getDate();
-      let guideFunction: (user: { name: string; email: string }) => Promise<void>;
+      let guideFunction: (user: { name: string; email: string }) => Promise<SendResult>;
       let eventType: string;
 
       if (dayOfMonth >= 1 && dayOfMonth <= 10) {
@@ -223,7 +236,12 @@ export async function GET(request: NextRequest) {
 
       for (const user of guidesResult.rows) {
         try {
-          await guideFunction(user);
+          const sent = await guideFunction(user);
+          if (!sent.ok) {
+            if (sent.status === 'skipped') results.skipped++;
+            else results.errors.push(`Falha ao enviar guia (usuário ${user.id}): ${sent.error}`);
+            continue;
+          }
 
           // Registrar evento
           await query(

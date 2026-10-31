@@ -1,14 +1,12 @@
 export const dynamic = 'force-dynamic';
 import { NextRequest, NextResponse } from 'next/server';
 import { query } from '@/lib/db';
-import { Resend } from 'resend';
 import crypto from 'crypto';
 import { esc } from '@/lib/email';
+import { deliverEmail } from '@/lib/emailSend';
 import { consumeEmailRequestSlots } from '@/lib/sendThrottle';
 
-const resend = new Resend(process.env.RESEND_API_KEY);
 const APP_URL = process.env.NEXT_PUBLIC_APP_URL || 'https://www.backfindr.com';
-const FROM_EMAIL = 'noreply@backfindr.com.br';
 const TOKEN_EXPIRES_MINUTES = 15;
 
 // POST /api/auth/magic-link — solicita envio do magic link
@@ -64,8 +62,8 @@ export async function POST(req: NextRequest) {
     const magicUrl = `${APP_URL}/api/auth/magic-link/verify?token=${token}`;
 
     // Enviar e-mail
-    const emailResult = await resend.emails.send({
-      from: `Backfindr <${FROM_EMAIL}>`,
+    // E-mail de segurança pedido pelo próprio usuário: vale também para legado.
+    const emailResult = await deliverEmail({
       to: email,
       subject: isNewUser ? 'Crie sua conta no Backfindr' : 'Seu link de acesso ao Backfindr',
       html: `
@@ -136,10 +134,12 @@ export async function POST(req: NextRequest) {
 </body>
 </html>
       `.trim(),
+      category: 'security',
+      source: 'magic_link',
     });
 
-    if (emailResult.error) {
-      console.error('Resend error:', emailResult.error);
+    // 'skipped' (endereço com bounce permanente) responde como sucesso, sem revelar nada sobre a conta.
+    if (!emailResult.ok && emailResult.status === 'failed') {
       return NextResponse.json({ error: 'Erro ao enviar e-mail. Tente novamente.' }, { status: 500 });
     }
 
