@@ -5,5 +5,6 @@ import path from 'path';
 export default defineConfig({
   root: path.resolve(__dirname, '..'),
   resolve: { alias: { '@': path.resolve(__dirname, '../src') } },
-  test: { include: ['tests/**/*.test.ts'], environment: 'node' },
+  // fileParallelism desligado: as suítes de integração recriam tabelas no mesmo banco de teste.
+  test: { include: ['tests/**/*.test.ts'], environment: 'node', fileParallelism: false },
 });

@@ -3,7 +3,7 @@ Atualizado: 31/10/2026
 Prioridade no portfólio: P1 (definido por Marcos em 01/10/2026)
 Fase: em produção (backfindr.com; hospedagem Vercel; banco Supabase; automações de publicação). Em 28/10/2026 a `main` recebeu o ajuste do QR Code como segundo passo (plataforma logada, site público e assistente), a medição de uso do QR, o registro de afirmações públicas e o filtro de linguagem do assistente; os deploys de produção terminaram sem erro
 Objetivo atual: levar à `main` o registro de decisões (`DECISOES.md`) e este STATUS atualizado, e seguir as decisões pendentes do responsável
-Próximo passo exato: o Marcos decide o limiar de destaque do QR Code (decisão Q-10) e as pendências da decisão Q-13, listadas no quadro privado; só depois a sessão atualiza este arquivo e abre o PR da etapa seguinte
+Próximo passo exato: o Marcos revisa o PR da mensagem da plataforma ao dono (rascunho, decisão Q-17) e decide o merge; depois testa em produção com a conta de teste. As decisões Q-10 e Q-13 seguem pendentes
 Feito na última sessão:
 - 09/10 a 14/10/2026: mesclados #36 (e-mail), #44 (limite de boas-vindas por origem), #45 (registros legados fora dos envios), #35 (remetente `.com.br`), #47 e #46 (avisos de match e envios aguardados antes de responder); testes reais 1 e 2 concluídos e confirmados pelo Marcos (fonte: PRs públicos e verificação de 14/10/2026)
 - 26 a 27/10/2026: mesclados #49 (BACKFINDR.md), #50 (STATUS genérico) e #52 a #55 (correções internas e ajuste do limite de envio de e-mails)
