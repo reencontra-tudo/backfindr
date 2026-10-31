@@ -8,7 +8,9 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
   if (auth instanceof NextResponse) return auth;
   try {
     const [userRes, objectsRes] = await Promise.all([
-      query(`SELECT id, email, name, phone, plan, is_verified, avatar_url, created_at, updated_at FROM users WHERE id = $1`, [params.id]),
+      query(`SELECT id, email, name, phone, plan, is_verified, avatar_url, created_at, updated_at,
+                    EXISTS (SELECT 1 FROM objects o WHERE o.user_id = users.id AND o.is_legacy = true) AS is_legacy
+             FROM users WHERE id = $1`, [params.id]),
       query(`SELECT id, title, status, category, qr_code, created_at, updated_at FROM objects WHERE user_id = $1 ORDER BY created_at DESC LIMIT 50`, [params.id]),
     ]);
     if (userRes.rows.length === 0) return NextResponse.json({ detail: 'Usuário não encontrado' }, { status: 404 });
