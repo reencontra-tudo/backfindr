@@ -790,9 +790,13 @@ function NewObjectForm() {
           {step === 0 ? (
             <span />
           ) : step < STEPS.length - 1 ? (
+            // key distinto: sem ele o React reaproveita o mesmo <button> e troca type="button" por
+            // type="submit" ainda dentro do clique, e o navegador envia o formulário ao entrar no último passo.
+            // preventDefault é a segunda trava: avançar de passo nunca submete.
             <button
+              key="next-step"
               type="button"
-              onClick={nextStep}
+              onClick={(e) => { e.preventDefault(); nextStep(); }}
               data-widget-safe-zone
               className={`flex items-center gap-2 px-6 py-2.5 text-white font-semibold rounded-xl transition-all text-sm ${
                 mode === 'protect'
@@ -805,6 +809,7 @@ function NewObjectForm() {
             </button>
           ) : (
             <button
+              key="submit-form"
               type="submit"
               disabled={submitting}
               data-widget-safe-zone
