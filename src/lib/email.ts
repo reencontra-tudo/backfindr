@@ -1,10 +1,5 @@
-import { Resend } from 'resend';
-
-function getResend() {
-  return new Resend(process.env.RESEND_API_KEY ?? '');
-}
-
-const FROM = 'Backfindr <noreply@backfindr.com.br>';
+import { deliverEmail } from '@/lib/emailSend';
+import type { EmailCategory } from '@/lib/emailPolicy';
 
 // ─── Proteção contra injeção em e-mail ──────────────────────────────────────
 // Todo dado vindo de usuário (nome, título de objeto, etc.) que entra num template
@@ -154,21 +149,13 @@ export async function sendWelcomeEmail(user: { name: string; email: string }) {
 </html>
   `.trim();
 
-  try {
-    const { error } = await getResend().emails.send({
-      from: FROM,
-      to: [user.email],
-      subject: `Bem-vindo ao Backfindr, ${subj(firstNameRaw)}! Registre seu primeiro objeto`,
-      html,
-    });
-
-    if (error) {
-      console.error('[email] Erro ao enviar boas-vindas:', error);
-    }
-  } catch (err) {
-    // Não bloquear o cadastro se o e-mail falhar
-    console.error('[email] Exceção ao enviar boas-vindas:', err);
-  }
+  return deliverEmail({
+    to: user.email,
+    subject: `Bem-vindo ao Backfindr, ${subj(firstNameRaw)}! Registre seu primeiro objeto`,
+    html,
+    category: 'service',
+    source: 'welcome',
+  });
 }
 
 // ─── E-mail de alerta de match ────────────────────────────────────────────────
@@ -317,20 +304,13 @@ export async function sendMatchAlertEmail(
 </html>
   `.trim();
 
-  try {
-    const { error } = await getResend().emails.send({
-      from: FROM,
-      to: [user.email],
-      subject: `⚡ Match encontrado para "${subj(objectTitle)}" — Backfindr`,
-      html,
-    });
-
-    if (error) {
-      console.error('[email] Erro ao enviar alerta de match:', error);
-    }
-  } catch (err) {
-    console.error('[email] Exceção ao enviar alerta de match:', err);
-  }
+  return deliverEmail({
+    to: user.email,
+    subject: `⚡ Match encontrado para "${subj(objectTitle)}" — Backfindr`,
+    html,
+    category: 'service',
+    source: 'match_alert',
+  });
 }
 
 // ─── E-mail de reativação 24h sem match ──────────────────────────────────────
@@ -475,20 +455,14 @@ export async function sendReactivationEmail(
 </html>
   `.trim();
 
-  try {
-    const { error } = await getResend().emails.send({
-      from: FROM,
-      to: [user.email],
-      subject: `🔍 Ainda estamos procurando por "${subj(objectTitle)}" — Backfindr`,
-      html,
-    });
-
-    if (error) {
-      console.error('[email] Erro ao enviar reativação:', error);
-    }
-  } catch (err) {
-    console.error('[email] Exceção ao enviar reativação:', err);
-  }
+  return deliverEmail({
+    to: user.email,
+    subject: `🔍 Ainda estamos procurando por "${subj(objectTitle)}" — Backfindr`,
+    html,
+    category: 'marketing',
+    source: 'reactivation',
+    lifecycleEvent: 'reactivation',
+  });
 }
 
 
@@ -615,20 +589,14 @@ export async function sendGuideCarTheftEmail(user: { name: string; email: string
 </html>
   `.trim();
 
-  try {
-    const { error } = await getResend().emails.send({
-      from: FROM,
-      to: [user.email],
-      subject: `🚗 Guia Backfindr: Como identificar carros roubados ou abandonados`,
-      html,
-    });
-
-    if (error) {
-      console.error('[email] Erro ao enviar guia de carros roubados:', error);
-    }
-  } catch (err) {
-    console.error('[email] Exceção ao enviar guia de carros roubados:', err);
-  }
+  return deliverEmail({
+    to: user.email,
+    subject: `🚗 Guia Backfindr: Como identificar carros roubados ou abandonados`,
+    html,
+    category: 'marketing',
+    source: 'guide_car_theft',
+    lifecycleEvent: 'guide_car_theft',
+  });
 }
 
 // ─── E-mail de Guia Educativo: Cachorro Perdido ────────────────────────────
@@ -783,20 +751,14 @@ export async function sendGuideLostPetEmail(user: { name: string; email: string 
 </html>
   `.trim();
 
-  try {
-    const { error } = await getResend().emails.send({
-      from: FROM,
-      to: [user.email],
-      subject: `🐕 Guia Backfindr: Como ajudar um cachorro perdido`,
-      html,
-    });
-
-    if (error) {
-      console.error('[email] Erro ao enviar guia de cachorro perdido:', error);
-    }
-  } catch (err) {
-    console.error('[email] Exceção ao enviar guia de cachorro perdido:', err);
-  }
+  return deliverEmail({
+    to: user.email,
+    subject: `🐕 Guia Backfindr: Como ajudar um cachorro perdido`,
+    html,
+    category: 'marketing',
+    source: 'guide_lost_pet',
+    lifecycleEvent: 'guide_lost_pet',
+  });
 }
 
 // ─── E-mail de Dica Rápida: Importância de Fotos ──────────────────────────
@@ -919,20 +881,14 @@ export async function sendTipPhotosEmail(user: { name: string; email: string }) 
 </html>
   `.trim();
 
-  try {
-    const { error } = await getResend().emails.send({
-      from: FROM,
-      to: [user.email],
-      subject: `📸 Dica Rápida: Fotos aumentam em 3x a chance de recuperação!`,
-      html,
-    });
-
-    if (error) {
-      console.error('[email] Erro ao enviar dica de fotos:', error);
-    }
-  } catch (err) {
-    console.error('[email] Exceção ao enviar dica de fotos:', err);
-  }
+  return deliverEmail({
+    to: user.email,
+    subject: `📸 Dica Rápida: Fotos aumentam em 3x a chance de recuperação!`,
+    html,
+    category: 'marketing',
+    source: 'guide_photos_tip',
+    lifecycleEvent: 'guide_photos_tip',
+  });
 }
 
 // ─── E-mail de incentivo PWA (Lifecycle Dia 3) ────────────────────────────────
@@ -1044,16 +1000,14 @@ export async function sendPWAIncentiveEmail(user: { name: string; email: string 
 </html>
   `.trim();
 
-  try {
-    await getResend().emails.send({
-      from: FROM,
-      to: [user.email],
-      subject: `📱 Instale o Backfindr e receba alertas em tempo real`,
-      html,
-    });
-  } catch (err) {
-    console.error('[email] Erro ao enviar incentivo PWA:', err);
-  }
+  return deliverEmail({
+    to: user.email,
+    subject: `📱 Instale o Backfindr e receba alertas em tempo real`,
+    html,
+    category: 'marketing',
+    source: 'pwa_incentive',
+    lifecycleEvent: 'day3_tips',
+  });
 }
 
 // ─── E-mail de "alguém encontrou seu objeto" ─────────────────────────────────
@@ -1167,26 +1121,28 @@ export async function sendObjectFoundEmail(
 </html>
   `.trim();
 
-  try {
-    const { error } = await getResend().emails.send({
-      from: FROM,
-      to: [user.email],
-      subject,
-      html,
-    });
-    if (error) console.error('[email] Erro ao enviar aviso de objeto encontrado:', error);
-  } catch (err) {
-    // Não bloquear a resposta ao finder se o e-mail falhar
-    console.error('[email] Exceção ao enviar aviso de objeto encontrado:', err);
-  }
+  return deliverEmail({
+    to: user.email,
+    subject,
+    html,
+    category: 'service',
+    source: 'object_found',
+  });
 }
 
 // ─── Função genérica sendEmail (usada pelo boost-expiration cron) ─────────────
-export async function sendEmail({ to, subject, html }: { to: string; subject: string; html: string }) {
-  try {
-    const { error } = await getResend().emails.send({ from: FROM, to: [to], subject, html });
-    if (error) console.error('[email] sendEmail error:', error);
-  } catch (err) {
-    console.error('[email] sendEmail exception:', err);
-  }
+export async function sendEmail({
+  to,
+  subject,
+  html,
+  category = 'service',
+  source = 'generic',
+}: {
+  to: string;
+  subject: string;
+  html: string;
+  category?: EmailCategory;
+  source?: string;
+}) {
+  return deliverEmail({ to, subject, html, category, source });
 }

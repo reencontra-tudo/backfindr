@@ -89,9 +89,11 @@ export async function POST(req: NextRequest) {
         const renewUrl = `${appUrl}/dashboard/objects/${boostExpiration.object_id}?action=renew-boost`;
 
         // Enviar email
-        await sendEmail({
+        const sendResult = await sendEmail({
           to: boostExpiration.user_email,
           subject,
+          category: 'service',
+          source: 'boost_expiration',
           html: `
             <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
               <h2 style="color: #14b8a6;">${subject}</h2>
@@ -113,6 +115,12 @@ export async function POST(req: NextRequest) {
             </div>
           `,
         });
+
+        // Recusa por regra ('skipped') ou falha do Resend: não marca como enviado.
+        if (!sendResult.ok) {
+          emailsFailed.push(row.user_email);
+          continue;
+        }
 
         emailsSent.push(boostExpiration.user_email);
 
