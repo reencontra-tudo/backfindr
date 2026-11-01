@@ -144,25 +144,62 @@ describe('/notify (usado pela interface) — comportamento que não pode mudar',
   });
 });
 
-// Estado ATUAL do endpoint sem /notify (antes da unificação).
-describe('POST /scan/[code] (sem /notify) — estado atual', () => {
-  it('grava aviso próprio (type qr_scan, sem url), usa a mensagem do corpo, só push, sem e-mail, sem cooldown', async () => {
-    state.lastOwnerNotifiedMinutesAgo = 1;
+// Depois da unificação: o endpoint sem /notify aplica a mesma regra do /notify e mantém o formato da própria resposta.
+describe('POST /scan/[code] (sem /notify) — alias do /notify', () => {
+  it('objeto perdido: mesma notificação com url, marca pendência, push e e-mail; resposta no formato próprio', async () => {
     const res = await call(postBare, { message: 'texto livre' });
+    expect(res.status).toBe(200);
     expect(await res.json()).toEqual({ message: 'Notification sent' });
     expect(state.notifications).toHaveLength(1);
-    expect(state.notifications[0]).toEqual(['user-1', 'QR Code Escaneado', 'texto livre', 'qr_scan']);
+    expect(state.notifications[0][3]).toBe('scan');
+    expect(state.notifications[0][4]).toBe('/dashboard/objects/obj-1');
+    expect(state.notifications.flat()).not.toContain('texto livre');
+    expect(state.updates).toHaveLength(1);
     expect(sendPushToUser).toHaveBeenCalledTimes(1);
-    expect(sendObjectFoundEmail).not.toHaveBeenCalled();
-    expect(state.updates).toHaveLength(0);
+    expect(sendObjectFoundEmail).toHaveBeenCalledTimes(1);
   });
 
-  it('objeto legado: aviso no app, sem push; mesma resposta', async () => {
+  it('funciona também sem corpo na requisição', async () => {
+    const req = new NextRequest('https://app.teste.local/api/v1/objects/scan/ABC', { method: 'POST' });
+    const res = await postBare(req, { params: { code: 'ABC' } });
+    expect(res.status).toBe(200);
+  });
+
+  it('objeto protegido: texto de QR escaneado e e-mail com isProtected', async () => {
+    state.object = obj({ status: 'protected' });
+    await call(postBare);
+    expect(String(state.notifications[0][1])).toContain('QR Code escaneado');
+    expect(vi.mocked(sendObjectFoundEmail).mock.calls[0][1]).toMatchObject({ isProtected: true });
+  });
+
+  it('objeto legado: aviso no app como antes, nenhum push nem e-mail; mesma resposta', async () => {
     state.object = obj({ legacy_blocked: true });
     const res = await call(postBare);
     expect(await res.json()).toEqual({ message: 'Notification sent' });
     expect(state.notifications).toHaveLength(1);
     expect(sendPushToUser).not.toHaveBeenCalled();
+    expect(sendObjectFoundEmail).not.toHaveBeenCalled();
+  });
+
+  it('cooldown de 15 min: dentro do intervalo nada é enviado, e a resposta é indistinguível', async () => {
+    state.lastOwnerNotifiedMinutesAgo = 5;
+    const dentro = await call(postBare);
+    expect(await dentro.json()).toEqual({ message: 'Notification sent' });
+    expect(state.notifications).toHaveLength(0);
+    expect(sendPushToUser).not.toHaveBeenCalled();
+    expect(sendObjectFoundEmail).not.toHaveBeenCalled();
+
+    state.lastOwnerNotifiedMinutesAgo = 16;
+    await call(postBare);
+    expect(state.notifications).toHaveLength(1);
+  });
+
+  it('dono sem e-mail: push sai, e-mail não', async () => {
+    state.ownerEmail = null;
+    const res = await call(postBare);
+    expect(res.status).toBe(200);
+    expect(sendPushToUser).toHaveBeenCalledTimes(1);
+    expect(sendObjectFoundEmail).not.toHaveBeenCalled();
   });
 
   it('objeto inexistente: 404', async () => {
