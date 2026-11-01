@@ -49,7 +49,7 @@ export default function FlowLayout({
       {/* Rodapé leve */}
       <div className="px-5 py-4 text-center">
         <p className="text-white/20 text-xs">
-          Seu contato fica protegido.{' '}
+          A conversa acontece pelo chat da plataforma.{' '}
           <Link href="/privacy" className="underline hover:text-white/40 transition-colors">
             Privacidade
           </Link>

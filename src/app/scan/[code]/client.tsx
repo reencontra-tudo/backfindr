@@ -166,7 +166,7 @@ export default function ScanPage() {
                 </div>
                 <div className="pb-4">
                   <p className="text-white text-sm font-semibold">Dono recebe notificação agora</p>
-                  <p className="text-slate-500 text-xs mt-0.5 leading-relaxed">Via push, email ou SMS — dependendo das configurações dele.</p>
+                  <p className="text-slate-500 text-xs mt-0.5 leading-relaxed">Por push ou e-mail, conforme as configurações dele.</p>
                 </div>
               </div>
               <div className="flex gap-3">
@@ -176,7 +176,7 @@ export default function ScanPage() {
                 </div>
                 <div className="pb-4">
                   <p className="text-slate-300 text-sm font-semibold">Dono entra em contato</p>
-                  <p className="text-slate-500 text-xs mt-0.5 leading-relaxed">Ele responde pelo Backfindr — seu número fica protegido.</p>
+                  <p className="text-slate-500 text-xs mt-0.5 leading-relaxed">A conversa acontece pelo chat da plataforma.</p>
                 </div>
               </div>
               <div className="flex gap-3">
@@ -349,7 +349,7 @@ export default function ScanPage() {
         {/* Trust signals */}
         <div className="grid grid-cols-3 gap-3 mb-5">
           {[
-            { icon: Shield, label: 'Anônimo', sub: 'Sua identidade protegida' },
+            { icon: Shield, label: 'Pelo chat', sub: 'Conversa pela plataforma' },
             { icon: Zap,    label: 'Imediato', sub: 'Dono notificado na hora' },
             { icon: Heart,  label: 'Gratuito', sub: 'Sem custo para você' },
           ].map(({ icon: Icon, label, sub }) => (

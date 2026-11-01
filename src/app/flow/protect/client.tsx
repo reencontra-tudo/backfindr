@@ -136,7 +136,7 @@ export default function ProtectFlowClient() {
               {[
                 { n: '1', title: 'Gere o QR Code', desc: 'Gratuito, em segundos. Um QR único para cada item.' },
                 { n: '2', title: 'Cole no item', desc: 'Adesivo, etiqueta ou capa. Onde quiser.' },
-                { n: '3', title: 'Alguém encontra e lê', desc: 'Você recebe uma notificação. Seu número fica protegido.' },
+                { n: '3', title: 'Alguém encontra e lê', desc: 'Você recebe uma notificação. A conversa acontece pelo chat da plataforma.' },
               ].map(s => (
                 <div key={s.n} className="flex gap-4 items-start bg-white/[0.03] border border-white/[0.06] rounded-2xl p-4">
                   <div className="w-8 h-8 rounded-full bg-blue-500/20 border border-blue-500/30 flex items-center justify-center flex-shrink-0">

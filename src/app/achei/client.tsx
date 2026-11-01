@@ -196,7 +196,7 @@ function AcheiInner() {
                 <div className="bg-teal-500/[0.08] border border-teal-500/20 rounded-2xl p-5 text-center">
                   <h3 className="text-white font-semibold mb-1">É um desses?</h3>
                   <p className="text-white/50 text-sm mb-4">
-                    Crie uma conta gratuita para entrar em contato com o dono. O chat é mediado — sua privacidade está protegida.
+                    Crie uma conta gratuita para entrar em contato com o dono. A conversa acontece pelo chat da plataforma.
                   </p>
                   <Link
                     href="/auth/register?intent=found"

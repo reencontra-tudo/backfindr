@@ -95,7 +95,7 @@ PLANO PRO (R$ 29/mês) — para quem quiser tecnologia mais robusta:
 PLANO BUSINESS (R$ 149/mês) — para empresas:
 - Até 500 objetos cadastrados
 - Matching prioritário
-- Notificações push, e-mail e SMS
+- Notificações push e e-mail
 - Até 5 usuários, API de integração
 - Contato: business@backfindr.com
 

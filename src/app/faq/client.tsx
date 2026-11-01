@@ -29,7 +29,7 @@ const SECTIONS = [
     items: [
       {
         q: 'Quem encontrar meu objeto vai ver meu telefone ou e-mail?',
-        a: 'Não. A página pública do objeto mostra apenas o nome do item, uma descrição e uma foto. O contato é feito por um chat mediado dentro da plataforma — seus dados pessoais nunca são expostos.',
+        a: 'Não. A página pública do objeto mostra apenas o nome do item, uma descrição e uma foto. A conversa acontece pelo chat da plataforma.',
       },
       {
         q: 'Meus dados são vendidos para terceiros?',
@@ -109,7 +109,7 @@ const SECTIONS = [
       },
       {
         q: 'Posso confiar em quem escaneia o QR?',
-        a: 'O chat mediado protege sua identidade. Você decide se quer compartilhar mais informações após conversar com a pessoa. A plataforma registra todas as interações para segurança de ambos os lados.',
+        a: 'A conversa acontece pelo chat da plataforma. A plataforma registra todas as interações para segurança de ambos os lados.',
       },
       {
         q: 'O QR Code não está sendo reconhecido.',
