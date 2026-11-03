@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { APP_URL } from '@/lib/constants';
 import { useParams } from 'next/navigation';
 import Link from 'next/link';
 import {
@@ -244,7 +245,7 @@ export default function ScanPage() {
             <span className="font-bold text-white text-sm tracking-tight drop-shadow-lg">Backfindr</span>
           </Link>
           <ShareModal
-            url={typeof window !== 'undefined' ? window.location.href : `https://backfindr.app/scan/${code}`}
+            url={typeof window !== 'undefined' ? window.location.href : `${APP_URL}/scan/${code}`}
             title={obj.title}
             description={obj.description ?? ''}
             imageUrl={obj.photos?.[0]}
