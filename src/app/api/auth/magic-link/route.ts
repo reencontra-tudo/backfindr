@@ -5,8 +5,8 @@ import crypto from 'crypto';
 import { esc } from '@/lib/email';
 import { deliverEmail } from '@/lib/emailSend';
 import { consumeEmailRequestSlots } from '@/lib/sendThrottle';
+import { APP_URL } from '@/lib/constants';
 
-const APP_URL = process.env.NEXT_PUBLIC_APP_URL || 'https://www.backfindr.com';
 const TOKEN_EXPIRES_MINUTES = 15;
 
 // POST /api/auth/magic-link — solicita envio do magic link
