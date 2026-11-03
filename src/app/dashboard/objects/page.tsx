@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState, useCallback } from 'react';
+import { APP_URL } from '@/lib/constants';
 import Link from 'next/link';
 import {
   Plus, Search, Filter, Package, AlertTriangle,
@@ -48,7 +49,7 @@ const STATUS_LABEL: Record<string, string> = {
 // ─── Object Card ─────────────────────────────────────────────────────────────
 
 function ObjectCard({ obj, view }: { obj: RegisteredObject; view: 'grid' | 'list' }) {
-  const shareUrl = `https://backfindr.app/objeto/${obj.unique_code}`;
+  const shareUrl = `${APP_URL}/objeto/${obj.unique_code}`;
 
   if (view === 'list') {
     return (

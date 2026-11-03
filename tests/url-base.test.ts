@@ -172,3 +172,16 @@ describe('canonical e og:url das páginas públicas', () => {
     }
   });
 });
+
+describe('domínios antigos fora do código', () => {
+  const root = path.resolve(__dirname, '..', 'src');
+  it.each(['app/dashboard/objects/page.tsx', 'app/scan/[code]/client.tsx'])('%s usa APP_URL em vez de backfindr.app', f => {
+    const src = fs.readFileSync(path.join(root, f), 'utf8');
+    expect(src).toContain("import { APP_URL } from '@/lib/constants';");
+    expect(src).not.toMatch(/backfindr\.(app|online|io)/);
+  });
+  it('link de compartilhar do cartão e fallback do scan seguem o formato esperado', () => {
+    expect(fs.readFileSync(path.join(root, 'app/dashboard/objects/page.tsx'), 'utf8')).toContain('`${APP_URL}/objeto/${obj.unique_code}`');
+    expect(fs.readFileSync(path.join(root, 'app/scan/[code]/client.tsx'), 'utf8')).toContain('`${APP_URL}/scan/${code}`');
+  });
+});

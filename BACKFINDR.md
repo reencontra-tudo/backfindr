@@ -14,7 +14,7 @@ Plataforma SaaS brasileira com 4 produtos independentes que compartilham base de
 
 Fundador solo: Marcos (Cido Menezes) — Guarulhos/SP
 Repositório: `https://github.com/reencontra-tudo/backfindr` (branch: `main`)
-Produção: `https://backfindr.com` / `https://backfindr.io`
+Produção: `https://backfindr.com` (domínio canônico)
 Projeto anterior: Webjetos (2015) — migração planejada
 
 ---
@@ -111,7 +111,7 @@ cd ~/backfindr && pnpm dev  # porta 3003  (caminho único desde 26/10/2026)
 
 ## 7. DOMÍNIOS
 
-`backfindr.com` ✅ principal | `backfindr.io` ✅ | `backfindr.app` ✅ | `backfindr.com.br` ✅
+`backfindr.com` é o domínio canônico (sem www; `www.backfindr.com` redireciona para ele). `backfindr.com.br`, `backfindr.io`, `backfindr.app` e `backfindr.online` (com e sem www) redirecionam permanentemente (308) para `https://backfindr.com`, preservando caminho e query. Atualizado em 03/11/2026 (verificado por curl).
 
 ---
 
