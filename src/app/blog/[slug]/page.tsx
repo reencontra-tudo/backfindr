@@ -134,9 +134,9 @@ Esses dados são comparados em tempo real com todos os objetos cadastrados como 
 
 Cada par (perdido × achado) recebe um **score de 0 a 100%**. Matches acima de 70% geram notificação automática para ambas as partes.
 
-## Privacidade garantida
+## Como funciona o contato
 
-O chat entre quem perdeu e quem achou é **mediado pela plataforma** — nenhum dos dois precisa expor dados pessoais antes de confirmar o match.
+A conversa entre quem perdeu e quem achou acontece pelo chat da plataforma.
 
 ## Resultados
 
