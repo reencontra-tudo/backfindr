@@ -1,8 +1,8 @@
 # STATUS — Backfindr
-Atualizado: 31/10/2026 (noite, 2)
+Atualizado: 03/11/2026
 Prioridade no portfólio: P1 (definido por Marcos em 01/10/2026)
 Fase: em produção (backfindr.com; hospedagem Vercel; banco Supabase; automações de publicação). Em 28/10/2026 a `main` recebeu o ajuste do QR Code como segundo passo (plataforma logada, site público e assistente), a medição de uso do QR, o registro de afirmações públicas e o filtro de linguagem do assistente; os deploys de produção terminaram sem erro
-Objetivo atual: acompanhar a revisão dos PRs abertos (rascunhos) e as decisões pendentes do responsável, depois do lote de 30–31/10/2026 (PRs #65 a #70 na `main`)
+Objetivo atual: acompanhar a revisão dos PRs abertos (rascunhos) e as decisões pendentes do responsável, depois do lote de 30–31/10/2026 (PRs #65 a #71 na `main`) e da Fase 0 da comunicação (PRs #73 a #76)
 Próximo passo exato: o Marcos decide o endurecimento adicional dos cookies de sessão e a revisão dos painéis de analítica (itens no quadro privado) e confirma o alcance da Q-22 em `DECISOES.md`. As decisões Q-10 e Q-13 seguem pendentes
 Feito na última sessão:
 - 09/10 a 14/10/2026: mesclados #36 (e-mail), #44 (limite de boas-vindas por origem), #45 (registros legados fora dos envios), #35 (remetente `.com.br`), #47 e #46 (avisos de match e envios aguardados antes de responder); testes reais 1 e 2 concluídos e confirmados pelo Marcos (fonte: PRs públicos e verificação de 14/10/2026)
@@ -11,10 +11,11 @@ Feito na última sessão:
 - PR #41 (STATUS antigo) fechado sem merge
 - 31/10/2026: mesclados #65 a #70 (aviso de objeto parecido ao registrar; endurecimento de acesso a tabelas do banco; correção do botão "Continuar" do cadastro; miniatura por categoria para objeto sem foto; mensagem da plataforma ao dono, somente in-app; e-mail: envio central, regra de quem recebe, descadastro, webhook do Resend e tela de resultados); migrations 018 a 022 aplicadas no banco de produção; verificação por leitura em 31/10/2026 (`gh` e consulta somente leitura)
 - 31/10/2026: mesclado o #71 (merge commit `08c5873`, 17:31Z): o login social entrega a sessão por cookie, não pela URL; links antigos são redirecionados pelo middleware; verificação por leitura em produção com valores falsos
+- 03/11/2026: Fase 0 da comunicação: mesclados #73 (textos sem promessa de contato protegido e sem SMS nos planos), #74 (rota de aviso de leitura do QR unificada, com testes), #75 (preferências de push por evento, com a migration 023 aplicada) e #76 (base de canais com SMS desligado, sem uso); também mesclados #43 (sitemap) e #37 (evento de analítica de ocorrência publicada); verificação por leitura e pelos checks da Vercel
 Pendências (em ordem de prioridade):
 - Decisões do Marcos sobre a cadeia "Encontrei" (detalhe no quadro privado)
 - Limiar de destaque do QR Code (Q-10) e pendências da decisão Q-13 (assistente e textos públicos); detalhe no quadro privado
-- PRs abertos de revisão (#33, #37, #38, #43, #48 e #51): lista no GitHub e no quadro privado; ordem de merge decidida pelo Marcos
+- PRs abertos de revisão (#33, #38, #48 e #51): lista no GitHub e no quadro privado; ordem de merge decidida pelo Marcos
 - Desempenho do mapa público (12–15 s no celular; medição de 25/09/2026, não verificada hoje)
 - Pendências de segurança, privacidade e configuração (inclui o endurecimento adicional dos cookies de sessão e a revisão dos painéis de analítica): o detalhe fica no quadro privado e na versão local deste arquivo, não neste repositório público
 Bloqueios / dependências externas:
