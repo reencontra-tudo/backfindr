@@ -12,6 +12,7 @@
 
 import webpush from 'web-push';
 import { query } from './db';
+import { isChannelEnabled, type PreferenceEvent } from './notificationPreferences';
 
 // ─── Configuração VAPID ───────────────────────────────────────────────────────
 const VAPID_PUBLIC_KEY  = process.env.VAPID_PUBLIC_KEY  ?? '';
@@ -54,9 +55,16 @@ interface PushSubscriptionRow {
  * Envia push notification para todos os dispositivos de um usuário.
  * Falhas individuais são silenciadas (subscription expirada → removida automaticamente).
  */
-export async function sendPushToUser(userId: string, payload: PushPayload): Promise<void> {
+export async function sendPushToUser(
+  userId: string,
+  payload: PushPayload,
+  opts?: { event?: PreferenceEvent },
+): Promise<void> {
   ensureVapid();
   if (!vapidConfigured) return;
+
+  // Preferência do usuário (migration 023). Sem `event`, sem linha ou sem a tabela: envia como sempre.
+  if (opts?.event && !(await isChannelEnabled(userId, opts.event, 'push'))) return;
 
   let rows: PushSubscriptionRow[] = [];
   try {

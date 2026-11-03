@@ -100,7 +100,7 @@ export async function POST(
         ).catch(() => ({ rows: [{ blocked: false }] }));
         if (!legacyCheck.rows[0]?.blocked) {
           await awaitSends([
-            sendPushToUser(otherUserId, matchConfirmedPayload(params.id, objectTitle))
+            sendPushToUser(otherUserId, matchConfirmedPayload(params.id, objectTitle), { event: 'returned' })
               .catch(err => console.error('[match confirm] push failed:', err)),
           ]);
         }

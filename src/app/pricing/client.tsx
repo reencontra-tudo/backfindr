@@ -36,7 +36,7 @@ const DEFAULT_PLANS: Plan[] = [
     name: 'Business',
     price_brl: 149.00,
     max_objects: 500,
-    features: ['500 objetos cadastrados', 'Matching prioritário', 'Notificações push, email e SMS', 'QR Code bulk', '5 usuários na conta', 'Relatórios completos', 'Suporte prioritário', 'Acesso à API'],
+    features: ['500 objetos cadastrados', 'Matching prioritário', 'Notificações push e email', 'QR Code bulk', '5 usuários na conta', 'Relatórios completos', 'Suporte prioritário', 'Acesso à API'],
     is_active: true,
   },
 ];

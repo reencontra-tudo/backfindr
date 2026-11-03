@@ -3,11 +3,11 @@ import type { Metadata } from 'next';
 
 export const metadata: Metadata = {
   title: 'Encontrei algo — Backfindr',
-  description: 'Registre um objeto encontrado gratuitamente. Seu contato fica protegido e o dono pode te encontrar.',
+  description: 'Registre um objeto encontrado gratuitamente. A conversa com o dono acontece pelo chat da plataforma.',
   alternates: { canonical: 'https://www.backfindr.com/encontrei' },
   openGraph: {
     title: 'Encontrei algo — Backfindr',
-    description: 'Registre um objeto encontrado gratuitamente. Seu contato fica protegido.',
+    description: 'Registre um objeto encontrado gratuitamente. A conversa com o dono acontece pelo chat da plataforma.',
     url: 'https://www.backfindr.com/encontrei',
   },
 };

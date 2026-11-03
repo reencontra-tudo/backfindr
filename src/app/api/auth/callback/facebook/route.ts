@@ -2,6 +2,7 @@ export const dynamic = 'force-dynamic';
 import { NextRequest, NextResponse } from 'next/server';
 import { query } from '@/lib/db';
 import { createAccessToken, createRefreshToken } from '@/lib/jwt';
+import { setAuthCookies } from '@/lib/authCookies';
 
 export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url);
@@ -78,13 +79,11 @@ export async function GET(request: NextRequest) {
     const accessToken = createAccessToken(user.id, user.email);
     const refreshToken = createRefreshToken(user.id, user.email);
 
-    // Redirecionar para o dashboard com tokens
-    const redirectUrl = new URL(`${appUrl}/auth/callback`);
-    redirectUrl.searchParams.set('access_token', accessToken);
-    redirectUrl.searchParams.set('refresh_token', refreshToken);
-    redirectUrl.searchParams.set('provider', 'facebook');
-
-    return NextResponse.redirect(redirectUrl.toString());
+    // Tokens em Set-Cookie na resposta do redirect, nunca na URL. O destino é a mesma página
+    // intermediária do Google (/auth/callback, usada antes, não existe no app).
+    const response = NextResponse.redirect(`${appUrl}/auth/google-success`);
+    setAuthCookies(response, { accessToken, refreshToken });
+    return response;
   } catch (error) {
     console.error('Facebook OAuth error:', error);
     return NextResponse.redirect(`${appUrl}/auth/login?error=facebook_auth_error`);

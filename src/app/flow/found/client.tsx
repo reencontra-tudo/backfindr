@@ -254,7 +254,7 @@ export default function FoundFlowClient() {
                 Publique o achado agora.
               </h2>
               <p className="text-white/40 text-sm leading-relaxed">
-                Seu contato fica protegido. O dono entra em contato pelo sistema — você não precisa expor nada.
+                A conversa com o dono acontece pelo chat da plataforma.
               </p>
             </div>
 

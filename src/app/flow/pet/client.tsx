@@ -331,7 +331,7 @@ export default function PetFlowClient() {
                 <ArrowRight className="w-5 h-5" />
               </button>
               <p className="text-center text-white/30 text-xs">
-                Gratuito. Seu contato fica protegido.
+                Gratuito. A conversa acontece pelo chat da plataforma.
               </p>
 
               {/* Compartilhar antes de publicar — aumenta viralização */}

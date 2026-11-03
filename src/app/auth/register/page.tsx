@@ -25,7 +25,7 @@ type FormData = z.infer<typeof schema>;
 const BENEFITS = [
   'QR Code único e permanente para cada objeto',
   'Notificação imediata quando encontrado',
-  'Chat mediado com privacidade garantida',
+  'Conversa pelo chat da plataforma',
   'Suporte a pets, documentos e eletrônicos',
   'Matching automático por IA',
 ];
