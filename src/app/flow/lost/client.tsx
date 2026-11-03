@@ -6,6 +6,7 @@ import { analytics } from '@/providers/PostHogProvider';
 import { ArrowRight, Loader2, Search, CheckCircle2, MapPin, Clock, AlertCircle, Share2 } from 'lucide-react';
 import FlowLayout from '@/components/flow/FlowLayout';
 import FlowMatchCard, { MatchItem } from '@/components/flow/FlowMatchCard';
+import { APP_URL } from '@/lib/constants';
 
 type WhenOption = 'agora' | 'hoje' | 'ontem' | 'outro';
 
@@ -305,7 +306,7 @@ export default function LostFlowClient() {
               {/* Compartilhar — aumenta chances de encontrar */}
               <button
                 onClick={() => {
-                  const text = `🔍 Perdi ${step1.what}${step1.where ? ` em ${step1.where}` : ''}. Alguém viu? Backfindr conecta quem perdeu com quem achou: https://backfindr.com.br/flow/found`;
+                  const text = `🔍 Perdi ${step1.what}${step1.where ? ` em ${step1.where}` : ''}. Alguém viu? Backfindr conecta quem perdeu com quem achou: ${APP_URL}/flow/found`;
                   if (navigator.share) {
                     navigator.share({ title: `Perdi ${step1.what}`, text });
                   } else {

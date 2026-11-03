@@ -1,8 +1,7 @@
 import { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import PublicObjectClient from './client';
-
-const APP_URL = process.env.NEXT_PUBLIC_APP_URL ?? 'https://backfindr.com';
+import { APP_URL } from '@/lib/constants';
 
 async function getObject(code: string) {
   try {
@@ -29,7 +28,7 @@ export async function generateMetadata({ params }: { params: { code: string } })
 
   const locationStr = obj.location?.address ? ` — ${obj.location.address}` : '';
   const descriptionFull = `${statusLabel[obj.status] ?? 'Objeto'}: ${obj.title}${locationStr}. ${obj.description ?? ''}`.slice(0, 160);
-  const canonicalUrl = `${process.env.NEXT_PUBLIC_APP_URL ?? 'https://backfindr.com.br'}/objeto/${obj.unique_code}`;
+  const canonicalUrl = `${APP_URL}/objeto/${obj.unique_code}`;
 
   return {
     title: `${obj.title} — ${statusLabel[obj.status] ?? 'Objeto'}`,
@@ -60,8 +59,6 @@ export async function generateMetadata({ params }: { params: { code: string } })
   };
 }
 
-const BASE_URL = process.env.NEXT_PUBLIC_APP_URL ?? 'https://backfindr.com.br';
-
 function buildJsonLd(obj: Record<string, unknown>) {
   const statusLabel: Record<string, string> = {
     lost: 'Perdido', found: 'Achado', returned: 'Recuperado', stolen: 'Roubado',
@@ -71,7 +68,7 @@ function buildJsonLd(obj: Record<string, unknown>) {
     '@type': 'Thing',
     name: obj.title,
     description: obj.description,
-    url: `${BASE_URL}/objeto/${obj.unique_code}`,
+    url: `${APP_URL}/objeto/${obj.unique_code}`,
     identifier: obj.unique_code,
     additionalProperty: [
       { '@type': 'PropertyValue', name: 'status', value: statusLabel[obj.status as string] ?? obj.status },
