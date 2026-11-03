@@ -1,5 +1,8 @@
 import { deliverEmail } from '@/lib/emailSend';
 import type { EmailCategory } from '@/lib/emailPolicy';
+import { APP_URL } from '@/lib/constants';
+
+const APP_HOST = APP_URL.replace(/^https?:\/\//, '');
 
 // ─── Proteção contra injeção em e-mail ──────────────────────────────────────
 // Todo dado vindo de usuário (nome, título de objeto, etc.) que entra num template
@@ -27,8 +30,8 @@ function subj(value: unknown): string {
 export async function sendWelcomeEmail(user: { name: string; email: string }) {
   const firstNameRaw = user.name.split(' ')[0];
   const firstName = esc(firstNameRaw);
-  const dashboardUrl = 'https://www.backfindr.com/dashboard/objects/new';
-  const faqUrl = 'https://www.backfindr.com/faq';
+  const dashboardUrl = `${APP_URL}/dashboard/objects/new`;
+  const faqUrl = `${APP_URL}/faq`;
 
   const html = `
 <!DOCTYPE html>
@@ -136,7 +139,7 @@ export async function sendWelcomeEmail(user: { name: string; email: string }) {
           <tr>
             <td style="padding:20px 32px;border-top:1px solid rgba(255,255,255,0.06);text-align:center;">
               <p style="color:rgba(255,255,255,0.2);font-size:12px;margin:0;">
-                © 2026 Backfindr · <a href="https://www.backfindr.com" style="color:rgba(255,255,255,0.3);text-decoration:none;">www.backfindr.com</a>
+                © 2026 Backfindr · <a href="${APP_URL}" style="color:rgba(255,255,255,0.3);text-decoration:none;">${APP_HOST}</a>
               </p>
             </td>
           </tr>
@@ -168,7 +171,7 @@ export async function sendMatchAlertEmail(
 ) {
   const firstNameRaw = user.name.split(' ')[0];
   const firstName = esc(firstNameRaw);
-  const matchUrl = `https://www.backfindr.com/dashboard/matches`;
+  const matchUrl = `${APP_URL}/dashboard/matches`;
   const scoreLabel = score && score >= 80 ? 'Alta' : score && score >= 60 ? 'Média' : 'Moderada';
   const scoreColor = score && score >= 80 ? '#22c55e' : score && score >= 60 ? '#f59e0b' : '#14b8a6';
   const scoreBar = score ? Math.round(score) : 70;
@@ -291,7 +294,7 @@ export async function sendMatchAlertEmail(
           <tr>
             <td style="padding:20px 32px;border-top:1px solid rgba(255,255,255,0.06);text-align:center;">
               <p style="color:rgba(255,255,255,0.2);font-size:12px;margin:0;">
-                © 2026 Backfindr · <a href="https://www.backfindr.com" style="color:rgba(255,255,255,0.3);text-decoration:none;">www.backfindr.com</a>
+                © 2026 Backfindr · <a href="${APP_URL}" style="color:rgba(255,255,255,0.3);text-decoration:none;">${APP_HOST}</a>
               </p>
             </td>
           </tr>
@@ -321,8 +324,8 @@ export async function sendReactivationEmail(
 ) {
   const firstNameRaw = user.name.split(' ')[0];
   const firstName = esc(firstNameRaw);
-  const searchUrl = `https://www.backfindr.com/buscar?keyword=${encodeURIComponent(objectTitle)}`;
-  const dashboardUrl = 'https://www.backfindr.com/dashboard';
+  const searchUrl = `${APP_URL}/buscar?keyword=${encodeURIComponent(objectTitle)}`;
+  const dashboardUrl = `${APP_URL}/dashboard`;
 
   // Ícones para cada dica — rotaciona pelos disponíveis
   const tipIcons = ['✏️', '📸', '📍', '🔔', '💡'];
@@ -442,7 +445,7 @@ export async function sendReactivationEmail(
           <tr>
             <td style="padding:20px 32px;border-top:1px solid rgba(255,255,255,0.06);text-align:center;">
               <p style="color:rgba(255,255,255,0.2);font-size:12px;margin:0;">
-                © 2026 Backfindr · <a href="https://www.backfindr.com" style="color:rgba(255,255,255,0.3);text-decoration:none;">www.backfindr.com</a>
+                © 2026 Backfindr · <a href="${APP_URL}" style="color:rgba(255,255,255,0.3);text-decoration:none;">${APP_HOST}</a>
               </p>
             </td>
           </tr>
@@ -470,7 +473,7 @@ export async function sendReactivationEmail(
 export async function sendGuideCarTheftEmail(user: { name: string; email: string }) {
   const firstNameRaw = user.name.split(' ')[0];
   const firstName = esc(firstNameRaw);
-  const dashboardUrl = 'https://www.backfindr.com/dashboard';
+  const dashboardUrl = `${APP_URL}/dashboard`;
 
   const html = `
 <!DOCTYPE html>
@@ -576,7 +579,7 @@ export async function sendGuideCarTheftEmail(user: { name: string; email: string
           <tr>
             <td style="padding:20px 32px;border-top:1px solid rgba(255,255,255,0.06);text-align:center;">
               <p style="color:rgba(255,255,255,0.2);font-size:12px;margin:0;">
-                © 2026 Backfindr · <a href="https://www.backfindr.com" style="color:rgba(255,255,255,0.3);text-decoration:none;">www.backfindr.com</a>
+                © 2026 Backfindr · <a href="${APP_URL}" style="color:rgba(255,255,255,0.3);text-decoration:none;">${APP_HOST}</a>
               </p>
             </td>
           </tr>
@@ -603,7 +606,7 @@ export async function sendGuideCarTheftEmail(user: { name: string; email: string
 export async function sendGuideLostPetEmail(user: { name: string; email: string }) {
   const firstNameRaw = user.name.split(' ')[0];
   const firstName = esc(firstNameRaw);
-  const dashboardUrl = 'https://www.backfindr.com/dashboard';
+  const dashboardUrl = `${APP_URL}/dashboard`;
 
   const html = `
 <!DOCTYPE html>
@@ -738,7 +741,7 @@ export async function sendGuideLostPetEmail(user: { name: string; email: string 
           <tr>
             <td style="padding:20px 32px;border-top:1px solid rgba(255,255,255,0.06);text-align:center;">
               <p style="color:rgba(255,255,255,0.2);font-size:12px;margin:0;">
-                © 2026 Backfindr · <a href="https://www.backfindr.com" style="color:rgba(255,255,255,0.3);text-decoration:none;">www.backfindr.com</a>
+                © 2026 Backfindr · <a href="${APP_URL}" style="color:rgba(255,255,255,0.3);text-decoration:none;">${APP_HOST}</a>
               </p>
             </td>
           </tr>
@@ -765,7 +768,7 @@ export async function sendGuideLostPetEmail(user: { name: string; email: string 
 export async function sendTipPhotosEmail(user: { name: string; email: string }) {
   const firstNameRaw = user.name.split(' ')[0];
   const firstName = esc(firstNameRaw);
-  const dashboardUrl = 'https://www.backfindr.com/dashboard';
+  const dashboardUrl = `${APP_URL}/dashboard`;
 
   const html = `
 <!DOCTYPE html>
@@ -868,7 +871,7 @@ export async function sendTipPhotosEmail(user: { name: string; email: string }) 
           <tr>
             <td style="padding:20px 32px;border-top:1px solid rgba(255,255,255,0.06);text-align:center;">
               <p style="color:rgba(255,255,255,0.2);font-size:12px;margin:0;">
-                © 2026 Backfindr · <a href="https://www.backfindr.com" style="color:rgba(255,255,255,0.3);text-decoration:none;">www.backfindr.com</a>
+                © 2026 Backfindr · <a href="${APP_URL}" style="color:rgba(255,255,255,0.3);text-decoration:none;">${APP_HOST}</a>
               </p>
             </td>
           </tr>
@@ -895,7 +898,7 @@ export async function sendTipPhotosEmail(user: { name: string; email: string }) 
 export async function sendPWAIncentiveEmail(user: { name: string; email: string }) {
   const firstNameRaw = user.name.split(' ')[0];
   const firstName = esc(firstNameRaw);
-  const dashboardUrl = 'https://www.backfindr.com/dashboard';
+  const dashboardUrl = `${APP_URL}/dashboard`;
 
   const html = `
 <!DOCTYPE html>
@@ -987,7 +990,7 @@ export async function sendPWAIncentiveEmail(user: { name: string; email: string 
           <tr>
             <td style="padding:20px 32px;border-top:1px solid rgba(255,255,255,0.06);text-align:center;">
               <p style="color:rgba(255,255,255,0.2);font-size:12px;margin:0;">
-                © 2026 Backfindr · <a href="https://www.backfindr.com" style="color:rgba(255,255,255,0.3);text-decoration:none;">www.backfindr.com</a>
+                © 2026 Backfindr · <a href="${APP_URL}" style="color:rgba(255,255,255,0.3);text-decoration:none;">${APP_HOST}</a>
               </p>
             </td>
           </tr>
@@ -1031,7 +1034,7 @@ export async function sendObjectFoundEmail(
   const firstNameRaw = user.name.split(' ')[0];
   const firstName = esc(firstNameRaw);
   const categoryLabel = CATEGORY_LABEL_EMAIL[obj.category] ?? 'objeto';
-  const objectUrl = `https://www.backfindr.com/dashboard/objects/${obj.id}`;
+  const objectUrl = `${APP_URL}/dashboard/objects/${obj.id}`;
   const subject = obj.isProtected
     ? `📍 O QR Code do seu ${categoryLabel} foi escaneado`
     : `🎉 Alguém pode ter encontrado seu ${categoryLabel}`;
@@ -1108,7 +1111,7 @@ export async function sendObjectFoundEmail(
           <tr>
             <td style="padding:20px 32px;border-top:1px solid rgba(255,255,255,0.06);text-align:center;">
               <p style="color:rgba(255,255,255,0.2);font-size:12px;margin:0;">
-                © 2026 Backfindr · <a href="https://www.backfindr.com" style="color:rgba(255,255,255,0.3);text-decoration:none;">www.backfindr.com</a>
+                © 2026 Backfindr · <a href="${APP_URL}" style="color:rgba(255,255,255,0.3);text-decoration:none;">${APP_HOST}</a>
               </p>
             </td>
           </tr>

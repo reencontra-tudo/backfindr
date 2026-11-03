@@ -9,6 +9,7 @@ import { api, parseApiError } from '@/lib/api';
 import { RegisteredObject } from '@/types';
 import RecoveredCelebration from '@/components/RecoveredCelebration';
 import ObjectThumb from '@/components/ObjectThumb';
+import { APP_URL } from '@/lib/constants';
 
 const CATEGORY_EMOJI: Record<string, string> = {
   phone: '📱', wallet: '👛', keys: '🔑', bag: '🎒', pet: '🐾',
@@ -177,7 +178,7 @@ export default function PublicObjectClient({ obj }: { obj: RegisteredObject }) {
     }
   };
 
-  const shareUrl = typeof window !== 'undefined' ? window.location.href : `${process.env.NEXT_PUBLIC_APP_URL || 'https://backfindr.com'}/objeto/${obj.unique_code}`;
+  const shareUrl = typeof window !== 'undefined' ? window.location.href : `${APP_URL}/objeto/${obj.unique_code}`;
   const location = obj.location as { lat?: number; lng?: number; address?: string } | null;
   const allPhotos = obj.photos ?? [];
 

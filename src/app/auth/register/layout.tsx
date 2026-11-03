@@ -1,13 +1,14 @@
 import type { Metadata } from 'next';
+import { APP_URL } from '@/lib/constants';
 
 export const metadata: Metadata = {
   title: 'Criar conta grátis',
   description: 'Crie sua conta gratuita no Backfindr e publique o que perdeu ou encontrou.',
-  alternates: { canonical: 'https://www.backfindr.com/auth/register' },
+  alternates: { canonical: `${APP_URL}/auth/register` },
   openGraph: {
     title: 'Criar conta grátis | Backfindr',
     description: 'Crie sua conta gratuita e publique o que perdeu ou encontrou.',
-    url: 'https://www.backfindr.com/auth/register',
+    url: `${APP_URL}/auth/register`,
   },
   twitter: {
     description: 'Registre e pesquise o que foi perdido, roubado ou achado.',

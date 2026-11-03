@@ -2,6 +2,7 @@ export const dynamic = 'force-dynamic';
 import { NextRequest, NextResponse } from 'next/server';
 import { query } from '@/lib/db';
 import { createAccessToken, createRefreshToken } from '@/lib/jwt';
+import { APP_URL } from '@/lib/constants';
 
 // POST /api/auth/magic-link/verify — valida o token e retorna JWT
 // Usa POST para resistir ao pre-fetch automático de clientes de e-mail (iCloud, Gmail)
@@ -88,7 +89,6 @@ export async function POST(req: NextRequest) {
 }
 
 // GET mantido para compatibilidade — redireciona para a página de confirmação
-const APP_URL = process.env.NEXT_PUBLIC_APP_URL || 'https://www.backfindr.com';
 export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url);
   const token = searchParams.get('token');
