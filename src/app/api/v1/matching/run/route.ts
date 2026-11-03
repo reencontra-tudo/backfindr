@@ -261,7 +261,8 @@ async function processMatch(
         pendingSends.push(
           sendPushToUser(
             owner.id as string,
-            matchPayload(newMatch.id as string, lostObj.title as string, score)
+            matchPayload(newMatch.id as string, lostObj.title as string, score),
+            { event: 'match' }
           ).catch(err => console.error('[push] match push failed:', err))
         );
       }
