@@ -1,13 +1,14 @@
 import type { Metadata } from 'next';
+import { APP_URL } from '@/lib/constants';
 
 export const metadata: Metadata = {
   title: 'Entrar na sua conta',
   description: 'Acesse sua conta no Backfindr para gerenciar seus objetos protegidos, ver matches e conversar com quem encontrou algo seu.',
-  alternates: { canonical: 'https://www.backfindr.com/auth/login' },
+  alternates: { canonical: `${APP_URL}/auth/login` },
   openGraph: {
     title: 'Entrar na sua conta | Backfindr',
     description: 'Acesse sua conta no Backfindr.',
-    url: 'https://www.backfindr.com/auth/login',
+    url: `${APP_URL}/auth/login`,
   },
   // noindex explícito (23/08/2026) — GSC reportava "Erro soft 404" pra essa
   // página: form client-side, sem conteúdo indexável e sem valor de busca.
