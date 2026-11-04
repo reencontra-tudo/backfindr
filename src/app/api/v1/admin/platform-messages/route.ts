@@ -6,14 +6,17 @@ import { verifyToken, extractTokenFromHeader } from '@/lib/jwt';
 import { SYSTEM_ACCOUNT_ID } from '@/lib/systemAccount';
 import { recordEvent } from '@/lib/events';
 import { PLATFORM_MESSAGE_TYPE, validatePlatformMessage } from '@/lib/platformMessage';
+import { pushPlatformMessage, platformPushLabel } from '@/lib/platformMessagePush';
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 /**
  * POST /api/v1/admin/platform-messages
- * Body: { user_id?, object_id?, title, message, link? }
+ * Body: { user_id?, object_id?, title, message, link?, push?, urgent? }
  *
- * Cria uma notificação in-app (type 'platform_message') para o dono. Sem e-mail, push ou WhatsApp.
+ * Cria uma notificação in-app (type 'platform_message') para o dono. Sem e-mail ou WhatsApp.
+ * `push: true` (opcional, escolha do admin) envia também um push de texto fixo, DEPOIS de gravar a mensagem;
+ * a preferência do usuário vence, e falha do push nunca desfaz a mensagem. `urgent: true` fica em data.urgent.
  * Com object_id, o destinatário é o dono do objeto. Recusa conta de sistema e dono legado (Webjetos).
  * Limite: 1 mensagem do mesmo admin para o mesmo usuário a cada 24 h.
  *
@@ -53,6 +56,8 @@ export async function POST(req: NextRequest) {
   const { title, message, link } = v.value;
 
   let userId = typeof body.user_id === 'string' ? body.user_id : null;
+  const wantPush = body.push === true;
+  const wantUrgent = body.urgent === true;
   const objectId = typeof body.object_id === 'string' ? body.object_id : null;
   if ((userId && !UUID.test(userId)) || (objectId && !UUID.test(objectId))) {
     return NextResponse.json({ detail: 'Identificador inválido' }, { status: 400 });
@@ -96,6 +101,7 @@ export async function POST(req: NextRequest) {
       sent_by_email: senderEmail,
       sent_at: new Date().toISOString(),
       object_id: objectId,
+      ...(wantUrgent ? { urgent: true } : {}),
       ...(impersonatedUserId ? { via_impersonation_of: impersonatedUserId } : {}),
     };
 
@@ -131,7 +137,18 @@ export async function POST(req: NextRequest) {
       });
     }
 
-    return NextResponse.json({ id: (ins.rows[0] as { id: string }).id, sent_by: senderId }, { status: 201 });
+    const created = { id: (ins.rows[0] as { id: string }).id, sent_by: senderId };
+    if (!wantPush) return NextResponse.json(created, { status: 201 });
+
+    // Push opcional: só depois do INSERT; qualquer falha aqui NÃO afeta a mensagem já criada.
+    let push: { requested: true; sent: boolean; label: string };
+    try {
+      const r = await pushPlatformMessage(target.id);
+      push = { requested: true, sent: r.sent, label: platformPushLabel(r) };
+    } catch {
+      push = { requested: true, sent: false, label: 'push não enviado (falha técnica)' };
+    }
+    return NextResponse.json({ ...created, push }, { status: 201 });
   } catch {
     return NextResponse.json({ detail: 'Erro ao enviar mensagem' }, { status: 500 });
   }

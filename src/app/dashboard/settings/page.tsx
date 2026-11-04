@@ -252,6 +252,7 @@ export default function SettingsPage() {
               { event: 'qr_scan', label: 'QR Code escaneado', desc: 'Quando alguém escanear o QR Code do seu objeto', icon: '📱' },
               { event: 'chat_message', label: 'Nova mensagem no chat', desc: 'Novas mensagens de quem encontrou seu objeto', icon: '💬' },
               { event: 'returned', label: 'Objeto recuperado', desc: 'Confirmação de recuperação bem-sucedida', icon: '✅' },
+              { event: 'platform_message', label: 'Mensagens da equipe', desc: 'Avisos enviados pela equipe do Backfindr', icon: '📢' },
             ].map(item => ({ ...item, on: pushPrefs[item.event] ?? true })).map(item => (
               <div key={item.label} className="flex items-center justify-between p-4 bg-white/[0.02] border border-white/[0.07] rounded-xl">
                 <div className="flex items-center gap-3">

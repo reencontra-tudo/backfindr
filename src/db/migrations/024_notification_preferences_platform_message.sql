@@ -1,6 +1,6 @@
 -- Migration 024 -- evento 'platform_message' em notification_preferences (Fase 1, entrega 4)
 --
--- NÃO APLICADA: entregue no PR, para autorização antes de rodar no SQL Editor.
+-- APLICADA em 04/11/2026 (pelo Marcos, no SQL Editor). Não reaplicar.
 --
 -- Hoje a mensagem da plataforma ao dono é SOMENTE in-app (Q-17). Esta migration só prepara o terreno
 -- para um push OPCIONAL: acrescenta 'platform_message' à lista de eventos aceitos pela tabela da 023.
