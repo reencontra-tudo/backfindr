@@ -83,11 +83,20 @@ export default function ChatPage() {
   const bottomRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const pollRef = useRef<ReturnType<typeof setInterval>>();
+  const lastMarkedRef = useRef('');
 
   const loadMessages = useCallback(async (silent = false) => {
     try {
       const { data } = await api.get(`/chat/${matchId}/messages`);
-      setMessages(data?.messages ?? []);
+      const msgs: ChatMsg[] = data?.messages ?? [];
+      setMessages(msgs);
+      // Marca como lidas as mensagens recebidas (só quando chega uma nova; falha não atrapalha o chat)
+      const uid = useAuthStore.getState().user?.id;
+      const lastIncoming = [...msgs].reverse().find(m => m.sender_id !== uid)?.id;
+      if (uid && lastIncoming && lastIncoming !== lastMarkedRef.current) {
+        lastMarkedRef.current = lastIncoming;
+        api.post(`/chat/${matchId}/read`).catch(() => { lastMarkedRef.current = ''; });
+      }
     } catch (e) {
       if (!silent) toast.error(parseApiError(e));
     }
