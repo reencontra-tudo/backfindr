@@ -1,24 +1,22 @@
-// Push OPCIONAL para a mensagem da plataforma (Q-17), PREPARADO E DESLIGADO.
+// Push OPCIONAL da mensagem da plataforma (Q-17): decidido pelo administrador, mensagem por mensagem
+// (campo `push` da rota POST /api/v1/admin/platform-messages). A mensagem in-app é sempre gravada ANTES;
+// falha aqui nunca a impede nem a desfaz.
 //
-// Decisão desta fase: NÃO enviar push. A mensagem continua somente in-app. Este módulo existe para que, quando o
-// Marcos decidir, ligar seja pequeno e já testado:
-//   1. aplicar a migration 024 (aceita o evento 'platform_message' em notification_preferences);
-//   2. trocar PLATFORM_MESSAGE_PUSH_ENABLED para true;
-//   3. chamar pushPlatformMessage(...) na rota POST /api/v1/admin/platform-messages, depois do INSERT.
-// Nada disso foi feito: a rota não chama este módulo.
+// PLATFORM_MESSAGE_PUSH_ENABLED é a chave de segurança geral: com `false` nenhum push desta mensagem sai,
+// mesmo que o administrador marque a opção, e o comportamento volta a ser somente in-app, sem desfazer o PR.
 //
-// Regras já embutidas: legado e conta de sistema recusados; só envia se o usuário não desligou o push deste evento;
-// sem a tabela de preferências (ou qualquer erro ao consultá-la) NÃO envia; texto fixo e curto (nunca o texto do
-// admin), link só interno; sem e-mail.
+// Regras embutidas: legado e conta de sistema recusados; a PREFERÊNCIA DO USUÁRIO vence a escolha do
+// administrador (migration 024, aplicada em 04/11/2026); sem a tabela de preferências NÃO envia; texto fixo e
+// curto (nunca o texto do administrador), link só interno; sem e-mail.
 import { query } from '@/lib/db';
 import { sendPushToUser } from '@/lib/pushNotification';
 
-export const PLATFORM_MESSAGE_PUSH_ENABLED = false;
+export const PLATFORM_MESSAGE_PUSH_ENABLED = true;
 export const PLATFORM_MESSAGE_PREFERENCE_EVENT = 'platform_message';
 
 export type PlatformPushResult =
   | { sent: true }
-  | { sent: false; reason: 'desligado' | 'conta_de_sistema' | 'legado' | 'usuario_nao_encontrado' | 'preferencia_desligada' | 'preferencias_indisponiveis' | 'erro_no_envio' };
+  | { sent: false; reason: 'desligado' | 'conta_de_sistema' | 'legado' | 'usuario_nao_encontrado' | 'preferencia_desligada' | 'sem_push_ativo' | 'preferencias_indisponiveis' | 'erro_no_envio' };
 
 export async function pushPlatformMessage(
   userId: string,
@@ -50,15 +48,32 @@ export async function pushPlatformMessage(
   }
 
   try {
-    // Sem push ativado (nenhum dispositivo inscrito) o envio simplesmente não acontece.
+    // Sem VAPID configurado o envio central não faz nada: não finge que enviou.
+    if (!process.env.VAPID_PUBLIC_KEY || !process.env.VAPID_PRIVATE_KEY) return { sent: false, reason: 'erro_no_envio' };
+    const subs = await query(`SELECT 1 FROM push_subscriptions WHERE user_id = $1 LIMIT 1`, [userId]);
+    if (subs.rows.length === 0) return { sent: false, reason: 'sem_push_ativo' };
+
     await sendPushToUser(userId, {
       title: 'Você tem uma mensagem da equipe do Backfindr',
       body: 'Abra as notificações para ler.',
       url: '/dashboard/notifications',
       tag: 'platform-message',
-    });
+    }, { event: 'platform_message' });
     return { sent: true };
   } catch {
     return { sent: false, reason: 'erro_no_envio' };
+  }
+}
+
+/** Frase curta para o administrador (resposta da rota e tela do admin). */
+export function platformPushLabel(r: PlatformPushResult): string {
+  if (r.sent) return 'push enviado';
+  switch (r.reason) {
+    case 'sem_push_ativo': return 'usuário sem push ativo';
+    case 'preferencia_desligada': return 'usuário desligou esse aviso';
+    case 'legado':
+    case 'conta_de_sistema': return 'push não enviado (legado/conta de sistema)';
+    case 'desligado': return 'push não enviado (desativado pelo sistema)';
+    default: return 'push não enviado (falha técnica)';
   }
 }

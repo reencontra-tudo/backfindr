@@ -3,7 +3,7 @@
 // um evento daqui e nunca passa por estas funções.
 import { query } from './db';
 
-export const PREFERENCE_EVENTS = ['match', 'qr_scan', 'chat_message', 'returned'] as const;
+export const PREFERENCE_EVENTS = ['match', 'qr_scan', 'chat_message', 'returned', 'platform_message'] as const;
 export type PreferenceEvent = (typeof PREFERENCE_EVENTS)[number];
 
 export const PREFERENCE_CHANNELS = ['app', 'push', 'email'] as const;

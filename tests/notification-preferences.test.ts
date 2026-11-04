@@ -130,3 +130,31 @@ describe('API de preferências', () => {
     expect((await PUT(req('PUT', { event: 'match', channel: 'push', enabled: false }))).status).toBe(503);
   });
 });
+
+describe('evento platform_message', () => {
+  it('PUT aceita platform_message (push) e os 4 eventos antigos seguem aceitos', async () => {
+    for (const event of ['match', 'qr_scan', 'chat_message', 'returned', 'platform_message']) {
+      expect((await PUT(req('PUT', { event, channel: 'push', enabled: false }))).status).toBe(200);
+    }
+    expect(db.writes.map((w) => w[1])).toEqual(['match', 'qr_scan', 'chat_message', 'returned', 'platform_message']);
+  });
+  it('platform_message por e-mail continua recusado (só push)', async () => {
+    expect((await PUT(req('PUT', { event: 'platform_message', channel: 'email', enabled: false }))).status).toBe(400);
+  });
+  it('GET traz platform_message ligado por padrão e reflete o desligado', async () => {
+    let body = await (await GET(req('GET'))).json();
+    expect(body.preferences.platform_message.push).toBe(true);
+    db.prefRows = [{ event: 'platform_message', channel: 'push', enabled: false }];
+    body = await (await GET(req('GET'))).json();
+    expect(body.preferences.platform_message.push).toBe(false);
+    expect(body.preferences.match.push).toBe(true);
+  });
+  it('push com event platform_message respeita a preferência desligada', async () => {
+    db.prefRows = [{ enabled: false }];
+    await sendPushToUser('u1', payload, { event: 'platform_message' });
+    expect(sent()).toBe(0);
+    db.prefRows = [];
+    await sendPushToUser('u1', payload, { event: 'platform_message' });
+    expect(sent()).toBe(1);
+  });
+});
