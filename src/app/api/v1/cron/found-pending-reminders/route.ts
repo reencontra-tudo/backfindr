@@ -16,11 +16,12 @@ import { recordEvent } from '@/lib/events';
  *   desfaz um retorno real nem qualquer outro dado; só limpa um sinal que
  *   ficou sem resposta por 2 semanas.
  *
- * IMPORTANTE: esta rota existe e foi testada manualmente, mas ainda NÃO
- * está agendada em lugar nenhum (nem Vercel Cron, nem n8n) — precisa ser
- * conectada a um schedule externo (mesmo padrão do cron n8n "Backfindr
- * Public Signals — Ingestão Diária"), 1x/dia é suficiente dado o intervalo
- * de dias. Ver BACKFINDR.md seção 17.
+ * Agendamento: workflow do n8n "Backfindr Found Pending — Lembretes e Timeout",
+ * diário às 2h (horário do servidor do n8n), com GET nesta rota e o header
+ * `Authorization: Bearer <CRON_SECRET>`. Se o CRON_SECRET for rotacionado na
+ * Vercel, o header desse nó precisa ser atualizado junto; senão a rota
+ * responde 401 e o lembrete deixa de rodar. Ver docs/ROTACAO-SEGREDOS.md e
+ * BACKFINDR.md seção 17.
  *
  * Dedup via `user_lifecycle_events` (tabela já existente, reaproveitada —
  * mesmo padrão de src/app/api/v1/cron/lifecycle/route.ts) chaveado por
