@@ -2,6 +2,7 @@ export const dynamic = 'force-dynamic';
 import { NextRequest, NextResponse } from 'next/server';
 import { query } from '@/lib/db';
 import { addSuppressionByHash, verifyUnsubscribeToken } from '@/lib/emailPolicy';
+import { APP_URL } from '@/lib/constants';
 
 // Descadastro público (sem login). Token assinado em ?t=; idempotente.
 //   GET  — link do rodapé: NÃO grava nada. Só confere o token e mostra uma página de confirmação com um botão
@@ -74,7 +75,7 @@ function page(key: PageKey, token?: string): NextResponse {
 <main style="max-width:480px;margin:0 auto;padding:64px 24px;text-align:center;">
 <h1 style="font-size:22px;margin:0 0 12px;">${p.title}</h1>
 <p style="font-size:15px;line-height:1.5;color:#94a3b8;margin:0 0 24px;">${p.text}</p>
-${form}<a href="https://www.backfindr.com" style="color:#2dd4bf;font-size:14px;">Ir para o Backfindr</a>
+${form}<a href="${APP_URL}" style="color:#2dd4bf;font-size:14px;">Ir para o Backfindr</a>
 </main></body></html>`;
   return new NextResponse(html, {
     status: p.status,

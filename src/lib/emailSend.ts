@@ -5,6 +5,7 @@
 // um resultado tipado. Recusa por regra é 'skipped' (não é falha); erro do Resend é 'failed' (nunca sucesso).
 import { Resend } from 'resend';
 import { query } from '@/lib/db';
+import { APP_URL } from '@/lib/constants';
 import {
   canSendEmail,
   createUnsubscribeToken,
@@ -38,7 +39,7 @@ export interface DeliverOptions {
 }
 
 function appUrl(): string {
-  return (process.env.NEXT_PUBLIC_APP_URL || 'https://www.backfindr.com').replace(/\/+$/, '');
+  return APP_URL;
 }
 
 export function unsubscribeUrl(token: string): string {
