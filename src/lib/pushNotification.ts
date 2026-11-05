@@ -39,6 +39,12 @@ export interface PushPayload {
   tag?: string;
   icon?: string;
   actions?: Array<{ action: string; title: string }>;
+  /** Imagem opcional (o service worker só aceita o próprio domínio ou o bucket de mídia). */
+  image?: string;
+  /** Aviso urgente: fica na tela até ser fechado e vibra mais (Web). */
+  urgent?: boolean;
+  /** Padrão de vibração opcional, em ms (Android). */
+  vibrate?: number[];
 }
 
 interface PushSubscriptionRow {
@@ -154,7 +160,7 @@ export function chatPayload(senderName: string, matchId: string, preview: string
   return {
     title: `💬 Nova mensagem de ${senderName}`,
     body: preview.length > 80 ? preview.slice(0, 77) + '…' : preview,
-    url: `/dashboard/matches/${matchId}`,
+    url: `/dashboard/chat/${matchId}`,
     tag: `chat-${matchId}`,
     actions: [{ action: 'reply', title: 'Responder' }],
   };

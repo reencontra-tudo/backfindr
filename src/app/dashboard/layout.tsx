@@ -13,6 +13,8 @@ import { toast } from 'sonner';
 import { useAuthStore } from '@/hooks/useAuth';
 import ImpersonationBanner from '@/components/ui/ImpersonationBanner';
 import { playNotificationSound } from '@/lib/notificationSound';
+import { isPushSoundEnabled, pushSoundPlayedRecently } from '@/lib/pushSound';
+import { usePushSound } from '@/hooks/usePushSound';
 
 // Formato mínimo retornado por GET /api/v1/notifications — só os campos que
 // o polling do sino/toast precisa (ver src/app/api/v1/notifications/route.ts).
@@ -46,6 +48,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const pathname = usePathname();
   const router = useRouter();
   const { user, isAuthenticated, logout, fetchMe } = useAuthStore();
+  usePushSound();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [pendingMatches, setPendingMatches] = useState(0);
   const [unreadNotifs, setUnreadNotifs] = useState(0);
@@ -161,7 +164,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           fresh.forEach(n => seenNotifIds.current!.add(n.id));
 
           if (fresh.length > 0) {
-            playNotificationSound();
+            if (isPushSoundEnabled() && !pushSoundPlayedRecently()) playNotificationSound();
             fresh.forEach(n => {
               toast.success(n.title, {
                 description: n.message,

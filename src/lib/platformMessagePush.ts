@@ -20,7 +20,7 @@ export type PlatformPushResult =
 
 export async function pushPlatformMessage(
   userId: string,
-  opts: { enabled?: boolean } = {},
+  opts: { enabled?: boolean; urgent?: boolean } = {},
 ): Promise<PlatformPushResult> {
   if (!(opts.enabled ?? PLATFORM_MESSAGE_PUSH_ENABLED)) return { sent: false, reason: 'desligado' };
 
@@ -58,6 +58,7 @@ export async function pushPlatformMessage(
       body: 'Abra as notificações para ler.',
       url: '/dashboard/notifications',
       tag: 'platform-message',
+      ...(opts.urgent === true ? { urgent: true } : {}),
     }, { event: 'platform_message' });
     return { sent: true };
   } catch {
