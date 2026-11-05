@@ -143,7 +143,7 @@ export async function POST(req: NextRequest) {
     // Push opcional: só depois do INSERT; qualquer falha aqui NÃO afeta a mensagem já criada.
     let push: { requested: true; sent: boolean; label: string };
     try {
-      const r = await pushPlatformMessage(target.id);
+      const r = await pushPlatformMessage(target.id, { urgent: wantUrgent });
       push = { requested: true, sent: r.sent, label: platformPushLabel(r) };
     } catch {
       push = { requested: true, sent: false, label: 'push não enviado (falha técnica)' };

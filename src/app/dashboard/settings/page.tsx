@@ -7,6 +7,7 @@ import { Loader2, User, Bell, Shield, Trash2, Check, ChevronRight } from 'lucide
 import { useAuthStore } from '@/hooks/useAuth';
 import { api, parseApiError } from '@/lib/api';
 import { usePushNotifications } from '@/hooks/usePushNotifications';
+import { isPushSoundEnabled, setPushSoundEnabled } from '@/lib/pushSound';
 
 type ProfileForm = { name: string; phone: string };
 
@@ -18,6 +19,7 @@ export default function SettingsPage() {
   const [saving, setSaving] = useState(false);
   const [pushEnabled, setPushEnabled] = useState(false);
   // Preferência de push por evento; sem nada gravado, tudo ligado (como antes).
+  const [soundOn, setSoundOn] = useState(true);
   const [pushPrefs, setPushPrefs] = useState<Record<string, boolean>>({});
   const [activeTab, setActiveTab] = useState<'profile'|'security'|'notifications'|'danger'>('profile');
 
@@ -25,6 +27,7 @@ export default function SettingsPage() {
 
   useEffect(() => {
     if (user) reset({ name: user.name, phone: user.phone ?? '' });
+    setSoundOn(isPushSoundEnabled());
     if ('Notification' in window) setPushEnabled(Notification.permission === 'granted');
   }, [user, reset]);
 
@@ -241,6 +244,24 @@ export default function SettingsPage() {
                 )}
               </div>
             </div>
+          </div>
+
+          {/* Som com o app aberto (por aparelho) */}
+          <div className="flex items-center justify-between p-4 bg-white/[0.02] border border-white/[0.07] rounded-xl">
+            <div>
+              <p className="text-white text-sm">Som com o app aberto</p>
+              <p className="text-white/30 text-xs mt-0.5">Toca um som curto neste aparelho quando chega um aviso e o app está aberto. Com o app fechado, vale o som padrão do sistema.</p>
+            </div>
+            <button
+              type="button"
+              role="switch"
+              aria-checked={soundOn}
+              aria-label="Som com o app aberto"
+              className={`relative w-10 h-5 rounded-full transition-all flex-shrink-0 ml-3 ${soundOn ? 'bg-teal-500' : 'bg-white/[0.08]'}`}
+              onClick={() => { const next = !soundOn; setSoundOn(next); setPushSoundEnabled(next); }}
+            >
+              <span className={`absolute top-0.5 w-4 h-4 bg-white rounded-full transition-all ${soundOn ? 'left-5' : 'left-0.5'}`} />
+            </button>
           </div>
 
           {/* Eventos configuráveis */}
