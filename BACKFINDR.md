@@ -328,6 +328,16 @@ PRs abertos em 26/10/2026 (`gh pr list`): #33, #34, #37, #38 (rascunho), #41, #4
 
 Relatórios de apoio ficam fora do repositório.
 
+### 17.0-B Registro de 04 e 05/11/2026 (Fase 1 da comunicação; fonte: `main` em 05/11/2026 e STATUS.md)
+
+Só fatos verificados no repositório; o que depende do banco ou do agendador externo está no STATUS.md como informado.
+- **Rotas e módulos novos:** `/api/v1/cron/chat-unread-email` (e-mail de serviço de aviso de chat não lido, `src/lib/chatUnreadEmail.ts`; protegida por segredo, **sem agendamento no `vercel.json`**; constantes: 30 min sem leitura, 6 h entre e-mails por conversa e destinatário, teto próprio de 20 por dia, guarda global de 90 nas últimas 24 h); `src/lib/chatUnread.ts` (contador de não lidas, coluna `chat_messages.is_read`, últimos 30 dias); `src/lib/platformMessagePush.ts` (push da mensagem da plataforma); a resposta de `/api/v1/cron/found-pending-reminders` ganhou `reminders_d1` (lembrete D+1, evento `found_pending_reminder_d1`).
+- **Chave geral do push da mensagem da plataforma:** `PLATFORM_MESSAGE_PUSH_ENABLED` é uma **constante no código** (`src/lib/platformMessagePush.ts`, hoje `true`), não uma variável de ambiente.
+- **Migrations em `src/db/migrations`:** 023 (preferências de notificação) e 024 (a restrição aceita `platform_message`); a aplicação da 024 em produção consta no STATUS.md como informada.
+- **Configurações do usuário:** interruptor «Mensagens da equipe» (preferência de push por evento `platform_message`) e interruptor «Som com o app aberto» (por aparelho, também controla o som antigo da lista de notificações).
+- **Service worker (`public/sw.js`):** ícone do payload, botões, vibração, renotificação por tag, imagem só do próprio domínio ou de `*.r2.dev`, aviso urgente com `requireInteraction`; **sem `skipWaiting`** (a versão nova só assume depois que todas as abas do Backfindr forem fechadas). O aviso de chat aponta para `/dashboard/chat/{matchId}`.
+- **Remetente dos e-mails no código:** `noreply@backfindr.com.br` (`src/lib/emailSend.ts`, constante `FROM_ADDRESS`).
+
 ### 17.1 Itens anteriores (29/06 a 22/08/2026, preservados)
 
 ### 🔴 Alto
