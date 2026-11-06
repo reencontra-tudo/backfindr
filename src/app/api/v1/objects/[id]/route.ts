@@ -1,4 +1,5 @@
 export const dynamic = 'force-dynamic';
+import { isLegacyUser, legacyReadOnlyResponse } from '@/lib/legacyGuard';
 import { NextRequest } from 'next/server';
 import { query } from '@/lib/db';
 import { verifyToken, extractTokenFromHeader } from '@/lib/jwt';
@@ -88,6 +89,7 @@ export async function PATCH(
     if (!token) return unauthorizedResponse();
     const payload = verifyToken(token);
     if (!payload) return unauthorizedResponse();
+    if (await isLegacyUser(String(payload.sub))) return legacyReadOnlyResponse();
     const body = await request.json();
     const {
       title, description, status, category, type, location, latitude, longitude, images,
@@ -165,6 +167,7 @@ export async function DELETE(
     if (!token) return unauthorizedResponse();
     const payload = verifyToken(token);
     if (!payload) return unauthorizedResponse();
+    if (await isLegacyUser(String(payload.sub))) return legacyReadOnlyResponse();
     const result = await query(
       `DELETE FROM objects WHERE id = $1 AND user_id = $2 RETURNING id`,
       [params.id, payload.sub]

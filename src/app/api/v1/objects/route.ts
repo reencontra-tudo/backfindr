@@ -1,4 +1,5 @@
 export const dynamic = 'force-dynamic';
+import { isLegacyUser, legacyReadOnlyResponse } from '@/lib/legacyGuard';
 import { NextRequest } from 'next/server';
 import { query } from '@/lib/db';
 import { verifyToken, extractTokenFromHeader } from '@/lib/jwt';
@@ -125,6 +126,7 @@ export async function POST(request: NextRequest) {
 
     const payload = verifyToken(token);
     if (!payload) return unauthorizedResponse();
+    if (await isLegacyUser(String(payload.sub))) return legacyReadOnlyResponse();
 
     // ── Verificar limite de objetos por plano ──────────────────────────────
     const userResult = await query(
