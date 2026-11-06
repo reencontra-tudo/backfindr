@@ -69,7 +69,7 @@ export async function POST(req: NextRequest) {
       { algorithm: 'HS256', expiresIn: '2h' }
     );
 
-    // Trilha de auditoria (migração 018): início da impersonação, com o id do admin e o do alvo (só ids).
+    // Trilha de auditoria (migração 025): início da impersonação, com o id do admin e o do alvo (só ids).
     // Falha de auditoria nunca impede a operação (logEvent usa SAVEPOINT e captura o erro).
     try {
       const actor = {

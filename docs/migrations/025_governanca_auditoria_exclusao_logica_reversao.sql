@@ -1,4 +1,4 @@
--- 018 — REVERSÃO da migração de governança (auditoria + exclusão lógica + anonimização)
+-- 025 — REVERSÃO da migração de governança (auditoria + exclusão lógica + anonimização)
 -- NÃO executar em produção sem ordem escrita. Testada em banco descartável (aplicar → reverter → reaplicar).
 --
 -- Garantias:

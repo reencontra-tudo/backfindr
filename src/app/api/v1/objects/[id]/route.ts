@@ -169,7 +169,7 @@ export async function DELETE(
     const payload = verifyToken(token);
     if (!payload) return unauthorizedResponse();
 
-    // Exclusão LÓGICA com motivo (migração 018): a linha fica na lixeira pelo prazo de retenção e pode ser restaurada.
+    // Exclusão LÓGICA com motivo (migração 025): a linha fica na lixeira pelo prazo de retenção e pode ser restaurada.
     // O corpo é opcional (clientes antigos): sem motivo → 'nao_informado'. O motivo nunca é obrigatório para o dono.
     let body: { reason?: unknown; reason_text?: unknown } | null = null;
     try { body = await request.json(); } catch { body = null; }

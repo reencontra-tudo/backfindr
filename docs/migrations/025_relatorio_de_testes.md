@@ -1,8 +1,8 @@
-# Migração 018 — relatório de testes (banco descartável)
+# Migração 025 — relatório de testes (banco descartável)
 
 Ambiente: PostgreSQL 17 (Docker) restaurado de dump recente do banco (≈2,2 mil `objects`, 2.002 legado; ≈4,4 mil `users`). Nada foi aplicado em produção.
 
-## 1. Ciclo da migração (`tests/run_018.sh`)
+## 1. Ciclo da migração (`tests/run_025.sh`)
 | Verificação | Resultado |
 |---|---|
 | Aplicar | ≈0,5 s no total (inclui o `docker exec` e o preenchimento de `users.audit_ref`) |
@@ -13,7 +13,7 @@ Ambiente: PostgreSQL 17 (Docker) restaurado de dump recente do banco (≈2,2 mil
 | Reaplicar | sem erro (idempotente; reaplicar após reversão deixa a conta "anon" inerte) |
 | Reversão com linhas na lixeira não anonimizadas | aborta sem alterar nada |
 
-## 2. Testes SQL (`tests/018_testes.sql`) — todos OK
+## 2. Testes SQL (`tests/025_testes.sql`) — todos OK
 **Governança (T0–T13):** legado 100% visível · exclusão lógica com os 13 motivos · motivos/tamanho/anonimização inválidos rejeitados · DELETE direto e cascata auditados **sem conteúdo** · DELETE de usuário (trilha usa a referência, não o id) · restauração idêntica · recuperado · pausar/reativar · duplicata · trilha imutável (UPDATE/DELETE/TRUNCATE) · falha da auditoria não derruba a operação · ator desconhecido · `users` sem senha/e-mail/nome/id na trilha · eventos de impersonação e permissões.
 **Trilha sem conteúdo (R1):** 19 trechos únicos (nome, e-mail, telefone, título, descrição, endereço, coordenadas, QR, foto, placa, série, chassi, texto de evento, texto livre) = 0 ocorrências nas duas tabelas da trilha.
 **Anonimização (A1–A10):** nenhuma coluna identificadora com valor (varredura por coluna) · contagens por categoria/status/legado/ano/trimestre/resolvido (objetos), tipo/ano/trimestre (eventos) e score/status/trimestre (matches) **idênticas antes e depois** · trilha sem o conteúdo anonimizado e evento `object_anonymized` com ator pseudonimizado · fila de arquivos (caminhos sem host/query; base64 descartado) · idempotência · **legado recusado** (e motivo inválido → erro) · anonimizar conta (dados pessoais, credenciais, notificações e mensagens; **`audit_ref` anulado**; ocorrências anonimizadas) · conta "anon" sem login possível · rotina de retenção (**purga não existe**; desligada não age; *dry-run* só conta; ligada anonimiza o vencido, não toca legado, registra a execução).

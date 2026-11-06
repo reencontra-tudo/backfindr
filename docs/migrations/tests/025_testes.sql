@@ -1,5 +1,5 @@
--- Testes da migração 018 (governança + anonimização). Rodar SOMENTE em banco descartável restaurado de um dump:
---   psql -X -v ON_ERROR_STOP=1 -f 018_testes.sql
+-- Testes da migração 025 (governança + anonimização). Rodar SOMENTE em banco descartável restaurado de um dump:
+--   psql -X -v ON_ERROR_STOP=1 -f 025_testes.sql
 -- Cada teste imprime "OK ..." ou aborta com EXCEPTION. Usa linhas de teste cujos ids ficam em public._gov_t (removida no fim).
 \set ON_ERROR_STOP on
 \timing off

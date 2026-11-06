@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """Teste de ponta a ponta das rotas de governança contra um banco DESCARTÁVEL (nunca produção).
-Pré-requisitos: contêiner Postgres descartável com a migração 018 aplicada, `next dev` em http://localhost:3999 com
+Pré-requisitos: contêiner Postgres descartável com a migração 025 aplicada, `next dev` em http://localhost:3999 com
 DATABASE_URL apontando para ele e SECRET_KEY de teste. Uso: governanca_rotas.py <contêiner> <SECRET_KEY de teste> <pasta do projeto>"""
 import json, subprocess, sys, urllib.request, urllib.error, uuid
 

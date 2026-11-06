@@ -1,10 +1,10 @@
--- 018 — Governança de dados: trilha de auditoria somente-inserção, exclusão lógica com motivo e ANONIMIZAÇÃO
+-- 025 — Governança de dados: trilha de auditoria somente-inserção, exclusão lógica com motivo e ANONIMIZAÇÃO
 -- Princípios: (1) dado inserido jamais some sem rastro: sai de uso → retenção por prazo → ANONIMIZAÇÃO (não há purga definitiva);
 -- (2) ao excluir, apaga-se/anonimiza-se o que a LGPD exige e mantém-se a ocorrência de forma genérica, para estatística;
 -- (3) a trilha é imutável e NÃO guarda dado pessoal: só nomes de colunas alteradas e colunas estatísticas.
 --
--- Esta migração é ADITIVA e REVERSÍVEL (ver 018_..._reversao.sql). NÃO foi aplicada em produção.
--- Aplicar só com ordem escrita, seguindo docs/migrations/018_aplicacao_e_reversao.md.
+-- Esta migração é ADITIVA e REVERSÍVEL (ver 025_..._reversao.sql). NÃO foi aplicada em produção.
+-- Aplicar só com ordem escrita, seguindo docs/migrations/025_aplicacao_e_reversao.md.
 --
 -- Efeitos sobre dados existentes (únicos): (a) `users.audit_ref` recebe um id aleatório por usuário (preenchimento único,
 -- reescreve a tabela users, ≈4,4 mil linhas); (b) é criada UMA conta de sistema inerte "anon" (sem login, sem e-mail real).
@@ -291,7 +291,7 @@ ON CONFLICT (id) DO UPDATE SET is_active = false, password = '!sem-login',
 
 -- ─── 7. Macro-região (IBGE) a partir dos dados existentes ───────────────────────────────────────────────
 -- 1º) UF escrita no fim do texto do local ("… - MA", "…, SP", "…/RJ"); 2º) UF do município mais próximo entre os cadastrados
--- em `municipalities`, se a até 300 km; senão 'Não informada'. Precisão medida e discutida em 018_desenho_etapas.md.
+-- em `municipalities`, se a até 300 km; senão 'Não informada'. Precisão medida e discutida em 025_desenho_etapas.md.
 CREATE OR REPLACE FUNCTION audit.macro_region_of(p_lat numeric, p_lng numeric, p_loc text) RETURNS text
 LANGUAGE plpgsql STABLE SET search_path = audit, public, pg_catalog AS $$
 DECLARE v_uf text; r text; v_state text; v_km float;

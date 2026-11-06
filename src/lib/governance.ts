@@ -1,7 +1,7 @@
 /**
  * Governança de dados — regras puras (sem banco, sem rede) para exclusão com motivo, retenção e ator.
  * Princípio: dado inserido jamais é apagado sem rastro; vai para a lixeira por um prazo; tudo é auditável.
- * Testado em tests/governance.test.mjs (node --test). Migração: docs/migrations/018_*.sql.
+ * Testado em tests/governance.test.mjs (node --test). Migração: docs/migrations/025_*.sql.
  */
 
 /** Prazo padrão de retenção na lixeira (dias). Configurável por GOV_RETENTION_DAYS; a limpeza definitiva é separada e desligada. */
@@ -47,7 +47,7 @@ export const OWNER_REASONS: readonly OwnerReason[] = [
   { code: 'nao_informado', label: 'Prefiro não dizer', action: 'delete' },
 ] as const;
 
-/** Códigos gravados em deleted_reason pelo caminho do dono (ver CHECK da migração 018). */
+/** Códigos gravados em deleted_reason pelo caminho do dono (ver CHECK da migração 025). */
 export const OWNER_DELETE_CODES = ['nao_informado', 'recuperei', 'duplicada', 'errado', 'desisti', 'pedido_lgpd', 'outro'] as const;
 
 /** Lista fixa do admin; o motivo é OBRIGATÓRIO na exclusão feita por admin. */

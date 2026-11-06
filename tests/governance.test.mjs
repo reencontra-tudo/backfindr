@@ -38,9 +38,9 @@ test('admin: motivo OBRIGATÓRIO e só da lista fixa; texto só em adm_outro', (
   assert.deepEqual(resolveDeletion('admin', { reason: 'adm_outro', reason_text: 'motivo' }), { ok: true, reason: 'adm_outro', reasonText: 'motivo' });
 });
 
-test('os códigos do app cabem no CHECK da migração 018 (mesma lista)', async () => {
+test('os códigos do app cabem no CHECK da migração 025 (mesma lista)', async () => {
   const { readFileSync } = await import('node:fs');
-  const sql = readFileSync(new URL('../docs/migrations/018_governanca_auditoria_exclusao_logica.sql', import.meta.url), 'utf8');
+  const sql = readFileSync(new URL('../docs/migrations/025_governanca_auditoria_exclusao_logica.sql', import.meta.url), 'utf8');
   const bloco = sql.slice(sql.indexOf("deleted_reason IS NULL OR deleted_reason IN ("), sql.indexOf("))$f$"));
   const codes = [...bloco.matchAll(/'([a-z_]+)'/g)].map((m) => m[1]);
   for (const c of [...OWNER_DELETE_CODES, ...ADMIN_REASONS.map((r) => r.code)]) assert.ok(codes.includes(c), `código ${c} ausente do CHECK`);
@@ -114,9 +114,9 @@ test('anonimização (admin): motivo da lista + confirmação digitada; fim_rete
   for (const r of ANON_REASONS) assert.equal(resolveAnonymization({ reason: r.code, confirm: true, confirm_text: ANON_CONFIRM_WORD }).ok, true, r.code);
 });
 
-test('os motivos de anonimização do app cabem no CHECK da migração 018', async () => {
+test('os motivos de anonimização do app cabem no CHECK da migração 025', async () => {
   const { readFileSync } = await import('node:fs');
-  const sql = readFileSync(new URL('../docs/migrations/018_governanca_auditoria_exclusao_logica.sql', import.meta.url), 'utf8');
+  const sql = readFileSync(new URL('../docs/migrations/025_governanca_auditoria_exclusao_logica.sql', import.meta.url), 'utf8');
   const i = sql.indexOf('anonymized_reason IS NULL OR anonymized_reason IN (');
   const bloco = sql.slice(i, sql.indexOf('))$f$', i));
   const codes = [...bloco.matchAll(/'([a-z_]+)'/g)].map((m) => m[1]);

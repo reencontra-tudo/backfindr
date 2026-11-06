@@ -1,7 +1,7 @@
-# Migração 018 — aplicar e reverter (governança de dados com anonimização)
+# Migração 025 — aplicar e reverter (governança de dados com anonimização)
 
 Status: **construída e testada em banco descartável; NÃO aplicada em produção.** Só aplicar com ordem escrita do responsável.
-Arquivos: `018_governanca_auditoria_exclusao_logica.sql` (aplicar) · `018_governanca_auditoria_exclusao_logica_reversao.sql` (reverter) · `tests/` (testes) · `tools/gov-remove-pending-files.mjs` (job de remoção de arquivos, desligado).
+Arquivos: `025_governanca_auditoria_exclusao_logica.sql` (aplicar) · `025_governanca_auditoria_exclusao_logica_reversao.sql` (reverter) · `tests/` (testes) · `tools/gov-remove-pending-files.mjs` (job de remoção de arquivos, desligado).
 
 ## O que muda
 - **Trilha de auditoria somente-inserção** (`audit.*`): guarda só **nomes das colunas alteradas** e **colunas estatísticas** (categoria, status, ano, trimestre, macro-região…). Nenhum título, descrição, endereço, coordenada, foto, QR, placa, número de série, e-mail, nome, telefone ou id de usuário. O ator é uma **referência aleatória** (`users.audit_ref`); ao anonimizar o usuário o mapa é anulado e a trilha deixa de se ligar à pessoa.
@@ -18,7 +18,7 @@ Arquivos: `018_governanca_auditoria_exclusao_logica.sql` (aplicar) · `018_gover
 ## Ordem OBRIGATÓRIA
 1. **Migração primeiro, código depois.** O código novo lê `objects_active` e usa as colunas novas; sem a migração falha. A migração é compatível com o código antigo (só adiciona).
 2. Reverter na ordem inversa: **código primeiro, migração depois.**
-3. **Antes de aplicar em produção:** esta versão da trilha já nasce sem conteúdo identificador; **não aplicar uma versão anterior** da 018 (a trilha é imutável: o que for gravado não se corrige).
+3. **Antes de aplicar em produção:** esta versão da trilha já nasce sem conteúdo identificador; **não aplicar uma versão anterior** da 025 (a trilha é imutável: o que for gravado não se corrige).
 
 ## Passo a passo para APLICAR
 1. Conferir o backup do dia (R2) e que o teste de restore mensal está verde. Anotar o horário.
@@ -26,7 +26,7 @@ Arquivos: `018_governanca_auditoria_exclusao_logica.sql` (aplicar) · `018_gover
 3. Rodar com a URL **de sessão (porta 5432) do papel dono**, lida do cofre, sem exibir o valor:
    ```bash
    PGURL="$(~/bin/cofre pipe supabase-backfindr-database-url | sed 's#:6543/#:5432/#')"
-   psql "$PGURL" -X -v ON_ERROR_STOP=1 -f docs/migrations/018_governanca_auditoria_exclusao_logica.sql
+   psql "$PGURL" -X -v ON_ERROR_STOP=1 -f docs/migrations/025_governanca_auditoria_exclusao_logica.sql
    unset PGURL
    ```
 4. Verificar (somente leitura):
@@ -44,7 +44,7 @@ Arquivos: `018_governanca_auditoria_exclusao_logica.sql` (aplicar) · `018_gover
 ## Passo a passo para REVERTER
 1. Reverter o código (revert do PR e novo deploy).
 2. A reversão **aborta** se houver linhas na lixeira ainda não anonimizadas: restaure-as (Lixeira → Restaurar) ou anonimize-as antes.
-3. Rodar `018_..._reversao.sql`. Remove gatilhos, visões e funções; **renomeia** o schema `audit` para `audit_arquivada_AAAAMMDD_HHMMSS` (**a trilha nunca é apagada**) e copia o mapa usuário→referência para `audit.actor_map_snapshot` (acesso restrito) antes de tirar `users.audit_ref`.
+3. Rodar `025_..._reversao.sql`. Remove gatilhos, visões e funções; **renomeia** o schema `audit` para `audit_arquivada_AAAAMMDD_HHMMSS` (**a trilha nunca é apagada**) e copia o mapa usuário→referência para `audit.actor_map_snapshot` (acesso restrito) antes de tirar `users.audit_ref`.
 4. **Anonimização é irreversível:** se já houver linhas anonimizadas, as colunas de governança são **mantidas** (aviso no log) e a conta "anon" permanece, para o registro não se perder.
 5. Verificar contagens de `objects`/`users`.
 
@@ -52,7 +52,7 @@ Arquivos: `018_governanca_auditoria_exclusao_logica.sql` (aplicar) · `018_gover
 | Risco | Mitigação |
 |---|---|
 | Código antes da migração | Ordem obrigatória; migração só adiciona |
-| Aplicar versão antiga da 018 (trilha com conteúdo) | Só esta versão; a trilha é imutável — conferir o arquivo antes |
+| Aplicar versão antiga da 025 (trilha com conteúdo) | Só esta versão; a trilha é imutável — conferir o arquivo antes |
 | `users` reescrita (≈4,4 mil linhas) | Transação com `lock_timeout`; ≈0,5 s medido; backup antes |
 | Esquecer o filtro de excluídos em leitura nova | Leituras usam `objects_active`; teste e revisão |
 | Anonimização irreversível acionada por engano | Admin: motivo + caixa + palavra digitada; rota exige confirmação; rotina automática desligada |

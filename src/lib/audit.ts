@@ -3,7 +3,7 @@ import { getClient } from '@/lib/db';
 import type { AuditActor } from '@/lib/governance';
 
 /**
- * Executa escritas numa transação que informa o ATOR à trilha de auditoria (migração 018):
+ * Executa escritas numa transação que informa o ATOR à trilha de auditoria (migração 025):
  * `set_config(..., true)` = SET LOCAL, válido só nesta transação. Os gatilhos leem app.actor_id, app.actor_type,
  * app.impersonated_id, app.origin e app.request_id. Sem isso a trilha grava ator = 'desconhecido' (nunca falha).
  *

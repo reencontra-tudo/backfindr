@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
-# Roda o ciclo completo da migração 018 num PostgreSQL 17 DESCARTÁVEL (contêiner Docker com o dump restaurado):
+# Roda o ciclo completo da migração 025 num PostgreSQL 17 DESCARTÁVEL (contêiner Docker com o dump restaurado):
 #   reverter (se aplicada) → fotografar → aplicar (medir) → testes → reverter → comparar com a fotografia → reaplicar.
-# Uso: run_018.sh <nome_do_conteiner>      Nunca aponte para produção.
+# Uso: run_025.sh <nome_do_conteiner>      Nunca aponte para produção.
 set -uo pipefail
 C="${1:?nome do contêiner descartável}"; D="$(cd "$(dirname "$0")/.." && pwd)"
 ANON="00000000-0000-4000-8000-0000000a0909"
@@ -14,7 +14,7 @@ limpa() { docker exec "$C" psql -U postgres -X -q -c "DO \$\$ BEGIN IF to_regcla
    DELETE FROM public.users WHERE id IN (SELECT v::uuid FROM public._gov_t WHERE k IN ('u','u2','ua','ub','u_r1'));
    DROP TABLE public._gov_t; END IF; END \$\$;
    DELETE FROM public.objects WHERE title LIKE 'GOV-TESTE%'; DELETE FROM public.users WHERE name LIKE 'GOV-TESTE%';" >/dev/null 2>&1; }
-docker cp "$D/018_governanca_auditoria_exclusao_logica.sql" "$C:/m.sql"; docker cp "$D/018_governanca_auditoria_exclusao_logica_reversao.sql" "$C:/r.sql"; docker cp "$D/tests/018_testes.sql" "$C:/t.sql"
+docker cp "$D/025_governanca_auditoria_exclusao_logica.sql" "$C:/m.sql"; docker cp "$D/025_governanca_auditoria_exclusao_logica_reversao.sql" "$C:/r.sql"; docker cp "$D/tests/025_testes.sql" "$C:/t.sql"
 echo "== 0) estado inicial"; limpa
 if [ "$(q "select count(*) from pg_namespace where nspname='audit'")" = "1" ]; then docker exec "$C" psql -U postgres -X -q -v ON_ERROR_STOP=1 -f /r.sql >/dev/null 2>&1 && echo "(migração anterior revertida)" || echo "(AVISO: a reversão do estado anterior falhou)"; fi
 ANTES="$(snap)"; echo "$ANTES"
