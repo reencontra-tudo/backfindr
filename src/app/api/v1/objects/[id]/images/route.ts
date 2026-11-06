@@ -1,6 +1,7 @@
 export const dynamic = 'force-dynamic';
 export const maxDuration = 60;
 
+import { isLegacyUser, legacyReadOnlyResponse } from '@/lib/legacyGuard';
 import { NextRequest } from 'next/server';
 import { query } from '@/lib/db';
 import { verifyToken, extractTokenFromHeader } from '@/lib/jwt';
@@ -25,6 +26,7 @@ export async function POST(
     if (!token) return unauthorizedResponse();
     const payload = verifyToken(token);
     if (!payload) return unauthorizedResponse();
+    if (await isLegacyUser(String(payload.sub))) return legacyReadOnlyResponse();
 
     const body = await request.json();
     const { images } = body as { images: string[] };
@@ -126,6 +128,7 @@ export async function DELETE(
     if (!token) return unauthorizedResponse();
     const payload = verifyToken(token);
     if (!payload) return unauthorizedResponse();
+    if (await isLegacyUser(String(payload.sub))) return legacyReadOnlyResponse();
 
     // Buscar imagens atuais para deletar do R2
     const current = await query(
