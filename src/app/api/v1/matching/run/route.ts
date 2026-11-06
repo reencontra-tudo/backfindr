@@ -43,7 +43,7 @@ export async function POST(request: NextRequest) {
 
     // Busca o objeto base
     const objectResult = await query(
-      'SELECT * FROM objects WHERE id = $1 AND user_id = $2',
+      'SELECT * FROM objects_active WHERE id = $1 AND user_id = $2',
       [objectId, payload.sub]
     );
     if (objectResult.rows.length === 0)
@@ -94,7 +94,7 @@ export async function POST(request: NextRequest) {
             cos(radians(longitude::float) - radians($4)) +
             sin(radians($3)) * sin(radians(latitude::float))
           ))) AS distance_km
-        FROM objects
+        FROM objects_active
         WHERE status = $1
           AND id != $2
           AND latitude IS NOT NULL
@@ -116,7 +116,7 @@ export async function POST(request: NextRequest) {
         : [oppositeStatus, objectId, lat, lon, MAX_RADIUS_KM];
     } else if (categoryGroup) {
       candidateQuery = `
-        SELECT * FROM objects
+        SELECT * FROM objects_active
         WHERE status = $1 AND id != $2
           AND is_legacy = false
           AND (category = ANY($3) OR type = ANY($3))
@@ -125,7 +125,7 @@ export async function POST(request: NextRequest) {
       candidateParams = [oppositeStatus, objectId, categoryGroup];
     } else {
       candidateQuery = `
-        SELECT * FROM objects
+        SELECT * FROM objects_active
         WHERE status = $1 AND id != $2
           AND is_legacy = false
         ORDER BY created_at DESC LIMIT 100
@@ -236,7 +236,7 @@ async function processMatch(
       `SELECT u.id, u.name, u.email,
               (o.is_legacy IS TRUE OR COALESCE(u.is_legacy, false) IS TRUE) AS legacy_blocked
          FROM users u
-         JOIN objects o ON o.user_id = u.id
+         JOIN objects_active o ON o.user_id = u.id
         WHERE o.id = $1`,
       [lostObj.id]
     );

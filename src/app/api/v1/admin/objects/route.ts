@@ -56,7 +56,7 @@ export async function GET(req: NextRequest) {
   try {
     const [countRes, rowsRes, countsRes] = await Promise.all([
       query(
-        `SELECT COUNT(*) FROM objects o LEFT JOIN users u ON u.id = o.user_id ${where}`,
+        `SELECT COUNT(*) FROM objects_active o LEFT JOIN users u ON u.id = o.user_id ${where}`,
         params
       ),
       query(
@@ -64,7 +64,7 @@ export async function GET(req: NextRequest) {
                 o.location, o.is_legacy, o.source, o.created_at, o.updated_at,
                 o.user_id AS owner_id,
                 u.name AS owner_name, u.email AS owner_email
-         FROM objects o
+         FROM objects_active o
          LEFT JOIN users u ON u.id = o.user_id
          ${where}
          ORDER BY o.updated_at DESC
@@ -74,7 +74,7 @@ export async function GET(req: NextRequest) {
       // Contagens por status
       query(
         `SELECT o.status, COUNT(*) AS cnt
-         FROM objects o LEFT JOIN users u ON u.id = o.user_id
+         FROM objects_active o LEFT JOIN users u ON u.id = o.user_id
          ${conditions.filter((_, i) => params[i] !== status).length > 0
            ? `WHERE ${conditions.filter((_, i) => params[i] !== status).join(' AND ')}`
            : ''}

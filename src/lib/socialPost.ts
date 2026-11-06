@@ -117,7 +117,7 @@ export async function processSocialQueue(): Promise<{ processed: number; errors:
     const pending = await query(
       `SELECT sp.*, o.title, o.qr_code, o.images
        FROM social_posts sp
-       JOIN objects o ON o.id = sp.object_id
+       JOIN objects_active o ON o.id = sp.object_id
        WHERE sp.status = 'pending'
          AND sp.scheduled_for <= NOW()
          AND sp.retry_count < 3

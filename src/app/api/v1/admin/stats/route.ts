@@ -21,21 +21,21 @@ export async function GET(req: NextRequest) {
             COUNT(*) FILTER (WHERE o.status = 'found')    AS found_objects,
             COUNT(*) FILTER (WHERE o.status = 'returned') AS returned_objects,
             COUNT(DISTINCT o.user_id)                     AS total_users
-           FROM objects o
+           FROM objects_active o
            JOIN users u ON u.id = o.user_id
            WHERE u.b2b_partner_id = $1`,
           [partnerId]
         ),
         query(
           `SELECT COUNT(*) FROM matches m
-           JOIN objects o ON o.id = m.object_id
+           JOIN objects_active o ON o.id = m.object_id
            JOIN users u ON u.id = o.user_id
            WHERE u.b2b_partner_id = $1 AND m.status = 'pending'`,
           [partnerId]
         ),
         query(
           `SELECT COUNT(*) FROM reports r
-           JOIN objects o ON o.id = r.object_id
+           JOIN objects_active o ON o.id = r.object_id
            JOIN users u ON u.id = o.user_id
            WHERE u.b2b_partner_id = $1 AND r.status = 'pending'`,
           [partnerId]
@@ -93,11 +93,11 @@ export async function GET(req: NextRequest) {
       query('SELECT COUNT(*) FROM users'),
       query('SELECT COUNT(*) FROM users WHERE created_at >= $1', [startOfDay.toISOString()]),
       query('SELECT COUNT(*) FROM users WHERE created_at >= $1', [startOfWeek.toISOString()]),
-      query('SELECT COUNT(DISTINCT user_id) FROM objects WHERE updated_at >= $1', [startOfWeek.toISOString()]),
+      query('SELECT COUNT(DISTINCT user_id) FROM objects_active WHERE updated_at >= $1', [startOfWeek.toISOString()]),
       query('SELECT COUNT(*) FROM objects'),
-      query("SELECT COUNT(*) FROM objects WHERE status = 'lost'"),
-      query("SELECT COUNT(*) FROM objects WHERE status = 'found'"),
-      query("SELECT COUNT(*) FROM objects WHERE status = 'returned'"),
+      query("SELECT COUNT(*) FROM objects_active WHERE status = 'lost'"),
+      query("SELECT COUNT(*) FROM objects_active WHERE status = 'found'"),
+      query("SELECT COUNT(*) FROM objects_active WHERE status = 'returned'"),
       query("SELECT COUNT(*) FROM matches WHERE status = 'pending'"),
       query("SELECT COUNT(*) FROM matches WHERE status = 'confirmed'"),
       query("SELECT COUNT(*) FROM matches WHERE status = 'rejected'"),
@@ -106,14 +106,14 @@ export async function GET(req: NextRequest) {
       query("SELECT COUNT(*) FROM users WHERE plan = 'pro'"),
       query("SELECT COUNT(*) FROM users WHERE plan = 'business'"),
       query(`SELECT TO_CHAR(DATE_TRUNC('day', created_at), 'DD/MM') AS day, COUNT(*)::int AS count FROM users WHERE created_at >= NOW() - INTERVAL '7 days' GROUP BY DATE_TRUNC('day', created_at) ORDER BY DATE_TRUNC('day', created_at)`),
-      query(`SELECT TO_CHAR(DATE_TRUNC('day', created_at), 'DD/MM') AS day, COUNT(*)::int AS count FROM objects WHERE created_at >= NOW() - INTERVAL '7 days' GROUP BY DATE_TRUNC('day', created_at) ORDER BY DATE_TRUNC('day', created_at)`),
+      query(`SELECT TO_CHAR(DATE_TRUNC('day', created_at), 'DD/MM') AS day, COUNT(*)::int AS count FROM objects_active WHERE created_at >= NOW() - INTERVAL '7 days' GROUP BY DATE_TRUNC('day', created_at) ORDER BY DATE_TRUNC('day', created_at)`),
       query(`SELECT COUNT(*) FROM public_signal_evidence WHERE status = 'pending'`),
       // Universo elegível real do /api/v1/objects/map (mesmo WHERE, sem o
       // LIMIT) — dá um número proativo de quanto da capacidade da query do
       // mapa está em uso, pra avisar antes de bater no teto (MAP_QUERY_LIMIT
       // em objects/map/route.ts), não só depois que já cortou objeto.
       query(
-        `SELECT COUNT(*)::int AS count FROM objects
+        `SELECT COUNT(*)::int AS count FROM objects_active
          WHERE is_public = true AND status IN ('lost', 'found', 'stolen')
            AND ((latitude IS NOT NULL AND longitude IS NOT NULL)
                 OR (location IS NOT NULL AND location != '' AND location != 'null'))`

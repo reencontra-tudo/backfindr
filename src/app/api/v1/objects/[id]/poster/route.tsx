@@ -140,7 +140,7 @@ export async function GET(
           WHEN b.id IS NOT NULL AND b.status = 'active' AND b.expires_at > NOW()
           THEN true ELSE false
         END as has_active_boost
-       FROM objects o
+       FROM objects_active o
        LEFT JOIN boosts b ON o.id = b.object_id
        WHERE o.id::text = $1 OR o.qr_code = $1
        LIMIT 1`,

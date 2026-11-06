@@ -44,7 +44,7 @@ export async function POST(
 
     // Verificar que o objeto pertence ao usuário
     const check = await query(
-      'SELECT id, images FROM objects WHERE id = $1 AND user_id = $2',
+      'SELECT id, images FROM objects_active WHERE id = $1 AND user_id = $2',
       [params.id, payload.sub]
     );
     if (check.rows.length === 0) return notFoundResponse();
@@ -129,7 +129,7 @@ export async function DELETE(
 
     // Buscar imagens atuais para deletar do R2
     const current = await query(
-      'SELECT images FROM objects WHERE id = $1 AND user_id = $2',
+      'SELECT images FROM objects_active WHERE id = $1 AND user_id = $2',
       [params.id, payload.sub]
     );
     if (current.rows.length === 0) return notFoundResponse();

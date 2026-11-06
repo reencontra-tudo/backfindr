@@ -42,8 +42,8 @@ export async function GET(req: NextRequest) {
     const [countRes, rowsRes] = await Promise.all([
       query(
         `SELECT COUNT(*) FROM matches m
-         LEFT JOIN objects lo ON lo.id = m.lost_object_id
-         LEFT JOIN objects fo ON fo.id = m.found_object_id
+         LEFT JOIN objects_active lo ON lo.id = m.lost_object_id
+         LEFT JOIN objects_active fo ON fo.id = m.found_object_id
          LEFT JOIN public_signal_evidence le ON le.object_id = lo.id
          LEFT JOIN public_signal_evidence fe ON fe.object_id = fo.id
          ${where}`,
@@ -61,8 +61,8 @@ export async function GET(req: NextRequest) {
                 latest.status AS latest_contact_status,
                 latest.attempted_at AS latest_contact_at
          FROM matches m
-         LEFT JOIN objects lo ON lo.id = m.lost_object_id
-         LEFT JOIN objects fo ON fo.id = m.found_object_id
+         LEFT JOIN objects_active lo ON lo.id = m.lost_object_id
+         LEFT JOIN objects_active fo ON fo.id = m.found_object_id
          LEFT JOIN public_signal_evidence le ON le.object_id = lo.id
          LEFT JOIN public_signal_evidence fe ON fe.object_id = fo.id
          LEFT JOIN LATERAL (

@@ -29,8 +29,8 @@ export async function GET(
     const matchResult = await query(
       `SELECT m.id, lo.user_id as lost_user_id, fo.user_id as found_user_id
        FROM matches m
-       LEFT JOIN objects lo ON m.lost_object_id = lo.id
-       LEFT JOIN objects fo ON m.found_object_id = fo.id
+       LEFT JOIN objects_active lo ON m.lost_object_id = lo.id
+       LEFT JOIN objects_active fo ON m.found_object_id = fo.id
        WHERE m.id = $1`,
       [params.matchId]
     );
@@ -93,8 +93,8 @@ export async function POST(
     const matchResult = await query(
       `SELECT m.id, lo.user_id as lost_user_id, fo.user_id as found_user_id
        FROM matches m
-       LEFT JOIN objects lo ON m.lost_object_id = lo.id
-       LEFT JOIN objects fo ON m.found_object_id = fo.id
+       LEFT JOIN objects_active lo ON m.lost_object_id = lo.id
+       LEFT JOIN objects_active fo ON m.found_object_id = fo.id
        WHERE m.id = $1`,
       [params.matchId]
     );

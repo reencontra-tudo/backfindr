@@ -32,7 +32,7 @@ export async function POST(
     const objectResult = await query(
       `SELECT o.id, o.user_id, o.title, o.status, o.category,
               (o.is_legacy IS TRUE OR COALESCE(u.is_legacy, false) IS TRUE) AS legacy_blocked
-         FROM objects o LEFT JOIN users u ON u.id = o.user_id
+         FROM objects_active o LEFT JOIN users u ON u.id = o.user_id
         WHERE o.qr_code = $1`,
       [params.code]
     );

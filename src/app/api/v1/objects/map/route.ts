@@ -33,7 +33,7 @@ export async function GET() {
            latitude,
            longitude,
            location
-         FROM objects
+         FROM objects_active
          WHERE is_public = true
            AND status IN ('lost', 'found', 'stolen')
            AND (
@@ -51,7 +51,7 @@ export async function GET() {
       // recuperado não precisa de pin pedindo ajuda). O front usa esse
       // número pra decidir se mostra o botão "Recuperado" pra quem não é
       // admin, evitando exibir um filtro que hoje sempre daria 0 resultado.
-      query(`SELECT COUNT(*)::int AS count FROM objects WHERE is_public = true AND status = 'returned'`, []),
+      query(`SELECT COUNT(*)::int AS count FROM objects_active WHERE is_public = true AND status = 'returned'`, []),
     ]);
 
     // Buscamos MAP_QUERY_LIMIT+1 de propósito: se essa linha extra veio, é
