@@ -32,6 +32,12 @@ Esta versão reúne as decisões Q-01 a Q-15, de 28/10/2026, sobre o QR Code com
 | Q-24 | 04/11/2026 | **Push da mensagem da plataforma: critério do administrador.** O administrador decide, a cada mensagem, se ela também sai por push ("Enviar também por push") e se é urgente; **as urgentes saem por push**. O texto do push é fixo e nunca reproduz o texto do administrador; a preferência do usuário ("Mensagens da equipe", nas Configurações) vence a escolha do administrador; legado e conta de sistema recusados. O limite de 1 mensagem do mesmo administrador para o mesmo usuário a cada 24 h continua; o motivo dessa regra não está documentado, e se ela muda para as urgentes é decisão pendente | Marcos, 04/11/2026 (informado pela sessão de execução) | PUBLICADO na `main` (PRs #85 e #86); decisão sobre o limite para urgentes PENDENTE |
 | Q-25 | 05/11/2026 | **Aviso push: melhorias na versão web agora; aplicativo nativo na próxima fase.** O aperfeiçoamento do aviso (ícone, botões, vibração, urgente que fica na tela, som com o app aberto com interruptor por aparelho) entra agora na versão web. O som próprio com o app fechado depende do aplicativo nativo e fica para a próxima fase. **Nenhum texto promete som próprio com o app fechado** | Marcos, 05/11/2026 (informado pela sessão de execução) | PUBLICADO na `main` (PR #87) quanto à versão web; aplicativo nativo PENDENTE (próxima fase). Vibração, botões, som com o app aberto e Android: não testados no celular |
 | Q-26 | 05/11/2026 | **Emenda da Q-23 (refinamento): legado somente leitura e critério para deixar de ser legado.** (a) O legado que não atualizou a conta fica SOMENTE LEITURA: pode entrar e ver o app, mas não inclui nem exclui objetos. Isso substitui, quanto a incluir e excluir, a frase "usa o app" do documento "Arquitetura de comunicação do Backfindr" (01/11/2026); a ausência de comunicação (Q-20) não muda. (b) Critério para deixar de ser legado ("atualizar a conta"): senha nova + aceitar os termos, e confirmar o e-mail por link + completar o perfil, as duas coisas juntas, dentro da reciclagem já desenhada na Q-23; só ao concluir a conta deixa de ser legada. (c) No passo "arquivar os objetos antigos" da reciclagem, o arquivamento só ocorre por decisão do próprio dono; assim a B-25 (09/10/2026, regra permanente: o legado do Webjetos permanece em sitemap, mapa e busca; nada o remove, oculta ou rebaixa) permanece intacta. (d) Ponto em aberto, não decidido: se o bloqueio de escrita (a) será antecipado em relação ao fluxo completo. (e) Relação com a B-27 (09/10/2026): a Q-26 supera a B-27 SOMENTE quanto ao bloqueio de escrita e ao fluxo de atualização da conta do legado, que agem apenas quando o próprio dono legado volta por iniciativa própria; para todo o resto a B-27 continua valendo (nenhum e-mail, notificação, matching, métrica ou contato com o legado; nunca remover, ocultar ou rebaixar). Decisão do Marcos, 05/11/2026. Não altera a Q-20 (o legado só recebe comunicação se aceitar por conta própria, com consentimento registrado) | Marcos, 05/11/2026 | DECIDIDO; aplicação PENDENTE (depende da tela de consentimento e da política de privacidade, Q-19, e da revisão jurídica, Fase 4; nada alterado no código) |
+| Q-27 | 01/11/2026 | **SMS: por ora não será usado.** A base de comunicação prevê o SMS como canal previsto e DESLIGADO por configuração, para uso futuro (cadastro de telefone, preferência por canal, registro de consentimento e limite de custo por dia ficam desenhados, sem enviar nada). Nenhum texto promete SMS enquanto o canal não existir; a menção sai da página do QR, do plano Business e do assistente | Marcos, 01/11/2026 (documento "Arquitetura de comunicação do Backfindr") | DECIDIDO; PARCIALMENTE APLICADO (verificado em 05/11/2026): a camada de canais existe com o SMS desligado (`src/lib/channels`), mas nenhum código de envio a chama; nenhum texto público ativo cita SMS (resta um arquivo `.bak` sem uso em `src/app/objeto/[code]/` que ainda cita) |
+| Q-28 | 01/11/2026 | **Horário de silêncio do push.** Das 22h às 7h, no fuso do usuário, o push de baixa e média urgência não sai e espera a manhã. Aviso de achado e mensagem de chat saem sempre | Marcos, 01/11/2026 (documento "Arquitetura de comunicação do Backfindr") | DECIDIDO; **NÃO EFETIVO** (verificado em 05/11/2026): a regra está escrita e testada em `src/lib/channels/policy.ts`, mas nenhum envio de push a usa; o push continua podendo sair à noite. Ligar exige ordem escrita |
+| Q-29 | 01/11/2026 | **Guarda das conversas.** Conversa sem atividade por 30 dias é arquivada. Depois de encerrada, o texto fica 12 meses e é apagado ou anonimizado, restando só datas, resultado e canal. Conversa com denúncia, disputa ou pedido de autoridade fica retida por até 3 anos. O prazo é por tempo e não por volume (o volume só serve de alarme de custo). Deve entrar na política de privacidade | Marcos, 01/11/2026 (documento "Arquitetura de comunicação do Backfindr") | DECIDIDO, a confirmar na revisão jurídica (Q-23); **NÃO IMPLEMENTADO** (não achei arquivamento nem retenção de conversas no código, 05/11/2026) |
+| Q-30 | 01/11/2026 | **Sinais públicos por aceite, no estilo do alerta do Google.** É serviço pedido pelo próprio usuário, não marketing. Ele assina em Configurações, sem precisar de objeto cadastrado, ou ao cadastrar um objeto perdido, e escolhe canal (app, push, e-mail), frequência (na hora ou resumo diário), região (cidade, bairro ou raio, sem GPS contínuo e sem ser mostrada a outras pessoas) e tipos de objeto. O alerta só leva ocorrências, sem promoção nem dica misturadas. Tudo começa desligado, cada aceite é registrado e todo e-mail tem descadastro de um clique. O padrão de e-mail é o resumo diário. O legado só assina por iniciativa própria | Marcos, 01/11/2026 (documento "Arquitetura de comunicação do Backfindr") | DECIDIDO; **NÃO IMPLEMENTADO** (nenhuma assinatura de alerta no código, 05/11/2026) |
+| Q-31 | 01/11/2026 | **Achador sem conta.** Quer o caminho de menor atrito para ele se cadastrar, com indução em cascata. O desenho proposto (conversa por ocorrência aberta pelo QR, link privado guardado no navegador, conta leve criada pelo link, entrada por Google ou só pelo e-mail em um toque) aguarda a confirmação do Marcos | Marcos, 01/11/2026 (direção); documento "Arquitetura de comunicação do Backfindr" (desenho) | DIREÇÃO DECIDIDA; desenho do canal **PENDENTE de confirmação**; **NÃO IMPLEMENTADO** (nenhum canal de conversa por ocorrência no código, 05/11/2026) |
+| Q-32 | 01/11/2026 | **Textos sobre contato e dono legado no QR.** Nenhum texto do produto afirma que o contato está protegido; a formulação aceita é "a conversa acontece pelo chat da plataforma"; os textos não podem conflitar com as políticas já estabelecidas. O dono legado não é avisado quando o QR de um objeto antigo é escaneado, e o achador vê a resposta de sempre | Marcos, 01/11/2026 (documento "Arquitetura de comunicação do Backfindr") | DECIDIDO; PARCIALMENTE APLICADO (verificado em 05/11/2026): instrução e filtro do assistente, FAQ e página "achei" usam a formulação; demais textos a auditar; aviso ao dono legado barrado no servidor (PRs #45 e #47) |
 
 ## Regras permanentes vigentes (resumo; o texto de cada decisão é o que vale)
 
@@ -57,6 +63,60 @@ Esta versão reúne as decisões Q-01 a Q-15, de 28/10/2026, sobre o QR Code com
 | B-30 | parte sobre «legados pertencem à conta de sistema» SUPERADA por | B-31 |
 | B-31 | corrige fato de | B-30 |
 | Q-26 | não altera | Q-20 |
+
+## Situação de aplicação (verificada em 05/11/2026)
+
+Compara o que foi decidido com o que existe no código da main (`07ae2a6`), nos PRs e no banco. NÃO VERIFICADO = não conferi.
+
+| Assunto | Situação | Evidência |
+|---|---|---|
+| Definição oficial do Backfindr (Q-11) | IMPLEMENTADO | Texto em `layout.tsx`, `auth/register` e assistente |
+| QR como segundo passo (Q-01, Q-02, Q-12) | Registrado como aplicado em 28/10; só conferi a frase do chat da plataforma | Presente em `achei`, `faq` e assistente |
+| Frase aprovada sobre a chance com QR (Q-05) | NÃO ENCONTRADA no código | Provavelmente saiu com o bloco retirado na Q-12; confirmar se ainda será usada |
+| Filtro de linguagem do assistente (Q-14) | IMPLEMENTADO | Rota do assistente |
+| Aplicação da Q-16 nos textos do código | PENDENTE de ordem escrita | FAQ ainda diz "plataforma de recuperação de objetos perdidos" |
+| Mensagem da plataforma e push (Q-17, Q-24) | IMPLEMENTADO | PRs #85 e #86; limite de 24 h para urgentes pendente |
+| Melhorias do push na web (Q-25) | IMPLEMENTADO | PR #87; Android sem teste |
+| E-mail em três categorias (Q-18) | Estrutura IMPLEMENTADA | Tabelas existem no banco |
+| Consentimento de marketing (Q-19) | NÃO IMPLEMENTADO | Sem tela de consentimento |
+| Legado fora de envios e rotinas (B-28, B-31, Q-20) | IMPLEMENTADO | PRs #45 e #47 |
+| Remetente (B-17) | IMPLEMENTADO | `FROM_ADDRESS` noreply@backfindr.com.br; PR #35 |
+| Limite de boas-vindas por origem (B-26) | IMPLEMENTADO | PR #44 |
+| Templates de e-mail (B-18 M1, B-24) | IMPLEMENTADO | PR #36 |
+| Limites nas demais rotas públicas (B-18 M3) | NÃO VERIFICADO | Pendente em 10/10 |
+| GA4 `ocorrencia_publicada` (B-19) | IMPLEMENTADO | PR #37 |
+| Canonical sem www (B-20) | SUPERADO | PR #38 fechado; PR #77 (03/11) refez |
+| Sitemap com todos os objetos (B-21, B-25) | IMPLEMENTADO | PR #43; canonical do blog NÃO VERIFICADO |
+| SMS desligado (Q-27) | PARCIAL | Camada pronta sem chamadores |
+| Silêncio noturno do push (Q-28) | NÃO EFETIVO | Política escrita, ninguém a usa |
+| Guarda das conversas (Q-29) | NÃO IMPLEMENTADO | Sem retenção no código |
+| Sinais públicos por aceite (Q-30) | NÃO IMPLEMENTADO | Sem assinatura de alerta |
+| Canal do achador sem conta (Q-31) | NÃO IMPLEMENTADO | Desenho aguarda confirmação |
+| Reciclagem e bloqueio do legado (Q-23, Q-26) | NÃO IMPLEMENTADO | Login não trata a marca de legado; exclusão pelo dono na main é definitiva |
+| Governança, lixeira e auditoria (PR #51) | NÃO APLICADO | Banco sem `objects.deleted_at`, `objects_active` e schema `audit` |
+| Cadeia de devolução (C-01 a C-04) | NÃO VERIFICADO | Código não conferido |
+
+## Decisões em aberto (lembrar sempre)
+
+Nenhuma destas deve ser tratada como implementada enquanto não sair da lista.
+
+| Decisão em aberto | Quem decide | Origem |
+|---|---|---|
+| Antecipar o bloqueio de escrita do legado antes do fluxo completo | Marcos | Q-26 (d) |
+| Confirmar o desenho do canal do achador sem conta | Marcos | Q-31 |
+| Limiar do destaque do QR | Marcos | Q-10 |
+| Limite de 1 mensagem por 24 h vale para as urgentes? | Marcos | Q-24 |
+| Alcance da configuração de segurança adiada | Marcos | Q-22 |
+| Redação do contato direto, texto da tentativa sem retorno, tensão com as premissas | Marcos e jurídico | C-01, C-03, C-04 |
+| Revisão jurídica (guarda das conversas, reciclagem, Fase 4) | Jurídico | Q-23, Q-29 |
+| Política de privacidade, tela de consentimento e canal LGPD | Marcos, jurídico e Code | Q-19, Q-21 |
+| Aplicar a Q-16 nos textos do código | Ordem escrita do Marcos | Q-16 |
+| Plano de aplicação da migration 025 (não mesclar #51 antes) | Ordem escrita do Marcos | PR #51 |
+| Ligar silêncio noturno, guarda de conversas e sinais públicos | Ordem do Marcos ao Code | Q-28, Q-29, Q-30 |
+| Planos de QR personalizado e em lote existem como produto? | Marcos | Q-03 |
+| Frase da chance com QR ainda será usada? | Marcos | Q-05 |
+| Aplicativo nativo e testes de push no celular | Marcos | Q-25 |
+| Reverificar B-18 M3, canonical do blog (B-21) e trava contra escrita em produção (B-23) | Code, a pedido | B-18, B-21, B-23 |
 
 ## Decisões da integração (08 a 10/10/2026) e da cadeia de devolução
 
