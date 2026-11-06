@@ -13,6 +13,8 @@ import { toast } from 'sonner';
 import { useAuthStore } from '@/hooks/useAuth';
 import ImpersonationBanner from '@/components/ui/ImpersonationBanner';
 import { playNotificationSound } from '@/lib/notificationSound';
+import { isPushSoundEnabled, pushSoundPlayedRecently } from '@/lib/pushSound';
+import { usePushSound } from '@/hooks/usePushSound';
 
 // Formato mínimo retornado por GET /api/v1/notifications — só os campos que
 // o polling do sino/toast precisa (ver src/app/api/v1/notifications/route.ts).
@@ -46,9 +48,11 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const pathname = usePathname();
   const router = useRouter();
   const { user, isAuthenticated, logout, fetchMe } = useAuthStore();
+  usePushSound();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [pendingMatches, setPendingMatches] = useState(0);
   const [unreadNotifs, setUnreadNotifs] = useState(0);
+  const [unreadChat, setUnreadChat] = useState(0);
   const [objectCount, setObjectCount] = useState<number | null>(null); // null = ainda carregando
   const [hydrated, setHydrated] = useState(false);
   const initDone = useRef(false);
@@ -160,7 +164,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           fresh.forEach(n => seenNotifIds.current!.add(n.id));
 
           if (fresh.length > 0) {
-            playNotificationSound();
+            if (isPushSoundEnabled() && !pushSoundPlayedRecently()) playNotificationSound();
             fresh.forEach(n => {
               toast.success(n.title, {
                 description: n.message,
@@ -168,6 +172,14 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
               });
             });
           }
+        })
+        .catch(() => {});
+
+      // Mensagens de chat não lidas (entram no número do sino; sem som nem toast)
+      fetch('/api/v1/chat/unread', { headers: { Authorization: `Bearer ${token}` } })
+        .then(r => r.ok ? r.json() : null)
+        .then((data: { total?: number } | null) => {
+          if (!cancelled && data) setUnreadChat(Number(data.total) || 0);
         })
         .catch(() => {});
     };
@@ -227,7 +239,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             const isNotifications = href === '/dashboard/notifications';
             const badge =
               isMatches && pendingMatches > 0 ? pendingMatches :
-              isNotifications && unreadNotifs > 0 ? unreadNotifs :
+              isNotifications && unreadNotifs + unreadChat > 0 ? unreadNotifs + unreadChat :
               null;
 
             // Item bloqueado: requer objetos mas o usuário ainda não tem nenhum

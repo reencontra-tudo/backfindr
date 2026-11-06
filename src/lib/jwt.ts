@@ -42,6 +42,24 @@ export function createRefreshToken(userId: string, email: string): string {
   });
 }
 
+/** Token de impersonation (2 h), assinado com a mesma chave e algoritmo dos demais tokens; usado só por admin/impersonate. */
+export function createImpersonationToken(
+  target: { id: string; email: string },
+  impersonator: { id: string; email: string },
+): string {
+  const payload: TokenPayload = {
+    sub: target.id,
+    email: target.email,
+    impersonated_by: impersonator.id,
+    impersonated_by_email: impersonator.email,
+  };
+
+  return jwt.sign(payload, SECRET_KEY, {
+    algorithm: ALGORITHM as any,
+    expiresIn: '2h',
+  });
+}
+
 export function verifyToken(token: string): TokenPayload | null {
   try {
     const decoded = jwt.verify(token, SECRET_KEY, {

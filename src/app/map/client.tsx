@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { MapPin, Search, X, ChevronRight, SlidersHorizontal, LocateFixed, Gift, Newspaper, ExternalLink, Navigation, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { useAuthStore } from '@/hooks/useAuth';
+import ObjectThumb from '@/components/ObjectThumb';
 
 // Abaixo desse número de casos reais, o botão "Recuperado" fica oculto pra
 // usuário comum — com volume muito baixo (hoje é 1), o filtro só passa
@@ -775,9 +776,7 @@ export default function MapPage() {
                     }}
                     className="w-full flex items-center gap-3 px-4 py-3 hover:bg-white/[0.03] transition-colors text-left group"
                   >
-                    <div className="w-9 h-9 rounded-xl bg-white/[0.06] flex items-center justify-center text-lg flex-shrink-0">
-                      {EMOJI[obj.category] ?? '📦'}
-                    </div>
+                    <ObjectThumb category={obj.category} size="sm" className="w-9 h-9 rounded-xl" />
                     <div className="flex-1 min-w-0">
                       <p className="text-white/80 text-xs font-medium leading-snug group-hover:text-white transition-colors truncate">
                         {obj.title}
@@ -854,9 +853,7 @@ export default function MapPage() {
                           : 'hover:bg-white/[0.04] border border-transparent'
                       }`}
                     >
-                      <div className="w-9 h-9 rounded-xl bg-white/[0.06] flex items-center justify-center text-lg flex-shrink-0">
-                        {EMOJI[obj.category] ?? '📦'}
-                      </div>
+                      <ObjectThumb category={obj.category} size="sm" className="w-9 h-9 rounded-xl" />
                       <div className="flex-1 min-w-0">
                         <p className="text-white text-sm font-medium truncate">{obj.title}</p>
                         <div className="flex items-center gap-1.5">
@@ -915,9 +912,7 @@ export default function MapPage() {
                       {detail.photos?.[0] ? (
                         <img src={detail.photos[0]} alt="" className="w-14 h-14 rounded-xl object-cover flex-shrink-0 border border-white/10" />
                       ) : (
-                        <div className="w-14 h-14 rounded-xl bg-white/[0.06] flex items-center justify-center text-3xl flex-shrink-0">
-                          {EMOJI[detail.category] ?? '📦'}
-                        </div>
+                        <ObjectThumb category={detail.category} size="md" className="w-14 h-14 rounded-xl" />
                       )}
                       <div className="flex-1 min-w-0">
                         <p className="text-white font-bold text-base leading-snug">{detail.title}</p>

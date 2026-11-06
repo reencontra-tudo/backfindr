@@ -4,15 +4,16 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import {
   Bell, Zap, MessageCircle, CheckCircle2,
-  QrCode, Check, Trash2
+  QrCode, Check, Trash2, Megaphone
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { formatDistanceToNow } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { api, parseApiError } from '@/lib/api';
 import { usePushNotifications } from '@/hooks/usePushNotifications';
+import { unescapeHtml } from '@/lib/platformMessage';
 
-type NotifType = 'match' | 'scan' | 'message' | 'returned' | 'system';
+type NotifType = 'match' | 'scan' | 'message' | 'returned' | 'system' | 'platform_message';
 
 interface Notification {
   id: string;
@@ -30,6 +31,7 @@ const NOTIF_ICON: Record<NotifType, React.ReactNode> = {
   message:  <MessageCircle className="w-4 h-4 text-blue-400" />,
   returned: <CheckCircle2 className="w-4 h-4 text-green-400" />,
   system:   <Bell className="w-4 h-4 text-slate-400" />,
+  platform_message: <Megaphone className="w-4 h-4 text-teal-400" />,
 };
 
 const NOTIF_BG: Record<NotifType, string> = {
@@ -38,6 +40,7 @@ const NOTIF_BG: Record<NotifType, string> = {
   message:  'bg-blue-500/10',
   returned: 'bg-green-500/10',
   system:   'bg-surface-border',
+  platform_message: 'bg-teal-500/10',
 };
 
 export default function NotificationsPage() {
@@ -176,15 +179,18 @@ export default function NotificationsPage() {
               </div>
 
               <div className="flex-1 min-w-0">
+                {notif.type === 'platform_message' && (
+                  <span className="inline-block text-[10px] font-semibold uppercase tracking-wider text-teal-400 bg-teal-500/10 px-1.5 py-0.5 rounded mb-1">Mensagem do Backfindr</span>
+                )}
                 <div className="flex items-start justify-between gap-2">
                   <p className={`text-sm font-medium ${notif.read ? 'text-slate-300' : 'text-white'}`}>
-                    {notif.title}
+                    {notif.type === 'platform_message' ? unescapeHtml(notif.title) : notif.title}
                   </p>
                   {!notif.read && (
                     <div className="w-2 h-2 bg-brand-500 rounded-full flex-shrink-0 mt-1" />
                   )}
                 </div>
-                <p className="text-slate-400 text-xs mt-0.5 leading-relaxed">{notif.message}</p>
+                <p className="text-slate-400 text-xs mt-0.5 leading-relaxed">{notif.type === 'platform_message' ? unescapeHtml(notif.message ?? '') : notif.message}</p>
                 <p className="text-slate-600 text-xs mt-1">
                   {formatDistanceToNow(new Date(notif.created_at), { addSuffix: true, locale: ptBR })}
                 </p>

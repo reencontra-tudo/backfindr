@@ -1,6 +1,7 @@
 'use client';
 
-import { useState, useEffect, Suspense } from 'react';
+import { useState, useEffect, useRef, Suspense } from 'react';
+import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -35,6 +36,17 @@ const schema = z.object({
 });
 
 type FormData = z.infer<typeof schema>;
+
+interface SimilarObject {
+  id: string;
+  title: string;
+  description: string | null;
+  status: string;
+}
+
+const SIMILAR_STATUS_LABEL: Record<string, string> = {
+  lost: 'Perdido', found: 'Encontrado', stolen: 'Roubado', protected: 'Protegido', recovered: 'Recuperado',
+};
 
 // ─── Options ─────────────────────────────────────────────────────────────────
 const CATEGORIES: { value: ObjectCategory; label: string; emoji: string }[] = [
@@ -80,23 +92,23 @@ function ModeSelector({ onSelect }: { onSelect: (mode: 'protect' | 'report') => 
       </div>
 
       <div className="space-y-4">
-        {/* Opção 1: Proteger preventivamente */}
+        {/* Opção 1: Registrar ocorrência (função principal) */}
         <button
           type="button"
-          onClick={() => onSelect('protect')}
+          onClick={() => onSelect('report')}
           className="w-full p-5 rounded-2xl border border-blue-500/30 bg-blue-500/5 hover:bg-blue-500/10 hover:border-blue-500/50 transition-all text-left group"
         >
           <div className="flex items-start gap-4">
             <div className="w-11 h-11 rounded-xl bg-blue-500/20 border border-blue-500/30 flex items-center justify-center flex-shrink-0 mt-0.5 group-hover:bg-blue-500/30 transition-colors">
-              <Shield className="w-5 h-5 text-blue-400" />
+              <Search className="w-5 h-5 text-blue-400" />
             </div>
             <div className="flex-1">
-              <p className="font-semibold text-white text-base mb-1">🛡️ Proteger um objeto</p>
+              <p className="font-semibold text-white text-base mb-1">🔍 Registrar uma ocorrência</p>
               <p className="text-slate-400 text-sm leading-relaxed">
-                Tenho o objeto agora e quero gerar um QR Code para colar nele. Se alguém encontrar no futuro, me avisa automaticamente.
+                Perdi um objeto, fui roubado ou encontrei algo e quero devolver.
               </p>
               <div className="mt-3 flex flex-wrap gap-2">
-                {['Celular', 'Carteira', 'Chaves', 'Mochila', 'Pet', 'Veículo'].map(item => (
+                {['Perdi algo', 'Fui roubado', 'Encontrei algo'].map(item => (
                   <span key={item} className="text-xs text-blue-400/70 bg-blue-500/10 border border-blue-500/20 px-2 py-0.5 rounded-full">{item}</span>
                 ))}
               </div>
@@ -104,24 +116,23 @@ function ModeSelector({ onSelect }: { onSelect: (mode: 'protect' | 'report') => 
             <ChevronRight className="w-5 h-5 text-blue-400 flex-shrink-0 mt-3 group-hover:translate-x-0.5 transition-transform" />
           </div>
         </button>
-
-        {/* Opção 2: Reportar ocorrência */}
+        {/* Opção 2: Proteger preventivamente (QR, opcional) */}
         <button
           type="button"
-          onClick={() => onSelect('report')}
+          onClick={() => onSelect('protect')}
           className="w-full p-5 rounded-2xl border border-white/10 bg-white/[0.02] hover:bg-white/[0.04] hover:border-white/20 transition-all text-left group"
         >
           <div className="flex items-start gap-4">
             <div className="w-11 h-11 rounded-xl bg-white/5 border border-white/10 flex items-center justify-center flex-shrink-0 mt-0.5 group-hover:bg-white/10 transition-colors">
-              <Search className="w-5 h-5 text-slate-400" />
+              <Shield className="w-5 h-5 text-slate-400" />
             </div>
             <div className="flex-1">
-              <p className="font-semibold text-white text-base mb-1">🔍 Reportar uma ocorrência</p>
+              <p className="font-semibold text-white text-base mb-1">🛡️ Proteger um objeto</p>
               <p className="text-slate-400 text-sm leading-relaxed">
-                Perdi um objeto, fui roubado ou encontrei algo de outra pessoa e quero devolver.
+                Se quiser se preparar antes, gere um QR Code para colar no objeto. Se alguém o escanear, você é avisado.
               </p>
               <div className="mt-3 flex flex-wrap gap-2">
-                {['Perdi algo', 'Fui roubado', 'Encontrei algo'].map(item => (
+                {['Celular', 'Carteira', 'Chaves', 'Mochila', 'Pet', 'Veículo'].map(item => (
                   <span key={item} className="text-xs text-slate-500 bg-white/5 border border-white/10 px-2 py-0.5 rounded-full">{item}</span>
                 ))}
               </div>
@@ -129,6 +140,7 @@ function ModeSelector({ onSelect }: { onSelect: (mode: 'protect' | 'report') => 
             <ChevronRight className="w-5 h-5 text-slate-500 flex-shrink-0 mt-3 group-hover:translate-x-0.5 transition-transform" />
           </div>
         </button>
+
       </div>
     </div>
   );
@@ -153,6 +165,11 @@ function NewObjectForm() {
 
   const [step, setStep] = useState(intentPreset.startStep ?? 0);
   const [submitting, setSubmitting] = useState(false);
+  // Guarda síncrona contra duplo clique: o `disabled={submitting}` só vale depois do próximo render.
+  const submittingRef = useRef(false);
+  // Aviso de objeto parecido (409 SIMILAR_OBJECT_FOUND). O formulário continua montado por baixo do modal.
+  const [similarObjects, setSimilarObjects] = useState<SimilarObject[] | null>(null);
+  const pendingDataRef = useRef<FormData | null>(null);
   const [photos, setPhotos] = useState<File[]>([]);
   const [previews, setPreviews] = useState<string[]>([]);
   const [compressing, setCompressing] = useState(false);
@@ -268,7 +285,9 @@ function NewObjectForm() {
     }
   };
 
-  const onSubmit = async (data: FormData) => {
+  const submitObject = async (data: FormData, confirmDuplicate: boolean) => {
+    if (submittingRef.current) return;
+    submittingRef.current = true;
     setSubmitting(true);
     try {
       const payload: Record<string, unknown> = {
@@ -280,6 +299,7 @@ function NewObjectForm() {
         longitude: data.lng || null,
         location: data.address || null,
       };
+      if (confirmDuplicate) payload.confirm_duplicate = true;
 
       if (isPet) {
         if (data.pet_species) payload.pet_species = data.pet_species;
@@ -321,6 +341,13 @@ function NewObjectForm() {
 
       router.push(`/dashboard/objects/${objectId}/sucesso`);
     } catch (err) {
+      // Objeto parecido já existente: pede confirmação em vez de criar
+      if (axios.isAxiosError(err) && err.response?.status === 409 && err.response.data?.error === 'SIMILAR_OBJECT_FOUND') {
+        pendingDataRef.current = data;
+        setSimilarObjects(err.response.data.similar_objects ?? []);
+        return;
+      }
+      setSimilarObjects(null);
       // Tratar erro de limite de plano com redirecionamento para upgrade
       if (axios.isAxiosError(err) && err.response?.data?.error === 'limit_reached') {
         const msg = err.response.data.message ?? 'Limite de objetos atingido.';
@@ -335,8 +362,21 @@ function NewObjectForm() {
         toast.error(parseApiError(err));
       }
     } finally {
+      submittingRef.current = false;
       setSubmitting(false);
     }
+  };
+
+  // handleSubmit passa (data, event): não repassar o 2º argumento para confirmDuplicate.
+  const onSubmit = (data: FormData) => submitObject(data, false);
+
+  const confirmDuplicateSubmit = () => {
+    if (pendingDataRef.current) submitObject(pendingDataRef.current, true);
+  };
+
+  const closeSimilarModal = () => {
+    if (submittingRef.current) return;
+    setSimilarObjects(null);
   };
 
   return (
@@ -750,9 +790,13 @@ function NewObjectForm() {
           {step === 0 ? (
             <span />
           ) : step < STEPS.length - 1 ? (
+            // key distinto: sem ele o React reaproveita o mesmo <button> e troca type="button" por
+            // type="submit" ainda dentro do clique, e o navegador envia o formulário ao entrar no último passo.
+            // preventDefault é a segunda trava: avançar de passo nunca submete.
             <button
+              key="next-step"
               type="button"
-              onClick={nextStep}
+              onClick={(e) => { e.preventDefault(); nextStep(); }}
               data-widget-safe-zone
               className={`flex items-center gap-2 px-6 py-2.5 text-white font-semibold rounded-xl transition-all text-sm ${
                 mode === 'protect'
@@ -765,6 +809,7 @@ function NewObjectForm() {
             </button>
           ) : (
             <button
+              key="submit-form"
               type="submit"
               disabled={submitting}
               data-widget-safe-zone
@@ -792,6 +837,90 @@ function NewObjectForm() {
         </div>
       </form>
     </div>
+      )}
+
+      {/* ── Aviso de objeto parecido ── */}
+      {similarObjects && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center px-4"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="similar-object-title"
+        >
+          <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={closeSimilarModal} />
+          <div className="relative w-full max-w-md bg-[#0f1623] border border-white/[0.08] rounded-2xl p-6 shadow-2xl z-10">
+            <button
+              type="button"
+              onClick={closeSimilarModal}
+              aria-label="Fechar"
+              className="absolute top-4 right-4 text-white/30 hover:text-white/60 transition-colors"
+            >
+              <X className="w-4 h-4" />
+            </button>
+
+            <div className="flex items-center gap-3 mb-3">
+              <div className="w-10 h-10 rounded-xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-center">
+                <Info className="w-5 h-5 text-amber-400" />
+              </div>
+              <h2 id="similar-object-title" className="text-white font-semibold text-sm">
+                Você já tem um objeto parecido
+              </h2>
+            </div>
+
+            <p className="text-white/50 text-xs mb-4 leading-relaxed">
+              Encontramos um objeto seu com dados semelhantes. Quer ver o que já existe ou registrar mesmo assim?
+            </p>
+
+            <ul className="space-y-2 mb-5">
+              {similarObjects.map((obj) => (
+                <li key={obj.id}>
+                  <Link
+                    href={`/dashboard/objects/${obj.id}`}
+                    className="block glass rounded-xl px-4 py-3 hover:bg-white/[0.06] transition-colors"
+                  >
+                    <div className="flex items-center justify-between gap-2">
+                      <span className="text-white text-sm font-medium truncate">{obj.title}</span>
+                      <span className="text-[11px] text-white/40 shrink-0">
+                        {SIMILAR_STATUS_LABEL[obj.status] ?? obj.status}
+                      </span>
+                    </div>
+                    {obj.description && (
+                      <p className="text-white/40 text-xs mt-1 line-clamp-2">{obj.description}</p>
+                    )}
+                  </Link>
+                </li>
+              ))}
+            </ul>
+
+            <div className="flex flex-col gap-2">
+              <button
+                type="button"
+                onClick={() => similarObjects[0] && router.push(`/dashboard/objects/${similarObjects[0].id}`)}
+                disabled={submitting || similarObjects.length === 0}
+                className="w-full px-5 py-2.5 bg-brand-500 hover:bg-brand-400 disabled:opacity-60 disabled:cursor-not-allowed text-white font-semibold rounded-xl transition-all text-sm"
+              >
+                Ver objeto existente
+              </button>
+              <button
+                type="button"
+                onClick={confirmDuplicateSubmit}
+                disabled={submitting}
+                className="w-full flex items-center justify-center gap-2 px-5 py-2.5 glass rounded-xl text-slate-300 hover:text-white disabled:opacity-60 disabled:cursor-not-allowed transition-all text-sm"
+              >
+                {submitting && <Loader2 className="w-4 h-4 animate-spin" />}
+                Registrar mesmo assim
+              </button>
+              <button
+                type="button"
+                onClick={closeSimilarModal}
+                disabled={submitting}
+                className="w-full px-5 py-2 text-white/40 hover:text-white/70 disabled:opacity-60 text-xs transition-colors"
+              >
+                Cancelar
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </>
   );

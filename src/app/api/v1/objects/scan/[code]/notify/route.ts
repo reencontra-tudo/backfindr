@@ -118,7 +118,8 @@ export async function POST(
     if (object.user_id && !object.legacy_blocked) {
       const pushTask = sendPushToUser(
         object.user_id,
-        scanPayload(object.title, object.id)
+        scanPayload(object.title, object.id),
+        { event: 'qr_scan' }
       ).catch(err => console.error('[push] notify push failed:', err));
 
       const emailTask = query(`SELECT name, email FROM users WHERE id = $1`, [object.user_id])

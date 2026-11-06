@@ -187,7 +187,8 @@ export async function GET(request: NextRequest) {
               ).catch(() => {}),
               sendPushToUser(
                 owner.id as string,
-                matchPayload(matchId, object.title as string, finalScore)
+                matchPayload(matchId, object.title as string, finalScore),
+                { event: 'match' }
               ).catch(() => {})
             );
             Events.ownerNotified(object.id as string, owner.id as string).catch(() => {});

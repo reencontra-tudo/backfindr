@@ -16,11 +16,12 @@ import { recordEvent } from '@/lib/events';
  *   desfaz um retorno real nem qualquer outro dado; só limpa um sinal que
  *   ficou sem resposta por 2 semanas.
  *
- * IMPORTANTE: esta rota existe e foi testada manualmente, mas ainda NÃO
- * está agendada em lugar nenhum (nem Vercel Cron, nem n8n) — precisa ser
- * conectada a um schedule externo (mesmo padrão do cron n8n "Backfindr
- * Public Signals — Ingestão Diária"), 1x/dia é suficiente dado o intervalo
- * de dias. Ver BACKFINDR.md seção 17.
+ * Agendamento: workflow do n8n "Backfindr Found Pending — Lembretes e Timeout",
+ * diário às 2h (horário do servidor do n8n), com GET nesta rota e o header
+ * `Authorization: Bearer <CRON_SECRET>`. Se o CRON_SECRET for rotacionado na
+ * Vercel, o header desse nó precisa ser atualizado junto; senão a rota
+ * responde 401 e o lembrete deixa de rodar. Ver docs/ROTACAO-SEGREDOS.md e
+ * BACKFINDR.md seção 17.
  *
  * Dedup via `user_lifecycle_events` (tabela já existente, reaproveitada —
  * mesmo padrão de src/app/api/v1/cron/lifecycle/route.ts) chaveado por
@@ -39,6 +40,7 @@ export async function GET(request: NextRequest) {
   }
 
   const results = {
+    reminders_d1: 0,
     reminders_d3: 0,
     reminders_d7: 0,
     auto_dismissed_d14: 0,
@@ -46,6 +48,45 @@ export async function GET(request: NextRequest) {
   };
 
   try {
+    // ─── D+1: primeiro aviso ───────────────────────────────────────────────
+    // Janela: 1 dia <= idade < 2 dias. Respeita a preferência de push do evento 'qr_scan'.
+    try {
+      const d1Result = await query(
+        `SELECT o.id, o.user_id, o.title
+           FROM objects o
+          WHERE o.found_pending_confirmation = true
+            AND o.found_pending_since <= NOW() - INTERVAL '1 day'
+            AND o.found_pending_since >  NOW() - INTERVAL '2 days'
+            AND o.user_id IS NOT NULL
+            AND o.is_legacy IS NOT TRUE
+            AND NOT EXISTS (SELECT 1 FROM users ux WHERE ux.id = o.user_id AND (ux.is_legacy IS TRUE OR ux.is_system_account IS TRUE))
+            AND (SELECT COUNT(*) FROM user_lifecycle_events
+                  WHERE user_id = o.user_id AND object_id = o.id
+                    AND event_type = 'found_pending_reminder_d1') = 0
+          LIMIT 200`
+      );
+      for (const row of d1Result.rows as { id: string; user_id: string; title: string }[]) {
+        try {
+          await sendPushToUser(row.user_id, {
+            title: '👀 Sinalização aguardando sua resposta',
+            body: `Alguém sinalizou que encontrou "${row.title}". Confirme ou descarte na página do objeto.`,
+            url: `/dashboard/objects/${row.id}`,
+            tag: `found-pending-d1-${row.id}`,
+          }, { event: 'qr_scan' });
+          await query(
+            `INSERT INTO user_lifecycle_events (user_id, object_id, event_type, created_at)
+             VALUES ($1, $2, 'found_pending_reminder_d1', NOW())`,
+            [row.user_id, row.id]
+          ).catch(() => {});
+          results.reminders_d1++;
+        } catch (err) {
+          results.errors.push(`Erro ao enviar lembrete D+1 (objeto ${row.id}): ${err}`);
+        }
+      }
+    } catch (err) {
+      results.errors.push(`Erro ao buscar objetos D+1: ${err}`);
+    }
+
     // ─── D+3: primeiro lembrete ────────────────────────────────────────────
     try {
       const d3Result = await query(

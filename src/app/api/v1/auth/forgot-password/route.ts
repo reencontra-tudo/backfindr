@@ -3,6 +3,8 @@ import { NextRequest } from 'next/server';
 import crypto from 'crypto';
 import { query } from '@/lib/db';
 import { esc } from '@/lib/email';
+import { deliverEmail } from '@/lib/emailSend';
+import { consumeEmailRequestSlots } from '@/lib/sendThrottle';
 import { successResponse, errorResponse, internalErrorResponse } from '@/lib/response';
 
 export async function POST(request: NextRequest) {
@@ -12,6 +14,15 @@ export async function POST(request: NextRequest) {
 
     if (!email) {
       return errorResponse('Email is required', 400);
+    }
+
+    // Limite por IP e por e-mail ANTES de consultar o banco: conta existente ou não, a resposta é a mesma, e nenhum
+    // token é sobrescrito nem e-mail enviado quando o limite estoura.
+    if (typeof email !== 'string') {
+      return errorResponse('Email is required', 400);
+    }
+    if (!(await consumeEmailRequestSlots('forgot_password', request.headers, email))) {
+      return errorResponse('Too many requests. Please wait a few minutes and try again.', 429);
     }
 
     // Verificar se o usuário existe
@@ -43,34 +54,25 @@ export async function POST(request: NextRequest) {
     // Em produção, enviar email via Resend
     const resetUrl = `${process.env.NEXT_PUBLIC_APP_URL || 'https://backfindr.vercel.app'}/auth/reset-password?token=${resetToken}`;
 
-    if (process.env.RESEND_API_KEY) {
-      try {
-        await fetch('https://api.resend.com/emails', {
-          method: 'POST',
-          headers: {
-            'Authorization': `Bearer ${process.env.RESEND_API_KEY}`,
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            from: 'Backfindr <noreply@backfindr.com.br>',
-            to: [user.email],
-            subject: 'Redefinição de senha — Backfindr',
-            html: `
-              <h2>Redefinição de senha</h2>
-              <p>Olá, ${esc(user.name)}!</p>
-              <p>Você solicitou a redefinição de sua senha. Clique no link abaixo para criar uma nova senha:</p>
-              <a href="${resetUrl}" style="background:#10b981;color:white;padding:12px 24px;border-radius:6px;text-decoration:none;display:inline-block;margin:16px 0;">
-                Redefinir senha
-              </a>
-              <p>Este link expira em 1 hora.</p>
-              <p>Se você não solicitou isso, ignore este email.</p>
-            `,
-          }),
-        });
-      } catch (emailError) {
-        console.error('Error sending email:', emailError);
-      }
-    }
+    // E-mail de segurança pedido pelo próprio usuário: vale também para legado (precisa trocar a senha).
+    // O resultado não altera a resposta (evita revelar se o e-mail existe).
+    await deliverEmail({
+      to: user.email,
+      subject: 'Redefinição de senha — Backfindr',
+      category: 'security',
+      source: 'password_reset',
+      recipient: { id: user.id },
+      html: `
+        <h2>Redefinição de senha</h2>
+        <p>Olá, ${esc(user.name)}!</p>
+        <p>Você solicitou a redefinição de sua senha. Clique no link abaixo para criar uma nova senha:</p>
+        <a href="${resetUrl}" style="background:#10b981;color:white;padding:12px 24px;border-radius:6px;text-decoration:none;display:inline-block;margin:16px 0;">
+          Redefinir senha
+        </a>
+        <p>Este link expira em 1 hora.</p>
+        <p>Se você não solicitou isso, ignore este email.</p>
+      `,
+    });
 
     return successResponse({ message: 'If this email exists, a reset link has been sent.' });
   } catch (error) {

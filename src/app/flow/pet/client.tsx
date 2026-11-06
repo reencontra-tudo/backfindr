@@ -6,6 +6,7 @@ import { analytics } from '@/providers/PostHogProvider';
 import { ArrowRight, Loader2, CheckCircle2, MapPin, AlertCircle, Dog, Cat, Bird, Share2 } from 'lucide-react';
 import FlowLayout from '@/components/flow/FlowLayout';
 import FlowMatchCard, { MatchItem } from '@/components/flow/FlowMatchCard';
+import { APP_URL } from '@/lib/constants';
 
 type PetType = 'cachorro' | 'gato' | 'passaro' | 'outro';
 
@@ -331,14 +332,14 @@ export default function PetFlowClient() {
                 <ArrowRight className="w-5 h-5" />
               </button>
               <p className="text-center text-white/30 text-xs">
-                Gratuito. Seu contato fica protegido.
+                Gratuito. A conversa acontece pelo chat da plataforma.
               </p>
 
               {/* Compartilhar antes de publicar — aumenta viralização */}
               <button
                 onClick={() => {
                   const petLabel = [step1.name, step1.breed, step1.petType].filter(Boolean).join(' ');
-                  const text = `🐾 Alguém viu este pet? ${petLabel}${step1.where ? ` — ${step1.where}` : ''}. Ajude a encontrar! https://backfindr.com.br/flow/pet`;
+                  const text = `🐾 Alguém viu este pet? ${petLabel}${step1.where ? ` — ${step1.where}` : ''}. Ajude a encontrar! ${APP_URL}/flow/pet`;
                   if (navigator.share) {
                     navigator.share({ title: `Pet desaparecido: ${petLabel}`, text });
                   } else {

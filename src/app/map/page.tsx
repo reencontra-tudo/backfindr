@@ -1,15 +1,16 @@
 import type { Metadata } from 'next';
 import MapClient from './client';
+import { APP_URL } from '@/lib/constants';
 
 export const metadata: Metadata = {
   title: 'Mapa de Ocorrências — Objetos Perdidos e Encontrados',
   description: 'Veja em tempo real objetos perdidos e encontrados perto de você. Mapa interativo com filtros por categoria, status e localização.',
   keywords: ['mapa', 'objetos perdidos', 'objetos encontrados', 'ocorrências', 'perto de mim', 'Backfindr'],
-  alternates: { canonical: 'https://www.backfindr.com/map' },
+  alternates: { canonical: `${APP_URL}/map` },
   openGraph: {
     title: 'Mapa de Ocorrências | Backfindr',
     description: 'Veja objetos perdidos e encontrados perto de você em tempo real.',
-    url: 'https://www.backfindr.com/map',
+    url: `${APP_URL}/map`,
     type: 'website',
     images: [{ url: '/icons/og-image.png', width: 1200, height: 630, alt: 'Mapa Backfindr' }],
   },

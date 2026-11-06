@@ -1,7 +1,8 @@
 'use client';
 
 import Link from 'next/link';
-import { MapPin, Package, ArrowRight } from 'lucide-react';
+import ObjectThumb from '@/components/ObjectThumb';
+import { MapPin, ArrowRight } from 'lucide-react';
 
 export interface MatchItem {
   id: string;
@@ -11,6 +12,7 @@ export interface MatchItem {
   photos?: string[];
   created_at?: string;
   unique_code?: string;
+  category?: string | null;
 }
 
 interface FlowMatchCardProps {
@@ -40,9 +42,7 @@ export default function FlowMatchCard({ item, onSelect, label }: FlowMatchCardPr
         {item.photos?.[0] ? (
           <img src={item.photos[0]} alt={item.title} className="w-full h-full object-cover" />
         ) : (
-          <div className="w-full h-full flex items-center justify-center">
-            <Package className="w-5 h-5 text-white/20" />
-          </div>
+          <ObjectThumb category={item.category} size="sm" className="w-full h-full" />
         )}
       </div>
 

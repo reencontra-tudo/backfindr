@@ -128,7 +128,7 @@ export async function POST(
         query(`SELECT name FROM users WHERE id = $1`, [payload.sub])
           .then(r => {
             const senderName = (r.rows[0] as { name: string } | undefined)?.name ?? 'Alguém';
-            return sendPushToUser(recipientId, chatPayload(senderName, params.matchId, message as string));
+            return sendPushToUser(recipientId, chatPayload(senderName, params.matchId, message as string), { event: 'chat_message' });
           })
           .catch(err => console.error('[push] chat push failed:', err)),
       ]);

@@ -9,6 +9,7 @@ import {
   Box, Truck, Store, RefreshCw, ChevronRight, Layers,
   BarChart3, Mail, Shield
 } from "lucide-react";
+import { normalizeActivity, timeAgo, type ActivityItem } from "@/lib/adminActivity";
 
 // ─── Tipos ────────────────────────────────────────────────────────────────────
 
@@ -31,25 +32,7 @@ interface Stats {
   devolution_rate?: number;
 }
 
-interface ActivityItem {
-  id: string;
-  type: string;
-  description: string;
-  created_at: string;
-  meta?: Record<string, string>;
-}
-
 // ─── Helpers ──────────────────────────────────────────────────────────────────
-
-function timeAgo(dateStr: string): string {
-  const diff = Date.now() - new Date(dateStr).getTime();
-  const mins = Math.floor(diff / 60000);
-  if (mins < 1) return "agora";
-  if (mins < 60) return `há ${mins}min`;
-  const hrs = Math.floor(mins / 60);
-  if (hrs < 24) return `há ${hrs}h`;
-  return `há ${Math.floor(hrs / 24)}d`;
-}
 
 function activityDot(type: string) {
   if (type.includes("match")) return "bg-teal-400";
@@ -170,7 +153,7 @@ export default function DashboardPage() {
       if (statsRes.status === "fulfilled") setStats(statsRes.value ?? {});
       if (actRes.status === "fulfilled") {
         const data = actRes.value;
-        setActivity(Array.isArray(data) ? data : (data?.items ?? data?.activity ?? []));
+        setActivity(normalizeActivity(data));
       }
       setLastRefresh(new Date());
     } catch (e) {
@@ -347,9 +330,9 @@ export default function DashboardPage() {
             </div>
           ) : (
             <div className="space-y-0">
-              {activity.map((item, idx) => (
+              {activity.map((item) => (
                 <div
-                  key={item.id ?? idx}
+                  key={item.id}
                   className="flex items-start gap-3 py-2.5 border-b border-white/[0.04] last:border-0"
                 >
                   <div className={`w-2 h-2 rounded-full mt-1.5 flex-shrink-0 ${activityDot(item.type)}`} />

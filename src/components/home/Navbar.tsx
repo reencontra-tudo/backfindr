@@ -48,7 +48,7 @@ export default function Navbar() {
             className="rounded-xl bg-teal-500 px-4 py-2 text-sm font-semibold text-white transition-all hover:bg-teal-400"
             style={{ boxShadow: '0 8px 24px rgba(20,184,166,0.22)' }}
           >
-            Criar QR grátis
+            Criar conta
           </Link>
         </div>
       </div>

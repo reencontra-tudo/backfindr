@@ -4,11 +4,24 @@ import { Mail, Send, Users, CheckCircle2, Eye, RefreshCw, Plus, X, AlertCircle }
 import { api, parseApiError } from '@/lib/api';
 import { toast } from 'sonner';
 
+interface CampaignResults {
+  tracked: number; delivered: number; bounced: number; complained: number;
+  opened: number; clicked: number; unsubscribed?: number;
+}
 interface Campaign {
   id: string; type: string; subject: string; status: string;
-  sent_count: number; failed_count: number; created_at: string; sent_at?: string;
+  sent_count: number; failed_count: number; skipped_count?: number; created_at: string; sent_at?: string;
+  results?: CampaignResults | null;
 }
 interface Stats { total_users: number; resend_connected: boolean; }
+interface Tracking { available: boolean; webhook_configured: boolean; }
+interface Health {
+  days: number; sent: number; events: number;
+  delivery_rate: number | null; bounce_rate: number | null; complaint_rate: number | null;
+  suppressed_total: number;
+}
+
+const pct = (v: number | null | undefined) => (v == null ? '—' : `${(v * 100).toLocaleString('pt-BR', { maximumFractionDigits: 1 })}%`);
 
 const TEMPLATE_WEBJETOS = `<div style="font-family:sans-serif;max-width:600px;margin:0 auto;background:#0a0f1a;color:#fff;padding:32px;border-radius:16px">
   <h2 style="color:#14b8a6;margin-bottom:8px">Olá, {{name}}!</h2>
@@ -35,6 +48,8 @@ const TYPE_LABEL: Record<string, string> = {
 export default function AdminEmails() {
   const [campaigns, setCampaigns] = useState<Campaign[]>([]);
   const [stats, setStats] = useState<Stats>({ total_users: 0, resend_connected: false });
+  const [tracking, setTracking] = useState<Tracking>({ available: false, webhook_configured: false });
+  const [health, setHealth] = useState<Health | null>(null);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
   const [sending, setSending] = useState(false);
@@ -54,6 +69,8 @@ export default function AdminEmails() {
       const { data } = await api.get('/admin/emails');
       setCampaigns(data.campaigns ?? []);
       setStats(data.stats ?? { total_users: 0, resend_connected: false });
+      setTracking(data.tracking ?? { available: false, webhook_configured: false });
+      setHealth(data.health ?? null);
     } catch {
       toast.error('Erro ao carregar campanhas');
     } finally {
@@ -151,6 +168,42 @@ export default function AdminEmails() {
         ))}
       </div>
 
+      {/* Saúde do envio (últimos 30 dias) */}
+      <div className="bg-white/[0.02] border border-white/[0.06] rounded-2xl p-5">
+        <div className="flex items-center justify-between mb-3">
+          <h3 className="text-white font-semibold text-sm">Saúde do envio · últimos 30 dias</h3>
+          {!tracking.available && (
+            <span className="text-yellow-400/80 text-[11px]">Rastreamento indisponível: falta aplicar as migrations 020 e 021</span>
+          )}
+        </div>
+        {health ? (
+          <>
+            <div className="grid grid-cols-2 lg:grid-cols-5 gap-3">
+              {[
+                { label: 'Enviados', value: health.sent.toLocaleString('pt-BR') },
+                { label: 'Taxa de entrega', value: pct(health.delivery_rate) },
+                { label: 'Taxa de rejeição', value: pct(health.bounce_rate) },
+                { label: 'Taxa de reclamação', value: pct(health.complaint_rate) },
+                { label: 'Endereços suprimidos', value: health.suppressed_total.toLocaleString('pt-BR') },
+              ].map(({ label, value }) => (
+                <div key={label} className="bg-white/[0.03] border border-white/[0.05] rounded-xl p-3">
+                  <p className="text-lg font-bold text-white">{value}</p>
+                  <p className="text-white/25 text-[11px] mt-0.5">{label}</p>
+                </div>
+              ))}
+            </div>
+            {health.events === 0 && (
+              <p className="text-white/30 text-[11px] mt-3">
+                Nenhum evento de entrega recebido do Resend no período: as taxas aparecem como "—" até o webhook estar ligado
+                {tracking.webhook_configured ? '' : ' (RESEND_WEBHOOK_SECRET não configurada)'}.
+              </p>
+            )}
+          </>
+        ) : (
+          <p className="text-white/30 text-xs">Sem dados ainda.</p>
+        )}
+      </div>
+
       {/* Lista de campanhas */}
       <div className="bg-white/[0.02] border border-white/[0.06] rounded-2xl overflow-hidden">
         <div className="px-5 py-4 border-b border-white/[0.06]">
@@ -182,12 +235,32 @@ export default function AdminEmails() {
                       <span className="text-white/10">·</span>
                       <span className="text-white/20 text-xs">{date}</span>
                     </div>
+                    <p className="text-white/35 text-[11px] mt-1">
+                      {c.results
+                        ? (c.results.delivered + c.results.bounced + c.results.complained + c.results.opened + c.results.clicked === 0 && !tracking.webhook_configured
+                            ? `${c.results.tracked.toLocaleString('pt-BR')} rastreados · aguardando eventos do Resend (webhook não configurado)`
+                            : [
+                                `Entregues ${c.results.delivered}`,
+                                `Rejeitados ${c.results.bounced}`,
+                                `Reclamações ${c.results.complained}`,
+                                `Descadastros ${c.results.unsubscribed ?? 0}`,
+                                ...(c.results.opened > 0 ? [`Aberturas ${c.results.opened}`] : []),
+                                ...(c.results.clicked > 0 ? [`Cliques ${c.results.clicked}`] : []),
+                              ].join(' · '))
+                        : 'Sem dados de entrega (anterior ao rastreamento)'}
+                    </p>
                   </div>
                   <div className="flex items-center gap-4 flex-shrink-0">
                     <div className="text-right hidden sm:block">
                       <p className="text-white/50 text-sm font-semibold">{(c.sent_count ?? 0).toLocaleString('pt-BR')}</p>
                       <p className="text-white/20 text-[10px]">enviados</p>
                     </div>
+                    {(c.skipped_count ?? 0) > 0 && (
+                      <div className="text-right hidden sm:block">
+                        <p className="text-white/50 text-sm font-semibold">{c.skipped_count}</p>
+                        <p className="text-white/20 text-[10px]">ignorados</p>
+                      </div>
+                    )}
                     {(c.failed_count ?? 0) > 0 && (
                       <div className="text-right hidden sm:block">
                         <p className="text-red-400 text-sm font-semibold">{c.failed_count}</p>

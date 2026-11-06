@@ -22,6 +22,8 @@ import { objectsApi, parseApiError } from '@/lib/api';
 import { ImageLightbox, useLightbox } from '@/components/ImageLightbox';
 import { RegisteredObject, ObjectStatus } from '@/types';
 import Cookies from 'js-cookie';
+import ObjectThumb from '@/components/ObjectThumb';
+import { APP_URL } from '@/lib/constants';
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
@@ -49,12 +51,25 @@ const STATUS_CONFIG: Record<string, { label: string; icon: React.ReactNode; colo
   archived:  { label: 'Arquivado',  icon: <Info className="w-4 h-4" />,          color: 'text-white/40',   bg: 'bg-white/5 border-white/10' },
 };
 
+// Registro de uso do QR (qr_downloaded / qr_printed). Silencioso: nunca interrompe a ação do usuário.
+function trackQrUsage(objectId: string | undefined, action: 'qr_downloaded' | 'qr_printed', format: string) {
+  try {
+    const token = Cookies.get('access_token');
+    if (!objectId || !token) return;
+    fetch(`/api/v1/objects/${objectId}/events`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+      body: JSON.stringify({ action, format }),
+    }).catch(() => {});
+  } catch { /* silencioso */ }
+}
+
 // ─── QR Code component ────────────────────────────────────────────────────────
 
-function QRCodeDisplay({ code, title, status }: { code: string; title: string; status: string }) {
+function QRCodeDisplay({ code, title, status, objectId }: { code: string; title: string; status: string; objectId?: string }) {
   const isLost = status === 'lost' || status === 'stolen';
   const isProtected = status === 'protected';
-  const scanUrl = `${process.env.NEXT_PUBLIC_APP_URL ?? 'https://backfindr.com.br'}/scan/${code}`;
+  const scanUrl = `${APP_URL}/scan/${code}`;
   const [theme, setTheme] = useState<'dark'|'light'|'teal'>('dark');
   const [size, setSize] = useState<'85x55'|'50x50'|'a4'>('85x55');
   const [showPrintOptions, setShowPrintOptions] = useState(false);
@@ -78,6 +93,7 @@ function QRCodeDisplay({ code, title, status }: { code: string; title: string; s
     link.href = qrImageUrl;
     link.download = `backfindr-qr-${code}.png`;
     link.click();
+    trackQrUsage(objectId, 'qr_downloaded', 'png');
   };
   const shareWhatsApp = () => {
     const msg = isProtected
@@ -118,6 +134,7 @@ function QRCodeDisplay({ code, title, status }: { code: string; title: string; s
     printWindow.document.write(buildPrintHTML());
     printWindow.document.close();
     printWindow.onload = () => { printWindow.focus(); printWindow.print(); };
+    trackQrUsage(objectId, 'qr_printed', `label_${size}`);
   };
 
   return (
@@ -554,7 +571,7 @@ export default function ObjectDetailPage() {
                   >
                     <ChevronLeft className="w-4 h-4" />
                   </Link>
-                  <span className="text-lg flex-shrink-0">{CATEGORY_EMOJI[obj.category] ?? '📦'}</span>
+                  <ObjectThumb category={obj.category} size="sm" className="w-8 h-8 rounded-lg" />
                   <h1 className="font-display text-xl sm:text-2xl font-bold text-white leading-tight break-words drop-shadow-lg">
                     {obj.title}
                   </h1>
@@ -574,7 +591,7 @@ export default function ObjectDetailPage() {
                 </Link>
                 <div className="min-w-0">
                   <div className="flex items-center gap-2 mb-1 flex-wrap">
-                    <span className="text-xl sm:text-2xl flex-shrink-0">{CATEGORY_EMOJI[obj.category] ?? '📦'}</span>
+                    <ObjectThumb category={obj.category} size="sm" className="w-9 h-9 rounded-lg" />
                     <h1 className="font-display text-lg sm:text-xl font-bold text-white leading-tight break-words">{obj.title}</h1>
                   </div>
                   <StatusBadge status={obj.status} />
@@ -835,6 +852,7 @@ export default function ObjectDetailPage() {
                             document.body.removeChild(link);
                             setTimeout(() => URL.revokeObjectURL(blobUrl), 1000);
                             toast.success('Pôster A4 baixado!');
+                            trackQrUsage(id, 'qr_downloaded', 'poster_a4_png');
                           } catch {
                             toast.error('Erro ao gerar pôster. Tente novamente.');
                           } finally {
@@ -873,6 +891,7 @@ export default function ObjectDetailPage() {
                           if (!win) { toast.error('Permita popups para usar esta função.'); return; }
                           win.document.write(`<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Imprimir Cartaz</title><style>*{margin:0;padding:0;box-sizing:border-box}body{background:#fff;display:flex;align-items:center;justify-content:center;min-height:100vh}img{max-width:100%;height:auto;display:block}@media print{body{margin:0}img{width:100%;height:auto}}</style></head><body><img src="${posterUrl}" onload="window.print()" /></body></html>`);
                           win.document.close();
+                          trackQrUsage(id, 'qr_printed', 'poster_a4');
                         }}
                         className="flex flex-col items-center justify-center gap-1.5 py-3 bg-white/[0.04] hover:bg-white/[0.08] border border-white/[0.10] text-slate-400 hover:text-white text-xs font-medium rounded-lg transition-all disabled:opacity-60 disabled:cursor-not-allowed"
                       >
@@ -892,7 +911,7 @@ export default function ObjectDetailPage() {
                   <QrCode className="w-4 h-4 text-brand-400" />
                   <h3 className="font-display font-semibold text-white text-sm">QR Code</h3>
                 </div>
-                <QRCodeDisplay code={obj.unique_code} title={obj.title} status={obj.status} />
+                <QRCodeDisplay code={obj.unique_code} title={obj.title} status={obj.status} objectId={obj.id} />
               </div>
 
               {/* ── ZONA 3: SECUNDÁRIOS ── */}

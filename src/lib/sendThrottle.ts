@@ -88,3 +88,31 @@ export async function consumeSendSlot(opts: SendSlotOptions): Promise<boolean> {
     return false;
   }
 }
+
+/**
+ * Limite por IP E por e-mail para rotas que mandam e-mail a pedido de qualquer visitante (magic-link, forgot-password).
+ * Os dois limites são independentes (tipos e chaves diferentes). O e-mail é contado exista conta ou não, para a
+ * resposta ser idêntica nos dois casos. Falha fechada como o resto do arquivo: false = não enviar.
+ * Limites: 10 pedidos/h por IP e 5 pedidos/h por e-mail (ver docs/seguranca/limite-envio-email.md).
+ */
+export const EMAIL_REQUEST_LIMITS = { ipPerHour: 10, emailPerHour: 5, windowSeconds: 3600 };
+
+export async function consumeEmailRequestSlots(
+  kindPrefix: string,
+  headers: Headers,
+  email: string,
+): Promise<boolean> {
+  const ipOk = await consumeSendSlot({
+    kind: `${kindPrefix}_ip`,
+    key: clientIpFromHeaders(headers),
+    limit: EMAIL_REQUEST_LIMITS.ipPerHour,
+    windowSeconds: EMAIL_REQUEST_LIMITS.windowSeconds,
+  });
+  if (!ipOk) return false;
+  return consumeSendSlot({
+    kind: `${kindPrefix}_email`,
+    key: email.trim().toLowerCase(),
+    limit: EMAIL_REQUEST_LIMITS.emailPerHour,
+    windowSeconds: EMAIL_REQUEST_LIMITS.windowSeconds,
+  });
+}

@@ -2,6 +2,7 @@
 
 import { useState, useCallback, Suspense } from 'react';
 import { ImageLightbox, useLightbox } from '@/components/ImageLightbox';
+import ObjectThumb from '@/components/ObjectThumb';
 import Link from 'next/link';
 import { MapPin, Search, ArrowRight, AlertTriangle, Package, Loader2 } from 'lucide-react';
 
@@ -155,9 +156,7 @@ function AcheiInner() {
                         {item.photos?.[0] ? (
                           <img src={item.photos[0]} alt={item.title} onClick={() => openLightbox(item.photos, 0)} className="w-full h-full object-cover cursor-zoom-in" />
                         ) : (
-                          <div className="w-full h-full flex items-center justify-center">
-                            <Package className="w-6 h-6 text-white/20" />
-                          </div>
+                          <ObjectThumb category={item.category} size="sm" className="w-full h-full" />
                         )}
                       </div>
 
@@ -197,7 +196,7 @@ function AcheiInner() {
                 <div className="bg-teal-500/[0.08] border border-teal-500/20 rounded-2xl p-5 text-center">
                   <h3 className="text-white font-semibold mb-1">É um desses?</h3>
                   <p className="text-white/50 text-sm mb-4">
-                    Crie uma conta gratuita para entrar em contato com o dono. O chat é mediado — sua privacidade está protegida.
+                    Crie uma conta gratuita para entrar em contato com o dono. A conversa acontece pelo chat da plataforma.
                   </p>
                   <Link
                     href="/auth/register?intent=found"

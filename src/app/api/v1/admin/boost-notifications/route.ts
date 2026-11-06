@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { query } from '@/lib/db';
 import { requireAdmin } from '@/lib/adminGuard';
+import { esc } from '@/lib/email';
+import { deliverEmail } from '@/lib/emailSend';
 import { successResponse, internalErrorResponse } from '@/lib/response';
 
 export const dynamic = 'force-dynamic';
@@ -59,31 +61,29 @@ export async function POST(req: NextRequest) {
         try {
           const msg = MESSAGES[day];
 
-          // Registrar notificação como enviada
+          // Aviso promocional de boost: categoria 'marketing' (exige opt-in e endereço não suprimido).
+          const sendResult = await deliverEmail({
+            to: row.email,
+            subject: msg.subject,
+            category: 'marketing',
+            source: 'boost_nudge',
+            recipient: { id: row.user_id },
+            html: `<p>Olá, ${esc(row.name)}!</p><p>${esc(msg.body).replace(/\n/g, '<br>')}</p>`,
+          });
+
+          if (!sendResult.ok) {
+            const why = sendResult.status === 'skipped' ? `ignorado: ${sendResult.reason}` : `falha: ${sendResult.error}`;
+            skipped.push({ object_id: row.object_id, day, reason: why });
+            continue;
+          }
+
+          // Só registra como notificado se o e-mail realmente saiu.
           await query(
             `INSERT INTO boost_notifications (object_id, user_id, day)
              VALUES ($1, $2, $3)
              ON CONFLICT (object_id, day) DO NOTHING`,
             [row.object_id, row.user_id, day]
           );
-
-          // Enviar email via Resend (se configurado)
-          const resendKey = process.env.RESEND_API_KEY;
-          if (resendKey) {
-            await fetch('https://api.resend.com/emails', {
-              method: 'POST',
-              headers: {
-                'Authorization': `Bearer ${resendKey}`,
-                'Content-Type': 'application/json',
-              },
-              body: JSON.stringify({
-                from: 'Backfindr <noreply@backfindr.com.br>',
-                to: row.email,
-                subject: msg.subject,
-                text: `Olá, ${row.name}!\n\n${msg.body}`,
-              }),
-            });
-          }
 
           sent.push({ object_id: row.object_id, user_email: row.email, day });
         } catch (err) {

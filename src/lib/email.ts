@@ -1,10 +1,8 @@
-import { Resend } from 'resend';
+import { deliverEmail } from '@/lib/emailSend';
+import type { EmailCategory } from '@/lib/emailPolicy';
+import { APP_URL } from '@/lib/constants';
 
-function getResend() {
-  return new Resend(process.env.RESEND_API_KEY ?? '');
-}
-
-const FROM = 'Backfindr <noreply@backfindr.com.br>';
+const APP_HOST = APP_URL.replace(/^https?:\/\//, '');
 
 // ─── Proteção contra injeção em e-mail ──────────────────────────────────────
 // Todo dado vindo de usuário (nome, título de objeto, etc.) que entra num template
@@ -32,8 +30,8 @@ function subj(value: unknown): string {
 export async function sendWelcomeEmail(user: { name: string; email: string }) {
   const firstNameRaw = user.name.split(' ')[0];
   const firstName = esc(firstNameRaw);
-  const dashboardUrl = 'https://www.backfindr.com/dashboard/objects/new';
-  const faqUrl = 'https://www.backfindr.com/faq';
+  const dashboardUrl = `${APP_URL}/dashboard/objects/new`;
+  const faqUrl = `${APP_URL}/faq`;
 
   const html = `
 <!DOCTYPE html>
@@ -68,7 +66,7 @@ export async function sendWelcomeEmail(user: { name: string; email: string }) {
                 Bem-vindo, ${firstName}! 🎉
               </h1>
               <p style="color:rgba(255,255,255,0.55);font-size:15px;line-height:1.6;margin:0 0 24px;">
-                Sua conta foi criada com sucesso. Agora você faz parte da maior rede de recuperação de objetos perdidos do Brasil.
+                Sua conta foi criada com sucesso. Agora você faz parte da rede de recuperação de objetos perdidos do Backfindr.
               </p>
 
               <!-- CTA principal -->
@@ -92,16 +90,9 @@ export async function sendWelcomeEmail(user: { name: string; email: string }) {
                     <table width="100%" cellpadding="0" cellspacing="0">
                       <tr>
                         <td style="padding:8px 0;vertical-align:top;">
-                          <span style="font-size:20px;margin-right:12px;">📱</span>
-                          <span style="color:white;font-size:14px;font-weight:600;">Instalar o App</span><br/>
-                          <span style="color:rgba(255,255,255,0.4);font-size:13px;">Adicione à tela inicial para receber alertas em tempo real quando seu objeto for encontrado.</span>
-                        </td>
-                      </tr>
-                      <tr>
-                        <td style="padding:8px 0;vertical-align:top;">
-                          <span style="font-size:20px;margin-right:12px;">🔒</span>
-                          <span style="color:white;font-size:14px;font-weight:600;">Proteger seus objetos</span><br/>
-                          <span style="color:rgba(255,255,255,0.4);font-size:13px;">Gere um QR Code único para mochila, carteira, pet ou documento.</span>
+                          <span style="font-size:20px;margin-right:12px;">📝</span>
+                          <span style="color:white;font-size:14px;font-weight:600;">Registrar uma ocorrência</span><br/>
+                          <span style="color:rgba(255,255,255,0.4);font-size:13px;">Registre o que perdeu, foi roubado ou encontrou.</span>
                         </td>
                       </tr>
                       <tr>
@@ -115,7 +106,21 @@ export async function sendWelcomeEmail(user: { name: string; email: string }) {
                         <td style="padding:8px 0;vertical-align:top;">
                           <span style="font-size:20px;margin-right:12px;">🤝</span>
                           <span style="color:white;font-size:14px;font-weight:600;">Devolver o que achou</span><br/>
-                          <span style="color:rgba(255,255,255,0.4);font-size:13px;">Registre o achado e conecte-se ao dono com privacidade garantida.</span>
+                          <span style="color:rgba(255,255,255,0.4);font-size:13px;">Registre o achado e fale com o dono pelo chat da plataforma.</span>
+                        </td>
+                      </tr>
+                      <tr>
+                        <td style="padding:8px 0;vertical-align:top;">
+                          <span style="font-size:20px;margin-right:12px;">🔒</span>
+                          <span style="color:white;font-size:14px;font-weight:600;">Preparar-se antes (opcional)</span><br/>
+                          <span style="color:rgba(255,255,255,0.4);font-size:13px;">Gere um QR Code para o que quiser identificar, como mochila, carteira, pet ou documento.</span>
+                        </td>
+                      </tr>
+                      <tr>
+                        <td style="padding:8px 0;vertical-align:top;">
+                          <span style="font-size:20px;margin-right:12px;">📱</span>
+                          <span style="color:white;font-size:14px;font-weight:600;">Instalar o App</span><br/>
+                          <span style="color:rgba(255,255,255,0.4);font-size:13px;">Adicione à tela inicial para receber alertas em tempo real quando seu objeto for encontrado.</span>
                         </td>
                       </tr>
                     </table>
@@ -134,7 +139,7 @@ export async function sendWelcomeEmail(user: { name: string; email: string }) {
           <tr>
             <td style="padding:20px 32px;border-top:1px solid rgba(255,255,255,0.06);text-align:center;">
               <p style="color:rgba(255,255,255,0.2);font-size:12px;margin:0;">
-                © 2026 Backfindr · <a href="https://www.backfindr.com" style="color:rgba(255,255,255,0.3);text-decoration:none;">www.backfindr.com</a>
+                © 2026 Backfindr · <a href="${APP_URL}" style="color:rgba(255,255,255,0.3);text-decoration:none;">${APP_HOST}</a>
               </p>
             </td>
           </tr>
@@ -147,21 +152,13 @@ export async function sendWelcomeEmail(user: { name: string; email: string }) {
 </html>
   `.trim();
 
-  try {
-    const { error } = await getResend().emails.send({
-      from: FROM,
-      to: [user.email],
-      subject: `Bem-vindo ao Backfindr, ${subj(firstNameRaw)}! Registre seu primeiro objeto`,
-      html,
-    });
-
-    if (error) {
-      console.error('[email] Erro ao enviar boas-vindas:', error);
-    }
-  } catch (err) {
-    // Não bloquear o cadastro se o e-mail falhar
-    console.error('[email] Exceção ao enviar boas-vindas:', err);
-  }
+  return deliverEmail({
+    to: user.email,
+    subject: `Bem-vindo ao Backfindr, ${subj(firstNameRaw)}! Registre seu primeiro objeto`,
+    html,
+    category: 'service',
+    source: 'welcome',
+  });
 }
 
 // ─── E-mail de alerta de match ────────────────────────────────────────────────
@@ -174,7 +171,7 @@ export async function sendMatchAlertEmail(
 ) {
   const firstNameRaw = user.name.split(' ')[0];
   const firstName = esc(firstNameRaw);
-  const matchUrl = `https://www.backfindr.com/dashboard/matches`;
+  const matchUrl = `${APP_URL}/dashboard/matches`;
   const scoreLabel = score && score >= 80 ? 'Alta' : score && score >= 60 ? 'Média' : 'Moderada';
   const scoreColor = score && score >= 80 ? '#22c55e' : score && score >= 60 ? '#f59e0b' : '#14b8a6';
   const scoreBar = score ? Math.round(score) : 70;
@@ -297,7 +294,7 @@ export async function sendMatchAlertEmail(
           <tr>
             <td style="padding:20px 32px;border-top:1px solid rgba(255,255,255,0.06);text-align:center;">
               <p style="color:rgba(255,255,255,0.2);font-size:12px;margin:0;">
-                © 2026 Backfindr · <a href="https://www.backfindr.com" style="color:rgba(255,255,255,0.3);text-decoration:none;">www.backfindr.com</a>
+                © 2026 Backfindr · <a href="${APP_URL}" style="color:rgba(255,255,255,0.3);text-decoration:none;">${APP_HOST}</a>
               </p>
             </td>
           </tr>
@@ -310,20 +307,13 @@ export async function sendMatchAlertEmail(
 </html>
   `.trim();
 
-  try {
-    const { error } = await getResend().emails.send({
-      from: FROM,
-      to: [user.email],
-      subject: `⚡ Match encontrado para "${subj(objectTitle)}" — Backfindr`,
-      html,
-    });
-
-    if (error) {
-      console.error('[email] Erro ao enviar alerta de match:', error);
-    }
-  } catch (err) {
-    console.error('[email] Exceção ao enviar alerta de match:', err);
-  }
+  return deliverEmail({
+    to: user.email,
+    subject: `⚡ Match encontrado para "${subj(objectTitle)}" — Backfindr`,
+    html,
+    category: 'service',
+    source: 'match_alert',
+  });
 }
 
 // ─── E-mail de reativação 24h sem match ──────────────────────────────────────
@@ -334,8 +324,8 @@ export async function sendReactivationEmail(
 ) {
   const firstNameRaw = user.name.split(' ')[0];
   const firstName = esc(firstNameRaw);
-  const searchUrl = `https://www.backfindr.com/buscar?keyword=${encodeURIComponent(objectTitle)}`;
-  const dashboardUrl = 'https://www.backfindr.com/dashboard';
+  const searchUrl = `${APP_URL}/buscar?keyword=${encodeURIComponent(objectTitle)}`;
+  const dashboardUrl = `${APP_URL}/dashboard`;
 
   // Ícones para cada dica — rotaciona pelos disponíveis
   const tipIcons = ['✏️', '📸', '📍', '🔔', '💡'];
@@ -455,7 +445,7 @@ export async function sendReactivationEmail(
           <tr>
             <td style="padding:20px 32px;border-top:1px solid rgba(255,255,255,0.06);text-align:center;">
               <p style="color:rgba(255,255,255,0.2);font-size:12px;margin:0;">
-                © 2026 Backfindr · <a href="https://www.backfindr.com" style="color:rgba(255,255,255,0.3);text-decoration:none;">www.backfindr.com</a>
+                © 2026 Backfindr · <a href="${APP_URL}" style="color:rgba(255,255,255,0.3);text-decoration:none;">${APP_HOST}</a>
               </p>
             </td>
           </tr>
@@ -468,20 +458,14 @@ export async function sendReactivationEmail(
 </html>
   `.trim();
 
-  try {
-    const { error } = await getResend().emails.send({
-      from: FROM,
-      to: [user.email],
-      subject: `🔍 Ainda estamos procurando por "${subj(objectTitle)}" — Backfindr`,
-      html,
-    });
-
-    if (error) {
-      console.error('[email] Erro ao enviar reativação:', error);
-    }
-  } catch (err) {
-    console.error('[email] Exceção ao enviar reativação:', err);
-  }
+  return deliverEmail({
+    to: user.email,
+    subject: `🔍 Ainda estamos procurando por "${subj(objectTitle)}" — Backfindr`,
+    html,
+    category: 'marketing',
+    source: 'reactivation',
+    lifecycleEvent: 'reactivation',
+  });
 }
 
 
@@ -489,7 +473,7 @@ export async function sendReactivationEmail(
 export async function sendGuideCarTheftEmail(user: { name: string; email: string }) {
   const firstNameRaw = user.name.split(' ')[0];
   const firstName = esc(firstNameRaw);
-  const dashboardUrl = 'https://www.backfindr.com/dashboard';
+  const dashboardUrl = `${APP_URL}/dashboard`;
 
   const html = `
 <!DOCTYPE html>
@@ -595,7 +579,7 @@ export async function sendGuideCarTheftEmail(user: { name: string; email: string
           <tr>
             <td style="padding:20px 32px;border-top:1px solid rgba(255,255,255,0.06);text-align:center;">
               <p style="color:rgba(255,255,255,0.2);font-size:12px;margin:0;">
-                © 2026 Backfindr · <a href="https://www.backfindr.com" style="color:rgba(255,255,255,0.3);text-decoration:none;">www.backfindr.com</a>
+                © 2026 Backfindr · <a href="${APP_URL}" style="color:rgba(255,255,255,0.3);text-decoration:none;">${APP_HOST}</a>
               </p>
             </td>
           </tr>
@@ -608,27 +592,21 @@ export async function sendGuideCarTheftEmail(user: { name: string; email: string
 </html>
   `.trim();
 
-  try {
-    const { error } = await getResend().emails.send({
-      from: FROM,
-      to: [user.email],
-      subject: `🚗 Guia Backfindr: Como identificar carros roubados ou abandonados`,
-      html,
-    });
-
-    if (error) {
-      console.error('[email] Erro ao enviar guia de carros roubados:', error);
-    }
-  } catch (err) {
-    console.error('[email] Exceção ao enviar guia de carros roubados:', err);
-  }
+  return deliverEmail({
+    to: user.email,
+    subject: `🚗 Guia Backfindr: Como identificar carros roubados ou abandonados`,
+    html,
+    category: 'marketing',
+    source: 'guide_car_theft',
+    lifecycleEvent: 'guide_car_theft',
+  });
 }
 
 // ─── E-mail de Guia Educativo: Cachorro Perdido ────────────────────────────
 export async function sendGuideLostPetEmail(user: { name: string; email: string }) {
   const firstNameRaw = user.name.split(' ')[0];
   const firstName = esc(firstNameRaw);
-  const dashboardUrl = 'https://www.backfindr.com/dashboard';
+  const dashboardUrl = `${APP_URL}/dashboard`;
 
   const html = `
 <!DOCTYPE html>
@@ -763,7 +741,7 @@ export async function sendGuideLostPetEmail(user: { name: string; email: string 
           <tr>
             <td style="padding:20px 32px;border-top:1px solid rgba(255,255,255,0.06);text-align:center;">
               <p style="color:rgba(255,255,255,0.2);font-size:12px;margin:0;">
-                © 2026 Backfindr · <a href="https://www.backfindr.com" style="color:rgba(255,255,255,0.3);text-decoration:none;">www.backfindr.com</a>
+                © 2026 Backfindr · <a href="${APP_URL}" style="color:rgba(255,255,255,0.3);text-decoration:none;">${APP_HOST}</a>
               </p>
             </td>
           </tr>
@@ -776,27 +754,21 @@ export async function sendGuideLostPetEmail(user: { name: string; email: string 
 </html>
   `.trim();
 
-  try {
-    const { error } = await getResend().emails.send({
-      from: FROM,
-      to: [user.email],
-      subject: `🐕 Guia Backfindr: Como ajudar um cachorro perdido`,
-      html,
-    });
-
-    if (error) {
-      console.error('[email] Erro ao enviar guia de cachorro perdido:', error);
-    }
-  } catch (err) {
-    console.error('[email] Exceção ao enviar guia de cachorro perdido:', err);
-  }
+  return deliverEmail({
+    to: user.email,
+    subject: `🐕 Guia Backfindr: Como ajudar um cachorro perdido`,
+    html,
+    category: 'marketing',
+    source: 'guide_lost_pet',
+    lifecycleEvent: 'guide_lost_pet',
+  });
 }
 
 // ─── E-mail de Dica Rápida: Importância de Fotos ──────────────────────────
 export async function sendTipPhotosEmail(user: { name: string; email: string }) {
   const firstNameRaw = user.name.split(' ')[0];
   const firstName = esc(firstNameRaw);
-  const dashboardUrl = 'https://www.backfindr.com/dashboard';
+  const dashboardUrl = `${APP_URL}/dashboard`;
 
   const html = `
 <!DOCTYPE html>
@@ -899,7 +871,7 @@ export async function sendTipPhotosEmail(user: { name: string; email: string }) 
           <tr>
             <td style="padding:20px 32px;border-top:1px solid rgba(255,255,255,0.06);text-align:center;">
               <p style="color:rgba(255,255,255,0.2);font-size:12px;margin:0;">
-                © 2026 Backfindr · <a href="https://www.backfindr.com" style="color:rgba(255,255,255,0.3);text-decoration:none;">www.backfindr.com</a>
+                © 2026 Backfindr · <a href="${APP_URL}" style="color:rgba(255,255,255,0.3);text-decoration:none;">${APP_HOST}</a>
               </p>
             </td>
           </tr>
@@ -912,27 +884,21 @@ export async function sendTipPhotosEmail(user: { name: string; email: string }) 
 </html>
   `.trim();
 
-  try {
-    const { error } = await getResend().emails.send({
-      from: FROM,
-      to: [user.email],
-      subject: `📸 Dica Rápida: Fotos aumentam em 3x a chance de recuperação!`,
-      html,
-    });
-
-    if (error) {
-      console.error('[email] Erro ao enviar dica de fotos:', error);
-    }
-  } catch (err) {
-    console.error('[email] Exceção ao enviar dica de fotos:', err);
-  }
+  return deliverEmail({
+    to: user.email,
+    subject: `📸 Dica Rápida: Fotos aumentam em 3x a chance de recuperação!`,
+    html,
+    category: 'marketing',
+    source: 'guide_photos_tip',
+    lifecycleEvent: 'guide_photos_tip',
+  });
 }
 
 // ─── E-mail de incentivo PWA (Lifecycle Dia 3) ────────────────────────────────
 export async function sendPWAIncentiveEmail(user: { name: string; email: string }) {
   const firstNameRaw = user.name.split(' ')[0];
   const firstName = esc(firstNameRaw);
-  const dashboardUrl = 'https://www.backfindr.com/dashboard';
+  const dashboardUrl = `${APP_URL}/dashboard`;
 
   const html = `
 <!DOCTYPE html>
@@ -1024,7 +990,7 @@ export async function sendPWAIncentiveEmail(user: { name: string; email: string 
           <tr>
             <td style="padding:20px 32px;border-top:1px solid rgba(255,255,255,0.06);text-align:center;">
               <p style="color:rgba(255,255,255,0.2);font-size:12px;margin:0;">
-                © 2026 Backfindr · <a href="https://www.backfindr.com" style="color:rgba(255,255,255,0.3);text-decoration:none;">www.backfindr.com</a>
+                © 2026 Backfindr · <a href="${APP_URL}" style="color:rgba(255,255,255,0.3);text-decoration:none;">${APP_HOST}</a>
               </p>
             </td>
           </tr>
@@ -1037,16 +1003,14 @@ export async function sendPWAIncentiveEmail(user: { name: string; email: string 
 </html>
   `.trim();
 
-  try {
-    await getResend().emails.send({
-      from: FROM,
-      to: [user.email],
-      subject: `📱 Instale o Backfindr e receba alertas em tempo real`,
-      html,
-    });
-  } catch (err) {
-    console.error('[email] Erro ao enviar incentivo PWA:', err);
-  }
+  return deliverEmail({
+    to: user.email,
+    subject: `📱 Instale o Backfindr e receba alertas em tempo real`,
+    html,
+    category: 'marketing',
+    source: 'pwa_incentive',
+    lifecycleEvent: 'day3_tips',
+  });
 }
 
 // ─── E-mail de "alguém encontrou seu objeto" ─────────────────────────────────
@@ -1070,7 +1034,7 @@ export async function sendObjectFoundEmail(
   const firstNameRaw = user.name.split(' ')[0];
   const firstName = esc(firstNameRaw);
   const categoryLabel = CATEGORY_LABEL_EMAIL[obj.category] ?? 'objeto';
-  const objectUrl = `https://www.backfindr.com/dashboard/objects/${obj.id}`;
+  const objectUrl = `${APP_URL}/dashboard/objects/${obj.id}`;
   const subject = obj.isProtected
     ? `📍 O QR Code do seu ${categoryLabel} foi escaneado`
     : `🎉 Alguém pode ter encontrado seu ${categoryLabel}`;
@@ -1147,7 +1111,7 @@ export async function sendObjectFoundEmail(
           <tr>
             <td style="padding:20px 32px;border-top:1px solid rgba(255,255,255,0.06);text-align:center;">
               <p style="color:rgba(255,255,255,0.2);font-size:12px;margin:0;">
-                © 2026 Backfindr · <a href="https://www.backfindr.com" style="color:rgba(255,255,255,0.3);text-decoration:none;">www.backfindr.com</a>
+                © 2026 Backfindr · <a href="${APP_URL}" style="color:rgba(255,255,255,0.3);text-decoration:none;">${APP_HOST}</a>
               </p>
             </td>
           </tr>
@@ -1160,26 +1124,28 @@ export async function sendObjectFoundEmail(
 </html>
   `.trim();
 
-  try {
-    const { error } = await getResend().emails.send({
-      from: FROM,
-      to: [user.email],
-      subject,
-      html,
-    });
-    if (error) console.error('[email] Erro ao enviar aviso de objeto encontrado:', error);
-  } catch (err) {
-    // Não bloquear a resposta ao finder se o e-mail falhar
-    console.error('[email] Exceção ao enviar aviso de objeto encontrado:', err);
-  }
+  return deliverEmail({
+    to: user.email,
+    subject,
+    html,
+    category: 'service',
+    source: 'object_found',
+  });
 }
 
 // ─── Função genérica sendEmail (usada pelo boost-expiration cron) ─────────────
-export async function sendEmail({ to, subject, html }: { to: string; subject: string; html: string }) {
-  try {
-    const { error } = await getResend().emails.send({ from: FROM, to: [to], subject, html });
-    if (error) console.error('[email] sendEmail error:', error);
-  } catch (err) {
-    console.error('[email] sendEmail exception:', err);
-  }
+export async function sendEmail({
+  to,
+  subject,
+  html,
+  category = 'service',
+  source = 'generic',
+}: {
+  to: string;
+  subject: string;
+  html: string;
+  category?: EmailCategory;
+  source?: string;
+}) {
+  return deliverEmail({ to, subject, html, category, source });
 }

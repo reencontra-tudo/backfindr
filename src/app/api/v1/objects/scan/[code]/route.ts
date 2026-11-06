@@ -2,9 +2,8 @@ export const dynamic = 'force-dynamic';
 import { NextRequest } from 'next/server';
 import { query } from '@/lib/db';
 import { successResponse, notFoundResponse, internalErrorResponse } from '@/lib/response';
-import { sendPushToUser, scanPayload } from '@/lib/pushNotification';
-import { awaitSends } from '@/lib/awaitSends';
 import { Events } from '@/lib/events';
+import { POST as notifyOwnerOfScan } from './notify/route';
 
 export async function GET(
   request: NextRequest,
@@ -15,7 +14,7 @@ export async function GET(
     const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(params.code);
     const result = await query(
       `SELECT id, title, description, status, category, type, location, latitude, longitude,
-              qr_code, images, color, brand, breed, user_id, is_legacy, source,
+              qr_code, images, color, brand, breed, is_legacy, source,
               reward_amount, reward_description, created_at, updated_at
        FROM objects_active
        WHERE ${isUUID ? 'id::text = $1 OR qr_code = $1' : 'qr_code = $1'}`,
@@ -45,7 +44,7 @@ export async function GET(
     return successResponse({
       id: row.id, title: row.title, description: row.description || '',
       status: row.status, category: row.category || row.type || 'other',
-      unique_code: row.qr_code, owner_id: row.user_id, photos, location,
+      unique_code: row.qr_code, photos, location,
       color: row.color, brand: row.brand, pet_breed: row.breed,
       is_legacy: row.is_legacy, source: row.source,
       reward_amount: row.reward_amount ? parseFloat(String(row.reward_amount)) : null,
@@ -57,57 +56,15 @@ export async function GET(
   }
 }
 
+// Este endpoint não é chamado por nenhum cliente do repositório (a interface usa /notify). Para não manter
+// duas regras de aviso, ele passa a ser um alias fino do /notify: mesmo intervalo de 15 min, mesma notificação
+// com url, mesmo e-mail e mesma barreira de legado. A resposta mantém o formato próprio; o corpo da requisição
+// (texto livre) deixa de ser usado, para que um visitante anônimo não escolha o texto que o dono recebe.
 export async function POST(
   request: NextRequest,
   { params }: { params: { code: string } }
 ) {
-  try {
-    // Notificar proprietário quando QR code é escaneado
-    const body = await request.json();
-    const { message } = body;
-
-    // Buscar objeto
-    const objectResult = await query(
-      `SELECT o.id, o.user_id, (o.is_legacy IS TRUE OR COALESCE(u.is_legacy, false) IS TRUE) AS legacy_blocked
-         FROM objects_active o LEFT JOIN users u ON u.id = o.user_id
-        WHERE o.qr_code = $1`,
-      [params.code]
-    );
-
-    if (objectResult.rows.length === 0) {
-      return notFoundResponse();
-    }
-
-    const object = objectResult.rows[0];
-
-    // Buscar título do objeto para a notificação
-    const objDetail = await query(
-      `SELECT id, title FROM objects_active WHERE qr_code = $1`,
-      [params.code]
-    );
-    const objTitle = (objDetail.rows[0] as { id: string; title: string } | undefined)?.title ?? 'objeto';
-    const objId    = (objDetail.rows[0] as { id: string; title: string } | undefined)?.id ?? '';
-
-    // Registrar notificação no banco
-    await query(
-      `INSERT INTO notifications (user_id, title, message, type, created_at)
-       VALUES ($1, $2, $3, $4, NOW())`,
-      [object.user_id, 'QR Code Escaneado', message || `Alguém escaneou o QR Code de "${objTitle}".`, 'qr_scan']
-    );
-
-    // Disparar push notification — barreira de proteção: objeto ou dono legado
-    // nunca recebe push (a resposta ao visitante é a mesma de sempre).
-    if (!object.legacy_blocked) {
-      await awaitSends([
-        sendPushToUser(
-          object.user_id as string,
-          scanPayload(objTitle, objId)
-        ).catch(err => console.error('[push] scan push failed:', err)),
-      ]);
-    }
-
-    return successResponse({ message: 'Notification sent' });
-  } catch (error) {
-    return internalErrorResponse(error);
-  }
+  const res = await notifyOwnerOfScan(request, { params });
+  if (!res.ok) return res;
+  return successResponse({ message: 'Notification sent' });
 }

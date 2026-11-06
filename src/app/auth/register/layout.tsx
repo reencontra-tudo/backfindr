@@ -1,13 +1,17 @@
 import type { Metadata } from 'next';
+import { APP_URL } from '@/lib/constants';
 
 export const metadata: Metadata = {
   title: 'Criar conta grátis',
-  description: 'Crie sua conta gratuita no Backfindr e comece a proteger seus objetos com QR Code único. Cadastro em menos de 1 minuto.',
-  alternates: { canonical: 'https://www.backfindr.com/auth/register' },
+  description: 'Crie sua conta gratuita no Backfindr e publique o que perdeu ou encontrou.',
+  alternates: { canonical: `${APP_URL}/auth/register` },
   openGraph: {
     title: 'Criar conta grátis | Backfindr',
-    description: 'Crie sua conta gratuita e proteja seus objetos com QR Code.',
-    url: 'https://www.backfindr.com/auth/register',
+    description: 'Crie sua conta gratuita e publique o que perdeu ou encontrou.',
+    url: `${APP_URL}/auth/register`,
+  },
+  twitter: {
+    description: 'Registre e pesquise o que foi perdido, roubado ou achado.',
   },
   // noindex explícito (23/08/2026) — mesmo padrão do auth/login: form
   // client-side, sem conteúdo indexável. Ver BACKFINDR.md seção 17/19.

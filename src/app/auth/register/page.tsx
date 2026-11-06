@@ -25,7 +25,7 @@ type FormData = z.infer<typeof schema>;
 const BENEFITS = [
   'QR Code único e permanente para cada objeto',
   'Notificação imediata quando encontrado',
-  'Chat mediado com privacidade garantida',
+  'Conversa pelo chat da plataforma',
   'Suporte a pets, documentos e eletrônicos',
   'Matching automático por IA',
 ];
@@ -101,7 +101,7 @@ function RegisterForm() {
       const result = await registerUser({ name: data.name, email: data.email, password: data.password, phone: data.phone });
       const { user: newUser } = useAuthStore.getState();
       if (newUser) {
-        analytics.identify(newUser.id, { email: newUser.email, name: newUser.name });
+        analytics.identify(newUser.id);
       }
       analytics.signUp('email');
       if (typeof window !== 'undefined' && (window as any).fbq) {

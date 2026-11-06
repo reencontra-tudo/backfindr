@@ -39,6 +39,41 @@ export async function recordEvent(payload: EventPayload): Promise<void> {
   }
 }
 
+// ── Eventos de uso do QR Code (medição) ───────────────────────────────────────
+// Servem para medir quantos objetos têm QR gerado, baixado ou impresso (gatilho de destaque do QR).
+// Usam só os campos já existentes (type, metadata); sem coluna nova e sem migration.
+// Nunca são gravados para dono legado (registros do Webjetos ficam fora de qualquer métrica).
+//
+// REGRA DE CONTAGEM DE ESCANEAMENTO: para contar escaneamento de PESSOA, use apenas `qr_scanned`
+// com `metadata.via` (gravado pelo POST /api/v1/objects/scan/[code]/notify). O `qr_scanned` do GET
+// /api/v1/objects/scan/[code] registra qualquer abertura da página (robôs, pré-visualização de link
+// e verificações internas) e superestima os escaneamentos reais.
+export type QrUsageEvent = 'qr_generated' | 'qr_downloaded' | 'qr_printed';
+
+const QR_USAGE_TITLES: Record<QrUsageEvent, string> = {
+  qr_generated: 'QR Code gerado',
+  qr_downloaded: 'QR Code baixado',
+  qr_printed: 'QR Code impresso',
+};
+
+export async function recordQrUsage(
+  object_id: string,
+  user_id: string,
+  type: QrUsageEvent,
+  metadata?: Record<string, unknown>
+): Promise<void> {
+  try {
+    const legacy = await query(`SELECT COALESCE(is_legacy, false) AS is_legacy FROM users WHERE id = $1`, [user_id]);
+    if (legacy.rows[0]?.is_legacy) return;
+    await recordEvent({
+      object_id, user_id, type, title: QR_USAGE_TITLES[type],
+      source: 'owner', actor_type: 'user', actor_id: user_id, metadata,
+    });
+  } catch (err) {
+    console.error('[events] Failed to record QR usage:', type, object_id, err);
+  }
+}
+
 // ── Helpers semânticos ────────────────────────────────────────────────────────
 
 export const Events = {
@@ -74,6 +109,15 @@ export const Events = {
 
   objectReturned: (object_id: string, user_id: string) =>
     recordEvent({ object_id, user_id, type: 'object_returned', title: 'Objeto recuperado 🎉', source: 'owner', actor_type: 'user', actor_id: user_id }),
+
+  qrGenerated: (object_id: string, user_id: string, metadata?: Record<string, unknown>) =>
+    recordQrUsage(object_id, user_id, 'qr_generated', metadata),
+
+  qrDownloaded: (object_id: string, user_id: string, metadata?: Record<string, unknown>) =>
+    recordQrUsage(object_id, user_id, 'qr_downloaded', metadata),
+
+  qrPrinted: (object_id: string, user_id: string, metadata?: Record<string, unknown>) =>
+    recordQrUsage(object_id, user_id, 'qr_printed', metadata),
 
   statusChanged: (object_id: string, from: string, to: string, user_id?: string) =>
     recordEvent({ object_id, user_id, type: 'status_changed', title: `Status alterado para ${to}`, source: 'owner', actor_type: 'user', actor_id: user_id, metadata: { from, to } }),

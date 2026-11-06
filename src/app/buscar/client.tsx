@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback, Suspense } from 'react';
 import { ImageLightbox, useLightbox } from '@/components/ImageLightbox';
+import ObjectThumb from '@/components/ObjectThumb';
 import { useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { MapPin, Search, ArrowRight, CheckCircle, Package, Loader2 } from 'lucide-react';
@@ -166,9 +167,7 @@ function BuscarInner() {
                         {item.photos?.[0] ? (
                           <img src={item.photos[0]} alt={item.title} onClick={() => openLightbox(item.photos, 0)} className="w-full h-full object-cover cursor-zoom-in" />
                         ) : (
-                          <div className="w-full h-full flex items-center justify-center">
-                            <Package className="w-6 h-6 text-white/20" />
-                          </div>
+                          <ObjectThumb category={item.category} size="sm" className="w-full h-full" />
                         )}
                       </div>
 

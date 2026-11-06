@@ -10,6 +10,7 @@ import { api, parseApiError } from '@/lib/api';
 import AdminDeleteReasonModal from '@/components/admin/AdminDeleteReasonModal';
 import { analytics } from '@/providers/PostHogProvider';
 import { toast } from 'sonner';
+import ObjectThumb from '@/components/ObjectThumb';
 
 interface Obj {
   id: string;
@@ -26,11 +27,6 @@ interface Obj {
   status: string;
 }
 
-const CATEGORY_EMOJI: Record<string, string> = {
-  phone: '📱', wallet: '👛', keys: '🔑', bag: '🎒', pet: '🐾',
-  bike: '🚲', vehicle: '🚗', document: '📄', jewelry: '💍', electronics: '💻',
-  clothing: '👕', other: '📦',
-};
 const CATEGORY_LABEL: Record<string, string> = {
   phone: 'Celular', wallet: 'Carteira', keys: 'Chaves', bag: 'Bolsa', pet: 'Pet',
   bike: 'Bicicleta', vehicle: 'Veículo', document: 'Documento', jewelry: 'Joia', electronics: 'Eletrônico',
@@ -59,7 +55,7 @@ function ObjectRow({ obj, onAction }: { obj: Obj; onAction: (id: string, action:
       onClick={() => router.push(`/admin/objects/${obj.id}`)}>
       <td className="px-4 py-3">
         <div className="flex items-center gap-3">
-          <span className="text-xl flex-shrink-0">{CATEGORY_EMOJI[obj.category] ?? '📦'}</span>
+          <ObjectThumb category={obj.category} size="sm" className="w-8 h-8 rounded-lg" />
           <div className="min-w-0">
             <div className="flex items-center gap-1.5 flex-wrap">
               <p className="text-white/85 text-sm font-medium truncate max-w-[140px]">{obj.title}</p>

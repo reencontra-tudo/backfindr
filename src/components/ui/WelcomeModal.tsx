@@ -14,13 +14,7 @@ const HIGHLIGHTS = [
     icon: Package,
     color: 'text-teal-400 bg-teal-400/10',
     title: 'Registre seus objetos',
-    desc: 'Celular, carteira, pet, chaves — tudo com QR Code único e rastreável.',
-  },
-  {
-    icon: QrCode,
-    color: 'text-purple-400 bg-purple-400/10',
-    title: 'Cole o QR Code',
-    desc: 'Imprima a etiqueta e cole no objeto. Quem achar escaneia e te avisa.',
+    desc: 'Celular, carteira, pet, chaves — cadastre o que perdeu, foi roubado ou encontrou.',
   },
   {
     icon: Zap,
@@ -33,6 +27,12 @@ const HIGHLIGHTS = [
     color: 'text-blue-400 bg-blue-400/10',
     title: 'Notificações em tempo real',
     desc: 'Receba alertas no celular quando alguém escanear ou reportar seu objeto.',
+  },
+  {
+    icon: QrCode,
+    color: 'text-purple-400 bg-purple-400/10',
+    title: 'Prepare-se antes (opcional)',
+    desc: 'Se quiser, imprima um QR Code e cole no objeto. Se alguém o escanear, você é avisado.',
   },
 ];
 
@@ -106,7 +106,7 @@ export default function WelcomeModal({ userName, onClose, onStartTour }: Welcome
           {/* Content */}
           <div className="p-5">
             <p className="text-white/50 text-sm mb-5 text-center">
-              O Backfindr protege seus objetos com QR Code inteligente e matching por IA.
+              O Backfindr compara os registros e aponta possíveis correspondências entre quem perdeu e quem encontrou.
               Veja como funciona:
             </p>
 

@@ -2,11 +2,9 @@ export const dynamic = 'force-dynamic';
 import { NextRequest, NextResponse } from 'next/server';
 import { requireSuperAdmin } from '@/lib/adminGuard';
 import { query } from '@/lib/db';
-import jwt from 'jsonwebtoken';
+import { createImpersonationToken } from '@/lib/jwt';
 import { withActor, logEvent } from '@/lib/audit';
 import { newRequestId } from '@/lib/governance';
-
-const SECRET_KEY = process.env.SECRET_KEY || 'backfindr-super-secret-key-2026-production-xyz';
 
 /**
  * POST /api/v1/admin/impersonate
@@ -58,15 +56,9 @@ export async function POST(req: NextRequest) {
     }
 
     // Gerar token de impersonation com validade de 2 horas
-    const impersonationToken = jwt.sign(
-      {
-        sub: targetUser.id,
-        email: targetUser.email,
-        impersonated_by: superAdmin.id,
-        impersonated_by_email: superAdmin.email,
-      },
-      SECRET_KEY,
-      { algorithm: 'HS256', expiresIn: '2h' }
+    const impersonationToken = createImpersonationToken(
+      { id: targetUser.id, email: targetUser.email },
+      { id: superAdmin.id, email: superAdmin.email },
     );
 
     // Trilha de auditoria (migração 025): início da impersonação, com o id do admin e o do alvo (só ids).

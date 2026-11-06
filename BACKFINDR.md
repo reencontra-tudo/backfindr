@@ -14,7 +14,7 @@ Plataforma SaaS brasileira com 4 produtos independentes que compartilham base de
 
 Fundador solo: Marcos (Cido Menezes) — Guarulhos/SP
 Repositório: `https://github.com/reencontra-tudo/backfindr` (branch: `main`)
-Produção: `https://backfindr.com` / `https://backfindr.io`
+Produção: `https://backfindr.com` (domínio canônico)
 Projeto anterior: Webjetos (2015) — migração planejada
 
 ---
@@ -46,7 +46,7 @@ Projeto anterior: Webjetos (2015) — migração planejada
 
 **Filosofia oficial:** "O Backfindr existe para aumentar as oportunidades de reencontro."
 
-**Posicionamento:** sistema vivo de recuperação patrimonial (não plataforma de perdidos e achados)
+**Posicionamento:** o Backfindr é definido pelo que faz, não por rótulo. É uma ferramenta inteligente que auxilia, aproxima e viabiliza o encontro e a devolução de objetos e coisas perdidos, roubados ou achados, para quem perdeu e para quem achou. Conecta as duas pontas, intermedeia o contato pelo chat da plataforma e usa IA para apontar possíveis correspondências. Funciona como infraestrutura de colaboração entre desconhecidos, apoiada em confiança e voltada à reconexão. Não é um espaço físico e não guarda nem armazena objetos. É um serviço privado e independente de órgãos públicos. Nenhum rótulo, inclusive 'achados e perdidos', é vetado ou obrigatório; vale a descrição fiel da função. O QR Code é um recurso opcional, um segundo passo para identificar e proteger bens.
 
 **Princípio de monetização:** "O usuário nunca compra antes de acreditar."
 
@@ -55,7 +55,7 @@ Projeto anterior: Webjetos (2015) — migração planejada
 1. **Marketplace de Recompensas** — usuário paga probabilidade de recuperação, não mídia
 2. **Motor de Distribuição** — divulgação user-funded (redes sociais, push, grupos, ads)
 3. **Intelligence Hub** — banco de ocorrências como produto B2B (seguradoras, prefeituras, condomínios)
-4. **QR Code é o DNA do Objeto** — produto físico de entrada, status `protected` = prevenção
+4. **QR Code** — recurso opcional para identificar e proteger bens; status `protected` = prevenção
 5. **Modelo de receita:** Impulsos avulsos / Assinatura preventiva / Auto / Pet / QR físico / B2B
 
 **Regra permanente de produto — responder antes de qualquer feature:**
@@ -111,7 +111,7 @@ cd ~/backfindr && pnpm dev  # porta 3003  (caminho único desde 26/10/2026)
 
 ## 7. DOMÍNIOS
 
-`backfindr.com` ✅ principal | `backfindr.io` ✅ | `backfindr.app` ✅ | `backfindr.com.br` ✅
+`backfindr.com` é o domínio canônico (sem www; `www.backfindr.com` redireciona para ele). `backfindr.com.br`, `backfindr.io`, `backfindr.app` e `backfindr.online` (com e sem www) redirecionam permanentemente (308) para `https://backfindr.com`, preservando caminho e query. Atualizado em 03/11/2026 (verificado por curl).
 
 ---
 
@@ -165,6 +165,22 @@ Evidência bruta da descoberta de ocorrências públicas (Public Signals) — nu
 | 4 | Backfindr Pet + Coleira QR | R$19,90/mês / R$29,90 |
 | 5 | QR físico (adesivo/tag/placa/coleira) | R$19,90–R$49,90 |
 | 6 | B2B / Condomínios / Intelligence Hub | R$599–2.999/mês / R$2–5/unid / R$2k–15k |
+
+> **Nota de 28/10/2026:** as linhas 2 a 5 (Assinatura Proteção, Backfindr Auto, Backfindr Pet + Coleira QR, QR físico) **não estão ativas**: sem produto em `src/` nesta data (verificado por busca no código). Nada foi removido; as linhas continuam como registro de intenção.
+
+---
+
+## 9-B. REGISTRO DE AFIRMAÇÕES PÚBLICAS
+
+Todo número ou comparação em texto público (site, e-mails, assistente, anúncios) precisa de uma linha aqui, com fonte, data e responsável. O script `tools/check-public-claims.mjs` apenas **avisa** (não quebra o build) sobre porcentagem, "mais chance", "garantido", "imediato", "adesivo" e "parceiro" em texto público sem linha correspondente, e sobre QR Code em título, descrição, H1 ou JSON-LD.
+
+<!-- registro-afirmacoes:inicio -->
+| Afirmação | Onde aparece | Fonte | Data | Responsável | Validade |
+|---|---|---|---|---|---|
+| 94% — mais chance com QR | Home, bloco de estatísticas (`src/app/page.tsx`, valor vindo de `src/app/api/v1/stats/public/route.ts`). O mesmo número no bloco de pets foi retirado em 28/10/2026 | Valor fixo no código, sem cálculo; a fonte citada pelo fundador ainda não está documentada | 28/10/2026 | Responsável pelo produto (documentar a fonte) | Não validada |
+| 12.847 objetos e 3.291 recuperações (totais públicos) | Home, bloco de estatísticas (`src/app/page.tsx`, `src/app/api/v1/stats/public/route.ts`) | Contagem do banco quando maior; valores mínimos fixos no código (piso) quando a contagem é menor | 28/10/2026 | Responsável pelo produto (decidir manter o piso) | Não validada (o piso não tem fonte documentada) |
+| Recuperações recentes (lista de casos com título, cidade e horas) | Home (`src/app/page.tsx`, `src/app/api/v1/stats/public/route.ts`) | Objetos devolvidos nos últimos 30 dias; sem nenhum, usa uma lista de exemplos fixa, sem rótulo de exemplo | 28/10/2026 | Responsável pelo produto | Não validada |
+<!-- registro-afirmacoes:fim -->
 
 ---
 
@@ -288,6 +304,8 @@ Estrutura de governança do produto instituída em 29/06/2026.
 > ~~Título anterior: «17. PRIORIDADES ABERTAS (29/06/2026 — fonte única de verdade)»~~ — **SUPERADO em 26/10/2026**: as pendências que dependem do Marcos estão no quadro privado "Central M2RPrime — Pendências" (fonte única desde 03/10/2026); este §17 registra o estado técnico do produto.
 > Os itens das seções "Alto", "Médio", "Baixo" e "Resolvidos" abaixo são registros de 29/06 a 22/08/2026 e **não foram reverificados em 26/10/2026**: tratar como hipótese até conferir na fonte.
 
+> **Nota de 31/10/2026:** o parágrafo «Estado em 26/10/2026» abaixo está **SUPERADO em 31/10/2026**: a `main` está no commit `12fd96a` (PRs #56 a #70 mesclados entre 28 e 31/10/2026). O estado atual está no `STATUS.md`; o texto original foi mantido.
+
 ### 17.0 Registro de 08 a 14/10/2026 (fonte: registros internos do projeto e PRs públicos; PRs e produção reverificados em 26/10/2026)
 
 Estado em 26/10/2026: `main` = 92d4deb (14/10); deploy de produção mais recente Ready, criado em 14/10 (`vercel inspect`, 26/10/2026). Nenhum commit novo no GitHub depois de 14/10/2026.
@@ -309,6 +327,16 @@ Regra permanente (DECISOES B-25, 09/10/2026): o legado do Webjetos é intenciona
 PRs abertos em 26/10/2026 (`gh pr list`): #33, #34, #37, #38 (rascunho), #41, #42 (rascunho), #43 (rascunho), #48 (rascunho). Itens técnicos em aberto (o detalhe de outros ajustes fica no quadro privado): decisões da cadeia "Encontrei" (D1, D3–D7, D13); sitemap (#43); canonical (#38 e issue #40); privacidade/PostHog (#33); texto padronizado dos avisos; desempenho do mapa (12–15 s no celular, medição de 25/09/2026, não verificada hoje).
 
 Relatórios de apoio ficam fora do repositório.
+
+### 17.0-B Registro de 04 e 05/11/2026 (Fase 1 da comunicação; fonte: `main` em 05/11/2026 e STATUS.md)
+
+Só fatos verificados no repositório; o que depende do banco ou do agendador externo está no STATUS.md como informado.
+- **Rotas e módulos novos:** `/api/v1/cron/chat-unread-email` (e-mail de serviço de aviso de chat não lido, `src/lib/chatUnreadEmail.ts`; protegida por segredo, **sem agendamento no `vercel.json`**; constantes: 30 min sem leitura, 6 h entre e-mails por conversa e destinatário, teto próprio de 20 por dia, guarda global de 90 nas últimas 24 h); `src/lib/chatUnread.ts` (contador de não lidas, coluna `chat_messages.is_read`, últimos 30 dias); `src/lib/platformMessagePush.ts` (push da mensagem da plataforma); a resposta de `/api/v1/cron/found-pending-reminders` ganhou `reminders_d1` (lembrete D+1, evento `found_pending_reminder_d1`).
+- **Chave geral do push da mensagem da plataforma:** `PLATFORM_MESSAGE_PUSH_ENABLED` é uma **constante no código** (`src/lib/platformMessagePush.ts`, hoje `true`), não uma variável de ambiente.
+- **Migrations em `src/db/migrations`:** 023 (preferências de notificação) e 024 (a restrição aceita `platform_message`); a aplicação da 024 em produção consta no STATUS.md como informada.
+- **Configurações do usuário:** interruptor «Mensagens da equipe» (preferência de push por evento `platform_message`) e interruptor «Som com o app aberto» (por aparelho, também controla o som antigo da lista de notificações).
+- **Service worker (`public/sw.js`):** ícone do payload, botões, vibração, renotificação por tag, imagem só do próprio domínio ou de `*.r2.dev`, aviso urgente com `requireInteraction`; **sem `skipWaiting`** (a versão nova só assume depois que todas as abas do Backfindr forem fechadas). O aviso de chat aponta para `/dashboard/chat/{matchId}`.
+- **Remetente dos e-mails no código:** `noreply@backfindr.com.br` (`src/lib/emailSend.ts`, constante `FROM_ADDRESS`).
 
 ### 17.1 Itens anteriores (29/06 a 22/08/2026, preservados)
 

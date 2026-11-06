@@ -42,15 +42,7 @@
 
 ---
 
-## O que o Backfindr não é
-
-- Não é uma plataforma de objetos perdidos
-- Não é um achados e perdidos digital
-- Não é centrado no usuário
-
 ## O que o Backfindr é
 
-- Uma infraestrutura de colaboração entre desconhecidos
-- Uma plataforma de confiança
-- Centrado na reconexão
+O Backfindr é definido pelo que faz: uma ferramenta inteligente que auxilia, aproxima e viabiliza o encontro e a devolução de objetos e coisas perdidos, roubados ou achados, para quem perdeu e para quem achou. Funciona como infraestrutura de colaboração entre desconhecidos, apoiada em confiança e voltada à reconexão entre pessoas e seus objetos. Não é um espaço físico e não guarda nem armazena objetos. Nenhum rótulo, inclusive 'achados e perdidos', é vetado ou obrigatório; vale a descrição fiel da função.
 

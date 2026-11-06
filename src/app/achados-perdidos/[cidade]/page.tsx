@@ -60,7 +60,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     // Sem "| Backfindr" manual — ver comentário equivalente em
     // achados-perdidos/[cidade]/[categoria]/page.tsx (mesmo bug, mesma causa).
     title: `Achados e Perdidos em ${city.name} (${city.state_name})`,
-    description: `Perdeu algo em ${city.name}? Veja os canais de achados e perdidos por categoria: celular, pet, documento, veículo, chave e bagagem. Registre grátis no Backfindr.`,
+    description: `Perdeu algo em ${city.name}? Veja os canais de achados e perdidos da cidade e registre no Backfindr, ferramenta privada e independente de órgãos públicos.`,
     alternates: { canonical: `https://backfindr.com/achados-perdidos/${params.cidade}` }
   }
 }

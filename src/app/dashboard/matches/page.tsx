@@ -6,7 +6,7 @@ import { CheckCircle2, XCircle, Zap, Clock, Package, Shield, AlertTriangle } fro
 import { toast } from 'sonner';
 import { formatDistanceToNow } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
-import { matchesApi, objectsApi, parseApiError } from '@/lib/api';
+import { api, matchesApi, objectsApi, parseApiError } from '@/lib/api';
 import { Match, RegisteredObject } from '@/types';
 
 const EMOJI: Record<string, string> = { phone:'📱',wallet:'👛',keys:'🔑',bag:'🎒',pet:'🐾',bike:'🚲',document:'📄',jewelry:'💍',electronics:'💻',clothing:'👕',other:'📦' };
@@ -116,6 +116,12 @@ export default function MatchesPage() {
   const [matches, setMatches] = useState<MatchFull[]>([]);
   const [loading, setLoading] = useState(true);
   const [acting, setActing] = useState<string | null>(null);
+  const [unread, setUnread] = useState<Record<string, number>>({});
+
+  // Mensagens de chat não lidas por conversa (falha ou ausência = sem indicador)
+  useEffect(() => {
+    api.get('/chat/unread').then(({ data }) => setUnread(data?.by_match ?? {})).catch(() => {});
+  }, []);
 
   useEffect(() => {
     const load = async () => {
@@ -163,16 +169,16 @@ export default function MatchesPage() {
           <div className="text-center py-20"><div className="text-5xl mb-4">🔍</div><p className="font-display font-semibold text-white text-lg mb-2">Nenhum match ainda</p><p className="text-slate-500 text-sm max-w-sm mx-auto">A IA está monitorando continuamente. Você será notificado quando encontrar um objeto compatível.</p></div>
         ) : (
           <div className="space-y-6">
-            {pending.length > 0 && <div><h2 className="font-display font-semibold text-white text-sm mb-3 flex items-center gap-2"><Clock className="w-4 h-4 text-brand-400" />Aguardando avaliação ({pending.length})</h2><div className="space-y-4">{pending.map(m => <MatchCard key={m.id} match={m} onAct={act} acting={acting} />)}</div></div>}
-            {confirmed.length > 0 && <div><h2 className="font-display font-semibold text-white text-sm mb-3 flex items-center gap-2"><CheckCircle2 className="w-4 h-4 text-green-400" />Confirmados ({confirmed.length})</h2><div className="space-y-3">{confirmed.map(m => <MatchCard key={m.id} match={m} onAct={act} acting={acting} />)}</div></div>}
-            {rejected.length > 0 && <div className="opacity-60"><h2 className="font-display font-semibold text-white text-sm mb-3 flex items-center gap-2"><XCircle className="w-4 h-4 text-slate-500" />Rejeitados ({rejected.length})</h2><div className="space-y-3">{rejected.map(m => <MatchCard key={m.id} match={m} onAct={act} acting={acting} />)}</div></div>}
+            {pending.length > 0 && <div><h2 className="font-display font-semibold text-white text-sm mb-3 flex items-center gap-2"><Clock className="w-4 h-4 text-brand-400" />Aguardando avaliação ({pending.length})</h2><div className="space-y-4">{pending.map(m => <MatchCard key={m.id} match={m} onAct={act} acting={acting} unread={unread[m.id] ?? 0} />)}</div></div>}
+            {confirmed.length > 0 && <div><h2 className="font-display font-semibold text-white text-sm mb-3 flex items-center gap-2"><CheckCircle2 className="w-4 h-4 text-green-400" />Confirmados ({confirmed.length})</h2><div className="space-y-3">{confirmed.map(m => <MatchCard key={m.id} match={m} onAct={act} acting={acting} unread={unread[m.id] ?? 0} />)}</div></div>}
+            {rejected.length > 0 && <div className="opacity-60"><h2 className="font-display font-semibold text-white text-sm mb-3 flex items-center gap-2"><XCircle className="w-4 h-4 text-slate-500" />Rejeitados ({rejected.length})</h2><div className="space-y-3">{rejected.map(m => <MatchCard key={m.id} match={m} onAct={act} acting={acting} unread={unread[m.id] ?? 0} />)}</div></div>}
           </div>
         )}
     </div>
   );
 }
 
-function MatchCard({ match, onAct, acting }: { match: MatchFull; onAct: (id:string,a:'confirm'|'reject')=>void; acting:string|null }) {
+function MatchCard({ match, onAct, acting, unread = 0 }: { match: MatchFull; onAct: (id:string,a:'confirm'|'reject')=>void; acting:string|null; unread?: number }) {
   const router = useRouter();
   const isPending = match.status === 'pending';
   const [showBriefing, setShowBriefing] = useState(false);
@@ -223,6 +229,7 @@ function MatchCard({ match, onAct, acting }: { match: MatchFull; onAct: (id:stri
           >
             <Shield className="w-3.5 h-3.5" />
             Abrir chat →
+            {unread > 0 && <span className="ml-1 min-w-5 h-5 px-1.5 rounded-full bg-amber-500 text-white text-xs font-bold flex items-center justify-center" aria-label={`${unread} mensagens novas`}>{unread}</span>}
           </button>
         )}
       </div>

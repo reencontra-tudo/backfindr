@@ -1,7 +1,7 @@
 'use client';
 // src/app/dashboard/objects/[id]/sucesso/page.tsx
 
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import {
@@ -12,6 +12,31 @@ import {
 import { toast } from 'sonner';
 import { objectsApi } from '@/lib/api';
 import PushPromptCard from '@/components/PushPromptCard';
+import { APP_URL } from '@/lib/constants';
+
+declare global {
+  interface Window {
+    gtag?: (...args: unknown[]) => void;
+  }
+}
+
+// Controle de "já disparado" por objeto na sessão. Tudo em try/catch: storage bloqueado
+// (modo privado, política do navegador) nunca pode quebrar a página nem o evento.
+const GA4_FIRED_KEY_PREFIX = 'bf_ga4_ocorrencia_publicada:';
+function ga4AlreadyFired(objectId: string): boolean {
+  try {
+    return window.sessionStorage.getItem(GA4_FIRED_KEY_PREFIX + objectId) === '1';
+  } catch {
+    return false;
+  }
+}
+function ga4MarkFired(objectId: string): void {
+  try {
+    window.sessionStorage.setItem(GA4_FIRED_KEY_PREFIX + objectId, '1');
+  } catch {
+    /* storage indisponível: sem marca, o evento pode repetir ao recarregar; nada quebra */
+  }
+}
 
 interface ObjectData {
   id: string;
@@ -35,7 +60,7 @@ const STATUS_MESSAGES: Record<string, { headline: string; sub: string }> = {
   lost:      { headline: 'Alerta publicado na rede!',      sub: 'Você será notificado assim que alguém encontrar.' },
   found:     { headline: 'Achado registrado!',             sub: 'Se o dono procurar, a gente conecta vocês automaticamente.' },
   stolen:    { headline: 'Registro de furto publicado!',   sub: 'Sua ocorrência está visível para toda a rede.' },
-  protected: { headline: 'Objeto protegido com QR Code!', sub: 'Cole o QR Code no objeto físico. Se alguém encontrar e escanear, você será notificado imediatamente.' },
+  protected: { headline: 'Objeto protegido com QR Code!', sub: 'Cole o QR Code no objeto físico. Se alguém encontrar e escanear, você será notificado.' },
 };
 
 // Extrai cidade/bairro do objeto para o texto magnético
@@ -58,7 +83,7 @@ function extractLocation(obj: ObjectData): string {
 function buildWhatsAppText(obj: ObjectData): string {
   const location = extractLocation(obj);
   const code = obj.unique_code || obj.qr_code || '';
-  const publicUrl = `https://www.backfindr.com/objeto/${code}`;
+  const publicUrl = `${APP_URL}/objeto/${code}`;
 
   if (obj.status === 'protected') {
     return `Colei um QR Code do Backfindr no meu ${obj.title}. Se você encontrar, é só escanear — ele me avisa automaticamente: ${publicUrl}`;
@@ -108,6 +133,7 @@ export default function SucessoPage() {
   const [linkCopied, setLinkCopied] = useState(false);
   const [shareCount, setShareCount] = useState(0);
   const [justShared, setJustShared] = useState(false);
+  const gtagFiredRef = useRef(false);
 
   useEffect(() => {
     objectsApi.get(id)
@@ -115,6 +141,44 @@ export default function SucessoPage() {
       .catch(() => router.push(`/dashboard/objects/${id}`))
       .finally(() => setLoading(false));
   }, [id, router]);
+
+  // Evento de conversão GA4/Google Ads — dispara uma única vez por carregamento,
+  // em paralelo aos demais eventos de analytics já existentes (PostHog, Events.*).
+  // gtag.js carrega com strategy="afterInteractive" no layout raiz; em navegações
+  // diretas para /sucesso (refresh, link externo) ele pode ainda não estar pronto
+  // no primeiro render, daí o retry curto.
+  useEffect(() => {
+    if (!obj || gtagFiredRef.current) return;
+    // Uma vez por objeto por sessão do navegador: recarregar a página (ou voltar a ela)
+    // não conta a conversão de novo. Se o sessionStorage falhar, só o ref acima vale.
+    if (ga4AlreadyFired(id)) {
+      gtagFiredRef.current = true;
+      return;
+    }
+
+    let attempts = 0;
+    const maxAttempts = 5;
+    let timeoutId: ReturnType<typeof setTimeout>;
+
+    const tryFireEvent = () => {
+      if (typeof window !== 'undefined' && window.gtag) {
+        window.gtag('event', 'ocorrencia_publicada', {
+          object_type: obj.category,
+          send_to: process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID,
+        });
+        gtagFiredRef.current = true;
+        ga4MarkFired(id);
+        return;
+      }
+      attempts++;
+      if (attempts < maxAttempts) {
+        timeoutId = setTimeout(tryFireEvent, 300);
+      }
+    };
+
+    tryFireEvent();
+    return () => clearTimeout(timeoutId);
+  }, [obj, id]);
 
   if (loading) {
     return (
@@ -129,7 +193,7 @@ export default function SucessoPage() {
   const msg = STATUS_MESSAGES[obj.status] ?? STATUS_MESSAGES.lost;
   const emoji = CATEGORY_EMOJI[obj.category] ?? '📦';
   const code = obj.unique_code || obj.qr_code || '';
-  const publicUrl = `https://www.backfindr.com/objeto/${code}`;
+  const publicUrl = `${APP_URL}/objeto/${code}`;
   const whatsappText = buildWhatsAppText(obj);
   const storiesText = buildStoriesText(obj);
   const whatsappUrl = `https://wa.me/?text=${encodeURIComponent(whatsappText)}`;
@@ -308,7 +372,7 @@ export default function SucessoPage() {
               </div>
               <div>
                 <p className="text-white text-sm font-medium">Ative as notificações</p>
-                <p className="text-white/40 text-xs">Alerta imediato quando alguém escanear o QR ou encontrar um match.</p>
+                <p className="text-white/40 text-xs">Aviso quando alguém escanear o QR ou houver uma possível correspondência.</p>
               </div>
             </div>
             <div className="flex items-start gap-3">

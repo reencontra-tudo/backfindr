@@ -1,14 +1,15 @@
 import type { Metadata } from 'next';
 import BuscarClient from './client';
+import { APP_URL } from '@/lib/constants';
 
 export const metadata: Metadata = {
   title: 'Buscar objetos perdidos',
   description: 'Pesquise na rede do Backfindr se alguém já encontrou o que você perdeu. Carteiras, celulares, pets, documentos e muito mais.',
-  alternates: { canonical: 'https://www.backfindr.com/buscar' },
+  alternates: { canonical: `${APP_URL}/buscar` },
   openGraph: {
     title: 'Buscar objetos perdidos | Backfindr',
     description: 'Pesquise na rede se alguém já encontrou o que você perdeu.',
-    url: 'https://www.backfindr.com/buscar',
+    url: `${APP_URL}/buscar`,
   },
 };
 

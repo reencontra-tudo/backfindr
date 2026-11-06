@@ -1,12 +1,14 @@
 'use client';
 
 import { useEffect, useState, useCallback } from 'react';
+import { APP_URL } from '@/lib/constants';
 import Link from 'next/link';
 import {
   Plus, Search, Filter, Package, AlertTriangle,
   CheckCircle2, Clock, ChevronRight, QrCode, LayoutGrid, List
 } from 'lucide-react';
 import ShareModal from '@/components/ShareModal';
+import ObjectThumb from '@/components/ObjectThumb';
 import { toast } from 'sonner';
 import { formatDistanceToNow } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
@@ -14,12 +16,6 @@ import { objectsApi, parseApiError } from '@/lib/api';
 import { RegisteredObject, ObjectStatus, ObjectCategory } from '@/types';
 
 // ─── Constants ────────────────────────────────────────────────────────────────
-
-const CATEGORY_EMOJI: Record<string, string> = {
-  phone: '📱', wallet: '👛', keys: '🔑', bag: '🎒', pet: '🐾',
-  bike: '🚲', vehicle: '🚗', document: '📄', jewelry: '💍', electronics: '💻',
-  clothing: '👕', other: '📦',
-};
 
 const STATUS_FILTERS: { value: string; label: string; color: string }[] = [
   { value: '',          label: 'Todos',       color: 'text-slate-300' },
@@ -53,15 +49,19 @@ const STATUS_LABEL: Record<string, string> = {
 // ─── Object Card ─────────────────────────────────────────────────────────────
 
 function ObjectCard({ obj, view }: { obj: RegisteredObject; view: 'grid' | 'list' }) {
-  const shareUrl = `https://backfindr.app/objeto/${obj.unique_code}`;
+  const shareUrl = `${APP_URL}/objeto/${obj.unique_code}`;
 
   if (view === 'list') {
     return (
       <div className="flex items-center gap-4 p-4 glass rounded-xl hover:border-brand-500/30 transition-all group">
         <Link href={`/dashboard/objects/${obj.id}`} className="flex items-center gap-4 flex-1 min-w-0">
-          <div className="w-11 h-11 rounded-xl bg-surface-border flex items-center justify-center text-2xl flex-shrink-0">
-            {CATEGORY_EMOJI[obj.category] ?? '📦'}
-          </div>
+          <ObjectThumb
+            photoUrl={obj.photos?.[0]}
+            category={obj.category}
+            size="sm"
+            alt={obj.title}
+            className="w-11 h-11 rounded-xl"
+          />
           <div className="flex-1 min-w-0">
             <p className="text-white font-medium text-sm truncate group-hover:text-brand-300 transition-colors">
               {obj.title}
@@ -95,18 +95,13 @@ function ObjectCard({ obj, view }: { obj: RegisteredObject; view: 'grid' | 'list
 
   return (
     <div className="glass rounded-2xl p-5 hover:border-brand-500/30 transition-all group flex flex-col relative">
-      {obj.photos?.[0] ? (
-        // eslint-disable-next-line @next/next/no-img-element
-        <img
-          src={obj.photos[0]}
-          alt={obj.title}
-          className="w-full h-32 object-cover rounded-xl mb-4 border border-surface-border"
-        />
-      ) : (
-        <div className="w-full h-32 bg-surface-border rounded-xl mb-4 flex items-center justify-center text-4xl">
-          {CATEGORY_EMOJI[obj.category] ?? '📦'}
-        </div>
-      )}
+      <ObjectThumb
+        photoUrl={obj.photos?.[0]}
+        category={obj.category}
+        size="lg"
+        alt={obj.title}
+        className="w-full h-32 rounded-xl mb-4 border border-surface-border"
+      />
 
       <div className="flex items-start justify-between gap-2 mb-2">
         <p className="text-white font-display font-semibold text-sm leading-tight group-hover:text-brand-300 transition-colors line-clamp-2">
@@ -265,7 +260,7 @@ export default function ObjectsPage() {
           <p className="text-slate-500 text-sm mb-6">
             {search || statusFilter
               ? 'Tente outros filtros ou termos de busca.'
-              : 'Proteja seus pertences com QR Code ou registre uma ocorrência.'}
+              : 'Registre o que perdeu, foi roubado ou encontrou. Se quiser se preparar antes, gere um QR Code.'}
           </p>
           {!search && !statusFilter && (
             <Link

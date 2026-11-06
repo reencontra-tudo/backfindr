@@ -2,7 +2,6 @@
 
 import { useEffect, useState, useCallback } from 'react';
 import Link from 'next/link';
-import Image from 'next/image';
 import {
   Package, CheckCircle2, AlertTriangle,
   Plus, ArrowRight, Zap, QrCode, Star, CreditCard,
@@ -20,11 +19,7 @@ import OnboardingTour, { TourStep } from '@/components/ui/OnboardingTour';
 import CondominioContextBanner from '@/components/CondominioContextBanner';
 import ActivitySummary from '@/components/activity/ActivitySummary';
 import PushPromptCard from '@/components/PushPromptCard';
-
-const EMOJI: Record<string, string> = {
-  phone:'📱',wallet:'👛',keys:'🔑',bag:'🎒',pet:'🐾',
-  bike:'🚲',document:'📄',jewelry:'💍',electronics:'💻',clothing:'👕',other:'📦',
-};
+import ObjectThumb from '@/components/ObjectThumb';
 
 const STATUS_COLOR: Record<string, string> = {
   lost:'text-red-400 bg-red-500/10 border-red-500/20',
@@ -61,7 +56,7 @@ const TOUR_STEPS: TourStep[] = [
     target: '[data-tour-id="register-btn"]',
     placement: 'right',
     title: 'Registrar Objeto',
-    description: 'Clique aqui para registrar um novo objeto. Você receberá um QR Code exclusivo para colar no objeto físico.',
+    description: 'Clique aqui para registrar uma ocorrência ou cadastrar um objeto.',
   },
   {
     target: '[data-tour-id="sidebar-nav"]',
@@ -79,13 +74,13 @@ const TOUR_STEPS: TourStep[] = [
     target: '[data-tour-id="recent-objects"]',
     placement: 'top',
     title: 'Objetos recentes',
-    description: 'Seus objetos mais recentes aparecem aqui. Clique em qualquer um para ver os detalhes, o QR Code e o histórico de scans.',
+    description: 'Seus objetos mais recentes aparecem aqui. Clique em qualquer um para ver os detalhes e o histórico.',
   },
   {
     target: '[data-tour-id="onboarding-checklist"]',
     placement: 'top',
     title: 'Checklist de primeiros passos',
-    description: 'Complete esses passos para aproveitar ao máximo o Backfindr: registre um objeto, ative notificações e cole o QR Code.',
+    description: 'Complete esses passos para aproveitar ao máximo o Backfindr: registre uma ocorrência, ative notificações e, se quiser, gere um QR Code.',
   },
 ];
 
@@ -371,7 +366,7 @@ export default function DashboardPage() {
             <div className="text-center py-12 bg-white/[0.02] border border-white/[0.06] rounded-2xl">
               <p className="text-3xl mb-3">🛡️</p>
               <p className="text-white font-semibold mb-1">Nenhum objeto ainda</p>
-              <p className="text-white/40 text-sm mb-4">Proteja seus pertences com QR Code ou registre uma ocorrência.</p>
+              <p className="text-white/40 text-sm mb-4">Registre o que perdeu, foi roubado ou encontrou. Se quiser se preparar antes, gere um QR Code.</p>
               <Link href="/dashboard/objects/new"
                 className="inline-flex items-center gap-1.5 bg-teal-500 hover:bg-teal-400 text-white text-sm font-semibold px-4 py-2 rounded-lg transition-all">
                 <Plus className="w-4 h-4" /> Começar agora
@@ -380,25 +375,16 @@ export default function DashboardPage() {
           ) : (
             <div className="space-y-2">
               {objects.map(obj => {
-                const thumb = obj.photos?.[0];
                 return (
                   <Link key={obj.id} href={`/dashboard/objects/${obj.id}`}
                     className="flex items-center gap-3 p-3 bg-white/[0.03] border border-white/[0.06] hover:border-white/[0.12] rounded-xl transition-all group">
-                    {/* Thumbnail: foto real ou emoji fallback */}
-                    <div className="w-12 h-12 rounded-xl overflow-hidden bg-white/[0.06] flex items-center justify-center flex-shrink-0">
-                      {thumb ? (
-                        <Image
-                          src={thumb}
-                          alt={obj.title}
-                          width={48}
-                          height={48}
-                          className="w-full h-full object-cover"
-                          unoptimized
-                        />
-                      ) : (
-                        <span className="text-xl">{EMOJI[obj.category] ?? '📦'}</span>
-                      )}
-                    </div>
+                    <ObjectThumb
+                      photoUrl={obj.photos?.[0]}
+                      category={obj.category}
+                      size="sm"
+                      alt={obj.title}
+                      className="w-12 h-12 rounded-xl bg-white/[0.06]"
+                    />
                     <div className="flex-1 min-w-0">
                       <p className="text-white text-sm font-medium truncate group-hover:text-teal-300 transition-colors">
                         {obj.title}

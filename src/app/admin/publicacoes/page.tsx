@@ -10,6 +10,7 @@ import { api, parseApiError } from '@/lib/api';
 import AdminDeleteReasonModal from '@/components/admin/AdminDeleteReasonModal';
 import { analytics } from '@/providers/PostHogProvider';
 import { toast } from 'sonner';
+import ObjectThumb from '@/components/ObjectThumb';
 
 interface Pub {
   id: string;
@@ -38,10 +39,6 @@ const STATUS_STYLE: Record<string, { text: string; bg: string; border: string; d
 const STATUS_LABEL: Record<string, string> = {
   lost: 'Perdido', found: 'Achado', returned: 'Recuperado', stolen: 'Roubado', protected: 'Protegido',
 };
-const CATEGORY_EMOJI: Record<string, string> = {
-  phone: '📱', wallet: '👛', keys: '🔑', bag: '🎒', pet: '🐾',
-  bike: '🚲', vehicle: '🚗', document: '📄', jewelry: '💍', electronics: '💻', clothing: '👕', other: '📦',
-};
 
 const STATUS_FILTERS = [
   { value: 'all',       label: 'Todos' },
@@ -63,7 +60,7 @@ function PubRow({ pub, onAction }: { pub: Pub; onAction: (id: string, action: st
       onClick={() => router.push(`/admin/objects/${pub.id}`)}>
       <td className="px-4 py-3">
         <div className="flex items-center gap-3">
-          <span className="text-xl flex-shrink-0">{CATEGORY_EMOJI[pub.category] ?? '📦'}</span>
+          <ObjectThumb category={pub.category} size="sm" className="w-8 h-8 rounded-lg" />
           <div className="min-w-0">
             <p className="text-white/85 text-sm font-medium truncate max-w-[150px]">{pub.title}</p>
             {pub.location && (

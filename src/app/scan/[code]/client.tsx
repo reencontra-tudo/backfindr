@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { APP_URL } from '@/lib/constants';
 import { useParams } from 'next/navigation';
 import Link from 'next/link';
 import {
@@ -13,6 +14,7 @@ import { RegisteredObject } from '@/types';
 import ShareModal from '@/components/ShareModal';
 import { ImageLightbox, useLightbox } from '@/components/ImageLightbox';
 import RecoveredCelebration from '@/components/RecoveredCelebration';
+import ObjectThumb from '@/components/ObjectThumb';
 
 
 const CATEGORY_EMOJI: Record<string, string> = {
@@ -165,7 +167,7 @@ export default function ScanPage() {
                 </div>
                 <div className="pb-4">
                   <p className="text-white text-sm font-semibold">Dono recebe notificação agora</p>
-                  <p className="text-slate-500 text-xs mt-0.5 leading-relaxed">Via push, email ou SMS — dependendo das configurações dele.</p>
+                  <p className="text-slate-500 text-xs mt-0.5 leading-relaxed">Por push ou e-mail, conforme as configurações dele.</p>
                 </div>
               </div>
               <div className="flex gap-3">
@@ -175,7 +177,7 @@ export default function ScanPage() {
                 </div>
                 <div className="pb-4">
                   <p className="text-slate-300 text-sm font-semibold">Dono entra em contato</p>
-                  <p className="text-slate-500 text-xs mt-0.5 leading-relaxed">Ele responde pelo Backfindr — seu número fica protegido.</p>
+                  <p className="text-slate-500 text-xs mt-0.5 leading-relaxed">A conversa acontece pelo chat da plataforma.</p>
                 </div>
               </div>
               <div className="flex gap-3">
@@ -226,12 +228,7 @@ export default function ScanPage() {
             className="absolute inset-0 w-full h-full object-cover cursor-zoom-in"
           />
         ) : (
-          <div className="absolute inset-0 bg-gradient-to-br from-[#0d1f1a] via-[#0a1510] to-[#0a0a0f] flex items-center justify-center">
-            <div className="text-center">
-              <div className="text-7xl mb-3 opacity-60">{CATEGORY_EMOJI[obj.category] ?? '📦'}</div>
-              <p className="text-slate-600 text-xs tracking-wide uppercase">Sem foto</p>
-            </div>
-          </div>
+          <ObjectThumb category={obj.category} size="hero" className="absolute inset-0" />
         )}
 
         {/* Gradiente dramático de baixo para cima */}
@@ -248,7 +245,7 @@ export default function ScanPage() {
             <span className="font-bold text-white text-sm tracking-tight drop-shadow-lg">Backfindr</span>
           </Link>
           <ShareModal
-            url={typeof window !== 'undefined' ? window.location.href : `https://backfindr.app/scan/${code}`}
+            url={typeof window !== 'undefined' ? window.location.href : `${APP_URL}/scan/${code}`}
             title={obj.title}
             description={obj.description ?? ''}
             imageUrl={obj.photos?.[0]}
@@ -353,7 +350,7 @@ export default function ScanPage() {
         {/* Trust signals */}
         <div className="grid grid-cols-3 gap-3 mb-5">
           {[
-            { icon: Shield, label: 'Anônimo', sub: 'Sua identidade protegida' },
+            { icon: Shield, label: 'Pelo chat', sub: 'Conversa pela plataforma' },
             { icon: Zap,    label: 'Imediato', sub: 'Dono notificado na hora' },
             { icon: Heart,  label: 'Gratuito', sub: 'Sem custo para você' },
           ].map(({ icon: Icon, label, sub }) => (

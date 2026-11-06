@@ -5,6 +5,7 @@ import { ArrowLeft, Save, User, Package, Shield, CheckCircle, XCircle, Crown, Lo
 import { api, parseApiError } from '@/lib/api';
 import { toast } from 'sonner';
 import Cookies from 'js-cookie';
+import PlatformMessageBox from '@/components/admin/PlatformMessageBox';
 
 const PLAN_OPTIONS = [
   { value: 'free',     label: 'Free',     color: 'text-white/60' },
@@ -19,7 +20,7 @@ interface UserObject {
 
 interface UserDetail {
   id: string; email: string; name: string; phone: string;
-  plan: string; is_verified: boolean; avatar_url: string | null;
+  plan: string; is_verified: boolean; is_legacy?: boolean; avatar_url: string | null;
   created_at: string; updated_at: string;
   objects: { items: UserObject[]; total: number };
 }
@@ -223,6 +224,8 @@ export default function AdminUserDetailPage() {
           <div><span className="text-white/30">ID:</span> <span className="text-white/30 font-mono text-[10px]">{user.id.slice(0, 8)}…</span></div>
         </div>
       </div>
+
+      <PlatformMessageBox userId={user.id} isLegacy={user.is_legacy} />
 
       {/* Ações */}
       <div className="pb-6 space-y-3">

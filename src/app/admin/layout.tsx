@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import {
@@ -240,6 +240,89 @@ function Sidebar({ onClose, stats }: { onClose?: () => void; stats: AdminStats }
   );
 }
 
+// ─── Sino de pendências ───────────────────────────────────────────────────────
+// Reaproveita o /admin/stats já carregado pelo layout (sem chamada nova).
+
+const BELL_ITEMS: { key: keyof AdminStats; href: string; label: string }[] = [
+  { key: 'pending_matches',        href: '/admin/matches',        label: 'Matches para revisar' },
+  { key: 'pending_reports',        href: '/admin/moderacao',      label: 'Denúncias para moderar' },
+  { key: 'pending_public_signals', href: '/admin/public-signals', label: 'Public Signals pendentes' },
+];
+
+function BellMenu({ stats, total }: { stats: AdminStats; total: number }) {
+  const pathname = usePathname();
+  const [open, setOpen] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+
+  // Fecha ao navegar
+  useEffect(() => { setOpen(false); }, [pathname]);
+
+  // Fecha ao clicar fora e com Esc (só enquanto aberto)
+  useEffect(() => {
+    if (!open) return;
+    const onDown = (e: MouseEvent | TouchEvent) => {
+      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
+    };
+    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') setOpen(false); };
+    document.addEventListener('mousedown', onDown);
+    document.addEventListener('touchstart', onDown);
+    document.addEventListener('keydown', onKey);
+    return () => {
+      document.removeEventListener('mousedown', onDown);
+      document.removeEventListener('touchstart', onDown);
+      document.removeEventListener('keydown', onKey);
+    };
+  }, [open]);
+
+  return (
+    <div ref={ref} className="relative">
+      <button
+        type="button"
+        onClick={() => setOpen(o => !o)}
+        aria-label={total > 0 ? `Pendências: ${total}` : 'Pendências'}
+        aria-haspopup="true"
+        aria-expanded={open}
+        className="relative w-8 h-8 flex items-center justify-center text-white/25 hover:text-white transition-colors"
+      >
+        <Bell className="w-4 h-4" />
+        {total > 0 && (
+          <span className="absolute -top-0.5 -right-0.5 min-w-[14px] h-[14px] flex items-center justify-center bg-red-500 text-white text-[8px] font-bold rounded-full px-0.5 ring-2 ring-[#060a12]">
+            {total > 9 ? '9+' : total}
+          </span>
+        )}
+      </button>
+
+      {open && (
+        <div
+          role="region"
+          aria-label="Pendências"
+          className="absolute right-0 top-full mt-2 w-64 max-w-[calc(100vw-2rem)] z-50 rounded-xl border border-white/[0.08] bg-[#0a0f1a] shadow-xl p-1.5"
+        >
+          {total === 0 ? (
+            <p className="px-3 py-3 text-[13px] text-white/40">Nada pendente</p>
+          ) : (
+            BELL_ITEMS.map(({ key, href, label }) => {
+              const count = stats[key] ?? 0;
+              return (
+                <Link
+                  key={href}
+                  href={href}
+                  className="flex items-center justify-between gap-3 px-3 py-2 rounded-lg text-[13px] text-white/70 hover:bg-white/[0.05] hover:text-white transition-colors"
+                >
+                  <span>{label}</span>
+                  <span className={`min-w-[20px] text-center text-[11px] font-bold rounded-full px-1.5 py-0.5 ${count > 0 ? 'bg-red-500/90 text-white' : 'bg-white/[0.06] text-white/30'}`}>
+                    {count}
+                  </span>
+                </Link>
+              );
+            })
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
 // ─── Layout ───────────────────────────────────────────────────────────────────
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
@@ -361,14 +444,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
           </div>
 
           <div className="flex items-center gap-2 ml-auto">
-            <button className="relative w-8 h-8 flex items-center justify-center text-white/25 hover:text-white transition-colors">
-              <Bell className="w-4 h-4" />
-              {totalAlerts > 0 && (
-                <span className="absolute -top-0.5 -right-0.5 min-w-[14px] h-[14px] flex items-center justify-center bg-red-500 text-white text-[8px] font-bold rounded-full px-0.5 ring-2 ring-[#060a12]">
-                  {totalAlerts > 9 ? '9+' : totalAlerts}
-                </span>
-              )}
-            </button>
+            <BellMenu stats={stats} total={totalAlerts} />
 
             <div className="hidden sm:flex items-center gap-1.5 px-2.5 py-1 bg-green-500/8 border border-green-500/15 rounded-full">
               <div className="w-1.5 h-1.5 bg-green-400 rounded-full animate-pulse" />

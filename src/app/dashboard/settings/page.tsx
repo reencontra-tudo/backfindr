@@ -7,6 +7,7 @@ import { Loader2, User, Bell, Shield, Trash2, Check, ChevronRight } from 'lucide
 import { useAuthStore } from '@/hooks/useAuth';
 import { api, parseApiError } from '@/lib/api';
 import { usePushNotifications } from '@/hooks/usePushNotifications';
+import { isPushSoundEnabled, setPushSoundEnabled } from '@/lib/pushSound';
 
 type ProfileForm = { name: string; phone: string };
 
@@ -17,12 +18,16 @@ export default function SettingsPage() {
   const { register: registerPush, unregister } = usePushNotifications();
   const [saving, setSaving] = useState(false);
   const [pushEnabled, setPushEnabled] = useState(false);
+  // Preferência de push por evento; sem nada gravado, tudo ligado (como antes).
+  const [soundOn, setSoundOn] = useState(true);
+  const [pushPrefs, setPushPrefs] = useState<Record<string, boolean>>({});
   const [activeTab, setActiveTab] = useState<'profile'|'security'|'notifications'|'danger'>('profile');
 
   const { register, handleSubmit, reset, formState: { isDirty } } = useForm<ProfileForm>();
 
   useEffect(() => {
     if (user) reset({ name: user.name, phone: user.phone ?? '' });
+    setSoundOn(isPushSoundEnabled());
     if ('Notification' in window) setPushEnabled(Notification.permission === 'granted');
   }, [user, reset]);
 
@@ -34,6 +39,27 @@ export default function SettingsPage() {
       toast.success('Perfil atualizado');
     } catch (e) { toast.error(parseApiError(e)); }
     finally { setSaving(false); }
+  };
+
+  useEffect(() => {
+    api.get('/notifications/preferences')
+      .then((r) => {
+        const prefs = (r.data?.preferences ?? {}) as Record<string, { push?: boolean }>;
+        setPushPrefs(Object.fromEntries(Object.entries(prefs).map(([ev, ch]) => [ev, ch.push !== false])));
+      })
+      .catch(() => { /* sem preferências: tudo ligado */ });
+  }, []);
+
+  const togglePushPref = async (event: string) => {
+    if (!pushEnabled) { toast.info('Ative as notificações push primeiro'); return; }
+    const next = !(pushPrefs[event] ?? true);
+    setPushPrefs((p) => ({ ...p, [event]: next }));
+    try {
+      await api.put('/notifications/preferences', { event, channel: 'push', enabled: next });
+    } catch (e) {
+      setPushPrefs((p) => ({ ...p, [event]: !next }));
+      toast.error(parseApiError(e));
+    }
   };
 
   const enablePush = async () => {
@@ -220,15 +246,35 @@ export default function SettingsPage() {
             </div>
           </div>
 
+          {/* Som com o app aberto (por aparelho) */}
+          <div className="flex items-center justify-between p-4 bg-white/[0.02] border border-white/[0.07] rounded-xl">
+            <div>
+              <p className="text-white text-sm">Som com o app aberto</p>
+              <p className="text-white/30 text-xs mt-0.5">Toca um som curto neste aparelho quando chega um aviso e o app está aberto. Com o app fechado, vale o som padrão do sistema.</p>
+            </div>
+            <button
+              type="button"
+              role="switch"
+              aria-checked={soundOn}
+              aria-label="Som com o app aberto"
+              className={`relative w-10 h-5 rounded-full transition-all flex-shrink-0 ml-3 ${soundOn ? 'bg-teal-500' : 'bg-white/[0.08]'}`}
+              onClick={() => { const next = !soundOn; setSoundOn(next); setPushSoundEnabled(next); }}
+            >
+              <span className={`absolute top-0.5 w-4 h-4 bg-white rounded-full transition-all ${soundOn ? 'left-5' : 'left-0.5'}`} />
+            </button>
+          </div>
+
           {/* Eventos configuráveis */}
           <div className="space-y-2">
             <p className="text-white/30 text-xs font-semibold uppercase tracking-wider px-1 mb-3">Quando notificar</p>
+            <p className="text-white/30 text-xs px-1 mb-3">Estas opções valem para as notificações push. Os avisos dentro do app e por e-mail seguem como antes.</p>
             {[
-              { label: 'Match encontrado pela IA', desc: 'Quando a IA encontrar um possível par para seu objeto', icon: '🔍', on: true },
-              { label: 'QR Code escaneado', desc: 'Quando alguém escanear o QR Code do seu objeto', icon: '📱', on: true },
-              { label: 'Nova mensagem no chat', desc: 'Novas mensagens de quem encontrou seu objeto', icon: '💬', on: true },
-              { label: 'Objeto recuperado', desc: 'Confirmação de recuperação bem-sucedida', icon: '✅', on: true },
-            ].map(item => (
+              { event: 'match', label: 'Match encontrado pela IA', desc: 'Quando a IA encontrar um possível par para seu objeto', icon: '🔍' },
+              { event: 'qr_scan', label: 'QR Code escaneado', desc: 'Quando alguém escanear o QR Code do seu objeto', icon: '📱' },
+              { event: 'chat_message', label: 'Nova mensagem no chat', desc: 'Novas mensagens de quem encontrou seu objeto', icon: '💬' },
+              { event: 'returned', label: 'Objeto recuperado', desc: 'Confirmação de recuperação bem-sucedida', icon: '✅' },
+              { event: 'platform_message', label: 'Mensagens da equipe', desc: 'Avisos enviados pela equipe do Backfindr', icon: '📢' },
+            ].map(item => ({ ...item, on: pushPrefs[item.event] ?? true })).map(item => (
               <div key={item.label} className="flex items-center justify-between p-4 bg-white/[0.02] border border-white/[0.07] rounded-xl">
                 <div className="flex items-center gap-3">
                   <span className="text-lg">{item.icon}</span>
@@ -241,7 +287,7 @@ export default function SettingsPage() {
                   className={`w-10 h-5 rounded-full relative cursor-pointer transition-all ${
                     item.on && pushEnabled ? 'bg-teal-500' : 'bg-white/[0.08]'
                   }`}
-                  onClick={() => !pushEnabled && toast.info('Ative as notificações push primeiro')}
+                  onClick={() => togglePushPref(item.event)}
                 >
                   <div className={`absolute top-0.5 w-4 h-4 rounded-full bg-white transition-all ${
                     item.on && pushEnabled ? 'left-5' : 'left-0.5'

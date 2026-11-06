@@ -7,6 +7,7 @@ import { ImageLightbox, useLightbox } from '@/components/ImageLightbox';
 import AdminDeleteReasonModal from '@/components/admin/AdminDeleteReasonModal';
 import { analytics } from '@/providers/PostHogProvider';
 import { toast } from 'sonner';
+import PlatformMessageBox from '@/components/admin/PlatformMessageBox';
 
 const STATUS_OPTIONS = [
   { value: 'lost',     label: 'Perdido',     color: 'text-red-400' },
@@ -134,6 +135,8 @@ export default function AdminObjectDetailPage() {
           <span className="ml-auto text-[10px] bg-purple-500/20 text-purple-400 px-2 py-0.5 rounded-full">Webjetos</span>
         )}
       </div>
+
+      <PlatformMessageBox objectId={obj.id} defaultLink={`/dashboard/objects/${obj.id}`} isLegacy={obj.is_legacy} />
 
       {/* Fotos */}
       {obj.images && obj.images.length > 0 && (

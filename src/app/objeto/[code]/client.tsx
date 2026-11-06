@@ -8,6 +8,8 @@ import { toast } from 'sonner';
 import { api, parseApiError } from '@/lib/api';
 import { RegisteredObject } from '@/types';
 import RecoveredCelebration from '@/components/RecoveredCelebration';
+import ObjectThumb from '@/components/ObjectThumb';
+import { APP_URL } from '@/lib/constants';
 
 const CATEGORY_EMOJI: Record<string, string> = {
   phone: '📱', wallet: '👛', keys: '🔑', bag: '🎒', pet: '🐾',
@@ -176,7 +178,7 @@ export default function PublicObjectClient({ obj }: { obj: RegisteredObject }) {
     }
   };
 
-  const shareUrl = typeof window !== 'undefined' ? window.location.href : `${process.env.NEXT_PUBLIC_APP_URL || 'https://backfindr.com'}/objeto/${obj.unique_code}`;
+  const shareUrl = typeof window !== 'undefined' ? window.location.href : `${APP_URL}/objeto/${obj.unique_code}`;
   const location = obj.location as { lat?: number; lng?: number; address?: string } | null;
   const allPhotos = obj.photos ?? [];
 
@@ -241,7 +243,7 @@ export default function PublicObjectClient({ obj }: { obj: RegisteredObject }) {
                   </div>
                   <div className="pb-4">
                     <p className="text-white text-sm font-semibold">Dono recebe notificação agora</p>
-                    <p className="text-white/40 text-xs mt-0.5 leading-relaxed">Via push, email ou SMS — dependendo das configurações dele.</p>
+                    <p className="text-white/40 text-xs mt-0.5 leading-relaxed">Por push ou e-mail, conforme as configurações dele.</p>
                   </div>
                 </div>
                 <div className="flex gap-3">
@@ -251,7 +253,7 @@ export default function PublicObjectClient({ obj }: { obj: RegisteredObject }) {
                   </div>
                   <div className="pb-4">
                     <p className="text-white/70 text-sm font-semibold">Dono entra em contato</p>
-                    <p className="text-white/40 text-xs mt-0.5 leading-relaxed">Ele responde pelo Backfindr — seu número fica protegido.</p>
+                    <p className="text-white/40 text-xs mt-0.5 leading-relaxed">A conversa acontece pelo chat da plataforma.</p>
                   </div>
                 </div>
                 <div className="flex gap-3">
@@ -309,9 +311,11 @@ export default function PublicObjectClient({ obj }: { obj: RegisteredObject }) {
                       className="w-20 h-20 rounded-xl object-cover border border-white/[0.08] flex-shrink-0 cursor-zoom-in"
                     />
                   ) : (
-                    <div className="w-20 h-20 rounded-xl bg-white/[0.06] border border-white/[0.08] flex items-center justify-center text-4xl flex-shrink-0">
-                      {CATEGORY_EMOJI[obj.category] ?? '📦'}
-                    </div>
+                    <ObjectThumb
+                      category={obj.category}
+                      size="md"
+                      className="w-20 h-20 rounded-xl border border-white/[0.08]"
+                    />
                   )}
                   <div className="flex-1 min-w-0">
                     <p className="text-white/40 text-xs mb-1">{CATEGORY_LABEL[obj.category]}</p>
@@ -382,8 +386,8 @@ export default function PublicObjectClient({ obj }: { obj: RegisteredObject }) {
                 <div className="flex items-start gap-2.5 mt-4 bg-white/[0.02] rounded-xl p-3">
                   <Shield className="w-4 h-4 text-teal-400/60 flex-shrink-0 mt-0.5" />
                   <p className="text-white/45 text-xs leading-relaxed">
-                    <span className="text-white/70 font-medium">Seus dados estão protegidos.</span>{' '}
-                    O dono recebe apenas um aviso. Seu nome e telefone não são revelados automaticamente — você decide o que compartilhar.
+                    <span className="text-white/70 font-medium">A conversa acontece pelo chat da plataforma.</span>{' '}
+                    O dono recebe um aviso.
                   </p>
                 </div>
               </div>
