@@ -2,6 +2,8 @@ export const dynamic = 'force-dynamic';
 import { NextRequest } from 'next/server';
 import { query } from '@/lib/db';
 import { successResponse, internalErrorResponse } from '@/lib/response';
+import { isBuscaAmpla, temPalavraEmComum, tituloRecuperado } from '@/lib/flowMatch/relevance';
+import { buscarRegistrosRecentesParecidos } from '@/lib/flowMatch/recentSimilar';
 
 // ─── Dicionário de sinônimos (PT-BR, normalizado sem acento) ───────────────
 const SINONIMOS: Record<string, string[]> = {
@@ -146,6 +148,19 @@ export async function GET(request: NextRequest) {
     const page     = parseInt(searchParams.get('page') || '1');
     const offset   = cursor ? null : (page - 1) * fetchSize;
 
+    // Opção NOVA, desligada por padrão: só o passo 2 de /flow/found e /flow/lost envia `strict=1`.
+    // Sem ela, nada abaixo muda (home, /buscar, /achei, painel e sitemap seguem idênticos).
+    const strict = searchParams.get('strict') === '1';
+    if (strict && isBuscaAmpla(keyword)) {
+      // Busca ampla demais: não lista itens fracos; o fluxo mostra o aviso «precisa de mais detalhes».
+      // `items` fica vazio; só registros RECENTES de usuário/sinal (nunca legado) vão em `recent_similar` (até 3).
+      const recent_similar = await buscarRegistrosRecentesParecidos(keyword, status);
+      return successResponse({
+        items: [], total: 0, page, size: requestedSize, next_cursor: null,
+        keywords_expanded: [], score_threshold: SCORE_MIN_BUSCA, needs_details: true, recent_similar,
+      });
+    }
+
     await checkFTS();
 
     const params: unknown[] = [];
@@ -255,10 +270,22 @@ export async function GET(request: NextRequest) {
       return item;
     });
 
+    // Só com strict=1: cor sozinha não conta e título «recuperado/a» não aparece (a pontuação e a ordem não mudam)
+    const kwExpandidoStrict = strict ? expandirTokens(tokenizar(keyword)) : null;
+    const passaStrict = (item: (typeof allItems)[number]) => !strict || (
+      !tituloRecuperado(item.title) &&
+      temPalavraEmComum(
+        kwExpandidoStrict as Set<string>,
+        expandirTokens(tokenizar((item.title as string) || '')),
+        expandirTokens(tokenizar((item.description as string) || '')),
+      )
+    );
+
     // Filtra por score mínimo e ordena por relevância (quando há keyword)
     const items = keyword.length > 0
       ? allItems
           .filter(item => item._score >= SCORE_MIN_BUSCA)
+          .filter(passaStrict)
           .sort((a, b) => b._score - a._score)
           .slice(0, requestedSize)
       : allItems.slice(0, requestedSize);

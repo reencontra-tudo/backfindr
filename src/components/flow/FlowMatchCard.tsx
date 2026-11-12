@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import ObjectThumb from '@/components/ObjectThumb';
 import { MapPin, ArrowRight } from 'lucide-react';
+import { formatAge } from '@/lib/flowMatch/age';
 
 export interface MatchItem {
   id: string;
@@ -19,16 +20,6 @@ interface FlowMatchCardProps {
   item: MatchItem;
   onSelect?: (item: MatchItem) => void;
   label?: string;
-}
-
-function timeAgo(dateStr?: string): string {
-  if (!dateStr) return '';
-  const diff = Date.now() - new Date(dateStr).getTime();
-  const mins = Math.floor(diff / 60000);
-  if (mins < 60) return `há ${mins} min`;
-  const hrs = Math.floor(mins / 60);
-  if (hrs < 24) return `há ${hrs}h`;
-  return `há ${Math.floor(hrs / 24)} dias`;
 }
 
 export default function FlowMatchCard({ item, onSelect, label }: FlowMatchCardProps) {
@@ -51,7 +42,7 @@ export default function FlowMatchCard({ item, onSelect, label }: FlowMatchCardPr
         <div className="flex items-start justify-between gap-2 mb-0.5">
           <h3 className="text-white font-semibold text-sm leading-tight truncate">{item.title}</h3>
           {item.created_at && (
-            <span className="text-white/30 text-xs flex-shrink-0">{timeAgo(item.created_at)}</span>
+            <span className="text-white/30 text-xs flex-shrink-0">{formatAge(item.created_at)}</span>
           )}
         </div>
         {item.description && (
