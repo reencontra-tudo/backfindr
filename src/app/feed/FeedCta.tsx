@@ -34,6 +34,32 @@ export function RegisterMenu({ variant, pagina }: { variant: 'fixed' | 'header';
   const box = useRef<HTMLDivElement | null>(null);
   const menuId = useId();
   const posicao: FeedCtaPosicao = variant === 'fixed' ? 'fixo' : 'cabecalho';
+  // Só o botão FIXO (celular): some ao rolar para baixo e volta ao rolar para cima, ao chegar ao topo ou ao receber foco.
+  // Com o menu aberto nunca some. No HTML do servidor ele já vem visível (igual para todos).
+  const [recolhido, setRecolhido] = useState(false);
+  const openRef = useRef(false);
+  openRef.current = open;
+  useEffect(() => {
+    if (variant !== 'fixed') return;
+    let ultimo = window.scrollY, ticking = false;
+    const onScroll = () => {
+      if (ticking) return; ticking = true;
+      requestAnimationFrame(() => {
+        ticking = false;
+        const y = Math.max(0, window.scrollY), d = y - ultimo;
+        if (y <= 24) setRecolhido(false);                                   // topo
+        else if (d > 8 && !openRef.current) { setRecolhido(true); }         // rolando para baixo
+        else if (d < -8) setRecolhido(false);                               // rolando para cima
+        if (Math.abs(d) > 8 || y <= 24) ultimo = y;
+      });
+    };
+    const onFocus = () => setRecolhido(false);
+    window.addEventListener('scroll', onScroll, { passive: true });
+    box.current?.addEventListener('focusin', onFocus);
+    const el = box.current;
+    return () => { window.removeEventListener('scroll', onScroll); el?.removeEventListener('focusin', onFocus); };
+  }, [variant]);
+  const escondido = variant === 'fixed' && recolhido && !open;
 
   useEffect(() => {
     if (!open) return;
@@ -55,7 +81,8 @@ export function RegisterMenu({ variant, pagina }: { variant: 'fixed' | 'header';
   const item = 'flex min-h-[44px] items-center rounded-lg px-3 text-sm font-medium text-white hover:bg-white/10 focus:outline-none focus:ring-2 focus:ring-teal-300';
 
   return (
-    <div ref={box} className={wrap} data-feed-register={variant}>
+    <div ref={box} data-feed-register={variant} data-recolhido={variant === 'fixed' ? String(escondido) : undefined}
+      className={`${wrap}${variant === 'fixed' ? ` transition-transform duration-200 motion-reduce:transition-none ${escondido ? 'pointer-events-none translate-y-[calc(100%+2rem)]' : 'translate-y-0'}` : ''}`}>
       <button type="button" aria-expanded={open} aria-controls={menuId} className={trigger}
         onClick={() => { if (!open) feedEvents.ctaCadastrar(posicao, pagina); setOpen((v) => !v); }}>
         <span aria-hidden className="text-base leading-none">+</span> Cadastrar ocorrência

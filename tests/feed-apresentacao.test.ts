@@ -125,6 +125,29 @@ describe('bloco explicativo entre os cards', () => {
   });
 });
 
+describe('botão fixo: some ao rolar para baixo e volta ao rolar para cima', () => {
+  const cta = read('src/app/feed/FeedCta.tsx');
+  const fixo = html(React.createElement(RegisterMenu, { variant: 'fixed', pagina: 1 }));
+  const cab = html(React.createElement(RegisterMenu, { variant: 'header', pagina: 1 }));
+  it('no HTML do servidor ele nasce VISÍVEL (igual para todos); só o fixo tem o estado de rolagem', () => {
+    expect(fixo).toContain('data-recolhido="false"'); expect(fixo).toContain('translate-y-0'); expect(fixo).not.toContain('translate-y-[calc');
+    expect(cab).not.toContain('data-recolhido');
+  });
+  it('a lógica: esconde ao descer, mostra ao subir, no topo e com foco; menu aberto nunca some', () => {
+    expect(cta).toContain("window.addEventListener('scroll', onScroll, { passive: true })");
+    expect(cta).toMatch(/y <= 24\) setRecolhido\(false\)/);
+    expect(cta).toMatch(/d > 8 && !openRef\.current\) \{ setRecolhido\(true\)/);
+    expect(cta).toMatch(/d < -8\) setRecolhido\(false\)/);
+    expect(cta).toContain("addEventListener('focusin'");
+    expect(cta).toContain("const escondido = variant === 'fixed' && recolhido && !open");
+  });
+  it('só mexe na posição (transform): sem mudar aparência, textos, rotas nem eventos', () => {
+    expect(cta).toContain('pointer-events-none translate-y-[calc(100%+2rem)]');
+    expect(cta).toContain('motion-reduce:transition-none');
+    expect(cta).toContain("'/flow/lost?ref=feed'");
+  });
+});
+
 describe('regras de texto (nada de promessa não confirmada)', () => {
   it('apresentação, bloco, botões e menu: sem gratuito/preço, contato protegido, SMS, chat ou conversa', () => {
     const src = ['src/app/feed/FeedCta.tsx', 'src/app/feed/[[...slug]]/page.tsx'].map(read).join('\n') + client(lista(4));

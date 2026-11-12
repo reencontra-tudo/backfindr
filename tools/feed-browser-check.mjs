@@ -13,7 +13,7 @@ const AXE = process.argv[3] && existsSync(process.argv[3]) ? readFileSync(proces
 let fails = 0;
 const ok = (name, cond, extra = '') => { if (!cond) fails++; console.log(`${cond ? 'PASS' : 'FAIL'}  ${name}${extra ? '  — ' + extra : ''}`); };
 
-const VIEWPORTS = [{ width: 360, height: 740 }, { width: 390, height: 844 }, { width: 1280, height: 800 }];
+const VIEWPORTS = [{ width: 360, height: 740 }, { width: 390, height: 844 }, { width: 1280, height: 800 }].filter((v) => !process.env.ONLY_WIDTH || String(v.width) === process.env.ONLY_WIDTH);
 const PHOTO = process.env.PHOTO_FILE && existsSync(process.env.PHOTO_FILE) ? readFileSync(process.env.PHOTO_FILE) : null; // foto de exemplo (as URLs de teste não existem)
 const GEO = (c, uf, delay = 0, country = 'BR') => (r) => setTimeout(() => r.fulfill({ status: 200, contentType: 'application/json', headers: { 'cache-control': 'private, no-store' }, body: JSON.stringify({ country, uf: country === 'BR' ? uf : null, city: country === 'BR' ? c : null }) }), delay);
 
@@ -131,6 +131,127 @@ for (const vp of VIEWPORTS) {
     ok(`[${vp.width}] cookies depois de abrir (informativo)`, true, (await ctx.cookies()).map((c) => c.name).join(',') || 'nenhum');
     await ctx.close(); }
 
+  // 6) Feed v2: apresentação, botões do topo, botão fixo/cabeçalho, bloco entre os cards, rotas e eventos (visitante SEM conta)
+  { const { ctx, page, st } = await newPage(browser, vp, { geo: 'abort' });
+    const posts = []; page.on('request', (rq) => { if (rq.method() !== 'GET' && rq.url().startsWith(BASE)) posts.push(`${rq.method()} ${rq.url().replace(BASE, '')}`); });
+    await page.goto(`${BASE}/feed`); await page.waitForTimeout(1200);
+    ok(`[${vp.width}] v2: um único h1 «Ocorrências recentes»`, (await page.locator('h1').count()) === 1 && (await page.locator('h1').textContent()) === 'Ocorrências recentes');
+    const intro = page.locator('section[aria-label="Sobre o Backfindr"]');
+    ok(`[${vp.width}] v2: apresentação visível com o texto combinado`, (await intro.isVisible()) && (await intro.textContent()).includes('O Backfindr conecta pessoas que perderam e encontraram objetos, documentos, animais e veículos. Cadastre uma ocorrência e descubra possíveis correspondências.'));
+    const topo = await intro.locator('a').evaluateAll((a) => a.map((x) => ({ t: x.textContent, h: x.getAttribute('href'), r: x.getBoundingClientRect().toJSON() })));
+    ok(`[${vp.width}] v2: botões do topo «Perdi algo» e «Encontrei algo» com as rotas existentes`, topo.length === 2 && topo[0].t === 'Perdi algo' && topo[0].h === '/flow/lost?ref=feed' && topo[1].t === 'Encontrei algo' && topo[1].h === '/flow/found?ref=feed', JSON.stringify(topo.map((x) => [x.t, x.h])));
+    ok(`[${vp.width}] v2: botões do topo ≥ 44 px`, topo.every((x) => x.r.height >= 43.5 && x.r.width >= 43.5), topo.map((x) => `${Math.round(x.r.width)}x${Math.round(x.r.height)}`).join(' '));
+    const primeiro = await page.locator('main article').first().evaluate((e) => Math.round(e.getBoundingClientRect().top));
+    console.log(`INFO  [${vp.width}] topo do 1º card a ${primeiro}px do topo da janela (altura ${vp.height})`);
+    const sobre = page.locator('aside[data-feed-about]');
+    const idxSobre = await page.evaluate(() => { const a = [...document.querySelectorAll('main article')]; const b = document.querySelector('aside[data-feed-about]'); return a.filter((x) => b && (x.compareDocumentPosition(b) & Node.DOCUMENT_POSITION_FOLLOWING)).length; });
+    ok(`[${vp.width}] v2: bloco «O Backfindr vai além das publicações» após o 3º card (e só um)`, (await sobre.count()) === 1 && idxSobre === 3 && (await sobre.locator('h2').textContent()) === 'O Backfindr vai além das publicações', `cards antes do bloco: ${idxSobre}`);
+    ok(`[${vp.width}] v2: continuam 12 cards e o «Ver mais» real`, (await cards(page).count()) === 12 && (await page.locator('a[href="/feed/pagina/2"]').count()) === 1);
+    ok(`[${vp.width}] v2: sem estouro horizontal`, await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth));
+    const fixo = page.locator('[data-feed-register="fixed"]'), cab = page.locator('[data-feed-register="header"]');
+    const celular = vp.width < 640;
+    ok(`[${vp.width}] v2: ${celular ? 'botão fixo visível e cabeçalho oculto' : 'botão do cabeçalho visível e fixo oculto'}`, celular ? (await fixo.isVisible()) && !(await cab.isVisible()) : (await cab.isVisible()) && !(await fixo.isVisible()));
+    const tog = (celular ? fixo : cab).locator('button');
+    ok(`[${vp.width}] v2: menu começa fechado e abre/fecha (clique, fora, Esc)`, await (async () => {
+      const menu = (celular ? fixo : cab).locator('[role="group"]');
+      if (await menu.isVisible()) return false;
+      await tog.click(); const a = await menu.isVisible();
+      await page.keyboard.press('Escape'); const b = !(await menu.isVisible());
+      await tog.click(); const c = await menu.isVisible();
+      await page.mouse.click(vp.width / 2, 5); await page.waitForTimeout(150); const d = !(await menu.isVisible());
+      return a && b && c && d;
+    })());
+    // Sobreposição: botão fixo x chat (sempre) e x botões/links dos cards (rolando a página inteira)
+    if (celular) {
+      const rect = (el) => el.getBoundingClientRect().toJSON();
+      const chat = page.locator('button[aria-label="Abrir assistente"]');
+      const chatOn = (await chat.count()) > 0 && (await chat.first().isVisible());
+      const inter = (a, b) => !(a.right <= b.left || b.right <= a.left || a.bottom <= b.top || b.bottom <= a.top);
+      await page.addStyleTag({ content: '[data-feed-register="fixed"]{transform:none!important;transition:none!important}' }); // mede o botão na posição «mostrado» (o esconder ao rolar é testado no bloco 7)
+      let colideChat = 0, colideCard = 0, colideCardFechado = 0, passos = 0; const exemplos = [];
+      for (const aberto of [false, true]) {
+        if (aberto) { await page.evaluate(() => window.scrollTo(0, 0)); await tog.click(); }
+        for (let y = 0; ; y += Math.round(vp.height * 0.6)) {
+          await page.evaluate((v) => window.scrollTo(0, v), y); await page.waitForTimeout(60); passos++;
+          const r = await page.evaluate(() => {
+            const R = (el) => el.getBoundingClientRect().toJSON();
+            const f = document.querySelector('[data-feed-register="fixed"]'); const fr = R(f);
+            const box = [R(f.querySelector('button'))]; const mn = f.querySelector('[role="group"]'); if (mn && !mn.hidden) box.push(R(mn));
+            const c = document.querySelector('button[aria-label="Abrir assistente"]');
+            const alvos = [...document.querySelectorAll('main article a, main article button, main aside a, main section a, main nav a, main nav button')].filter((el) => !f.contains(el)).map((el) => ({ r: R(el), t: (el.textContent || '').trim().slice(0, 24) })).filter((x) => x.r.width > 0 && x.r.height > 0 && x.r.bottom > 0 && x.r.top < window.innerHeight);
+            return { box, chat: c ? R(c) : null, alvos, fim: window.scrollY + window.innerHeight >= document.documentElement.scrollHeight - 2 };
+          });
+          for (const b of r.box) {
+            if (r.chat && inter(b, r.chat)) colideChat++;
+            for (const a of r.alvos) if (inter(b, a.r)) { colideCard++; if (!aberto) colideCardFechado++; if (exemplos.length < 3) exemplos.push(`${a.t}@y=${y}${aberto ? ' (menu aberto)' : ''}`); }
+          }
+          if (r.fim) break;
+        }
+        if (aberto) { await page.keyboard.press('Escape'); }
+      }
+      ok(`[${vp.width}] v2: botão fixo (fechado e com menu aberto) NÃO encosta no botão do chat em nenhuma rolagem`, colideChat === 0, `chat visível=${chatOn}, passos=${passos}, colisões=${colideChat}`);
+      console.log(`INFO  [${vp.width}] botão fixo x botões/links de cards durante a rolagem: ${colideCardFechado} encontros com o menu fechado (${colideCard} contando o menu aberto) ${exemplos.join('; ')}`);
+      await page.evaluate(() => window.scrollTo(0, document.body.scrollHeight)); await page.waitForTimeout(200);
+      const fim = await page.evaluate(() => { const f = document.querySelector('[data-feed-register="fixed"] button').getBoundingClientRect(); const m = [...document.querySelectorAll('main a, main button')].filter((e) => !e.closest('[data-feed-register]')).map((e) => e.getBoundingClientRect()).filter((r) => r.width > 0 && r.top < window.innerHeight && r.bottom > 0); return m.filter((r) => !(r.right <= f.left || f.right <= r.left || r.bottom <= f.top || f.bottom <= r.top)).length; });
+      ok(`[${vp.width}] v2: no fim da página o botão fixo não cobre nenhum link/botão (paginação e rodapé do Feed livres)`, fim === 0, `encontros=${fim}`);
+    }
+    // Cada botão leva ao fluxo certo, sem criar conta e sem enviar nada (visitante sem login)
+    const rotas = [];
+    const ir = async (abrir, nome, esperado) => {
+      await page.goto(`${BASE}/feed`); await page.waitForTimeout(700);
+      if (abrir) await abrir();
+      await page.click(nome); await page.waitForURL((u) => u.pathname === esperado.split('?')[0], { timeout: 8000 }).catch(() => {});
+      rotas.push([nome, page.url().replace(BASE, '')]);
+      await page.waitForTimeout(3600); // navegação interna do site: o PostHog envia o lote depois de ~3 s sem recarregar a página
+      return page.url().replace(BASE, '') === esperado;
+    };
+    const menuAbrir = async () => { await (celular ? fixo : cab).locator('button').click(); };
+    const esc = (t) => `${celular ? '[data-feed-register="fixed"]' : '[data-feed-register="header"]'} a:has-text("${t}")`;
+    ok(`[${vp.width}] v2: topo «Perdi algo» → /flow/lost`, await ir(null, 'section[aria-label="Sobre o Backfindr"] a:has-text("Perdi algo")', '/flow/lost?ref=feed'));
+    ok(`[${vp.width}] v2: topo «Encontrei algo» → /flow/found`, await ir(null, 'section[aria-label="Sobre o Backfindr"] a:has-text("Encontrei algo")', '/flow/found?ref=feed'));
+    ok(`[${vp.width}] v2: menu «Perdi algo» → /flow/lost`, await ir(menuAbrir, esc('Perdi algo'), '/flow/lost?ref=feed'));
+    ok(`[${vp.width}] v2: menu «Encontrei algo» → /flow/found`, await ir(menuAbrir, esc('Encontrei algo'), '/flow/found?ref=feed'));
+    ok(`[${vp.width}] v2: menu «Roubaram algo meu» → /flow/stolen`, await ir(menuAbrir, esc('Roubaram algo meu'), '/flow/stolen?ref=feed'));
+    ok(`[${vp.width}] v2: visitante sem conta chega ao fluxo, sem login forçado, sem cookies de sessão e sem enviar nada (nenhum POST/PUT/PATCH ao site)`, !rotas.some(([, u]) => /auth|login/.test(u)) && (await ctx.cookies()).every((c) => !/token|session/i.test(c.name)) && posts.length === 0, `${rotas.map((r) => r[1]).join(' ')} | envios: ${posts.join(',') || 'nenhum'}`);
+    await page.waitForTimeout(4500);
+    const ev = st.events.filter((e) => /^feed_cta_/.test(e.event));
+    const nomes = ev.map((e) => `${e.event}:${e.properties.posicao}`);
+    const quer = celular ? ['feed_cta_perdi:topo', 'feed_cta_encontrei:topo', 'feed_cta_cadastrar:fixo', 'feed_cta_perdi:fixo', 'feed_cta_encontrei:fixo', 'feed_cta_roubado:fixo']
+                         : ['feed_cta_perdi:topo', 'feed_cta_encontrei:topo', 'feed_cta_cadastrar:cabecalho', 'feed_cta_perdi:cabecalho', 'feed_cta_encontrei:cabecalho', 'feed_cta_roubado:cabecalho'];
+    ok(`[${vp.width}] v2: eventos feed_cta_* chegam ao PostHog com a posição certa`, quer.every((q) => nomes.includes(q)), `recebidos: ${[...new Set(nomes)].join(',')}`);
+    const custom = ev.flatMap((e) => Object.keys(e.properties ?? {}).filter((k) => !(k.startsWith('$') || ['token', 'distinct_id', 'time', 'uuid'].includes(k))));
+    ok(`[${vp.width}] v2: eventos feed_cta_* só com origem, posicao e pagina (sem dado pessoal)`, custom.every((k) => ['origem', 'posicao', 'pagina'].includes(k)) && ev.every((e) => e.properties.pagina === 1), [...new Set(custom)].join(','));
+    // Página 2: sem apresentação e sem bloco, mas com o acesso ao cadastro
+    await page.goto(`${BASE}/feed/pagina/2`); await page.waitForTimeout(600);
+    ok(`[${vp.width}] v2: página 2 sem apresentação nem bloco, com o acesso ao cadastro`, (await page.locator('section[aria-label="Sobre o Backfindr"]').count()) === 0 && (await page.locator('aside[data-feed-about]').count()) === 0 && (await page.locator('[data-feed-register]').count()) === 2 && (await page.locator('h1').count()) === 1);
+    await ctx.close(); }
+
+  // 7) Botão fixo: some ao rolar para baixo, volta ao rolar para cima / topo; menu aberto não some; desktop não tem botão fixo
+  { const { ctx, page } = await newPage(browser, vp, { geo: 'abort' });
+    await page.goto(`${BASE}/feed`); await page.waitForTimeout(1000);
+    const celular = vp.width < 640;
+    if (!celular) {
+      ok(`[${vp.width}] rolagem: no desktop o botão do cabeçalho não é fixo e continua visível ao rolar`, await (async () => { await page.mouse.wheel(0, 1500); await page.waitForTimeout(500); return page.locator('[data-feed-register="header"] button').isVisible() && (await page.locator('[data-feed-register="fixed"]').isHidden()); })());
+    } else {
+      const estado = async () => page.evaluate(() => { const f = document.querySelector('[data-feed-register="fixed"]'); const r = f.getBoundingClientRect(); return { rec: f.getAttribute('data-recolhido'), fora: r.top >= window.innerHeight - 1 }; });
+      const rolar = async (dy) => { await page.mouse.move(vp.width / 2, vp.height / 2); await page.mouse.wheel(0, dy); await page.waitForTimeout(450); };
+      let e = await estado(); ok(`[${vp.width}] rolagem: no topo o botão aparece`, e.rec === 'false' && !e.fora);
+      await rolar(700); e = await estado(); ok(`[${vp.width}] rolagem: ao rolar para baixo o botão some (sai da tela)`, e.rec === 'true' && e.fora, JSON.stringify(e));
+      await rolar(500); e = await estado(); ok(`[${vp.width}] rolagem: continua escondido enquanto desce`, e.rec === 'true' && e.fora);
+      await rolar(-150); e = await estado(); ok(`[${vp.width}] rolagem: ao rolar para cima o botão volta`, e.rec === 'false' && !e.fora, JSON.stringify(e));
+      await rolar(300); e = await estado(); ok(`[${vp.width}] rolagem: desceu de novo, some de novo`, e.rec === 'true' && e.fora);
+      await page.evaluate(() => window.scrollTo(0, 0)); await page.waitForTimeout(450); e = await estado(); ok(`[${vp.width}] rolagem: ao voltar ao topo o botão aparece`, e.rec === 'false' && !e.fora);
+      // menu aberto nunca some
+      await rolar(600); await rolar(-100); await page.locator('[data-feed-register="fixed"] button').click(); await rolar(500);
+      e = await estado(); ok(`[${vp.width}] rolagem: com o menu aberto o botão NÃO some ao descer`, e.rec === 'false' && !e.fora && (await page.locator('[data-feed-register="fixed"] [role="group"]').isVisible()), JSON.stringify(e));
+      await page.keyboard.press('Escape');
+      // links do menu continuam funcionando depois de esconder/mostrar
+      await rolar(-300); await page.locator('[data-feed-register="fixed"] button').click();
+      await page.click('[data-feed-register="fixed"] a:has-text("Roubaram algo meu")'); await page.waitForURL('**/flow/stolen**', { timeout: 8000 }).catch(() => {});
+      ok(`[${vp.width}] rolagem: depois de rolar, o menu ainda leva ao fluxo certo`, page.url().endsWith('/flow/stolen?ref=feed'), page.url().replace(BASE, ''));
+    }
+    await ctx.close(); }
+
   if (desktop) continue; // o resto são comportamentos, iguais em qualquer largura
 
   // 3) «Perto de mim» (lento, 1,5 s): só aí a rota é chamada; a lista não some; troca de uma vez; depois «Só a minha cidade»
@@ -237,99 +358,6 @@ for (const vp of VIEWPORTS) {
     ok(`[${vp.width}] valores dos eventos (informativo)`, !/USR0|SIG0|@|Cascavel/.test(vals), vals.slice(0, 300));
     await ctx.close(); }
 
-  // 6) Feed v2: apresentação, botões do topo, botão fixo/cabeçalho, bloco entre os cards, rotas e eventos (visitante SEM conta)
-  { const { ctx, page, st } = await newPage(browser, vp, { geo: 'abort' });
-    const posts = []; page.on('request', (rq) => { if (rq.method() !== 'GET' && rq.url().startsWith(BASE)) posts.push(`${rq.method()} ${rq.url().replace(BASE, '')}`); });
-    await page.goto(`${BASE}/feed`); await page.waitForTimeout(1200);
-    ok(`[${vp.width}] v2: um único h1 «Ocorrências recentes»`, (await page.locator('h1').count()) === 1 && (await page.locator('h1').textContent()) === 'Ocorrências recentes');
-    const intro = page.locator('section[aria-label="Sobre o Backfindr"]');
-    ok(`[${vp.width}] v2: apresentação visível com o texto combinado`, (await intro.isVisible()) && (await intro.textContent()).includes('O Backfindr conecta pessoas que perderam e encontraram objetos, documentos, animais e veículos. Cadastre uma ocorrência e descubra possíveis correspondências.'));
-    const topo = await intro.locator('a').evaluateAll((a) => a.map((x) => ({ t: x.textContent, h: x.getAttribute('href'), r: x.getBoundingClientRect().toJSON() })));
-    ok(`[${vp.width}] v2: botões do topo «Perdi algo» e «Encontrei algo» com as rotas existentes`, topo.length === 2 && topo[0].t === 'Perdi algo' && topo[0].h === '/flow/lost?ref=feed' && topo[1].t === 'Encontrei algo' && topo[1].h === '/flow/found?ref=feed', JSON.stringify(topo.map((x) => [x.t, x.h])));
-    ok(`[${vp.width}] v2: botões do topo ≥ 44 px`, topo.every((x) => x.r.height >= 43.5 && x.r.width >= 43.5), topo.map((x) => `${Math.round(x.r.width)}x${Math.round(x.r.height)}`).join(' '));
-    const primeiro = await page.locator('main article').first().evaluate((e) => Math.round(e.getBoundingClientRect().top));
-    console.log(`INFO  [${vp.width}] topo do 1º card a ${primeiro}px do topo da janela (altura ${vp.height})`);
-    const sobre = page.locator('aside[data-feed-about]');
-    const idxSobre = await page.evaluate(() => { const a = [...document.querySelectorAll('main article')]; const b = document.querySelector('aside[data-feed-about]'); return a.filter((x) => b && (x.compareDocumentPosition(b) & Node.DOCUMENT_POSITION_FOLLOWING)).length; });
-    ok(`[${vp.width}] v2: bloco «O Backfindr vai além das publicações» após o 3º card (e só um)`, (await sobre.count()) === 1 && idxSobre === 3 && (await sobre.locator('h2').textContent()) === 'O Backfindr vai além das publicações', `cards antes do bloco: ${idxSobre}`);
-    ok(`[${vp.width}] v2: continuam 12 cards e o «Ver mais» real`, (await cards(page).count()) === 12 && (await page.locator('a[href="/feed/pagina/2"]').count()) === 1);
-    ok(`[${vp.width}] v2: sem estouro horizontal`, await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth));
-    const fixo = page.locator('[data-feed-register="fixed"]'), cab = page.locator('[data-feed-register="header"]');
-    const celular = vp.width < 640;
-    ok(`[${vp.width}] v2: ${celular ? 'botão fixo visível e cabeçalho oculto' : 'botão do cabeçalho visível e fixo oculto'}`, celular ? (await fixo.isVisible()) && !(await cab.isVisible()) : (await cab.isVisible()) && !(await fixo.isVisible()));
-    const tog = (celular ? fixo : cab).locator('button');
-    ok(`[${vp.width}] v2: menu começa fechado e abre/fecha (clique, fora, Esc)`, await (async () => {
-      const menu = (celular ? fixo : cab).locator('[role="group"]');
-      if (await menu.isVisible()) return false;
-      await tog.click(); const a = await menu.isVisible();
-      await page.keyboard.press('Escape'); const b = !(await menu.isVisible());
-      await tog.click(); const c = await menu.isVisible();
-      await page.mouse.click(vp.width / 2, 5); await page.waitForTimeout(150); const d = !(await menu.isVisible());
-      return a && b && c && d;
-    })());
-    // Sobreposição: botão fixo x chat (sempre) e x botões/links dos cards (rolando a página inteira)
-    if (celular) {
-      const rect = (el) => el.getBoundingClientRect().toJSON();
-      const chat = page.locator('button[aria-label="Abrir assistente"]');
-      const chatOn = (await chat.count()) > 0 && (await chat.first().isVisible());
-      const inter = (a, b) => !(a.right <= b.left || b.right <= a.left || a.bottom <= b.top || b.bottom <= a.top);
-      let colideChat = 0, colideCard = 0, colideCardFechado = 0, passos = 0; const exemplos = [];
-      for (const aberto of [false, true]) {
-        if (aberto) await tog.click();
-        for (let y = 0; ; y += Math.round(vp.height * 0.6)) {
-          await page.evaluate((v) => window.scrollTo(0, v), y); await page.waitForTimeout(60); passos++;
-          const r = await page.evaluate(() => {
-            const R = (el) => el.getBoundingClientRect().toJSON();
-            const f = document.querySelector('[data-feed-register="fixed"]'); const fr = R(f);
-            const box = [R(f.querySelector('button'))]; const mn = f.querySelector('[role="group"]'); if (mn && !mn.hidden) box.push(R(mn));
-            const c = document.querySelector('button[aria-label="Abrir assistente"]');
-            const alvos = [...document.querySelectorAll('main article a, main article button, main aside a, main section a, main nav a, main nav button')].filter((el) => !f.contains(el)).map((el) => ({ r: R(el), t: (el.textContent || '').trim().slice(0, 24) })).filter((x) => x.r.width > 0 && x.r.height > 0 && x.r.bottom > 0 && x.r.top < window.innerHeight);
-            return { box, chat: c ? R(c) : null, alvos, fim: window.scrollY + window.innerHeight >= document.documentElement.scrollHeight - 2 };
-          });
-          for (const b of r.box) {
-            if (r.chat && inter(b, r.chat)) colideChat++;
-            for (const a of r.alvos) if (inter(b, a.r)) { colideCard++; if (!aberto) colideCardFechado++; if (exemplos.length < 3) exemplos.push(`${a.t}@y=${y}${aberto ? ' (menu aberto)' : ''}`); }
-          }
-          if (r.fim) break;
-        }
-        if (aberto) { await page.keyboard.press('Escape'); }
-      }
-      ok(`[${vp.width}] v2: botão fixo (fechado e com menu aberto) NÃO encosta no botão do chat em nenhuma rolagem`, colideChat === 0, `chat visível=${chatOn}, passos=${passos}, colisões=${colideChat}`);
-      console.log(`INFO  [${vp.width}] botão fixo x botões/links de cards durante a rolagem: ${colideCardFechado} encontros com o menu fechado (${colideCard} contando o menu aberto) ${exemplos.join('; ')}`);
-      await page.evaluate(() => window.scrollTo(0, document.body.scrollHeight)); await page.waitForTimeout(200);
-      const fim = await page.evaluate(() => { const f = document.querySelector('[data-feed-register="fixed"] button').getBoundingClientRect(); const m = [...document.querySelectorAll('main a, main button')].filter((e) => !e.closest('[data-feed-register]')).map((e) => e.getBoundingClientRect()).filter((r) => r.width > 0 && r.top < window.innerHeight && r.bottom > 0); return m.filter((r) => !(r.right <= f.left || f.right <= r.left || r.bottom <= f.top || f.bottom <= r.top)).length; });
-      ok(`[${vp.width}] v2: no fim da página o botão fixo não cobre nenhum link/botão (paginação e rodapé do Feed livres)`, fim === 0, `encontros=${fim}`);
-    }
-    // Cada botão leva ao fluxo certo, sem criar conta e sem enviar nada (visitante sem login)
-    const rotas = [];
-    const ir = async (abrir, nome, esperado) => {
-      await page.goto(`${BASE}/feed`); await page.waitForTimeout(700);
-      if (abrir) await abrir();
-      await page.click(nome); await page.waitForURL((u) => u.pathname === esperado.split('?')[0], { timeout: 8000 }).catch(() => {});
-      rotas.push([nome, page.url().replace(BASE, '')]);
-      await page.waitForTimeout(3600); // navegação interna do site: o PostHog envia o lote depois de ~3 s sem recarregar a página
-      return page.url().replace(BASE, '') === esperado;
-    };
-    const menuAbrir = async () => { await (celular ? fixo : cab).locator('button').click(); };
-    const esc = (t) => `${celular ? '[data-feed-register="fixed"]' : '[data-feed-register="header"]'} a:has-text("${t}")`;
-    ok(`[${vp.width}] v2: topo «Perdi algo» → /flow/lost`, await ir(null, 'section[aria-label="Sobre o Backfindr"] a:has-text("Perdi algo")', '/flow/lost?ref=feed'));
-    ok(`[${vp.width}] v2: topo «Encontrei algo» → /flow/found`, await ir(null, 'section[aria-label="Sobre o Backfindr"] a:has-text("Encontrei algo")', '/flow/found?ref=feed'));
-    ok(`[${vp.width}] v2: menu «Perdi algo» → /flow/lost`, await ir(menuAbrir, esc('Perdi algo'), '/flow/lost?ref=feed'));
-    ok(`[${vp.width}] v2: menu «Encontrei algo» → /flow/found`, await ir(menuAbrir, esc('Encontrei algo'), '/flow/found?ref=feed'));
-    ok(`[${vp.width}] v2: menu «Roubaram algo meu» → /flow/stolen`, await ir(menuAbrir, esc('Roubaram algo meu'), '/flow/stolen?ref=feed'));
-    ok(`[${vp.width}] v2: visitante sem conta chega ao fluxo, sem login forçado, sem cookies de sessão e sem enviar nada (nenhum POST/PUT/PATCH ao site)`, !rotas.some(([, u]) => /auth|login/.test(u)) && (await ctx.cookies()).every((c) => !/token|session/i.test(c.name)) && posts.length === 0, `${rotas.map((r) => r[1]).join(' ')} | envios: ${posts.join(',') || 'nenhum'}`);
-    await page.waitForTimeout(4500);
-    const ev = st.events.filter((e) => /^feed_cta_/.test(e.event));
-    const nomes = ev.map((e) => `${e.event}:${e.properties.posicao}`);
-    const quer = celular ? ['feed_cta_perdi:topo', 'feed_cta_encontrei:topo', 'feed_cta_cadastrar:fixo', 'feed_cta_perdi:fixo', 'feed_cta_encontrei:fixo', 'feed_cta_roubado:fixo']
-                         : ['feed_cta_perdi:topo', 'feed_cta_encontrei:topo', 'feed_cta_cadastrar:cabecalho', 'feed_cta_perdi:cabecalho', 'feed_cta_encontrei:cabecalho', 'feed_cta_roubado:cabecalho'];
-    ok(`[${vp.width}] v2: eventos feed_cta_* chegam ao PostHog com a posição certa`, quer.every((q) => nomes.includes(q)), `recebidos: ${[...new Set(nomes)].join(',')}`);
-    const custom = ev.flatMap((e) => Object.keys(e.properties ?? {}).filter((k) => !(k.startsWith('$') || ['token', 'distinct_id', 'time', 'uuid'].includes(k))));
-    ok(`[${vp.width}] v2: eventos feed_cta_* só com origem, posicao e pagina (sem dado pessoal)`, custom.every((k) => ['origem', 'posicao', 'pagina'].includes(k)) && ev.every((e) => e.properties.pagina === 1), [...new Set(custom)].join(','));
-    // Página 2: sem apresentação e sem bloco, mas com o acesso ao cadastro
-    await page.goto(`${BASE}/feed/pagina/2`); await page.waitForTimeout(600);
-    ok(`[${vp.width}] v2: página 2 sem apresentação nem bloco, com o acesso ao cadastro`, (await page.locator('section[aria-label="Sobre o Backfindr"]').count()) === 0 && (await page.locator('aside[data-feed-about]').count()) === 0 && (await page.locator('[data-feed-register]').count()) === 2 && (await page.locator('h1').count()) === 1);
-    await ctx.close(); }
 }
 await browser.close();
 console.log(fails ? `\n${fails} VERIFICAÇÃO(ÕES) FALHOU/FALHARAM` : '\nTodas as verificações de navegador passaram');
