@@ -201,6 +201,8 @@ Todas as sprints concluídas em 26–27/06/2026:
 **Cron:** removido do vercel.json (Hobby limit). Matching via n8n Railway a cada 15min.
 **CRON_SECRET:** já existe no Vercel há 39 dias ✅ — NÃO é pendência.
 
+**Escaneamento real x abertura de página (12/11/2026, DECISOES F-03):** o `qr_scanned` SEM `metadata.via` é só «alguém abriu a página» (`GET /api/v1/objects/scan/[code]`, chamado por `/objeto`, `/scan` e pelo mapa); o `qr_scanned` COM `via` é pessoa real (`POST …/notify`, que também avisa o dono). O GET deixou de gravar para objeto/dono legado e sinal público (usuário segue gravando); `GET /api/v1/objects/[id]/events` (Central de Atividade) conta, lista e calcula a «última atividade» só com o real; rótulo «escaneamentos reais de QR». Nada em `object_events` foi apagado. Antes da mudança: 47.855 aberturas de página (93% legado) contra 6 escaneamentos reais; ~5.440 gravações por dia, das quais ~5.380 deixam de ser gravadas.
+
 ---
 
 ## 11. MOMENTOS DE CONVERSÃO — STATUS

@@ -104,9 +104,9 @@ export default function ActivityCenterCard({
             <div className="text-lg font-bold text-brand-400">{summary.total_ai_runs}</div>
             <div className="text-[10px] text-slate-500 leading-tight">comparações IA</div>
           </div>
-          <div className="bg-surface-card rounded-lg p-2 text-center">
+          <div className="bg-surface-card rounded-lg p-2 text-center" title="Conta só quando alguém abre o QR e avisa que encontrou. Visitas à página e robôs não entram.">
             <div className="text-lg font-bold text-teal-400">{summary.total_scans}</div>
-            <div className="text-[10px] text-slate-500 leading-tight">scans QR</div>
+            <div className="text-[10px] text-slate-500 leading-tight">escaneamentos reais de QR</div>
           </div>
           <div className="bg-surface-card rounded-lg p-2 text-center">
             <div className={`text-lg font-bold ${summary.total_matches > 0 ? 'text-amber-400' : 'text-slate-600'}`}>
