@@ -13,7 +13,8 @@ const AXE = process.argv[3] && existsSync(process.argv[3]) ? readFileSync(proces
 let fails = 0;
 const ok = (name, cond, extra = '') => { if (!cond) fails++; console.log(`${cond ? 'PASS' : 'FAIL'}  ${name}${extra ? '  — ' + extra : ''}`); };
 
-const VIEWPORTS = [{ width: 360, height: 740 }, { width: 390, height: 844 }];
+const VIEWPORTS = [{ width: 360, height: 740 }, { width: 390, height: 844 }, { width: 1280, height: 800 }];
+const PHOTO = process.env.PHOTO_FILE && existsSync(process.env.PHOTO_FILE) ? readFileSync(process.env.PHOTO_FILE) : null; // foto de exemplo (as URLs de teste não existem)
 const GEO = (c, uf, delay = 0, country = 'BR') => (r) => setTimeout(() => r.fulfill({ status: 200, contentType: 'application/json', headers: { 'cache-control': 'private, no-store' }, body: JSON.stringify({ country, uf: country === 'BR' ? uf : null, city: country === 'BR' ? c : null }) }), delay);
 
 async function newPage(browser, viewport, { geo = 'abort', js = true } = {}) {
@@ -45,6 +46,8 @@ async function newPage(browser, viewport, { geo = 'abort', js = true } = {}) {
     route.fulfill({ status: 200, contentType: 'application/json', body: '{}' });
   });
   st.ipapiCalls = 0; st.geoCalls = 0;
+  if (PHOTO) await page.route('https://pub-test.r2.dev/**', (r) => r.fulfill({ status: 200, contentType: 'image/jpeg', body: PHOTO }));
+  await page.addInitScript(() => { window.__cls = 0; try { new PerformanceObserver((l) => { for (const e of l.getEntries()) if (!e.hadRecentInput) window.__cls += e.value; }).observe({ type: 'layout-shift', buffered: true }); } catch {} });
   page.on('request', (rq) => { if (/\/api\/v1\/feed\/geo/.test(rq.url())) st.geoCalls++; });
   page.on('request', (rq) => { if (/ipapi\.co/.test(rq.url())) st.ipapiCalls++; });
   await page.route('https://ipapi.co/**', (r) => r.abort()); // o navegador NÃO deve mais chamar isto
@@ -55,7 +58,7 @@ async function newPage(browser, viewport, { geo = 'abort', js = true } = {}) {
 }
 
 const cards = (page) => page.locator('main article');
-const labels = (page) => cards(page).evaluateAll((els) => els.map((e) => ({ o: e.getAttribute('data-origin'), t: e.querySelector('h2')?.textContent, loc: e.querySelectorAll('p')[0]?.textContent, badge: e.querySelector('div.flex-wrap span')?.textContent, href: e.querySelector('h2 a')?.getAttribute('href') })));
+const labels = (page) => cards(page).evaluateAll((els) => els.map((e) => ({ o: e.getAttribute('data-origin'), t: e.querySelector('h2')?.textContent, loc: e.querySelector('span.truncate')?.textContent, badge: e.querySelector('span.font-semibold')?.textContent, href: e.querySelector('h2 a')?.getAttribute('href'), photo: e.getAttribute('data-photo') })));
 
 async function touchTargets(page, vp) {
   const bad = await page.evaluate(() => {
@@ -83,66 +86,121 @@ for (const vp of VIEWPORTS) {
     ok(`[${vp.width}] sem JS: «Ver mais» leva a /feed/pagina/2 com os demais cards`, page.url().endsWith('/feed/pagina/2') && (await cards(page).count()) === 8, page.url().replace(BASE, ''));
     await ctx.close(); }
 
-  // 2) Sessão LIMPA, localização falha: conteúdo do servidor permanece; sem 401; sem redirecionar ao login
-  { const { ctx, page, st } = await newPage(browser, vp, { geo: 'abort' });
+  const SEL = 'select >> nth=1'; // «Cidade ou região»
+  const AVISO = 'text=Não conseguimos identificar sua região. Escolha seu estado para ver ocorrências perto de você.';
+  const desktop = vp.width >= 1000;
+
+  // 2) Sessão LIMPA: abre em «Todas as regiões», sem NENHUMA chamada de localização; layout e visual
+  { const { ctx, page, st } = await newPage(browser, vp, { geo: GEO('Cascavel', 'PR') });
     ok(`[${vp.width}] contexto novo: sem cookies e sem localStorage antes de abrir`, (await ctx.cookies()).length === 0);
-    await page.goto(`${BASE}/feed`); await page.waitForTimeout(2500);
+    await page.goto(`${BASE}/feed`); await page.waitForTimeout(5200);
     ok(`[${vp.width}] sessão limpa: nenhuma resposta ≥ 400 do próprio site`, st.bad.length === 0, st.bad.join(', '));
     ok(`[${vp.width}] sessão limpa: nenhum redirecionamento (login)`, st.nav.every((u) => u === '/feed'), st.nav.join(' > '));
     ok(`[${vp.width}] sem erros de JavaScript na página`, st.errors.length === 0, st.errors.slice(0, 2).join(' | '));
-    ok(`[${vp.width}] localização falhou: os 12 cards do servidor continuam`, (await cards(page).count()) === 12);
-    ok(`[${vp.width}] localização falhou: aviso curto aparece, sem sugerir região`, await page.locator('text=Não conseguimos identificar sua região. Escolha seu estado para ver ocorrências perto de você.').count() === 1);
-    ok(`[${vp.width}] localização falhou: continua «Todas as regiões»`, (await page.locator('select').nth(1).inputValue()) === 'todas');
-    ok(`[${vp.width}] o navegador chamou a rota própria 1 vez e o ipapi.co 0 vezes`, st.geoCalls === 1 && st.ipapiCalls === 0, `geo=${st.geoCalls} ipapi=${st.ipapiCalls}`);
+    ok(`[${vp.width}] ao abrir: NENHUMA chamada a /api/v1/feed/geo (nem depois de 5 s) e 0 ao ipapi.co`, st.geoCalls === 0 && st.ipapiCalls === 0, `geo=${st.geoCalls} ipapi=${st.ipapiCalls}`);
+    ok(`[${vp.width}] ao abrir: 12 cards do servidor, «Todas as regiões» selecionada, sem aviso`, (await cards(page).count()) === 12 && (await page.locator(SEL).inputValue()) === 'todas' && (await page.locator(AVISO).count()) === 0);
+    const ops = await page.locator(SEL).locator('option').evaluateAll((o) => o.map((x) => x.textContent));
+    ok(`[${vp.width}] ordem das opções: Todas, Perto de mim, Só a minha cidade, estados`, JSON.stringify(ops.slice(0, 3)) === JSON.stringify(['Todas as regiões', 'Perto de mim', 'Só a minha cidade']) && ops.slice(3).every((x) => /^Estado: [A-Z]{2}$/.test(x)), ops.slice(0, 5).join(' | '));
     ok(`[${vp.width}] sem estouro horizontal`, await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth));
     await touchTargets(page, vp);
+    // visual dos cards
+    const m = await page.evaluate(() => {
+      const arts = [...document.querySelectorAll('main article')];
+      const R = (el) => el.getBoundingClientRect();
+      const comFoto = arts.filter((a) => a.dataset.photo === 'sim'), semFoto = arts.filter((a) => a.dataset.photo === 'nao');
+      const ratios = comFoto.map((a) => { const d = a.querySelector('img').parentElement; const r = R(d); return r.width / r.height; });
+      const hFoto = comFoto.length ? R(comFoto[0]).height : null, hSem = semFoto.length ? Math.max(...semFoto.map((a) => R(a).height)) : null;
+      const linhaUnica = arts.every((a) => { const p = [...a.querySelectorAll('p')].find((x) => x.querySelector('time')); return p && R(p).height < 30; });
+      const acoesNaMesmaLinha = arts.every((a) => { const els = [...a.querySelectorAll('a,button')].filter((x) => /Ver detalhes|Compartilhar|Informar que encontrei/.test(x.textContent + (x.getAttribute('aria-label') || ''))); const tops = els.map((x) => Math.round(R(x).top)); return tops.length >= 2 && Math.max(...tops) - Math.min(...tops) <= 2; });
+      const sobrepoe = arts.some((a) => { const els = [...a.querySelectorAll('h2 a,p,button,a[href]')].map(R).filter((r) => r.width && r.height); for (let i = 0; i < els.length; i++) for (let j = i + 1; j < els.length; j++) { const A = els[i], B = els[j]; const ix = Math.min(A.right, B.right) - Math.max(A.left, B.left), iy = Math.min(A.bottom, B.bottom) - Math.max(A.top, B.top); const aninhado = (A.left <= B.left && A.right >= B.right && A.top <= B.top && A.bottom >= B.bottom) || (B.left <= A.left && B.right >= A.right && B.top <= A.top && B.bottom >= A.bottom); if (!aninhado && ix > 2 && iy > 2) return true; } return false; });
+      const foraDaTela = arts.some((a) => [...a.querySelectorAll('*')].some((x) => R(x).right > window.innerWidth + 1));
+      const secundario = arts.every((a) => { const v = [...a.querySelectorAll('a')].find((x) => /Ver detalhes/.test(x.textContent)); const c = [...a.querySelectorAll('button')].find((x) => /Compartilhar/.test(x.textContent)); return v && c && getComputedStyle(v).backgroundColor !== 'rgba(0, 0, 0, 0)' && getComputedStyle(c).backgroundColor === 'rgba(0, 0, 0, 0)'; });
+      return { n: arts.length, comFoto: comFoto.length, semFoto: semFoto.length, ratios, hFoto, hSem, linhaUnica, acoesNaMesmaLinha, sobrepoe, foraDaTela, secundario, cls: window.__cls };
+    });
+    ok(`[${vp.width}] cards: ${m.comFoto} com foto e ${m.semFoto} sem foto`, m.comFoto > 0 && m.semFoto > 0, `${m.comFoto}/${m.semFoto}`);
+    ok(`[${vp.width}] foto: proporção estável (mesma em todos os cards)`, PHOTO ? m.ratios.every((r) => Math.abs(r - m.ratios[0]) < 0.02) : true, m.ratios.map((r) => r.toFixed(2)).join(','));
+    ok(`[${vp.width}] card sem foto bem mais baixo que o com foto`, m.hFoto && m.hSem && m.hSem < m.hFoto * 0.6, `com foto=${Math.round(m.hFoto)}px, sem foto=${Math.round(m.hSem)}px`);
+    ok(`[${vp.width}] local e data numa linha só`, m.linhaUnica);
+    ok(`[${vp.width}] ações na mesma linha`, m.acoesNaMesmaLinha);
+    ok(`[${vp.width}] «Ver detalhes» principal (cheio) e «Compartilhar» discreto (sem fundo)`, m.secundario);
+    ok(`[${vp.width}] sem sobreposição dentro dos cards e nada fora da tela`, !m.sobrepoe && !m.foraDaTela);
+    ok(`[${vp.width}] sem pulo de layout (CLS < 0,05)`, (m.cls ?? 0) < 0.05, String((m.cls ?? 0).toFixed(4)));
     if (AXE) { await page.addScriptTag({ content: AXE });
       const v = await page.evaluate(async () => (await axe.run(document.querySelector('main'), { runOnly: ['color-contrast', 'button-name', 'link-name', 'label', 'image-alt', 'heading-order'] })).violations.map((x) => `${x.id}(${x.nodes.length})`));
       ok(`[${vp.width}] acessibilidade (contraste, nomes, rótulos)`, v.length === 0, v.join(', ')); }
     ok(`[${vp.width}] cookies depois de abrir (informativo)`, true, (await ctx.cookies()).map((c) => c.name).join(',') || 'nenhum');
     await ctx.close(); }
 
-  // 3) Localização lenta (1,5 s): o conteúdo NÃO some enquanto espera e a troca é de uma vez
+  if (desktop) continue; // o resto são comportamentos, iguais em qualquer largura
+
+  // 3) «Perto de mim» (lento, 1,5 s): só aí a rota é chamada; a lista não some; troca de uma vez; depois «Só a minha cidade»
   { const { ctx, page, st } = await newPage(browser, vp, { geo: GEO('Cascavel', 'PR', 1500) });
-    await page.goto(`${BASE}/feed`);
-    await page.waitForTimeout(300);
-    ok(`[${vp.width}] enquanto procura a região: SEM aviso`, await page.locator('text=Não conseguimos identificar').count() === 0);
+    await page.goto(`${BASE}/feed`); await page.waitForTimeout(800);
+    await page.selectOption(SEL, 'auto');
+    await page.waitForTimeout(250);
+    ok(`[${vp.width}] escolheu «Perto de mim»: a rota foi chamada 1 vez, o seletor fica bloqueado e os cards continuam`, st.geoCalls === 1 && (await page.locator(SEL).isDisabled()) && (await cards(page).count()) === 12, `geo=${st.geoCalls}`);
+    ok(`[${vp.width}] enquanto procura: SEM aviso`, await page.locator(AVISO).count() === 0);
     const seen = [];
-    for (let i = 0; i < 50; i++) { seen.push(await cards(page).count()); await page.waitForTimeout(80); }
+    for (let i = 0; i < 40; i++) { seen.push(await cards(page).count()); await page.waitForTimeout(80); }
     ok(`[${vp.width}] sem «piscar»: nunca zero cards durante a troca`, Math.min(...seen) > 0, `contagens: ${[...new Set(seen)].join('→')}`);
-    const L = await labels(page);
-    ok(`[${vp.width}] visitante em Cascavel/PR: só PR (nada de Recife/SP/SC)`, L.length > 0 && !L.some((x) => /Recife|São Paulo|Florianópolis| SC| SP| PE|Brusque|Palmares/.test(x.loc ?? '')) && L.filter((x) => /PR/.test(x.loc ?? '')).length >= L.length - 1, `${L.length} cards`);
-    ok(`[${vp.width}] visitante: usuário antes de sinal público`, L.findIndex((x) => x.o === 'sinal_publico') === -1 || L.slice(0, L.findIndex((x) => x.o === 'sinal_publico')).every((x) => x.o === 'usuario'));
-    ok(`[${vp.width}] seletor mostra «Perto de mim»`, await page.locator('select option[value="auto"]').count() === 1);
-    ok(`[${vp.width}] localizado: sem aviso e sem chamada do navegador ao ipapi.co`, await page.locator('text=Não conseguimos identificar').count() === 0 && st.ipapiCalls === 0);
+    let L = await labels(page);
+    ok(`[${vp.width}] localizado em Cascavel/PR: só PR (nada de Recife/SP/SC), «Perto de mim» selecionado, sem aviso`,
+      L.length > 0 && !L.some((x) => /Recife|São Paulo|Florianópolis| SC| SP| PE|Brusque|Palmares/.test(x.loc ?? '')) && (await page.locator(SEL).inputValue()) === 'auto' && (await page.locator(AVISO).count()) === 0, `${L.length} cards`);
+    ok(`[${vp.width}] usuário antes de sinal público`, L.findIndex((x) => x.o === 'sinal_publico') === -1 || L.slice(0, L.findIndex((x) => x.o === 'sinal_publico')).every((x) => x.o === 'usuario'));
+    await page.selectOption(SEL, 'cidade'); await page.waitForTimeout(900);
+    L = await labels(page);
+    ok(`[${vp.width}] «Só a minha cidade»: não chama a rota de novo e mostra só Cascavel`, st.geoCalls === 1 && L.length > 0 && L.every((x) => /Cascavel|Parque Verde|Belmonte|Colonial|Alto|Universit|Nova York|Centro/.test(x.loc ?? '')) && !L.some((x) => /Recife|São Paulo/.test(x.loc ?? '')), `geo=${st.geoCalls} ${L.length} cards`);
+    await page.selectOption(SEL, 'todas'); await page.waitForTimeout(900);
+    ok(`[${vp.width}] voltar a «Todas as regiões» traz as outras regiões de novo; nenhuma chamada nova`, (await cards(page).count()) === 12 && st.geoCalls === 1 && st.ipapiCalls === 0);
     await ctx.close(); }
 
-  // 3b) Visitante de outro país (sigla coincide com estado brasileiro): NÃO vale; mantém «Todas» e mostra o aviso
-  { const { ctx, page } = await newPage(browser, vp, { geo: GEO('Pittsburgh', 'PA', 0, 'US') });
-    await page.goto(`${BASE}/feed`); await page.waitForTimeout(1200);
-    ok(`[${vp.width}] visitante dos EUA: 12 cards, «Todas as regiões», sem «Perto de mim», com aviso`,
-      (await cards(page).count()) === 12 && (await page.locator('select').nth(1).inputValue()) === 'todas'
-      && (await page.locator('select option[value="auto"]').count()) === 0 && (await page.locator('text=Não conseguimos identificar').count()) === 1);
+  // 3b) Outro país (sigla coincide com estado brasileiro): volta para «Todas» e mostra o aviso
+  { const { ctx, page, st } = await newPage(browser, vp, { geo: GEO('Pittsburgh', 'PA', 0, 'US') });
+    await page.goto(`${BASE}/feed`); await page.waitForTimeout(600);
+    await page.selectOption(SEL, 'auto'); await page.waitForTimeout(1200);
+    ok(`[${vp.width}] visitante dos EUA escolhe «Perto de mim»: volta para «Todas as regiões», 12 cards, com aviso`,
+      (await page.locator(SEL).inputValue()) === 'todas' && (await cards(page).count()) === 12 && (await page.locator(AVISO).count()) === 1 && st.geoCalls === 1);
+    await page.selectOption(SEL, 'SP'); await page.waitForTimeout(900);
+    ok(`[${vp.width}] escolher um estado depois do aviso funciona e tira o aviso`, (await page.locator(AVISO).count()) === 0 && (await cards(page).count()) > 0);
     await ctx.close(); }
 
-  // 3c) Detecção lenta demais (mais de 4 s): desiste e mostra o aviso; o conteúdo do servidor continua
+  // 3c) Falha da rota: «Só a minha cidade» também volta para «Todas» com o aviso
+  { const { ctx, page } = await newPage(browser, vp, { geo: 'abort' });
+    await page.goto(`${BASE}/feed`); await page.waitForTimeout(600);
+    await page.selectOption(SEL, 'cidade'); await page.waitForTimeout(1200);
+    ok(`[${vp.width}] falha ao localizar («Só a minha cidade»): volta para «Todas as regiões», 12 cards, com aviso`,
+      (await page.locator(SEL).inputValue()) === 'todas' && (await cards(page).count()) === 12 && (await page.locator(AVISO).count()) === 1);
+    await ctx.close(); }
+
+  // 3d) Demora mais de 4 s: desiste, volta para «Todas» e mostra o aviso
   { const { ctx, page } = await newPage(browser, vp, { geo: GEO('Cascavel', 'PR', 7000) });
-    await page.goto(`${BASE}/feed`); await page.waitForTimeout(3000);
-    const antes = await page.locator('text=Não conseguimos identificar').count();
+    await page.goto(`${BASE}/feed`); await page.waitForTimeout(600);
+    await page.selectOption(SEL, 'auto'); await page.waitForTimeout(3000);
+    const antes = await page.locator(AVISO).count();
     await page.waitForTimeout(2200);
-    ok(`[${vp.width}] tempo limite de 4 s: sem aviso aos 3 s, aviso depois dos 4 s, 12 cards mantidos`,
-      antes === 0 && (await page.locator('text=Não conseguimos identificar').count()) === 1 && (await cards(page).count()) === 12);
+    ok(`[${vp.width}] tempo limite de 4 s: sem aviso aos 3 s, aviso depois, «Todas as regiões» e 12 cards`,
+      antes === 0 && (await page.locator(AVISO).count()) === 1 && (await page.locator(SEL).inputValue()) === 'todas' && (await cards(page).count()) === 12);
     await ctx.close(); }
 
-  // 3d) Página 2: não detecta nada (nenhuma chamada à rota, nenhum aviso)
+  // 3e) Localizado só pelo estado (sem cidade): «Perto de mim» vale; «Só a minha cidade» volta para «Todas» com aviso
+  { const { ctx, page } = await newPage(browser, vp, { geo: (r) => r.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ country: 'BR', uf: 'PR', city: null }) }) });
+    await page.goto(`${BASE}/feed`); await page.waitForTimeout(600);
+    await page.selectOption(SEL, 'auto'); await page.waitForTimeout(1000);
+    const okAuto = (await page.locator(SEL).inputValue()) === 'auto' && (await page.locator(AVISO).count()) === 0 && (await cards(page).count()) > 0;
+    await page.selectOption(SEL, 'cidade'); await page.waitForTimeout(1000);
+    ok(`[${vp.width}] só o estado: «Perto de mim» vale; «Só a minha cidade» (sem cidade) volta para «Todas» com aviso`, okAuto && (await page.locator(SEL).inputValue()) === 'todas' && (await page.locator(AVISO).count()) === 1);
+    await ctx.close(); }
+
+  // 3f) Página 2: também não detecta ao carregar
   { const { ctx, page, st } = await newPage(browser, vp, { geo: GEO('Cascavel', 'PR') });
     await page.goto(`${BASE}/feed/pagina/2`); await page.waitForTimeout(1500);
-    ok(`[${vp.width}] /feed/pagina/2: nenhuma chamada de localização e nenhum aviso`, st.geoCalls === 0 && await page.locator('text=Não conseguimos identificar').count() === 0, `geo=${st.geoCalls}`);
+    ok(`[${vp.width}] /feed/pagina/2: nenhuma chamada de localização e nenhum aviso`, st.geoCalls === 0 && await page.locator(AVISO).count() === 0, `geo=${st.geoCalls}`);
     await ctx.close(); }
 
-  // 4) Região sem ocorrências: estado vazio com mapa, busca e cadastro (nunca outras regiões)
+  // 4) Região sem ocorrências (escolhida): estado vazio com mapa, busca e cadastro (nunca outras regiões)
   { const { ctx, page } = await newPage(browser, vp, { geo: GEO('Manaus', 'AM') });
-    await page.goto(`${BASE}/feed`); await page.waitForSelector('text=Nenhuma ocorrência recente nesta seleção', { timeout: 6000 });
+    await page.goto(`${BASE}/feed`); await page.waitForTimeout(600);
+    await page.selectOption(SEL, 'auto'); await page.waitForSelector('text=Nenhuma ocorrência recente nesta seleção', { timeout: 6000 });
     ok(`[${vp.width}] estado vazio: zero cards`, (await cards(page).count()) === 0);
     const hrefs = await page.locator('main section a').evaluateAll((a) => a.map((x) => x.getAttribute('href')));
     ok(`[${vp.width}] estado vazio: mapa, busca e cadastro (?ref=feed)`, ['/map', '/buscar', '/auth/register?ref=feed'].every((h) => hrefs.includes(h)), hrefs.join(' '));
