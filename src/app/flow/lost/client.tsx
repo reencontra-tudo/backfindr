@@ -349,7 +349,7 @@ export default function LostFlowClient() {
                 <ArrowRight className="w-5 h-5" />
               </button>
               <p className="text-center text-white/30 text-xs">
-                Gratuito. Seu contato não fica exposto publicamente.
+                Gratuito. Publique seu alerta agora.
               </p>
 
               {/* Compartilhar — aumenta chances de encontrar */}

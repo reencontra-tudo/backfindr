@@ -208,7 +208,7 @@ export default function PhoneFlowClient() {
                 style={{ boxShadow: '0 0 0 1px rgba(20,184,166,0.4),0 4px 20px rgba(20,184,166,0.15)' }}>
                 Publicar alerta agora <ArrowRight className="w-5 h-5" />
               </button>
-              <p className="text-center text-white/30 text-xs">Gratuito. Seu contato não fica exposto publicamente.</p>
+              <p className="text-center text-white/30 text-xs">Gratuito. Publique seu alerta agora.</p>
               <button onClick={() => { const text = `📱 Perdi meu celular${step1.what ? ` — ${step1.what}` : ''}${step1.where ? ` em ${step1.where}` : ''}. Alguém viu? backfindr.com/flow/phone`; if (navigator.share) navigator.share({ title: 'Perdi meu celular', text }); else window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, '_blank'); }}
                 className="w-full flex items-center justify-center gap-2 py-3 text-teal-400/70 hover:text-teal-400 border border-teal-500/20 hover:border-teal-500/40 rounded-xl text-sm font-medium transition-all">
                 <Share2 className="w-4 h-4" /> Compartilhar no WhatsApp
