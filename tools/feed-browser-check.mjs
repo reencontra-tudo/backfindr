@@ -2,7 +2,7 @@
 // Verificação de navegador do Feed (Playwright, fora das dependências do projeto).
 //   node tools/feed-browser-check.mjs <baseUrl> [caminho/para/axe.min.js]
 // Requer o app rodando (next start) com NEXT_PUBLIC_POSTHOG_KEY falsa e NEXT_PUBLIC_POSTHOG_HOST=http://localhost:3199
-// (o script intercepta esse host: nada vai ao PostHog real). A localização por IP é simulada (ipapi.co interceptado).
+// (o script intercepta esse host: nada vai ao PostHog real). A localização é simulada: o navegador chama a rota própria /api/v1/feed/geo (interceptada aqui); qualquer chamada do navegador ao ipapi.co é contada e reprovada.
 import { createRequire } from 'node:module';
 import { readFileSync, existsSync } from 'node:fs';
 import { gunzipSync } from 'node:zlib';
@@ -14,7 +14,7 @@ let fails = 0;
 const ok = (name, cond, extra = '') => { if (!cond) fails++; console.log(`${cond ? 'PASS' : 'FAIL'}  ${name}${extra ? '  — ' + extra : ''}`); };
 
 const VIEWPORTS = [{ width: 360, height: 740 }, { width: 390, height: 844 }];
-const GEO = (c, uf, delay = 0) => (r) => setTimeout(() => r.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ city: c, region_code: uf }) }), delay);
+const GEO = (c, uf, delay = 0, country = 'BR') => (r) => setTimeout(() => r.fulfill({ status: 200, contentType: 'application/json', headers: { 'cache-control': 'private, no-store' }, body: JSON.stringify({ country, uf: country === 'BR' ? uf : null, city: country === 'BR' ? c : null }) }), delay);
 
 async function newPage(browser, viewport, { geo = 'abort', js = true } = {}) {
   // user-agent comum: o PostHog descarta eventos de «HeadlessChrome» (filtro anti-bot da própria biblioteca)
@@ -44,8 +44,12 @@ async function newPage(browser, viewport, { geo = 'abort', js = true } = {}) {
     } catch { /* corpo ilegível: ignora */ }
     route.fulfill({ status: 200, contentType: 'application/json', body: '{}' });
   });
-  if (geo === 'abort') await page.route('https://ipapi.co/**', (r) => r.abort());
-  else await page.route('https://ipapi.co/**', geo);
+  st.ipapiCalls = 0; st.geoCalls = 0;
+  page.on('request', (rq) => { if (/\/api\/v1\/feed\/geo/.test(rq.url())) st.geoCalls++; });
+  page.on('request', (rq) => { if (/ipapi\.co/.test(rq.url())) st.ipapiCalls++; });
+  await page.route('https://ipapi.co/**', (r) => r.abort()); // o navegador NÃO deve mais chamar isto
+  if (geo === 'abort') await page.route('**/api/v1/feed/geo', (r) => r.abort());
+  else await page.route('**/api/v1/feed/geo', geo);
   await page.route(/google-analytics|googletagmanager|clarity\.ms|facebook\.net|mapbox/, (r) => r.abort());
   return { ctx, page, st };
 }
@@ -87,6 +91,9 @@ for (const vp of VIEWPORTS) {
     ok(`[${vp.width}] sessão limpa: nenhum redirecionamento (login)`, st.nav.every((u) => u === '/feed'), st.nav.join(' > '));
     ok(`[${vp.width}] sem erros de JavaScript na página`, st.errors.length === 0, st.errors.slice(0, 2).join(' | '));
     ok(`[${vp.width}] localização falhou: os 12 cards do servidor continuam`, (await cards(page).count()) === 12);
+    ok(`[${vp.width}] localização falhou: aviso curto aparece, sem sugerir região`, await page.locator('text=Não conseguimos identificar sua região. Escolha seu estado para ver ocorrências perto de você.').count() === 1);
+    ok(`[${vp.width}] localização falhou: continua «Todas as regiões»`, (await page.locator('select').nth(1).inputValue()) === 'todas');
+    ok(`[${vp.width}] o navegador chamou a rota própria 1 vez e o ipapi.co 0 vezes`, st.geoCalls === 1 && st.ipapiCalls === 0, `geo=${st.geoCalls} ipapi=${st.ipapiCalls}`);
     ok(`[${vp.width}] sem estouro horizontal`, await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth));
     await touchTargets(page, vp);
     if (AXE) { await page.addScriptTag({ content: AXE });
@@ -96,8 +103,10 @@ for (const vp of VIEWPORTS) {
     await ctx.close(); }
 
   // 3) Localização lenta (1,5 s): o conteúdo NÃO some enquanto espera e a troca é de uma vez
-  { const { ctx, page } = await newPage(browser, vp, { geo: GEO('Cascavel', 'PR', 1500) });
+  { const { ctx, page, st } = await newPage(browser, vp, { geo: GEO('Cascavel', 'PR', 1500) });
     await page.goto(`${BASE}/feed`);
+    await page.waitForTimeout(300);
+    ok(`[${vp.width}] enquanto procura a região: SEM aviso`, await page.locator('text=Não conseguimos identificar').count() === 0);
     const seen = [];
     for (let i = 0; i < 50; i++) { seen.push(await cards(page).count()); await page.waitForTimeout(80); }
     ok(`[${vp.width}] sem «piscar»: nunca zero cards durante a troca`, Math.min(...seen) > 0, `contagens: ${[...new Set(seen)].join('→')}`);
@@ -105,6 +114,30 @@ for (const vp of VIEWPORTS) {
     ok(`[${vp.width}] visitante em Cascavel/PR: só PR (nada de Recife/SP/SC)`, L.length > 0 && !L.some((x) => /Recife|São Paulo|Florianópolis| SC| SP| PE|Brusque|Palmares/.test(x.loc ?? '')) && L.filter((x) => /PR/.test(x.loc ?? '')).length >= L.length - 1, `${L.length} cards`);
     ok(`[${vp.width}] visitante: usuário antes de sinal público`, L.findIndex((x) => x.o === 'sinal_publico') === -1 || L.slice(0, L.findIndex((x) => x.o === 'sinal_publico')).every((x) => x.o === 'usuario'));
     ok(`[${vp.width}] seletor mostra «Perto de mim»`, await page.locator('select option[value="auto"]').count() === 1);
+    ok(`[${vp.width}] localizado: sem aviso e sem chamada do navegador ao ipapi.co`, await page.locator('text=Não conseguimos identificar').count() === 0 && st.ipapiCalls === 0);
+    await ctx.close(); }
+
+  // 3b) Visitante de outro país (sigla coincide com estado brasileiro): NÃO vale; mantém «Todas» e mostra o aviso
+  { const { ctx, page } = await newPage(browser, vp, { geo: GEO('Pittsburgh', 'PA', 0, 'US') });
+    await page.goto(`${BASE}/feed`); await page.waitForTimeout(1200);
+    ok(`[${vp.width}] visitante dos EUA: 12 cards, «Todas as regiões», sem «Perto de mim», com aviso`,
+      (await cards(page).count()) === 12 && (await page.locator('select').nth(1).inputValue()) === 'todas'
+      && (await page.locator('select option[value="auto"]').count()) === 0 && (await page.locator('text=Não conseguimos identificar').count()) === 1);
+    await ctx.close(); }
+
+  // 3c) Detecção lenta demais (mais de 4 s): desiste e mostra o aviso; o conteúdo do servidor continua
+  { const { ctx, page } = await newPage(browser, vp, { geo: GEO('Cascavel', 'PR', 7000) });
+    await page.goto(`${BASE}/feed`); await page.waitForTimeout(3000);
+    const antes = await page.locator('text=Não conseguimos identificar').count();
+    await page.waitForTimeout(2200);
+    ok(`[${vp.width}] tempo limite de 4 s: sem aviso aos 3 s, aviso depois dos 4 s, 12 cards mantidos`,
+      antes === 0 && (await page.locator('text=Não conseguimos identificar').count()) === 1 && (await cards(page).count()) === 12);
+    await ctx.close(); }
+
+  // 3d) Página 2: não detecta nada (nenhuma chamada à rota, nenhum aviso)
+  { const { ctx, page, st } = await newPage(browser, vp, { geo: GEO('Cascavel', 'PR') });
+    await page.goto(`${BASE}/feed/pagina/2`); await page.waitForTimeout(1500);
+    ok(`[${vp.width}] /feed/pagina/2: nenhuma chamada de localização e nenhum aviso`, st.geoCalls === 0 && await page.locator('text=Não conseguimos identificar').count() === 0, `geo=${st.geoCalls}`);
     await ctx.close(); }
 
   // 4) Região sem ocorrências: estado vazio com mapa, busca e cadastro (nunca outras regiões)

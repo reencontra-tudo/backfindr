@@ -3,7 +3,7 @@
 // (initialItems) e continua na tela enquanto o navegador carrega: nada é apagado nem «pisca».
 //
 // Como a reordenação por localização evita «piscar»: o conteúdo do servidor fica visível; quando a localização
-// do visitante chega (mesma consulta por IP que a home já usa; nada é guardado nem mostrado a outras pessoas),
+// do visitante chega (rota própria /api/v1/feed/geo, no mesmo site; nada é guardado nem mostrado a outras pessoas),
 // buscamos a lista regional e trocamos tudo de uma vez só, num único setState (a lista só fica levemente
 // esmaecida enquanto carrega, sem esqueleto e sem tela vazia no meio do caminho).
 //
@@ -29,7 +29,7 @@ interface Props {
 }
 
 type Region = 'auto' | 'todas' | 'cidade' | string; // string = UF escolhida
-interface Geo { city: string; uf: string | null }
+interface Geo { city: string | null; uf: string }
 
 const STATUS_OPTIONS = [
   { value: 'all', label: 'Todos' },
@@ -52,9 +52,9 @@ function buildQuery(status: string, category: string, region: Region, geo: Geo |
   if (status !== 'all') q.set('status', status);
   if (category !== 'all') q.set('categoria', category);
   if ((region === 'auto' || region === 'cidade') && geo) {
-    q.set('cidade', geo.city);
-    if (geo.uf) q.set('uf', geo.uf);
-    if (region === 'cidade') q.set('escopo', 'cidade');
+    if (geo.city) q.set('cidade', geo.city);
+    q.set('uf', geo.uf);
+    if (region === 'cidade' && geo.city) q.set('escopo', 'cidade');
   } else if (region !== 'auto' && region !== 'todas' && region !== 'cidade') {
     q.set('uf', region);
   }
@@ -71,13 +71,13 @@ async function fetchFeed(qs: string): Promise<ApiResponse> {
 }
 
 async function detectGeo(signal: AbortSignal): Promise<Geo | null> {
-  // Mesma fonte que a home usa (ipapi.co). Falhou, foi bloqueada ou demorou: segue sem localização.
+  // Rota própria (mesmo site). Só o Brasil conta; qualquer falha, outro país ou sigla inválida = não localizado.
   try {
-    const r = await fetch('https://ipapi.co/json/', { signal });
+    const r = await fetch('/api/v1/feed/geo', { signal, cache: 'no-store', headers: { Accept: 'application/json' } });
+    if (!r.ok) return null;
     const d = await r.json();
-    if (!d?.city) return null;
-    const uf = typeof d.region_code === 'string' && /^[A-Z]{2}$/.test(d.region_code) ? d.region_code : null;
-    return { city: String(d.city).slice(0, 60), uf };
+    if (d?.country !== 'BR' || typeof d?.uf !== 'string' || !/^[A-Z]{2}$/.test(d.uf)) return null;
+    return { city: typeof d.city === 'string' && d.city ? d.city.slice(0, 60) : null, uf: d.uf };
   } catch { return null; }
 }
 
@@ -156,6 +156,7 @@ export default function FeedClient({ initialItems, initialNextCursor, initialHas
   const [category, setCategory] = useState('all');
   const [region, setRegion] = useState<Region>('todas');
   const [geo, setGeo] = useState<Geo | null>(null);
+  const [geoUnknown, setGeoUnknown] = useState(false); // detecção terminou sem localizar (aviso)
   const [loading, setLoading] = useState(false);
   const [failed, setFailed] = useState(false);
   const reqId = useRef(0);
@@ -179,15 +180,17 @@ export default function FeedClient({ initialItems, initialNextCursor, initialHas
   useEffect(() => {
     feedEvents.aberto(feedOrigin());
     if (page !== 1) return;
+    let cancelled = false;
     const ctl = new AbortController();
     const timer = setTimeout(() => ctl.abort(), 4000);
     detectGeo(ctl.signal).then((g) => {
       clearTimeout(timer);
-      if (!g) return;
+      if (cancelled) return;
+      if (!g) { setGeoUnknown(true); return; } // mantém «Todas as regiões» e mostra o aviso
       setGeo(g); setRegion('auto');
       void reload('all', 'all', 'auto', g);
     });
-    return () => { clearTimeout(timer); ctl.abort(); };
+    return () => { cancelled = true; clearTimeout(timer); ctl.abort(); };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -244,13 +247,19 @@ export default function FeedClient({ initialItems, initialNextCursor, initialHas
             <select className={`${selectCls} mt-1`} value={region}
               onChange={(e) => { feedEvents.filtroAplicado('regiao', /^[A-Z]{2}$/.test(e.target.value) ? e.target.value : e.target.value); apply(status, category, e.target.value); }}>
               {geo && <option value="auto">Perto de mim</option>}
-              {geo && <option value="cidade">Só a minha cidade</option>}
+              {geo?.city && <option value="cidade">Só a minha cidade</option>}
               <option value="todas">Todas as regiões</option>
               {regions.map((u) => <option key={u} value={u}>Estado: {u}</option>)}
             </select>
           </label>
         </div>
       </div>
+
+      {geoUnknown && !geo && (
+        <p role="status" className="mt-4 rounded-lg bg-white/[0.06] px-3 py-2 text-sm text-white/85">
+          Não conseguimos identificar sua região. Escolha seu estado para ver ocorrências perto de você.
+        </p>
+      )}
 
       <div className={`mt-5 grid gap-4 transition-opacity ${loading ? 'opacity-60' : ''}`} aria-busy={loading}>
         {items.length === 0 && !loading ? <EmptyState /> : items.map((it) => <FeedCard key={it.code} item={it} />)}
