@@ -2,6 +2,7 @@ import { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import PublicObjectClient from './client';
 import { APP_URL } from '@/lib/constants';
+import { maskObjectForPublicPage } from '@/lib/objectPublicView';
 
 async function getObject(code: string) {
   try {
@@ -12,7 +13,8 @@ async function getObject(code: string) {
     if (!res.ok) return null;
     const json = await res.json();
     // O endpoint retorna { success: true, data: {...} }
-    return json?.data ?? json;
+    // Sinal público: nome de pessoa mascarado no servidor (usuário e legado passam sem alteração).
+    return maskObjectForPublicPage(json?.data ?? json);
   } catch {
     return null;
   }

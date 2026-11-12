@@ -95,6 +95,7 @@ Projeto anterior: Webjetos (2015) — migração planejada
 - **Vercel Hobby:** cron máximo 1x/dia — matching gerenciado pelo n8n no Railway
 - **Heredoc no zsh:** não usar para arquivos TSX/código com backticks — usar Python com strings
 - **Public Signals:** publicação em `objects` é SEMPRE por aprovação manual (`/admin/public-signals`) — pipeline nunca publica sozinho. Qualquer auto-aprovação futura precisa nascer atrás de um toggle explícito, desligado por padrão, desenhado junto com a lógica de automação (não construído antes dela — ver seção 17 e histórico 18-19/08)
+- **Páginas `/objeto/[code]` de SINAL PÚBLICO (12/11/2026, PR da máscara):** nome de pessoa (ex.: «Documento encontrado em nome de …») é mascarado no servidor em título da aba, h1, meta, Open Graph, JSON-LD e JSON embutido (`src/lib/objectPublicView.ts`, usando `src/lib/privacy/maskPersonNames.ts`). Objetos de usuários e do legado não mudam (mesma referência). **Pendência:** a imagem do cartaz usada em `og:image` (`/api/v1/objects/[id]/poster`) ainda é gerada com o título original.
 
 ---
 
