@@ -39,12 +39,16 @@ Esta versão reúne as decisões Q-01 a Q-15, de 28/10/2026, sobre o QR Code com
 | Q-31 | 01/11/2026 | **Achador sem conta.** Quer o caminho de menor atrito para ele se cadastrar, com indução em cascata. O desenho proposto (conversa por ocorrência aberta pelo QR, link privado guardado no navegador, conta leve criada pelo link, entrada por Google ou só pelo e-mail em um toque) aguarda a confirmação do Marcos | Marcos, 01/11/2026 (direção); documento "Arquitetura de comunicação do Backfindr" (desenho) | DIREÇÃO DECIDIDA; desenho do canal **PENDENTE de confirmação**; **NÃO IMPLEMENTADO** (nenhum canal de conversa por ocorrência no código, 05/11/2026) |
 | F-03 | 12/11/2026 | **Registro de «escaneamentos»: só o escaneamento real conta.** A simples abertura de uma página de objeto (pessoa, robô do Google, pré-visualização de link) NÃO é escaneamento de QR (já constava na Q-07). Decidido pelo Marcos: (1) parar de gravar a abertura de página de objetos do **legado** (objeto ou dono legado) e de **sinais públicos**; objetos de usuários seguem gravando como antes; (2) a «Central de Atividade» do dono conta, lista e usa na «última atividade» só o escaneamento real (evento com `metadata.via`, gravado quando alguém avisa pelo QR que encontrou); o quadrinho passa a se chamar «escaneamentos reais de QR»; (3) **nenhum registro existente em `object_events` é apagado ou alterado** (os cerca de 47 mil já gravados ficam; só mudam o que será gravado daqui para frente e o que a Central conta); (4) NÃO foram tocados o fluxo `/scan/[code]`, o aviso ao dono (`notify`) e os eventos de QR gerado, baixado e impresso. Estimativa: deixam de ser gravados ~5.380 registros por dia (~98,8%). Sem migration. | Marcos, 12/11/2026 | DECIDIDO; código em PR rascunho, nada mesclado nem publicado |
 | Q-32 | 01/11/2026 | **Textos sobre contato e dono legado no QR.** Nenhum texto do produto afirma que o contato está protegido; a formulação aceita é "a conversa acontece pelo chat da plataforma"; os textos não podem conflitar com as políticas já estabelecidas. O dono legado não é avisado quando o QR de um objeto antigo é escaneado, e o achador vê a resposta de sempre | Marcos, 01/11/2026 (documento "Arquitetura de comunicação do Backfindr") | DECIDIDO; PARCIALMENTE APLICADO (verificado em 05/11/2026): instrução e filtro do assistente, FAQ e página "achei" usam a formulação; demais textos a auditar; aviso ao dono legado barrado no servidor (PRs #45 e #47) |
+| F-01 | 12/11/2026 | **Feed «Ocorrências recentes» (Fase 1): escopo e exceção do legado.** O Feed é só outra forma de ver as ocorrências, ao lado da Busca e do Mapa (rolagem de cards): mesmos dados, mesmas páginas de detalhe e o mesmo sistema de correspondência do Backfindr. Não é rede social nem produto novo: sem curtidas, seguidores, comentários, conteúdo da Comunidade, «Seguir região», exibição de correspondências, chat novo, destaque de QR Code nem texto que prometa contato protegido ou SMS. **Exceção autorizada pelo Marcos em 12/11/2026: nesta Fase 1 o Feed NÃO mostra o legado (Webjetos).** Essa exceção vale SOMENTE para o Feed e NÃO altera a regra geral do legado (B-25 e B-27), que continua valendo para o mapa, a busca, as contagens públicas, o sitemap e qualquer outro lugar; nada do legado é apagado, ocultado ou alterado. Por isso a tela se chama «Ocorrências recentes», tem o link «Ver histórico no mapa» e nunca mostra um total nem dá a entender que traz todas as ocorrências. O legado pode voltar ao Feed no futuro, como filtro opcional «Histórico», por decisão do Marcos (não implementado agora). O Feed é **indexável pelo Google** (decisão do Marcos), mas fica fora da navegação principal por enquanto: só um link discreto no rodapé do FAQ e uma entrada no sitemap. Sem migration. | Marcos, 12/11/2026 (autorização por escrito nesta tarefa) | DECIDIDO; código em PR rascunho, nada mesclado nem publicado |
+| F-02 | 12/11/2026 | **Feed: decisões do Marcos depois de revisar o PR #93.** (1) Ordem mantida: cadastros de usuários antes dos sinais públicos. (2) «Todas as regiões» como escolha explícita do visitante: aprovado (nunca como preenchimento). (3) O `/achei` e o `?ref=feed` não são alterados agora; a atribuição do cadastro fica por conta do PostHog. (4) «Informar que encontrei» leva ao `/achei` na Fase 1, com o atrito descrito no PR (o fluxo exige cadastro). Também decidido: mascarar o nome de pessoa nas páginas `/objeto/[code]` de sinal público, em PR separado (#94), que deve ser mesclado ANTES do PR do Feed; nada é mesclado nem publicado sem aprovação do Marcos. | Marcos, 12/11/2026 (mensagem após a revisão do PR) | DECIDIDO; PRs em rascunho |
+| F-04 | 12/11/2026 | **Feed: como descobrir a cidade do visitante (opção C, escolhida pelo Marcos).** O Feed deixa de chamar o ipapi.co direto do navegador e passa a chamar uma rota própria do site, que lê os cabeçalhos de localização da Vercel e, só se faltarem, consulta o ipapi.co no servidor. Só Brasil vale; outro país, sigla inválida ou falha mantêm «Todas as regiões» com um aviso curto, sem sugerir que aquela é a região da pessoa. A resposta nunca vai para cache compartilhado e nada é guardado ou registrado. O HTML do servidor, o cache de 5 minutos, o canonical, a indexação e o sitemap não mudam. Home, busca e mapa não foram tocados. | Marcos, 12/11/2026 | DECIDIDO; código na mesma branch do PR do Feed, nada mesclado |
 
 ## Regras permanentes vigentes (resumo; o texto de cada decisão é o que vale)
 
 | Regra | Onde | Observação |
 |---|---|---|
 | O legado do Webjetos permanece e nunca é removido, ocultado nem rebaixado | B-25 | Vale para sitemap, mapa, busca e qualquer outro lugar |
+| ↳ Única exceção de exibição: o Feed novo («Ocorrências recentes») não mostra o legado na Fase 1. Vale só para o Feed; a regra acima segue valendo em todo o resto, e nenhuma sessão precisa parar por causa disso | F-01 | Autorizada pelo Marcos em 12/11/2026; o legado pode voltar ao Feed como filtro opcional «Histórico» |
 | O legado só serve para povoar o sistema: sem e-mail, notificação, matching, métrica, contato ou dado de apoio | B-27 | SUPERADA EM PARTE pela Q-26 (somente bloqueio de escrita e fluxo de atualização da conta) |
 | O legado só recebe comunicação se o próprio usuário aceitar, com consentimento registrado | Q-20 | Aplicação pendente (Q-19) |
 | Rotas de manutenção que gravam em linhas legadas não são executadas sem ordem explícita | B-29 | Permanente até nova ordem |
@@ -65,6 +69,7 @@ Esta versão reúne as decisões Q-01 a Q-15, de 28/10/2026, sobre o QR Code com
 | B-30 | parte sobre «legados pertencem à conta de sistema» SUPERADA por | B-31 |
 | B-31 | corrige fato de | B-30 |
 | Q-26 | não altera | Q-20 |
+| F-01 | exceção só de exibição no Feed; NÃO supera | B-25 e B-27 |
 
 ## Situação de aplicação (verificada em 05/11/2026)
 
@@ -97,6 +102,7 @@ Compara o que foi decidido com o que existe no código da main (`07ae2a6`), nos 
 | Reciclagem e bloqueio do legado (Q-23, Q-26) | NÃO IMPLEMENTADO | Login não trata a marca de legado; exclusão pelo dono na main é definitiva |
 | Governança, lixeira e auditoria (PR #51) | NÃO APLICADO | Banco sem `objects.deleted_at`, `objects_active` e schema `audit` |
 | Cadeia de devolução (C-01 a C-04) | NÃO VERIFICADO | Código não conferido |
+| Feed «Ocorrências recentes», Fase 1 (F-01) | EM PR RASCUNHO (12/11/2026) | Nada mesclado nem publicado; sem migration |
 
 ## Decisões em aberto (lembrar sempre)
 
@@ -119,6 +125,7 @@ Nenhuma destas deve ser tratada como implementada enquanto não sair da lista.
 | Frase da chance com QR ainda será usada? | Marcos | Q-05 |
 | Aplicativo nativo e testes de push no celular | Marcos | Q-25 |
 | Reverificar B-18 M3, canonical do blog (B-21) e trava contra escrita em produção (B-23) | Code, a pedido | B-18, B-21, B-23 |
+| Se e quando o legado entra no Feed como filtro opcional «Histórico»; leitura do teto de sinais públicos no topo do Feed (ver descrição do PR) | Marcos | F-01 |
 
 ## Decisões da integração (08 a 10/10/2026) e da cadeia de devolução
 

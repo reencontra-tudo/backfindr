@@ -216,6 +216,7 @@ export default function FaqPage() {
           <Link href="/" className="hover:text-white/60 transition-colors">Home</Link>
           <Link href="/pricing" className="hover:text-white/60 transition-colors">Planos</Link>
           <Link href="/map" className="hover:text-white/60 transition-colors">Mapa</Link>
+          <Link href="/feed" className="hover:text-white/60 transition-colors">Ocorrências recentes</Link>
           <Link href="/privacy" className="hover:text-white/60 transition-colors">Privacidade</Link>
           <Link href="/terms" className="hover:text-white/60 transition-colors">Termos</Link>
         </div>

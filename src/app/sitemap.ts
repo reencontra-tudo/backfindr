@@ -12,6 +12,7 @@ const STATIC_PAGES: MetadataRoute.Sitemap = [
   { url: `${BASE}/map`,         lastModified: new Date(), changeFrequency: 'hourly',  priority: 0.9 },
   { url: `${BASE}/comunidade`,  lastModified: new Date(), changeFrequency: 'daily',   priority: 0.9 },
   { url: `${BASE}/buscar`,      lastModified: new Date(), changeFrequency: 'hourly',  priority: 0.8 },
+  { url: `${BASE}/feed`,        lastModified: new Date(), changeFrequency: 'hourly',  priority: 0.7 },
   { url: `${BASE}/pet`,         lastModified: new Date(), changeFrequency: 'weekly',  priority: 0.8 },
   { url: `${BASE}/pricing`,     lastModified: new Date(), changeFrequency: 'weekly',  priority: 0.7 },
   { url: `${BASE}/perdi`,       lastModified: new Date(), changeFrequency: 'weekly',  priority: 0.7 },
