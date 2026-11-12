@@ -27,11 +27,14 @@ export async function GET(
     if (ownerCheck.rows.length === 0)
       return successResponse({ detail: 'Object not found' }, 404);
 
-    // Busca eventos ordenados mais recente primeiro
+    // Busca eventos ordenados mais recente primeiro.
+    // Escaneamento REAL = qr_scanned com metadata.via (POST …/notify). A simples ABERTURA da página (qr_scanned sem via) não
+    // entra na contagem, na linha do tempo nem na «última atividade»; os registros continuam no banco, nada é apagado.
     const eventsResult = await query(
       `SELECT type, title, description, source, metadata, created_at
        FROM object_events
        WHERE object_id = $1
+         AND NOT (type = 'qr_scanned' AND NOT COALESCE(COALESCE(metadata, '{}'::jsonb) ? 'via', false))
        ORDER BY created_at DESC
        LIMIT 20`,
       [objectId]
@@ -40,10 +43,10 @@ export async function GET(
     // Summary agregado
     const summaryResult = await query(
       `SELECT
-         COUNT(*) FILTER (WHERE type = 'qr_scanned')                          AS total_scans,
+         COUNT(*) FILTER (WHERE type = 'qr_scanned' AND COALESCE(COALESCE(metadata, '{}'::jsonb) ? 'via', false)) AS total_scans,
          COUNT(*) FILTER (WHERE type = 'match_found')                         AS total_matches,
          COUNT(*) FILTER (WHERE type IN ('matching_started','matching_completed')) AS total_ai_runs,
-         MAX(created_at)                                                        AS last_activity
+         MAX(created_at) FILTER (WHERE NOT (type = 'qr_scanned' AND NOT COALESCE(COALESCE(metadata, '{}'::jsonb) ? 'via', false))) AS last_activity
        FROM object_events
        WHERE object_id = $1`,
       [objectId]
