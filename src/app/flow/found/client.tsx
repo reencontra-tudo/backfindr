@@ -288,7 +288,7 @@ export default function FoundFlowClient() {
                 <ArrowRight className="w-5 h-5" />
               </button>
               <p className="text-center text-white/30 text-xs">
-                Gratuito. Seu contato não fica exposto publicamente.
+                Gratuito. Publique seu achado agora.
               </p>
               <button
                 onClick={() => setStep(2)}
