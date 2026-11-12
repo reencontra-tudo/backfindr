@@ -65,7 +65,7 @@ export async function POST(req: NextRequest) {
       WITH matched AS (
         SELECT m.id AS municipality_id, ${CATEGORY_TO_SEO_SLUG_SQL} AS category
         FROM municipalities m
-        JOIN objects o
+        JOIN objects_active o
           ON o.is_public = true
          AND o.status IN ('lost', 'found', 'stolen')
          AND o.latitude IS NOT NULL AND o.longitude IS NOT NULL

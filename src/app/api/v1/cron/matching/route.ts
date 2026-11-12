@@ -48,7 +48,7 @@ export async function GET(request: NextRequest) {
     // base) — achado real: 386 candidatos ambíguos mandados pro estágio 3
     // numa rodada só, 0 aceitos, custo de API sem ganho.
     const objects = await query(
-      `SELECT * FROM objects
+      `SELECT * FROM objects_active
        WHERE status IN ('lost', 'stolen')
          AND is_legacy = false
          AND NOT EXISTS (
@@ -93,7 +93,7 @@ export async function GET(request: NextRequest) {
       // matches do diagnóstico eram 100% webjetos×webjetos.
       if (hasLocation) {
         candidateQuery = `
-          SELECT * FROM objects
+          SELECT * FROM objects_active
           WHERE status = 'found' AND id != $1
             AND latitude IS NOT NULL AND longitude IS NOT NULL
             AND (6371 * acos(LEAST(1.0,
@@ -109,7 +109,7 @@ export async function GET(request: NextRequest) {
           : [object.id, lat, lon, MAX_RADIUS_KM];
       } else if (categoryGroup) {
         candidateQuery = `
-          SELECT * FROM objects
+          SELECT * FROM objects_active
           WHERE status = 'found' AND id != $1
             AND is_legacy = false
             AND (category = ANY($2) OR type = ANY($2))
@@ -171,7 +171,7 @@ export async function GET(request: NextRequest) {
         try {
           const ownerResult = await query(
             `SELECT u.id, u.name, u.email FROM users u
-             JOIN objects o ON o.user_id = u.id
+             JOIN objects_active o ON o.user_id = u.id
              WHERE o.id = $1`,
             [object.id]
           );

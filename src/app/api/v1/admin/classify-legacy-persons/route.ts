@@ -91,7 +91,7 @@ export async function POST(req: NextRequest) {
 
   try {
     const rowsRes = await query(
-      `SELECT id, title, description, category, status, is_public FROM objects
+      `SELECT id, title, description, category, status, is_public FROM objects_active
        WHERE source = 'webjetos' AND category IN ('pet', 'animal', 'other')
        ORDER BY id
        OFFSET $1 LIMIT $2`,

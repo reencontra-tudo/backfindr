@@ -3,6 +3,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import { requireSuperAdmin } from '@/lib/adminGuard';
 import { query } from '@/lib/db';
 import { createImpersonationToken } from '@/lib/jwt';
+import { withActor, logEvent } from '@/lib/audit';
+import { newRequestId } from '@/lib/governance';
 
 /**
  * POST /api/v1/admin/impersonate
@@ -58,6 +60,18 @@ export async function POST(req: NextRequest) {
       { id: targetUser.id, email: targetUser.email },
       { id: superAdmin.id, email: superAdmin.email },
     );
+
+    // Trilha de auditoria (migração 025): início da impersonação, com o id do admin e o do alvo (só ids).
+    // Falha de auditoria nunca impede a operação (logEvent usa SAVEPOINT e captura o erro).
+    try {
+      const actor = {
+        id: superAdmin.id, type: 'impersonacao' as const, impersonatedId: targetUser.id,
+        origin: 'POST /api/v1/admin/impersonate', requestId: newRequestId(req.headers),
+      };
+      await withActor(actor, (q) => logEvent(q, 'impersonation_start', actor, targetUser.id, { max_minutes: 120 }));
+    } catch (auditErr) {
+      console.error('[admin/impersonate] auditoria do início falhou:', auditErr);
+    }
 
     return NextResponse.json({
       access_token: impersonationToken,

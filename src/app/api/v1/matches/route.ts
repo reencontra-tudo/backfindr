@@ -26,8 +26,8 @@ export async function GET(request: NextRequest) {
               lo.title as lost_title, lo.description as lost_description,
               fo.title as found_title, fo.description as found_description
        FROM matches m
-       LEFT JOIN objects lo ON m.lost_object_id = lo.id
-       LEFT JOIN objects fo ON m.found_object_id = fo.id
+       LEFT JOIN objects_active lo ON m.lost_object_id = lo.id
+       LEFT JOIN objects_active fo ON m.found_object_id = fo.id
        WHERE lo.user_id = $1 OR fo.user_id = $1
        ORDER BY m.created_at DESC`,
       [payload.sub]

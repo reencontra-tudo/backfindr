@@ -38,7 +38,7 @@ export async function GET(req: NextRequest) {
          o.id as object_id, o.title as object_title, o.status as object_status,
          o.category as object_category, o.qr_code
        FROM social_posts sp
-       LEFT JOIN objects o ON o.id = sp.object_id
+       LEFT JOIN objects_active o ON o.id = sp.object_id
        ${where}
        ORDER BY sp.created_at DESC
        LIMIT $${params.length + 1} OFFSET $${params.length + 2}`,

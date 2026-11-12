@@ -39,7 +39,7 @@ async function resolveUser(req: NextRequest): Promise<AdminUser | NextResponse> 
 
   try {
     const result = await query(
-      `SELECT id, email, name, plan, role, b2b_partner_id FROM users WHERE id = $1`,
+      `SELECT id, email, name, plan, role, b2b_partner_id FROM users_active WHERE id = $1`,
       [payload.sub]
     );
     if (result.rows.length === 0) {

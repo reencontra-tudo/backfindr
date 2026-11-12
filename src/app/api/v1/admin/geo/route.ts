@@ -27,7 +27,7 @@ export async function GET(req: NextRequest) {
           ELSE 'Outras cidades'
         END AS city,
         COUNT(*) AS count
-      FROM objects
+      FROM objects_active
       WHERE location IS NOT NULL AND location != ''
       GROUP BY city
       ORDER BY count DESC

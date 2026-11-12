@@ -29,26 +29,26 @@ export async function GET(request: NextRequest) {
 
     // Total de objetos do usuário
     const totalObjectsRes = await query(
-      'SELECT COUNT(*) as count FROM objects WHERE user_id = $1',
+      'SELECT COUNT(*) as count FROM objects_active WHERE user_id = $1',
       [userId]
     );
 
     // Objetos por status
     const byStatusRes = await query(
-      `SELECT status, COUNT(*) as count FROM objects WHERE user_id = $1 GROUP BY status`,
+      `SELECT status, COUNT(*) as count FROM objects_active WHERE user_id = $1 GROUP BY status`,
       [userId]
     );
 
     // Objetos cadastrados nos últimos 30 dias
     const recentRes = await query(
-      `SELECT COUNT(*) as count FROM objects WHERE user_id = $1 AND created_at >= NOW() - INTERVAL '30 days'`,
+      `SELECT COUNT(*) as count FROM objects_active WHERE user_id = $1 AND created_at >= NOW() - INTERVAL '30 days'`,
       [userId]
     );
 
     // Matches do usuário
     const matchesRes = await query(
       `SELECT COUNT(*) as count FROM matches m
-       JOIN objects o ON (m.object_id = o.id OR m.matched_object_id = o.id)
+       JOIN objects_active o ON (m.object_id = o.id OR m.matched_object_id = o.id)
        WHERE o.user_id = $1`,
       [userId]
     );
@@ -56,21 +56,21 @@ export async function GET(request: NextRequest) {
     // Matches confirmados (recuperações)
     const confirmedMatchesRes = await query(
       `SELECT COUNT(*) as count FROM matches m
-       JOIN objects o ON (m.object_id = o.id OR m.matched_object_id = o.id)
+       JOIN objects_active o ON (m.object_id = o.id OR m.matched_object_id = o.id)
        WHERE o.user_id = $1 AND m.status = 'confirmed'`,
       [userId]
     );
 
     // Objetos com QR Code escaneados (scan_count > 0)
     const scannedRes = await query(
-      `SELECT COUNT(*) as count FROM objects WHERE user_id = $1 AND scan_count > 0`,
+      `SELECT COUNT(*) as count FROM objects_active WHERE user_id = $1 AND scan_count > 0`,
       [userId]
     );
 
     // Últimos 10 objetos cadastrados
     const recentObjectsRes = await query(
       `SELECT id, title, status, category, created_at, scan_count, qr_code
-       FROM objects WHERE user_id = $1
+       FROM objects_active WHERE user_id = $1
        ORDER BY created_at DESC LIMIT 10`,
       [userId]
     );
@@ -78,7 +78,7 @@ export async function GET(request: NextRequest) {
     // Objetos por categoria
     const byCategoryRes = await query(
       `SELECT COALESCE(category, type, 'other') as category, COUNT(*) as count
-       FROM objects WHERE user_id = $1
+       FROM objects_active WHERE user_id = $1
        GROUP BY COALESCE(category, type, 'other')
        ORDER BY count DESC`,
       [userId]

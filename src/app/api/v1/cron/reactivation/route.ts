@@ -171,13 +171,13 @@ export async function GET(req: NextRequest) {
         u.email                                                       AS user_email,
         EXTRACT(EPOCH FROM (NOW() - o.created_at)) / 86400            AS days_since_creation,
         (
-          SELECT COUNT(*) FROM objects candidates
+          SELECT COUNT(*) FROM objects_active candidates
           WHERE candidates.status IN ('found')
             AND candidates.id != o.id
             AND candidates.is_legacy IS NOT TRUE
             AND (candidates.category = o.category OR candidates.type = o.category)
         )                                                             AS candidate_count
-      FROM objects o
+      FROM objects_active o
       JOIN users u ON u.id = o.user_id
       WHERE o.status IN ('lost', 'stolen')
         AND o.created_at BETWEEN NOW() - INTERVAL '72 hours' AND NOW() - INTERVAL '24 hours'

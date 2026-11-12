@@ -14,7 +14,7 @@ export async function GET(req: NextRequest) {
         u.id, u.name, u.email, u.avatar_url, u.role,
         u.admin_permissions, u.created_at,
         u.is_active,
-        (SELECT COUNT(*) FROM objects WHERE user_id = u.id) AS objects_count
+        (SELECT COUNT(*) FROM objects_active WHERE user_id = u.id) AS objects_count
       FROM users u
       WHERE u.role IN ('super_admin', 'admin', 'b2b_admin')
       ORDER BY

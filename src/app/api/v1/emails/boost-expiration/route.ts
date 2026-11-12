@@ -47,7 +47,7 @@ export async function POST(req: NextRequest) {
         EXTRACT(DAY FROM (b.expires_at - NOW()))::int as days_remaining
       FROM boost_notifications bn
       JOIN boosts b ON bn.object_id = b.object_id AND bn.user_id = b.user_id
-      JOIN objects o ON b.object_id = o.id
+      JOIN objects_active o ON b.object_id = o.id
       JOIN auth.users u ON b.user_id = u.id
       WHERE b.status = 'active'
         AND b.expires_at > NOW()

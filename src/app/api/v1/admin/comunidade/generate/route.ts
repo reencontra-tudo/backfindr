@@ -122,7 +122,7 @@ async function fetchRealCases(category?: string): Promise<ObjectRow[]> {
 
     const result = await query(
       `SELECT title, category, location, description, created_at
-       FROM objects o
+       FROM objects_active o
        WHERE status IN ('lost', 'found', 'returned')
          AND title IS NOT NULL
          ${categoryFilter}
