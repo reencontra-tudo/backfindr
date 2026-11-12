@@ -36,6 +36,7 @@ export default function FoundFlowClient() {
   const [matches, setMatches] = useState<MatchItem[]>([]);
   const [loadingMatches, setLoadingMatches] = useState(false);
   const [needsDetails, setNeedsDetails] = useState(false); // busca ampla demais: aviso no lugar da lista
+  const [recentSimilar, setRecentSimilar] = useState<MatchItem[]>([]); // busca ampla: até 3 registros recentes (nunca legado)
 
   // ─── Tela 1: Captura do que foi encontrado ────────────────────────────────
   async function handleStep1Submit(e: React.FormEvent) {
@@ -45,6 +46,7 @@ export default function FoundFlowClient() {
     analytics.flowStep('found', 2, 3);
     setStep(2);
     setNeedsDetails(false);
+    setRecentSimilar([]);
     setLoadingMatches(true);
 
     try {
@@ -56,9 +58,11 @@ export default function FoundFlowClient() {
       const res = await fetch(`/api/v1/objects/public?${params.toString()}`);
       const data = await res.json();
       const items = data.items || [];
+      const recentes: MatchItem[] = data.needs_details === true && Array.isArray(data.recent_similar) ? data.recent_similar.slice(0, 3) : [];
       setNeedsDetails(data.needs_details === true);
+      setRecentSimilar(recentes);
       setMatches(items);
-      if (data.needs_details === true) analytics.flowMatchNeedsDetailsShown('found');
+      if (data.needs_details === true) analytics.flowMatchNeedsDetailsShown('found', recentes.length);
       else if (items.length === 0) analytics.flowMatchNoneShown('found');
     } catch {
       setMatches([]);
@@ -203,6 +207,22 @@ export default function FoundFlowClient() {
                     >
                       Editar minha busca
                     </button>
+                  </div>
+                )}
+
+                {needsDetails && recentSimilar.length > 0 && (
+                  <div className="mb-6" data-recent-similar>
+                    <h3 className="text-sm font-semibold text-white/60 mb-3">Registros recentes parecidos</h3>
+                    <div className="space-y-3">
+                      {recentSimilar.map(item => (
+                        <FlowMatchCard
+                          key={item.id}
+                          item={item}
+                          onSelect={handleMatchSelect}
+                          label="Ver registro"
+                        />
+                      ))}
+                    </div>
                   </div>
                 )}
 

@@ -15,7 +15,7 @@ import { NextRequest } from 'next/server';
 const TEST_DB = process.env.TEST_DATABASE_URL;
 if (TEST_DB) process.env.DATABASE_URL = TEST_DB;
 
-import { isBuscaAmpla, palavrasDeIdentificacao, tituloRecuperado, temPalavraEmComum, CORES, PALAVRAS_VAZIAS } from '@/lib/flowMatch/relevance';
+import { isBuscaAmpla, palavrasDeIdentificacao, tituloRecuperado, temPalavraEmComum, temPalavraIdentificadoraEmComum, palavrasDoTexto, CORES, PALAVRAS_VAZIAS, MAX_REGISTROS_RECENTES, DIAS_REGISTROS_RECENTES } from '@/lib/flowMatch/relevance';
 import { formatAge } from '@/lib/flowMatch/age';
 import FlowMatchCard from '@/components/flow/FlowMatchCard';
 
@@ -67,6 +67,19 @@ describe('«recuperado/recuperada» só como palavra inteira no título', () => 
   });
 });
 
+describe('registros recentes parecidos (busca ampla): palavra identificadora em comum', () => {
+  it('limites: até 3 itens, últimos 90 dias', () => { expect(MAX_REGISTROS_RECENTES).toBe(3); expect(DIAS_REGISTROS_RECENTES).toBe(90); });
+  it('palavra inteira, sem acento, sem cor/vazia/genérica e sem sinônimos', () => {
+    expect(palavrasDoTexto('Celulares, Óculos-de-grau 11')).toEqual(new Set(['celulare', 'oculo', 'grau', '11']));
+    expect(temPalavraIdentificadoraEmComum('Celular azul', 'Celular azul', 'Perdi no parque')).toBe(true);
+    expect(temPalavraIdentificadoraEmComum('Celular azul', 'Bolsa azul', 'cor azul')).toBe(false);        // só a cor em comum
+    expect(temPalavraIdentificadoraEmComum('Pochete de couro preta', 'Bolsa preta', 'bolsa de couro')).toBe(false); // «couro» é genérica; «bolsa» não é sinônimo aqui
+    expect(temPalavraIdentificadoraEmComum('Pochete de couro preta', 'Pochete de couro marrom', '')).toBe(true);
+    expect(temPalavraIdentificadoraEmComum('de da com', 'de da com', '')).toBe(false);
+    expect(temPalavraIdentificadoraEmComum('Celular', 'Celularistas', '')).toBe(false); // palavra inteira, não pedaço
+  });
+});
+
 describe('idade amigável', () => {
   const NOW = Date.parse('2026-11-12T12:00:00Z');
   const ago = (ms: number) => new Date(NOW - ms).toISOString();
@@ -108,12 +121,23 @@ describe('os dois fluxos usam a opção nova; os outros 6 e o endpoint padrão n
     for (const [nome, src] of [['found', found], ['lost', lost]] as const) {
       expect(src).toContain("params.set('strict', '1')");
       expect(src).toContain('data.needs_details === true');
-      expect(src).toContain(`analytics.flowMatchNeedsDetailsShown('${nome}')`);
+      expect(src).toContain(`analytics.flowMatchNeedsDetailsShown('${nome}', recentes.length)`);
       expect(src).toContain(`analytics.flowMatchNoneShown('${nome}')`);
     }
     const ph = read('src/providers/PostHogProvider.tsx');
-    expect(ph).toContain("posthog.capture('flow_match_needs_details_shown', { flow })");
+    expect(ph).toContain("posthog.capture('flow_match_needs_details_shown', { flow, recent_count: recentCount })");
     expect(ph).toContain("posthog.capture('flow_match_none_shown', { flow })");
+  });
+  it('seção «Registros recentes parecidos» nos dois fluxos: título neutro, rótulo «Ver registro», nunca «Pode ser o dono»; evento com a quantidade', () => {
+    for (const src of [found, lost]) {
+      expect(src).toContain('Registros recentes parecidos');
+      expect(src).toContain('data-recent-similar');
+      expect(src).toContain('label="Ver registro"');
+      const secao = src.slice(src.indexOf('data-recent-similar'), src.indexOf('data-recent-similar') + 700);
+      expect(secao).not.toMatch(/Pode ser o dono|É parecido com o meu/);
+      expect(src).toContain('data.recent_similar.slice(0, 3)');
+    }
+    expect(read('src/providers/PostHogProvider.tsx')).toContain("posthog.capture('flow_match_needs_details_shown', { flow, recent_count: recentCount })");
   });
   it('aviso exato, dica, botão de editar, e a tela «nada encontrado» continua existindo, com texto diferente', () => {
     for (const src of [found, lost]) {
@@ -225,7 +249,41 @@ describe.skipIf(!TEST_DB)('rota /api/v1/objects/public com banco real', () => {
     const todos = await call('status=all&size=200');
     expect(titles(todos).some((t) => /RECUPERADO/.test(t))).toBe(true);
     const { rows } = await pool.query("select count(*)::int n from objects where title ~* 'RECUPERADO'");
-    expect(rows[0].n).toBe(2); // nenhuma linha foi apagada nem alterada
+    expect(rows[0].n).toBe(3); // nenhuma linha foi apagada nem alterada
+  });
+  it('/flow/found · «Celular azul»: busca ampla + até 3 registros recentes de usuário/sinal, mais novos primeiro; nunca legado, nunca > 90 dias', async () => {
+    const d = await flowFoundStrict('Celular azul') as unknown as { items: unknown[]; needs_details: boolean; recent_similar: { title: string; unique_code: string; created_at: string; status: string }[] };
+    expect(d.needs_details).toBe(true); expect(d.items).toEqual([]);
+    expect(d.recent_similar.length).toBe(3);
+    expect(d.recent_similar.map((i) => i.title)).toEqual(['Celular azul', 'Celular Samsung Galaxy - recuperação em andamento', 'Perda de celular Motorola no bairro Centro']);
+    expect(d.recent_similar.every((i) => i.status === 'lost')).toBe(true);
+    for (const i of d.recent_similar) {
+      expect(i.unique_code).toMatch(/^(USR|SIG)/);                       // nada de LEG (legado)
+      expect(Date.now() - new Date(i.created_at).getTime()).toBeLessThanOrEqual(90 * 86400000);
+    }
+    const todos = d.recent_similar.map((i) => i.title).join('|');
+    expect(todos).not.toMatch(/legado|do João|RECUPERADO pela/);       // legado recente, registro de 120 dias e «recuperado» ficam de fora
+  });
+  it('/flow/found · «Pochete de couro preta»: aviso e NENHUM registro recente (não há pochete; bolsa preta recente não entra)', async () => {
+    const d = await flowFoundStrict('Pochete de couro preta') as unknown as { items: unknown[]; needs_details: boolean; recent_similar: unknown[] };
+    expect(d.needs_details).toBe(true); expect(d.items).toEqual([]); expect(d.recent_similar).toEqual([]);
+  });
+  it('/flow/lost · «Celular azul»: usa o status do fluxo (achados) e só sinais recentes', async () => {
+    const d = await flowLostStrict('Celular azul') as unknown as { needs_details: boolean; recent_similar: { title: string; status: string; unique_code: string }[] };
+    expect(d.needs_details).toBe(true);
+    expect(d.recent_similar.map((i) => i.title)).toEqual(['Achado celular da marca Samsung', 'Achado celular da marca Motorola no bairro Pacaembu']);
+    expect(d.recent_similar.every((i) => i.status === 'found' && /^(USR|SIG)/.test(i.unique_code))).toBe(true);
+  });
+  it('busca específica NÃO traz recent_similar (só o estado de busca ampla)', async () => {
+    for (const kw of ['Chaves de carro', 'Celular Samsung preto', 'Violão Giannini azul']) {
+      const d = await flowFoundStrict(kw) as unknown as { recent_similar?: unknown };
+      expect(d.recent_similar, kw).toBeUndefined();
+    }
+  });
+  it('sem strict a resposta é a de sempre, mesmo para busca ampla (sem needs_details nem recent_similar)', async () => {
+    const d = await flowFound('Celular azul') as unknown as Record<string, unknown>;
+    expect(d.recent_similar).toBeUndefined(); expect(d.needs_details).toBeUndefined();
+    expect(Object.keys(d).sort()).toEqual(['items', 'keywords_expanded', 'next_cursor', 'page', 'score_threshold', 'size', 'total']);
   });
   it('estrito nunca ACRESCENTA itens: é sempre um subconjunto da lista padrão com a mesma ordem relativa', async () => {
     for (const kw of ['Chaves de carro', 'Celular Samsung preto', 'Gatinha siamesa preta', 'Cachorro Pinscher', 'Notebook Dell']) {

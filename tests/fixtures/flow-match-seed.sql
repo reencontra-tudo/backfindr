@@ -28,3 +28,11 @@ INSERT INTO objects (title, description, status, category, type, color, is_publi
 ('Carteira preta achada no ônibus',                        'carteira preta com zíper',                     'found','wallet','wallet','preta', true,false,NULL,'USR00003', now()-interval '5 days', now()-interval '5 days'),
 -- Achado LEGADO (nunca entra em status=found, regra que já existe na rota)
 ('Achado bolsa preta antiga',                              'bolsa preta de couro',                         'found','bag','other','preta', true,true,'webjetos','LEG00010', now()-interval '3000 days', now()-interval '3000 days');
+-- Busca ampla («Celular azul», «Pochete de couro preta»): registros recentes parecidos
+INSERT INTO objects (title, description, status, category, type, color, is_public, is_legacy, source, qr_code, created_at, updated_at) VALUES
+('Perda de celular Motorola no bairro Centro',  'Perda de celular Motorola no bairro Centro',  'lost','phone','phone',NULL, true,false,'public_signal','SIG00020', now()-interval '30 days',  now()-interval '30 days'),
+('Perda de celular Xiaomi no bairro Brasília',  'Perda de celular Xiaomi no bairro Brasília',  'lost','phone','phone',NULL, true,false,'public_signal','SIG00021', now()-interval '40 days',  now()-interval '40 days'),
+('Celular do João perdido na rodoviária',       'celular antigo perdido na rodoviária',        'lost','phone','phone',NULL, true,false,NULL,'USR00020', now()-interval '120 days', now()-interval '120 days'),
+('Celular legado perdido recentemente',         'celular perdido, registro do legado',         'lost','phone','phone',NULL, true,true,'webjetos','LEG00020', now()-interval '10 days',  now()-interval '10 days'),
+('Celular RECUPERADO pela polícia',             'celular recuperado e devolvido',              'lost','phone','phone',NULL, true,false,NULL,'USR00021', now()-interval '8 days',    now()-interval '8 days'),
+('Bolsa preta perdida no ônibus',               'bolsa preta com zíper perdida no ônibus',     'lost','bag','bag','preta',   true,false,NULL,'USR00022', now()-interval '5 days',    now()-interval '5 days');

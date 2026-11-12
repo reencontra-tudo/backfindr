@@ -3,6 +3,7 @@ import { NextRequest } from 'next/server';
 import { query } from '@/lib/db';
 import { successResponse, internalErrorResponse } from '@/lib/response';
 import { isBuscaAmpla, temPalavraEmComum, tituloRecuperado } from '@/lib/flowMatch/relevance';
+import { buscarRegistrosRecentesParecidos } from '@/lib/flowMatch/recentSimilar';
 
 // ─── Dicionário de sinônimos (PT-BR, normalizado sem acento) ───────────────
 const SINONIMOS: Record<string, string[]> = {
@@ -152,9 +153,11 @@ export async function GET(request: NextRequest) {
     const strict = searchParams.get('strict') === '1';
     if (strict && isBuscaAmpla(keyword)) {
       // Busca ampla demais: não lista itens fracos; o fluxo mostra o aviso «precisa de mais detalhes».
+      // `items` fica vazio; só registros RECENTES de usuário/sinal (nunca legado) vão em `recent_similar` (até 3).
+      const recent_similar = await buscarRegistrosRecentesParecidos(keyword, status);
       return successResponse({
         items: [], total: 0, page, size: requestedSize, next_cursor: null,
-        keywords_expanded: [], score_threshold: SCORE_MIN_BUSCA, needs_details: true,
+        keywords_expanded: [], score_threshold: SCORE_MIN_BUSCA, needs_details: true, recent_similar,
       });
     }
 

@@ -67,3 +67,21 @@ export function temPalavraEmComum(kwExpandido: Set<string>, tituloExpandido: Set
 export function tituloRecuperado(title: unknown): boolean {
   return typeof title === 'string' && /\brecuperad[oa]\b/.test(removerAcentos(title).toLowerCase());
 }
+
+// ── Estado «busca ampla»: registros recentes parecidos (nunca legado) ───────────────────────────────────────────
+export const MAX_REGISTROS_RECENTES = 3;
+export const DIAS_REGISTROS_RECENTES = 90;
+
+/** Palavras inteiras do texto (sem acento, no singular simples, como o resto do projeto normaliza). */
+export function palavrasDoTexto(text: string | null | undefined): Set<string> {
+  if (!text) return new Set();
+  return new Set(removerAcentos(text).toLowerCase().split(/[^a-z0-9]+/).filter((w) => w.length >= 3 || /\d/.test(w)).map(normalizarPalavra));
+}
+
+/** Pelo menos 1 palavra de identificação da busca (sem cor, palavra vazia nem descrição genérica) aparece, inteira, no título ou na descrição. Sem sinônimos de propósito. */
+export function temPalavraIdentificadoraEmComum(keyword: string, title: unknown, description: unknown): boolean {
+  const ident = palavrasDeIdentificacao(keyword);
+  if (ident.length === 0) return false;
+  const palavras = new Set([...palavrasDoTexto(typeof title === 'string' ? title : ''), ...palavrasDoTexto(typeof description === 'string' ? description : '')]);
+  return ident.some((w) => palavras.has(w));
+}
