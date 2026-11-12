@@ -27,3 +27,18 @@ export function maskObjectForPublicPage<T extends PublicObjectLike | null | unde
     location,
   } as T;
 }
+
+// Textos que viram IMAGEM ou texto de compartilhamento (cartaz / pré-visualização no WhatsApp e redes).
+// Mesma regra: só SINAL PÚBLICO tem o nome de pessoa mascarado; usuário e legado recebem o MESMO objeto de volta.
+// A máscara é aplicada ANTES de qualquer corte de tamanho (o cartaz corta o título em 40 caracteres).
+export function maskSharedTexts<T extends { title?: string | null; description?: string | null; location?: unknown }>(
+  source: string | null | undefined, texts: T,
+): T {
+  if (source !== 'public_signal') return texts;
+  return {
+    ...texts,
+    title: typeof texts.title === 'string' ? maskPersonNames(texts.title) : texts.title,
+    description: typeof texts.description === 'string' ? maskPersonNames(texts.description) : texts.description,
+    location: typeof texts.location === 'string' ? maskPersonNames(texts.location) : texts.location,
+  };
+}
