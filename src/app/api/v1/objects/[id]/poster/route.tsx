@@ -2,6 +2,7 @@ import { ImageResponse } from 'next/og';
 import { NextRequest } from 'next/server';
 import { query } from '@/lib/db';
 import { buildPosterData } from '@/lib/posterFormatter';
+import { maskSharedTexts } from '@/lib/objectPublicView';
 import sharp from 'sharp';
 
 export const runtime = 'nodejs';
@@ -134,7 +135,7 @@ export async function GET(
 
     const result = await query(
       `SELECT
-        o.id, o.title, o.description, o.status, o.category, o.qr_code, o.images,
+        o.id, o.title, o.description, o.status, o.category, o.qr_code, o.images, o.source,
         o.location, o.latitude, o.longitude, o.reward_amount, o.created_at,
         CASE
           WHEN b.id IS NOT NULL AND b.status = 'active' AND b.expires_at > NOW()
@@ -154,7 +155,7 @@ export async function GET(
     const obj = result.rows[0] as {
       id: string; title: string; description: string | null;
       status: string; category: string; qr_code: string;
-      images: unknown; location: unknown;
+      images: unknown; location: unknown; source: string | null;
       latitude: unknown; longitude: unknown;
       reward_amount: number | null; created_at: string;
       has_active_boost: boolean;
@@ -162,13 +163,16 @@ export async function GET(
 
     const appUrl = (process.env.NEXT_PUBLIC_APP_URL ?? 'https://backfindr.com').replace(/\/$/, '');
 
+    // Sinal público: nome de pessoa mascarado ANTES de virar imagem (usuário e legado passam sem alteração).
+    const shown = maskSharedTexts(obj.source, { title: obj.title, description: obj.description, location: obj.location });
+
     const pd = buildPosterData({
-      title:       obj.title,
-      description: obj.description,
+      title:       shown.title ?? obj.title,
+      description: shown.description ?? null,
       category:    obj.category,
       status:      obj.status,
       created_at:  obj.created_at,
-      location:    obj.location,
+      location:    shown.location,
       reward:      obj.reward_amount,
       qr_code:     obj.qr_code,
       photo_url:   normalizeImages(obj.images)[0] ?? null,
