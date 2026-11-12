@@ -102,6 +102,9 @@ export const analytics = {
     posthog.capture('flow_abandoned', { flow, at_step: step }),
   flowMatchClicked: (flow: string, objectCode: string) =>
     posthog.capture('flow_match_clicked', { flow, object_code: objectCode }),
+  // Passo 2 dos fluxos /flow/found e /flow/lost: só o fluxo de origem (nunca o texto digitado nem dado pessoal)
+  flowMatchNeedsDetailsShown: (flow: string) => posthog.capture('flow_match_needs_details_shown', { flow }),
+  flowMatchNoneShown:         (flow: string) => posthog.capture('flow_match_none_shown', { flow }),
 
   // Identify
   // Só o id interno: e-mail, nome e qualquer outro dado pessoal NÃO vão para o

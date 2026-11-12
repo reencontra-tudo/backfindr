@@ -35,6 +35,7 @@ export default function FoundFlowClient() {
   const [step1, setStep1] = useState<Step1Data>({ what: '', where: '', whereType: 'rua' });
   const [matches, setMatches] = useState<MatchItem[]>([]);
   const [loadingMatches, setLoadingMatches] = useState(false);
+  const [needsDetails, setNeedsDetails] = useState(false); // busca ampla demais: aviso no lugar da lista
 
   // ─── Tela 1: Captura do que foi encontrado ────────────────────────────────
   async function handleStep1Submit(e: React.FormEvent) {
@@ -43,6 +44,7 @@ export default function FoundFlowClient() {
 
     analytics.flowStep('found', 2, 3);
     setStep(2);
+    setNeedsDetails(false);
     setLoadingMatches(true);
 
     try {
@@ -50,9 +52,14 @@ export default function FoundFlowClient() {
       params.set('status', 'lost');
       params.set('keyword', step1.what.trim());
       params.set('size', '5');
+      params.set('strict', '1'); // relevância estrita só neste passo (cor sozinha não conta, «recuperado» fora, busca ampla avisa)
       const res = await fetch(`/api/v1/objects/public?${params.toString()}`);
       const data = await res.json();
-      setMatches(data.items || []);
+      const items = data.items || [];
+      setNeedsDetails(data.needs_details === true);
+      setMatches(items);
+      if (data.needs_details === true) analytics.flowMatchNeedsDetailsShown('found');
+      else if (items.length === 0) analytics.flowMatchNoneShown('found');
     } catch {
       setMatches([]);
     } finally {
@@ -181,18 +188,38 @@ export default function FoundFlowClient() {
               </div>
             ) : (
               <>
-                <div className="mb-6">
-                  <h2 className="text-2xl font-bold text-white leading-tight mb-2">
-                    {matches.length > 0
-                      ? 'Alguém pode estar procurando isso.'
-                      : 'Nenhum alerta correspondente ainda.'}
-                  </h2>
-                  <p className="text-white/40 text-sm">
-                    {matches.length > 0
-                      ? `${matches.length} ${matches.length === 1 ? 'alerta encontrado' : 'alertas encontrados'} para "${step1.what}"`
-                      : `Nenhum alerta de perda para "${step1.what}" — mas publique o achado e o dono pode aparecer.`}
-                  </p>
-                </div>
+                {needsDetails && (
+                  <div className="mb-6" data-needs-details>
+                    <div className="bg-white/[0.03] border border-white/[0.06] rounded-2xl p-5 flex gap-3 mb-4">
+                      <AlertCircle className="w-5 h-5 text-amber-400 flex-shrink-0 mt-0.5" />
+                      <div>
+                        <h2 className="text-lg font-bold text-white leading-snug mb-1">Sua busca precisa de mais detalhes para uma resposta melhor.</h2>
+                        <p className="text-white/50 text-sm leading-relaxed">Tente incluir o tipo do objeto, a marca, onde e quando.</p>
+                      </div>
+                    </div>
+                    <button
+                      onClick={() => setStep(1)}
+                      className="w-full flex items-center justify-center gap-2 border border-teal-500/40 text-teal-300 hover:bg-teal-500/10 font-semibold py-3 rounded-xl transition-all text-sm"
+                    >
+                      Editar minha busca
+                    </button>
+                  </div>
+                )}
+
+                {!needsDetails && (
+                  <div className="mb-6">
+                    <h2 className="text-2xl font-bold text-white leading-tight mb-2">
+                      {matches.length > 0
+                        ? 'Alguém pode estar procurando isso.'
+                        : 'Nenhum alerta correspondente ainda.'}
+                    </h2>
+                    <p className="text-white/40 text-sm">
+                      {matches.length > 0
+                        ? `${matches.length} ${matches.length === 1 ? 'alerta encontrado' : 'alertas encontrados'} para "${step1.what}"`
+                        : `Nenhum alerta de perda para "${step1.what}" — mas publique o achado e o dono pode aparecer.`}
+                    </p>
+                  </div>
+                )}
 
                 {matches.length > 0 && (
                   <div className="space-y-3 mb-6">
@@ -207,7 +234,7 @@ export default function FoundFlowClient() {
                   </div>
                 )}
 
-                {matches.length === 0 && (
+                {matches.length === 0 && !needsDetails && (
                   <div className="bg-white/[0.03] border border-white/[0.06] rounded-2xl p-5 mb-6 flex gap-3">
                     <AlertCircle className="w-5 h-5 text-amber-400 flex-shrink-0 mt-0.5" />
                     <div>
@@ -228,12 +255,14 @@ export default function FoundFlowClient() {
                     {matches.length > 0 ? 'Nenhum é o dono — publicar achado' : 'Publicar o achado agora'}
                     <ArrowRight className="w-5 h-5" />
                   </button>
+                  {!needsDetails && (
                   <button
-                    onClick={() => setStep(1)}
-                    className="w-full py-3 text-white/40 hover:text-white/60 text-sm transition-colors"
-                  >
-                    Voltar e refinar a busca
-                  </button>
+                      onClick={() => setStep(1)}
+                      className="w-full py-3 text-white/40 hover:text-white/60 text-sm transition-colors"
+                    >
+                      Voltar e refinar a busca
+                    </button>
+                  )}
                 </div>
               </>
             )}
