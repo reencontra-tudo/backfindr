@@ -170,6 +170,25 @@ function FeedCard({ item, index }: { item: FeedItem; index: number }) {
   );
 }
 
+/** Bloco explicativo entre os primeiros cards (só na página 1; um único bloco). Texto fixo, igual para todos. */
+function FeedAbout() {
+  const linkCls = 'inline-flex min-h-[44px] items-center rounded-lg px-3 text-sm font-medium text-teal-100 underline decoration-white/30 underline-offset-2 hover:bg-white/10 hover:text-white focus:outline-none focus:ring-2 focus:ring-teal-400';
+  return (
+    <aside aria-label="Sobre o Backfindr" className="py-5" data-feed-about>
+      <div className="rounded-xl bg-white/[0.05] p-4">
+        <h2 className="text-base font-semibold text-white">O Backfindr vai além das publicações</h2>
+        <p className="mt-1 text-sm leading-relaxed text-white/80">
+          Pesquise por localização e características e descubra possíveis correspondências entre o que foi perdido e o que foi encontrado.
+        </p>
+        <div className="-ml-3 mt-1 flex flex-wrap items-center">
+          <Link href="/buscar" prefetch={false} className={linkCls}>Buscar ocorrências</Link>
+          <Link href="/map" prefetch={false} className={linkCls}>Ver no mapa</Link>
+        </div>
+      </div>
+    </aside>
+  );
+}
+
 function EmptyState() {
   return (
     <section className="rounded-2xl border border-white/15 bg-white/[0.04] p-6 text-center" aria-live="polite">
@@ -306,7 +325,10 @@ export default function FeedClient({ initialItems, initialNextCursor, initialHas
       )}
 
       <div className={`mt-3 divide-y divide-white/10 transition-opacity ${loading || locating ? 'opacity-60' : ''}`} aria-busy={loading || locating}>
-        {items.length === 0 && !loading && !locating ? <EmptyState /> : items.map((it, i) => <FeedCard key={it.code} item={it} index={i} />)}
+        {items.length === 0 && !loading && !locating ? <EmptyState /> : items.flatMap((it, i) => {
+          const card = <FeedCard key={it.code} item={it} index={i} />;
+          return page === 1 && i === 2 ? [card, <FeedAbout key="sobre-o-backfindr" />] : [card];
+        })}
       </div>
       {failed && <p role="status" className="mt-4 text-sm text-amber-200">Não foi possível atualizar agora. As ocorrências acima continuam válidas; tente de novo em instantes.</p>}
 

@@ -11,6 +11,7 @@ import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { MapPin } from 'lucide-react';
 import FeedClient from '../FeedClient';
+import { IntroButtons, RegisterMenu } from '../FeedCta';
 import { APP_URL } from '@/lib/constants';
 import { getRankedFeed, pageByNumber } from '@/lib/feed/query';
 
@@ -62,23 +63,37 @@ export default async function FeedPage({ params }: { params: { slug?: string[] }
           <nav aria-label="Atalhos" className="flex items-center gap-1 text-sm">
             <Link href="/map" className="inline-flex min-h-[44px] items-center px-3 text-white/85 hover:text-white">Mapa</Link>
             <Link href="/buscar" className="inline-flex min-h-[44px] items-center px-3 text-white/85 hover:text-white">Buscar</Link>
+            <RegisterMenu variant="header" pagina={page} />
           </nav>
         </div>
       </header>
 
-      <div className="mx-auto max-w-2xl px-4 py-6">
+      <div className="mx-auto max-w-2xl px-4 py-6 pb-24 sm:pb-6">
         <h1 className="text-2xl font-bold leading-tight">Ocorrências recentes</h1>
-        <p className="mt-2 text-sm leading-relaxed text-white/80">
-          Os registros mais recentes de objetos, documentos e pets perdidos, achados ou roubados. É só um recorte recente: para ver o histórico, abra o mapa.
-        </p>
-        <Link href="/map" className="mt-3 inline-flex min-h-[44px] items-center gap-2 rounded-xl border border-white/25 px-4 text-sm font-medium text-white hover:bg-white/10">
-          Ver histórico no mapa
-        </Link>
 
-        <div className="mt-6">
+        {/* Apresentação (só na página 1; no HTML do servidor, igual para todos). NÃO é um segundo h1. */}
+        {page === 1 && (
+          <section aria-label="Sobre o Backfindr" className="mt-3">
+            <p className="text-base font-semibold leading-snug text-white">Perdeu algo? Encontrou alguma coisa?</p>
+            <p className="mt-1 text-sm leading-relaxed text-white/80">
+              O Backfindr conecta pessoas que perderam e encontraram objetos, documentos, animais e veículos. Cadastre uma ocorrência e descubra possíveis correspondências.
+            </p>
+            <IntroButtons pagina={page} />
+          </section>
+        )}
+
+        <p className="mt-3 text-xs leading-relaxed text-white/70">
+          Os registros mais recentes de objetos, documentos e pets perdidos, achados ou roubados. É só um recorte recente:{' '}
+          <Link href="/map" className="inline-flex min-h-[44px] items-center font-medium underline underline-offset-2 hover:text-white">Ver histórico no mapa</Link>
+        </p>
+
+        <div className="mt-2">
           <FeedClient initialItems={pg.items} initialNextCursor={pg.nextCursor} initialHasMore={pg.hasMore} page={page} regions={ranked.ufs} />
         </div>
       </div>
+
+      {/* Botão fixo (só celular): canto inferior esquerdo, longe do chat (direito) */}
+      <RegisterMenu variant="fixed" pagina={page} />
     </main>
   );
 }

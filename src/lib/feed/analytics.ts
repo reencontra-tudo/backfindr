@@ -26,7 +26,19 @@ export function feedOrigin(): string {
   } catch { return 'direto'; }
 }
 
+export type FeedCtaPosicao = 'topo' | 'fixo' | 'cabecalho';
+
+// Cliques nos acessos ao cadastro (sem dado pessoal): `origem` = como a pessoa chegou (igual ao feed_aberto),
+// `posicao` = onde na página clicou, `pagina` = número da página do Feed.
+const cta = (event: string, posicao: FeedCtaPosicao, pagina: number) => send(event, { origem: feedOrigin(), posicao, pagina });
+
 export const feedEvents = {
+  ctaPerdi: (posicao: FeedCtaPosicao, pagina: number) => cta('feed_cta_perdi', posicao, pagina),
+  ctaEncontrei: (posicao: FeedCtaPosicao, pagina: number) => cta('feed_cta_encontrei', posicao, pagina),
+  ctaRoubado: (posicao: FeedCtaPosicao, pagina: number) => cta('feed_cta_roubado', posicao, pagina),
+  /** Botão «+ Cadastrar ocorrência» (fixo no celular / no cabeçalho no desktop): conta ao ABRIR o menu. */
+  ctaCadastrar: (posicao: FeedCtaPosicao, pagina: number) => cta('feed_cta_cadastrar', posicao, pagina),
+
   aberto: (origem: string) => send('feed_aberto', { origem }),
   filtroAplicado: (filtro: 'situacao' | 'categoria' | 'regiao', valor: string) => send('feed_filtro_aplicado', { filtro, valor }),
   cardAberto: (origem_item: FeedOrigemItem) => send('feed_card_aberto', { origem_item }),
