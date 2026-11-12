@@ -19,7 +19,7 @@ import { NextRequest } from 'next/server';
 const TEST_DB = process.env.TEST_DATABASE_URL;
 if (TEST_DB) process.env.DATABASE_URL = TEST_DB;
 
-import { maskPersonNames, MASK_PLACEHOLDER } from '@/lib/feed/mask';
+import { maskPersonNames, MASK_PLACEHOLDER } from '@/lib/privacy/maskPersonNames';
 import { feedCategoryKey, FEED_CATEGORY_LABELS } from '@/lib/feed/category';
 import { parseLocation, NO_LOCATION_LABEL, cityFromCoordinates, bandFor } from '@/lib/feed/location';
 import { rankFeed, signalCapHolds, type Rankable } from '@/lib/feed/order';

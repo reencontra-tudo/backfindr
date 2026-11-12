@@ -2,7 +2,7 @@
 // O que sai daqui para fora (toPublicItem) é uma lista fixa de campos: nunca owner_id/user_id, telefone,
 // e-mail, endereço exato, coordenadas, descrição bruta, contact_snapshot, match ou score.
 import { query } from '@/lib/db';
-import { maskPersonNames } from './mask';
+import { maskPersonNames } from '@/lib/privacy/maskPersonNames';
 import { feedCategoryKey, FEED_CATEGORY_LABELS, isFeedCategoryKey, type FeedCategoryKey } from './category';
 import { parseLocation, cityFromCoordinates, bandFor, norm, UF_CODES, NO_LOCATION_LABEL, type Municipality, type Visitor } from './location';
 import { rankFeed } from './order';
