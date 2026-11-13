@@ -44,7 +44,8 @@ async function nova({ geo = true } = {}) {
     route.fulfill({ status: 200, contentType: 'application/json', body: '{}' });
   });
   await ctx.route(/google|clarity|facebook|mapbox|ipapi|posthog\.com/, (r) => r.abort());
-  if (PHOTO) await ctx.route('https://pub-test.r2.dev/**', (r) => r.fulfill({ status: 200, contentType: 'image/jpeg', body: PHOTO }));
+  // fotos de exemplo para os servidores de foto (o de teste e o de produção: o ambiente do teste pode não alcançá-los, e uma foto que falha encolhe o card)
+  if (PHOTO) await ctx.route(/^https:\/\/pub-[a-z0-9]+\.r2\.dev\//, (r) => r.fulfill({ status: 200, contentType: 'image/jpeg', body: PHOTO }));
   if (geo) await ctx.route('**/api/v1/feed/geo', (r) => { st.geoChamadas++; r.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ country: 'BR', uf: 'PE', city: 'Recife' }) }); });
   await instalar(p);
   ctx.on('page', instalar);
