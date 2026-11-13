@@ -59,7 +59,16 @@ function sourceName(url: string | null): string | null {
   } catch { return null; }
 }
 
-const SQL = `
+/**
+ * Regra de elegibilidade do Feed (FONTE ÚNICA): a leitura do Feed e a contagem do admin usam este mesmo trecho,
+ * para o número do admin nunca divergir do que o Feed pode mostrar. Sem legado.
+ */
+export const FEED_ELIGIBILITY_WHERE = `o.is_public = true
+     AND o.is_legacy = false
+     AND o.status IN ('lost', 'found', 'stolen')
+     AND o.qr_code IS NOT NULL`;
+
+export const FEED_SQL = `
   SELECT o.qr_code AS code, o.title, o.status, o.category, o.type,
          o.location AS location_text, o.latitude, o.longitude, o.source, o.created_at,
          (o.is_boosted = true AND (o.boost_expires_at IS NULL OR o.boost_expires_at > NOW())) AS boosted,
@@ -72,10 +81,7 @@ const SQL = `
          AND left(e.source_url, 4) = 'http'
        ORDER BY e.created_at DESC LIMIT 1
     ) ev ON true
-   WHERE o.is_public = true
-     AND o.is_legacy = false
-     AND o.status IN ('lost', 'found', 'stolen')
-     AND o.qr_code IS NOT NULL
+   WHERE ${FEED_ELIGIBILITY_WHERE}
    ORDER BY o.created_at DESC, o.id
    LIMIT $1`;
 
@@ -100,7 +106,7 @@ async function loadMunicipalities(): Promise<Municipality[]> {
 
 async function load(): Promise<Loaded> {
   if (memo && Date.now() - memo.at < CACHE_TTL_MS) return memo;
-  const [res, munis] = await Promise.all([query(SQL, [FEED_MAX_CANDIDATES + 1]), loadMunicipalities()]);
+  const [res, munis] = await Promise.all([query(FEED_SQL, [FEED_MAX_CANDIDATES + 1]), loadMunicipalities()]);
   const truncated = res.rows.length > FEED_MAX_CANDIDATES;
   if (truncated) console.warn(`[feed] teto de ${FEED_MAX_CANDIDATES} candidatos atingido; as mais antigas ficaram de fora desta leitura`);
   const muniByName = new Map(munis.map((m) => [norm(m.name), m]));

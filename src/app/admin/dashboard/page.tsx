@@ -10,6 +10,7 @@ import {
   BarChart3, Mail, Shield
 } from "lucide-react";
 import { normalizeActivity, timeAgo, type ActivityItem } from "@/lib/adminActivity";
+import FeedStatsCard from "./FeedStatsCard";
 
 // ─── Tipos ────────────────────────────────────────────────────────────────────
 
@@ -304,6 +305,9 @@ export default function DashboardPage() {
       </div>
 
       {/* Linha: atividade + acesso rápido */}
+      {/* Feed: cards elegíveis (somente leitura) */}
+      <FeedStatsCard />
+
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
 
         {/* Atividade recente */}
