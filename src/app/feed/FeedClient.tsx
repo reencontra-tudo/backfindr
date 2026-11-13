@@ -23,6 +23,7 @@ import { relativeTimeLabel } from '@/lib/feed/time';
 import { FEED_CATEGORY_LABELS, type FeedCategoryKey } from '@/lib/feed/category';
 import { feedEvents, feedOrigin } from '@/lib/feed/analytics';
 import type { FeedItem } from '@/lib/feed/query';
+import { ConviteFim } from './FeedCta';
 
 interface Props {
   initialItems: FeedItem[];
@@ -51,11 +52,20 @@ const CATEGORY_ICON: Record<FeedCategoryKey, LucideIcon> = {
   bike: Bike, vehicle: Car, jewelry: Gem, electronics: Laptop, clothing: Shirt, other: Package,
 };
 
+// Carregamento híbrido: os 12 cards do HTML + até 2 lotes automáticos ao rolar = 3 lotes (36 cards). Depois o automático PARA e
+// o botão «Ver mais ocorrências» (link real para /feed/pagina/N) carrega mais 12 por clique.
+export const LOTES_AUTOMATICOS = 3;
+const CARREGAMENTOS_AUTOMATICOS = LOTES_AUTOMATICOS - 1;
+/** Ainda pode carregar sozinho ao rolar? `lotesAutomaticos` = lotes que vieram sozinhos até agora (o do HTML não conta; o clique em «Ver mais» também não). */
+export const podeCarregarAutomatico = (lotesAutomaticos: number) => lotesAutomaticos < CARREGAMENTOS_AUTOMATICOS;
+
 const selectCls = 'min-h-[44px] w-full rounded-xl border border-white/25 bg-[#10151c] px-3 text-sm text-white focus:outline-none focus:ring-2 focus:ring-teal-400 disabled:opacity-60';
 const actionCls = 'inline-flex min-h-[44px] items-center justify-center gap-2 rounded-xl border border-white/25 px-4 text-sm font-medium text-white hover:bg-white/10 focus:outline-none focus:ring-2 focus:ring-teal-400';
-// Ações do card: «Ver detalhes» é a principal; as outras são discretas (sem borda), todas na MESMA linha
-const primaryActionCls = 'inline-flex min-h-[44px] shrink-0 items-center justify-center rounded-xl bg-teal-500 px-4 text-sm font-semibold text-[#04110f] hover:bg-teal-400 focus:outline-none focus:ring-2 focus:ring-teal-200';
-const quietActionCls = 'inline-flex min-h-[44px] min-w-0 items-center justify-center gap-1.5 rounded-xl px-2 text-center text-xs font-medium leading-tight text-white/85 hover:bg-white/10 focus:outline-none focus:ring-2 focus:ring-teal-400';
+// Ações do card (celular): 2 linhas. 1ª: «Ver detalhes» (principal) + «Compartilhar»; 2ª: «Informar que encontrei» sozinha, sem quebrar o texto.
+// Tudo alinhado à esquerda e com largura natural: as ações nunca chegam à área do botão de chat (canto inferior direito).
+// O ícone de «Compartilhar» tem tamanho fixo (antes encolhia a um ponto). Só classes: a estrutura do HTML é a mesma.
+const primaryActionCls = 'inline-flex min-h-[44px] shrink-0 items-center justify-center whitespace-nowrap rounded-xl bg-teal-500 px-3.5 text-sm font-semibold text-[#04110f] hover:bg-teal-400 focus:outline-none focus:ring-2 focus:ring-teal-200 max-[359px]:px-2.5';
+const quietActionCls = 'inline-flex min-h-[44px] items-center justify-center gap-1.5 whitespace-nowrap rounded-xl px-2.5 text-center text-[13px] font-medium leading-tight text-white/85 hover:bg-white/10 focus:outline-none focus:ring-2 focus:ring-teal-400 max-[359px]:gap-1 max-[359px]:px-1.5 max-[359px]:text-xs [&>svg]:h-[18px] [&>svg]:w-[18px] [&>svg]:shrink-0';
 
 function buildQuery(status: string, category: string, region: Region, geo: Geo | null, cursor?: string | null) {
   const q = new URLSearchParams();
@@ -130,15 +140,15 @@ function FeedCard({ item, index }: { item: FeedItem; index: number }) {
           )}
         </p>
       )}
-      <div className="mt-3 flex items-stretch gap-1.5">
+      <div className={`mt-3 grid grid-cols-[auto_auto] items-center justify-start gap-x-1 gap-y-0.5 sm:flex sm:flex-wrap sm:gap-1.5 ${withPhoto ? '' : '-ml-12 sm:ml-0'}`}>
         <Link href={href} prefetch={false} aria-label={`Ver detalhes: ${item.title}`} className={primaryActionCls}
           onClick={() => feedEvents.cardAberto(item.origin)}>Ver detalhes</Link>
-        <span className="flex min-w-0 flex-1" onClickCapture={() => feedEvents.compartilhar(item.origin)}>
+        <span className="flex min-w-0" onClickCapture={() => feedEvents.compartilhar(item.origin)}>
           <ShareModal url={`${APP_URL}${href}`} title={item.title} description={`${item.status_label} · ${item.location_label}`}
-            buttonLabel="Compartilhar" buttonClassName={`${quietActionCls} w-full`} />
+            buttonLabel="Compartilhar" buttonClassName={quietActionCls} />
         </span>
-        {item.can_report_found && (
-          <Link href="/achei?ref=feed" prefetch={false} className={`${quietActionCls} flex-1 text-teal-100`}
+        {item.can_report_found && item.status === 'lost' && (
+          <Link href="/achei?ref=feed" prefetch={false} className={`${quietActionCls} col-span-2 justify-self-start text-teal-100 sm:col-auto`}
             onClick={() => feedEvents.informarEncontreiClique()}>Informar que encontrei</Link>
         )}
       </div>
@@ -215,6 +225,7 @@ export default function FeedClient({ initialItems, initialNextCursor, initialHas
   const [locating, setLocating] = useState(false);       // procurando a região (só depois de a pessoa escolher)
   const [loading, setLoading] = useState(false);
   const [failed, setFailed] = useState(false);
+  const [autoLoads, setAutoLoads] = useState(0); // lotes trazidos AUTOMATICAMENTE ao rolar (o clique em «Ver mais» não conta)
   const reqId = useRef(0);
   const sentinel = useRef<HTMLDivElement | null>(null);
 
@@ -224,7 +235,7 @@ export default function FeedClient({ initialItems, initialNextCursor, initialHas
     try {
       const data = await fetchFeed(buildQuery(s, c, r, g));
       if (id !== reqId.current) return;
-      setItems(data.items); setNextCursor(data.next_cursor); setHasMore(data.has_more); // troca única
+      setItems(data.items); setNextCursor(data.next_cursor); setHasMore(data.has_more); setAutoLoads(0); // troca única: a lista recomeça
     } catch {
       if (id === reqId.current) setFailed(true); // mantém o que já está na tela
     } finally {
@@ -263,7 +274,7 @@ export default function FeedClient({ initialItems, initialNextCursor, initialHas
     apply(status, category, value, g);
   };
 
-  const loadMore = useCallback(async () => {
+  const loadMore = useCallback(async (origem: 'auto' | 'manual' = 'manual') => {
     if (loading || !hasMore || !nextCursor) return;
     const id = ++reqId.current;
     setLoading(true);
@@ -272,18 +283,21 @@ export default function FeedClient({ initialItems, initialNextCursor, initialHas
       if (id !== reqId.current) return;
       setItems((prev) => { const seen = new Set(prev.map((i) => i.code)); return [...prev, ...data.items.filter((i) => !seen.has(i.code))]; });
       setNextCursor(data.next_cursor); setHasMore(data.has_more);
+      if (origem === 'auto') setAutoLoads((n) => n + 1);
     } catch { if (id === reqId.current) setFailed(true); }
     finally { if (id === reqId.current) setLoading(false); }
   }, [loading, hasMore, nextCursor, status, category, region, geo]);
 
-  // Carregamento contínuo ao rolar (o link «Ver mais» abaixo continua existindo e funcionando sem JavaScript)
+  // Carregamento ao rolar, só até 3 lotes no total (12 do HTML + 2 automáticos). Depois PARA: quem quer mais usa o «Ver mais»
+  // (link real para /feed/pagina/N; sem JavaScript funciona do mesmo jeito).
+  const autoParou = !podeCarregarAutomatico(autoLoads);
   useEffect(() => {
     const el = sentinel.current;
-    if (!el || !hasMore || typeof IntersectionObserver === 'undefined') return;
-    const io = new IntersectionObserver((e) => { if (e[0].isIntersecting) void loadMore(); }, { rootMargin: '400px' });
+    if (!el || !hasMore || autoParou || typeof IntersectionObserver === 'undefined') return;
+    const io = new IntersectionObserver((e) => { if (e[0].isIntersecting) void loadMore('auto'); }, { rootMargin: '400px' });
     io.observe(el);
     return () => io.disconnect();
-  }, [hasMore, loadMore]);
+  }, [hasMore, autoParou, loadMore]);
 
   return (
     <div>
@@ -332,15 +346,16 @@ export default function FeedClient({ initialItems, initialNextCursor, initialHas
       </div>
       {failed && <p role="status" className="mt-4 text-sm text-amber-200">Não foi possível atualizar agora. As ocorrências acima continuam válidas; tente de novo em instantes.</p>}
 
-      <nav aria-label="Paginação do Feed" className="mt-6 flex flex-wrap items-center justify-center gap-3">
+      <nav aria-label="Paginação do Feed" className="mt-6 flex flex-wrap items-center justify-center gap-3 max-[359px]:justify-start">
         {page > 1 && (
           <Link href={page === 2 ? '/feed' : `/feed/pagina/${page - 1}`} prefetch={false} className={actionCls}>Ver ocorrências anteriores</Link>
         )}
         {hasMore && (
           <Link href={`/feed/pagina/${page + 1}`} prefetch={false} className={actionCls}
-            onClick={(e) => { e.preventDefault(); void loadMore(); }}>Ver mais ocorrências</Link>
+            onClick={(e) => { e.preventDefault(); void loadMore('manual'); }}>Ver mais ocorrências</Link>
         )}
       </nav>
+      {items.length > 0 && (autoParou || !hasMore) && <ConviteFim pagina={page} />}
       <div ref={sentinel} aria-hidden className="h-1" />
     </div>
   );

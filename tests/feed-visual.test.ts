@@ -18,7 +18,7 @@ const mk = (o: Partial<FeedItem>): FeedItem => ({
   created_at: '2026-11-10T10:00:00.000Z', source_url: null, source_name: null, can_report_found: true, ...o,
 });
 const COM_FOTO = mk({});
-const SEM_FOTO = mk({ code: 'T0000002', title: 'Carteira de identidade', category: 'document', has_photo: false, photo_url: null, status: 'found', status_label: 'Achado' });
+const SEM_FOTO = mk({ code: 'T0000002', title: 'Carteira de identidade', category: 'document', has_photo: false, photo_url: null, status: 'lost', status_label: 'Perdido' }); // usuário + perdido: o único caso em que «Informar que encontrei» aparece
 const SINAL = mk({ code: 'T0000003', origin: 'sinal_publico', can_report_found: false, has_photo: false, photo_url: null, source_url: 'https://g1.globo.com/x', source_name: 'g1.globo.com' });
 
 // O React separa textos vizinhos com «<!-- -->» no HTML do servidor; o navegador junta de novo. Tira para comparar o texto.
@@ -97,12 +97,14 @@ describe('card com foto (estilo publicação)', () => {
     expect(a).toMatch(/<h2[^>]*text-lg/);
     expect(a).toMatch(/<a [^>]*href="\/objeto\/T0000001"[^>]*>Celular azul perdido<\/a>/);
   });
-  it('ações numa linha só; «Ver detalhes» é a principal e as outras são discretas; textos iguais aos de antes', () => {
-    const acoes = a.slice(a.lastIndexOf('<div class="mt-3 flex'));
+  it('ações: «Ver detalhes» é a principal e as outras são discretas; textos iguais aos de antes; em duas linhas no celular', () => {
+    const acoes = a.slice(a.lastIndexOf('<div class="mt-3 grid'));
     for (const t of ['Ver detalhes', 'Compartilhar', 'Informar que encontrei']) expect(acoes).toContain(t);
     expect(acoes).toMatch(/bg-teal-500[^"]*"[^>]*>Ver detalhes|aria-label="Ver detalhes[^"]*" class="[^"]*bg-teal-500/);
     expect((acoes.match(/bg-teal-500/g) ?? []).length).toBe(1); // só a principal é «cheia»
     expect(acoes).toContain('href="/achei?ref=feed"');
+    expect(acoes).toContain('grid-cols-[auto_auto]');              // 1ª linha: Ver detalhes + Compartilhar
+    expect(acoes).toMatch(/<a [^>]*class="[^"]*col-span-2[^"]*"[^>]*>Informar que encontrei/); // 2ª linha: sozinha
     expect(a).not.toMatch(/flex-wrap gap-2 pt-1/); // sem a linha de botões antiga que quebrava
   });
   it('menos caixas: o card não tem borda nem fundo próprios (divisória fina entre publicações)', () => {
@@ -127,7 +129,7 @@ describe('card sem foto (compacto)', () => {
     expect(a.indexOf('h-9 w-9')).toBeLessThan(a.indexOf('<h2'));         // ao lado (antes) do título
   });
   it('mesmos dados e mesmas ações do card com foto', () => {
-    for (const t of ['Carteira de identidade', 'Achado', 'Documento', 'Boa Viagem, Recife - PE', 'Registrado', 'Ver detalhes', 'Compartilhar', 'Informar que encontrei'])
+    for (const t of ['Carteira de identidade', 'Perdido', 'Documento', 'Boa Viagem, Recife - PE', 'Registrado', 'Ver detalhes', 'Compartilhar', 'Informar que encontrei'])
       expect(a, t).toContain(t);
     expect(a).toContain('href="/objeto/T0000002"');
   });

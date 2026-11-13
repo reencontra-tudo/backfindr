@@ -135,11 +135,11 @@ describe('botão fixo: some ao rolar para baixo e volta ao rolar para cima', () 
   });
   it('a lógica: esconde ao descer, mostra ao subir, no topo e com foco; menu aberto nunca some', () => {
     expect(cta).toContain("window.addEventListener('scroll', onScroll, { passive: true })");
-    expect(cta).toMatch(/y <= 24\) setRecolhido\(false\)/);
+    expect(cta).toMatch(/y <= 24 \|\| fim\) setRecolhido\(false\)/);
     expect(cta).toMatch(/d > 8 && !openRef\.current\) \{ setRecolhido\(true\)/);
     expect(cta).toMatch(/d < -8\) setRecolhido\(false\)/);
     expect(cta).toContain("addEventListener('focusin'");
-    expect(cta).toContain("const escondido = variant === 'fixed' && recolhido && !open");
+    expect(cta).toContain("const escondido = variant === 'fixed' && !open && !comFoco && (recolhido || rolando || sobreposto)");
   });
   it('só mexe na posição (transform): sem mudar aparência, textos, rotas nem eventos', () => {
     expect(cta).toContain('pointer-events-none translate-y-[calc(100%+2rem)]');

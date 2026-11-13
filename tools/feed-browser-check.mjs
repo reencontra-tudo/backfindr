@@ -111,7 +111,8 @@ for (const vp of VIEWPORTS) {
       const ratios = comFoto.map((a) => { const d = a.querySelector('img').parentElement; const r = R(d); return r.width / r.height; });
       const hFoto = comFoto.length ? R(comFoto[0]).height : null, hSem = semFoto.length ? Math.max(...semFoto.map((a) => R(a).height)) : null;
       const linhaUnica = arts.every((a) => { const p = [...a.querySelectorAll('p')].find((x) => x.querySelector('time')); return p && R(p).height < 30; });
-      const acoesNaMesmaLinha = arts.every((a) => { const els = [...a.querySelectorAll('a,button')].filter((x) => /Ver detalhes|Compartilhar|Informar que encontrei/.test(x.textContent + (x.getAttribute('aria-label') || ''))); const tops = els.map((x) => Math.round(R(x).top)); return tops.length >= 2 && Math.max(...tops) - Math.min(...tops) <= 2; });
+      // Celular (< 640 px): 1ª linha «Ver detalhes» + «Compartilhar»; 2ª linha «Informar que encontrei» sozinha. Desktop: tudo numa linha.
+      const acoesNaMesmaLinha = arts.every((a) => { const find = (re) => [...a.querySelectorAll('a,button')].find((x) => re.test(x.textContent + (x.getAttribute('aria-label') || ''))); const ver = find(/Ver detalhes/), sh = find(/Compartilhar/), inf = find(/Informar que encontrei/); if (!ver || !sh) return false; const tv = Math.round(R(ver).top), ts = Math.round(R(sh).top); if (Math.abs(tv - ts) > 2) return false; if (!inf) return true; const ti = Math.round(R(inf).top); return window.innerWidth >= 640 ? Math.abs(ti - tv) <= 2 : ti > R(ver).bottom - 2; });
       const sobrepoe = arts.some((a) => { const els = [...a.querySelectorAll('h2 a,p,button,a[href]')].map(R).filter((r) => r.width && r.height); for (let i = 0; i < els.length; i++) for (let j = i + 1; j < els.length; j++) { const A = els[i], B = els[j]; const ix = Math.min(A.right, B.right) - Math.max(A.left, B.left), iy = Math.min(A.bottom, B.bottom) - Math.max(A.top, B.top); const aninhado = (A.left <= B.left && A.right >= B.right && A.top <= B.top && A.bottom >= B.bottom) || (B.left <= A.left && B.right >= A.right && B.top <= A.top && B.bottom >= A.bottom); if (!aninhado && ix > 2 && iy > 2) return true; } return false; });
       const foraDaTela = arts.some((a) => [...a.querySelectorAll('*')].some((x) => R(x).right > window.innerWidth + 1));
       const secundario = arts.every((a) => { const v = [...a.querySelectorAll('a')].find((x) => /Ver detalhes/.test(x.textContent)); const c = [...a.querySelectorAll('button')].find((x) => /Compartilhar/.test(x.textContent)); return v && c && getComputedStyle(v).backgroundColor !== 'rgba(0, 0, 0, 0)' && getComputedStyle(c).backgroundColor === 'rgba(0, 0, 0, 0)'; });
@@ -121,7 +122,7 @@ for (const vp of VIEWPORTS) {
     ok(`[${vp.width}] foto: proporção estável (mesma em todos os cards)`, PHOTO ? m.ratios.every((r) => Math.abs(r - m.ratios[0]) < 0.02) : true, m.ratios.map((r) => r.toFixed(2)).join(','));
     ok(`[${vp.width}] card sem foto bem mais baixo que o com foto`, m.hFoto && m.hSem && m.hSem < m.hFoto * 0.6, `com foto=${Math.round(m.hFoto)}px, sem foto=${Math.round(m.hSem)}px`);
     ok(`[${vp.width}] local e data numa linha só`, m.linhaUnica);
-    ok(`[${vp.width}] ações na mesma linha`, m.acoesNaMesmaLinha);
+    ok(`[${vp.width}] ações: «Ver detalhes» + «Compartilhar» na mesma linha; «Informar que encontrei» na linha de baixo no celular (na mesma linha no desktop)`, m.acoesNaMesmaLinha);
     ok(`[${vp.width}] «Ver detalhes» principal (cheio) e «Compartilhar» discreto (sem fundo)`, m.secundario);
     ok(`[${vp.width}] sem sobreposição dentro dos cards e nada fora da tela`, !m.sobrepoe && !m.foraDaTela);
     ok(`[${vp.width}] sem pulo de layout (CLS < 0,05)`, (m.cls ?? 0) < 0.05, String((m.cls ?? 0).toFixed(4)));
@@ -238,7 +239,9 @@ for (const vp of VIEWPORTS) {
       let e = await estado(); ok(`[${vp.width}] rolagem: no topo o botão aparece`, e.rec === 'false' && !e.fora);
       await rolar(700); e = await estado(); ok(`[${vp.width}] rolagem: ao rolar para baixo o botão some (sai da tela)`, e.rec === 'true' && e.fora, JSON.stringify(e));
       await rolar(500); e = await estado(); ok(`[${vp.width}] rolagem: continua escondido enquanto desce`, e.rec === 'true' && e.fora);
-      await rolar(-150); e = await estado(); ok(`[${vp.width}] rolagem: ao rolar para cima o botão volta`, e.rec === 'false' && !e.fora, JSON.stringify(e));
+      await rolar(-150); e = await estado();
+      const livre = await page.evaluate(() => document.querySelector('[data-feed-register="fixed"]').getAttribute('data-sobreposto') === 'false');
+      ok(`[${vp.width}] rolagem: ao rolar para cima o botão volta SE não cobrir texto nem botão (se cobrir, continua escondido)`, livre ? (e.rec === 'false' && !e.fora) : (e.rec === 'true' && e.fora), `livre=${livre} ${JSON.stringify(e)}`);
       await rolar(300); e = await estado(); ok(`[${vp.width}] rolagem: desceu de novo, some de novo`, e.rec === 'true' && e.fora);
       await page.evaluate(() => window.scrollTo(0, 0)); await page.waitForTimeout(450); e = await estado(); ok(`[${vp.width}] rolagem: ao voltar ao topo o botão aparece`, e.rec === 'false' && !e.fora);
       // menu aberto nunca some

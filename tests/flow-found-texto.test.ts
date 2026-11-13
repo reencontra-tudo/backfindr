@@ -34,3 +34,12 @@ describe('/flow/found: texto da linha abaixo do botão de publicar', () => {
     expect(p).not.toMatch(/canonical/);
   });
 });
+
+describe('found, wallet e keys: nenhum texto promete contato protegido, segurança, SMS ou chat protegido', () => {
+  for (const f of ['found', 'wallet', 'keys']) {
+    it(`/flow/${f}`, () => {
+      const t = visivel(read(`src/app/flow/${f}/client.tsx`));
+      expect(t).not.toMatch(/com seguran[çc]a|protegid|\bSMS\b|sem expor|contato (n[ãa]o )?(fica )?exposto|chat (seguro|protegido)/i);
+    });
+  }
+});

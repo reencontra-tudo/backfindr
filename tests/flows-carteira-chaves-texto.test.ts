@@ -27,8 +27,12 @@ describe('/flow/keys', () => {
   it('passo 1: «Registre em 30 segundos. Quem achar pode te devolver.» (uma vez)', () => {
     expect((keys.match(/Registre em 30 segundos\. Quem achar pode te devolver\./g) ?? []).length).toBe(1);
   });
-  it('passo 3: «Conta gratuita em segundos. Quem achar suas chaves pode te devolver pelo chat.» (uma vez; «pelo chat» fica)', () => {
-    expect((keys.match(/Conta gratuita em segundos\. Quem achar suas chaves pode te devolver pelo chat\./g) ?? []).length).toBe(1);
+  it('passo 3: fórmula aceita «a conversa acontece pelo chat da plataforma» (uma vez), sem «com segurança»', () => {
+    expect((keys.match(/Quem achar suas chaves pode te devolver — a conversa acontece pelo chat da plataforma\./g) ?? []).length).toBe(1);
+    expect(keys).not.toContain('pode te devolver pelo chat.');
+  });
+  it('nenhum dos dois fluxos promete contato protegido, SMS ou chat protegido', () => {
+    for (const f of [wallet, keys]) expect(semComentarios(f)).not.toMatch(/protegid|\bSMS\b|sem expor|contato (n[ãa]o )?(fica )?exposto|chat (seguro|protegido)/i);
   });
   it('sem «com segurança» no fluxo', () => {
     expect(semComentarios(keys)).not.toMatch(/com seguran[çc]a/i);
