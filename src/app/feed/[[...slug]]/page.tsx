@@ -68,7 +68,7 @@ export default async function FeedPage({ params }: { params: { slug?: string[] }
         </div>
       </header>
 
-      <div className="mx-auto max-w-2xl px-4 py-6 pb-24 sm:pb-6">
+      <div className="mx-auto max-w-2xl px-4 py-6 pb-32 sm:pb-6">
         <h1 className="text-2xl font-bold leading-tight">Ocorrências recentes</h1>
 
         {/* Apresentação (só na página 1; no HTML do servidor, igual para todos). NÃO é um segundo h1. */}
