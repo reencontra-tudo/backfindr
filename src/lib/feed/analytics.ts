@@ -44,4 +44,6 @@ export const feedEvents = {
   cardAberto: (origem_item: FeedOrigemItem) => send('feed_card_aberto', { origem_item }),
   compartilhar: (origem_item: FeedOrigemItem) => send('feed_compartilhar', { origem_item }),
   informarEncontreiClique: () => send('feed_informar_encontrei_clique', { origem_item: 'usuario' }),
+  /** A lista e a rolagem voltaram ao usar o botão «voltar» do navegador. Só a quantidade de cards (sem dado pessoal). */
+  estadoRestaurado: (cards: number) => send('feed_state_restored', { cards }),
 };

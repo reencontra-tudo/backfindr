@@ -44,7 +44,7 @@ describe('carregamento híbrido: 3 lotes automáticos e depois o botão', () => 
     expect(client).toContain("void loadMore('auto')");
     expect(client).toContain("void loadMore('manual')");
     expect(client).toContain('setAutoLoads(0)');
-    expect(client).toMatch(/if \(!el \|\| !hasMore \|\| autoParou \|\| typeof IntersectionObserver === 'undefined'\) return;/);
+    expect(client).toMatch(/if \(!el \|\| !hasMore \|\| autoParou \|\| restaurando \|\| typeof IntersectionObserver === 'undefined'\) return;/); // `restaurando`: só pausa enquanto a lista volta (voltar do navegador)
   });
   it('em telas abaixo de 360 px a linha do «Ver mais» fica à esquerda (para não chegar à área do chat)', () => {
     expect(client).toContain('justify-center gap-3 max-[359px]:justify-start');
@@ -110,7 +110,7 @@ describe('bloco «Não encontrou o que procurava?»', () => {
     const an = read('src/lib/feed/analytics.ts');
     expect(an).toContain("'topo' | 'fixo' | 'cabecalho' | 'fim'");
     const eventos = [...an.matchAll(/'(feed_[a-z_]+)'/g)].map((m) => m[1]);
-    expect([...new Set(eventos)].sort()).toEqual(['feed_aberto', 'feed_card_aberto', 'feed_compartilhar', 'feed_cta_cadastrar', 'feed_cta_encontrei', 'feed_cta_perdi', 'feed_cta_roubado', 'feed_filtro_aplicado', 'feed_informar_encontrei_clique'].sort());
+    expect([...new Set(eventos)].sort()).toEqual(['feed_aberto', 'feed_card_aberto', 'feed_compartilhar', 'feed_cta_cadastrar', 'feed_cta_encontrei', 'feed_cta_perdi', 'feed_cta_roubado', 'feed_filtro_aplicado', 'feed_informar_encontrei_clique', 'feed_state_restored'].sort());
   });
 });
 
