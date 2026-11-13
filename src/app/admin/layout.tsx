@@ -8,7 +8,7 @@ import {
   Building2, Box, QrCode, Truck, Store, MapPin,
   CreditCard, TrendingUp, Mail, Send, Megaphone,
   FileBarChart, Server, Users2, LogOut, Menu, X,
-  ChevronRight, Bell, Activity, LayoutGrid, Palette, MessageSquare, Radar,
+  ChevronRight, Bell, Activity, LayoutGrid, Palette, MessageSquare, Radar, Newspaper, ExternalLink,
 } from 'lucide-react';
 import { useAuthStore } from '@/hooks/useAuth';
 import { usePushNotifications } from '@/hooks/usePushNotifications';
@@ -33,6 +33,7 @@ const NAV = [
     items: [
       { href: '/admin/dashboard', icon: LayoutDashboard, label: 'Dashboard',   badge: null,              superOnly: false },
       { href: '/admin/analytics', icon: BarChart2,       label: 'Analytics',   badge: null,              superOnly: true  },
+      { href: '/feed',            icon: Newspaper,       label: 'Feed',        badge: null,              superOnly: false, external: true },
     ],
   },
   {
@@ -174,9 +175,21 @@ function Sidebar({ onClose, stats }: { onClose?: () => void; stats: AdminStats }
                 </p>
               </div>
               <div className="space-y-0.5">
-                {visibleItems.map(({ href, icon: Icon, label, badge }) => {
+                {visibleItems.map((item) => {
+                  const { href, icon: Icon, label, badge } = item;
+                  const external = 'external' in item && item.external === true;
                   const active     = href === '/admin' ? pathname === '/admin' : pathname.startsWith(href);
                   const badgeCount = getBadge(badge);
+                  if (external) { // atalho para uma página pública: abre em nova aba
+                    return (
+                      <a key={href} href={href} target="_blank" rel="noopener noreferrer"
+                        className="flex items-center gap-2.5 px-2.5 py-2 rounded-xl text-[13px] transition-all group text-white/35 hover:text-white/80 hover:bg-white/[0.04]">
+                        <Icon className="w-4 h-4 flex-shrink-0 transition-colors text-white/25 group-hover:text-white/50" />
+                        <span className="flex-1 font-medium">{label}</span>
+                        <ExternalLink className="w-3 h-3 text-white/25" aria-hidden />
+                      </a>
+                    );
+                  }
                   return (
                     <Link
                       key={href}
