@@ -11,7 +11,7 @@
 //
 // Esta tela NÃO usa o cliente axios da aplicação (que redireciona para o login num 401): só fetch simples
 // para um endpoint público que nunca devolve 401.
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import {
   MapPin, Newspaper, Search, Map as MapIcon, PlusCircle,
@@ -23,6 +23,10 @@ import { relativeTimeLabel } from '@/lib/feed/time';
 import { FEED_CATEGORY_LABELS, type FeedCategoryKey } from '@/lib/feed/category';
 import { feedEvents, feedOrigin } from '@/lib/feed/analytics';
 import type { FeedItem } from '@/lib/feed/query';
+import {
+  ESTADO_MAX_CARDS, consumirVoltou, criarEstado, deveRestaurar, descartarEstado, escolherCorte, expandir, instalarRastreadorVoltar,
+  lerEstado, obterStorage, registrarMontagem, salvarEstado, tipoNavegacao, type Filtros, type Marco,
+} from '@/lib/feed/estado';
 import { ConviteFim } from './FeedCta';
 
 interface Props {
@@ -35,6 +39,11 @@ interface Props {
 
 type Region = 'auto' | 'todas' | 'cidade' | string; // string = UF escolhida
 interface Geo { city: string | null; uf: string }
+
+// «Voltar» do navegador: guarda a lista carregada e a rolagem (sessionStorage) e restaura ao voltar. Só no navegador; o HTML do servidor não muda.
+if (typeof window !== 'undefined') instalarRastreadorVoltar();
+const useIsoLayoutEffect = typeof window !== 'undefined' ? useLayoutEffect : useEffect;
+const SALVAR_A_CADA_MS = 400;
 
 const STATUS_OPTIONS = [
   { value: 'all', label: 'Todos' },
@@ -228,6 +237,14 @@ export default function FeedClient({ initialItems, initialNextCursor, initialHas
   const [autoLoads, setAutoLoads] = useState(0); // lotes trazidos AUTOMATICAMENTE ao rolar (o clique em «Ver mais» não conta)
   const reqId = useRef(0);
   const sentinel = useRef<HTMLDivElement | null>(null);
+  const [restaurando, setRestaurando] = useState(false); // enquanto a lista e a rolagem voltam: o carregamento automático espera
+  const restaurandoRef = useRef(false);
+  const congelado = useRef(false);                        // depois do clique que sai da página, não grava mais (o Next zera a rolagem)
+  const timerSalvar = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const filtrosDaLista = useRef<Filtros>({ status: 'all', category: 'all', region: 'todas', geo: null }); // filtros que geraram a lista na tela
+  const marcos = useRef<Marco[]>([{ n: initialItems.length, cursor: initialNextCursor, temMais: initialHasMore }]);
+  const foto = useRef({ items, nextCursor, hasMore, autoLoads });
+  foto.current = { items, nextCursor, hasMore, autoLoads };
 
   const reload = useCallback(async (s: string, c: string, r: Region, g: Geo | null) => {
     const id = ++reqId.current;
@@ -236,6 +253,8 @@ export default function FeedClient({ initialItems, initialNextCursor, initialHas
       const data = await fetchFeed(buildQuery(s, c, r, g));
       if (id !== reqId.current) return;
       setItems(data.items); setNextCursor(data.next_cursor); setHasMore(data.has_more); setAutoLoads(0); // troca única: a lista recomeça
+      filtrosDaLista.current = { status: s, category: c, region: r, geo: g };
+      marcos.current = [{ n: data.items.length, cursor: data.next_cursor, temMais: data.has_more }];
     } catch {
       if (id === reqId.current) setFailed(true); // mantém o que já está na tela
     } finally {
@@ -245,6 +264,97 @@ export default function FeedClient({ initialItems, initialNextCursor, initialHas
 
   // Abertura. NÃO há detecção de localização ao carregar: ela só roda quando a pessoa escolhe «Perto de mim» ou «Só a minha cidade».
   useEffect(() => { feedEvents.aberto(feedOrigin()); }, []);
+
+  // ---- Voltar do navegador: restaurar a lista e a rolagem ----
+  // Restaura só em «voltar/avançar» e só com estado guardado válido (versão, idade, página, filtros). Abertura normal, link novo, F5 e nova aba
+  // começam do zero (e descartam o estado antigo). Nenhuma API é chamada: os cards e o cursor vêm do sessionStorage.
+  const scrollAlvo = useRef(0);
+  const scrollAntes = useRef<ScrollRestoration | null>(null);
+  const restauradoUmaVez = useRef(false);
+  useIsoLayoutEffect(() => {
+    if (restauradoUmaVez.current) return;
+    restauradoUmaVez.current = true;
+    const primeira = registrarMontagem();
+    const voltou = deveRestaurar({ tipoNavegacao: tipoNavegacao(), primeiraMontagem: primeira, voltouAgora: consumirVoltou(Date.now()) });
+    const storage = obterStorage();
+    if (!voltou) { descartarEstado(storage); return; }
+    const est = lerEstado(storage, { agora: Date.now(), pagina: page, regioes: regions });
+    if (!est) return;
+    const itens = est.itens.map(expandir);
+    restaurandoRef.current = true; scrollAlvo.current = est.scrollY;
+    try { scrollAntes.current = window.history.scrollRestoration; window.history.scrollRestoration = 'manual'; } catch { /* sem problema */ }
+    filtrosDaLista.current = est.filtros;
+    marcos.current = [{ n: itens.length, cursor: est.cursor, temMais: est.temMais }];
+    setItems(itens); setNextCursor(est.cursor); setHasMore(est.temMais); setAutoLoads(est.autoLotes);
+    setStatus(est.filtros.status); setCategory(est.filtros.category); setRegion(est.filtros.region); setGeo(est.filtros.geo);
+    setRestaurando(true);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+  // devolve o valor original de history.scrollRestoration ao sair da página
+  useEffect(() => () => { try { if (scrollAntes.current) window.history.scrollRestoration = scrollAntes.current; } catch { /* sem problema */ } }, []);
+
+  // Rolagem: espera a lista voltar a ser desenhada (requestAnimationFrame) e confere; qualquer toque/roda/tecla da pessoa cancela.
+  useEffect(() => {
+    if (!restaurando) return;
+    let cancelado = false, frames = 0, raf = 0;
+    const fim = () => {
+      if (cancelado) return; cancelado = true; cancelAnimationFrame(raf);
+      window.removeEventListener('touchstart', fim); window.removeEventListener('wheel', fim); window.removeEventListener('keydown', fim);
+      restaurandoRef.current = false; setRestaurando(false);
+      feedEvents.estadoRestaurado(foto.current.items.length);
+    };
+    const tentar = () => {
+      if (cancelado) return;
+      const alvo = scrollAlvo.current;
+      window.scrollTo({ top: alvo, left: 0, behavior: 'instant' as ScrollBehavior });
+      frames++;
+      const maximo = document.documentElement.scrollHeight - window.innerHeight;
+      if (Math.abs(window.scrollY - alvo) <= 2 || (alvo > maximo && window.scrollY >= maximo - 2) || frames >= 20) { fim(); return; }
+      raf = requestAnimationFrame(tentar);
+    };
+    window.addEventListener('touchstart', fim, { passive: true }); window.addEventListener('wheel', fim, { passive: true }); window.addEventListener('keydown', fim);
+    raf = requestAnimationFrame(tentar);
+    return () => { cancelado = true; cancelAnimationFrame(raf); window.removeEventListener('touchstart', fim); window.removeEventListener('wheel', fim); window.removeEventListener('keydown', fim); };
+  }, [restaurando]);
+
+  // ---- Guardar a posição: durante a rolagem (a cada 400 ms), ao carregar mais, ao esconder/sair da página e no clique que sai do Feed ----
+  const salvar = useCallback(() => {
+    if (restaurandoRef.current || congelado.current) return;
+    const f = foto.current;
+    const corte = escolherCorte(f.items, marcos.current, { cursor: f.nextCursor, temMais: f.hasMore }, ESTADO_MAX_CARDS);
+    if (!corte) return;
+    salvarEstado(obterStorage(), criarEstado({
+      agora: Date.now(), pagina: page, itens: corte.itens, cursor: corte.cursor, temMais: corte.temMais,
+      autoLotes: f.autoLoads, filtros: filtrosDaLista.current, scrollY: window.scrollY,
+    }));
+  }, [page]);
+  const agendarSalvar = useCallback(() => {
+    if (timerSalvar.current) return;
+    timerSalvar.current = setTimeout(() => { timerSalvar.current = null; salvar(); }, SALVAR_A_CADA_MS);
+  }, [salvar]);
+  useEffect(() => {
+    let liberar: ReturnType<typeof setTimeout> | null = null;
+    const aoClicar = (e: MouseEvent) => {
+      const a = (e.target as Element | null)?.closest?.('a[href]') as HTMLAnchorElement | null;
+      if (!a) return;
+      salvar(); // guarda ANTES de o Next trocar de página (e zerar a rolagem)
+      const href = a.getAttribute('href') ?? '';
+      const sai = href.startsWith('/') && !href.startsWith('/feed') && a.target !== '_blank' && !a.hasAttribute('download') && !e.metaKey && !e.ctrlKey && !e.shiftKey;
+      if (sai) { congelado.current = true; if (liberar) clearTimeout(liberar); liberar = setTimeout(() => { congelado.current = false; }, 2500); }
+    };
+    const aoEsconder = () => { if (document.visibilityState === 'hidden') salvar(); };
+    document.addEventListener('click', aoClicar);
+    document.addEventListener('visibilitychange', aoEsconder);
+    window.addEventListener('pagehide', salvar);
+    window.addEventListener('scroll', agendarSalvar, { passive: true });
+    return () => {
+      document.removeEventListener('click', aoClicar); document.removeEventListener('visibilitychange', aoEsconder);
+      window.removeEventListener('pagehide', salvar); window.removeEventListener('scroll', agendarSalvar);
+      if (timerSalvar.current) { clearTimeout(timerSalvar.current); timerSalvar.current = null; }
+      if (liberar) clearTimeout(liberar);
+    };
+  }, [salvar, agendarSalvar]);
+  useEffect(() => { agendarSalvar(); }, [items, autoLoads, agendarSalvar]); // lista nova ou outro lote: grava (com atraso curto)
 
   const apply = (s: string, c: string, r: Region, g: Geo | null = geo) => {
     setStatus(s); setCategory(c); setRegion(r);
@@ -281,8 +391,12 @@ export default function FeedClient({ initialItems, initialNextCursor, initialHas
     try {
       const data = await fetchFeed(buildQuery(status, category, region, geo, nextCursor));
       if (id !== reqId.current) return;
-      setItems((prev) => { const seen = new Set(prev.map((i) => i.code)); return [...prev, ...data.items.filter((i) => !seen.has(i.code))]; });
+      const base = foto.current.items;
+      const seen = new Set(base.map((i) => i.code));
+      const novos = data.items.filter((i) => !seen.has(i.code));
+      setItems([...base, ...novos]);
       setNextCursor(data.next_cursor); setHasMore(data.has_more);
+      marcos.current = [...marcos.current, { n: base.length + novos.length, cursor: data.next_cursor, temMais: data.has_more }];
       if (origem === 'auto') setAutoLoads((n) => n + 1);
     } catch { if (id === reqId.current) setFailed(true); }
     finally { if (id === reqId.current) setLoading(false); }
@@ -293,11 +407,11 @@ export default function FeedClient({ initialItems, initialNextCursor, initialHas
   const autoParou = !podeCarregarAutomatico(autoLoads);
   useEffect(() => {
     const el = sentinel.current;
-    if (!el || !hasMore || autoParou || typeof IntersectionObserver === 'undefined') return;
+    if (!el || !hasMore || autoParou || restaurando || typeof IntersectionObserver === 'undefined') return;
     const io = new IntersectionObserver((e) => { if (e[0].isIntersecting) void loadMore('auto'); }, { rootMargin: '400px' });
     io.observe(el);
     return () => io.disconnect();
-  }, [hasMore, autoParou, loadMore]);
+  }, [hasMore, autoParou, restaurando, loadMore]);
 
   return (
     <div>
