@@ -298,7 +298,7 @@ export default function BikeFlowClient() {
               >
                 Publicar alerta agora <ArrowRight className="w-5 h-5" />
               </button>
-              <p className="text-center text-white/30 text-xs">Gratuito. Seu contato não fica exposto publicamente.</p>
+              <p className="text-center text-white/30 text-xs">Gratuito. Publique seu alerta agora.</p>
               <button
                 onClick={() => {
                   const text = `🚲 ${step1.event === 'roubada' ? 'Roubaram' : 'Perdi'} minha bike${step1.what ? ` — ${step1.what}` : ''}${step1.where ? ` em ${step1.where}` : ''}. Alguém viu? backfindr.com/flow/bike`;
