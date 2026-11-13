@@ -1,7 +1,7 @@
 export const dynamic = 'force-dynamic';
 import { NextRequest } from 'next/server';
 import { query } from '@/lib/db';
-import { successResponse, notFoundResponse, internalErrorResponse } from '@/lib/response';
+import { successResponse, notFoundResponse, conflictResponse, internalErrorResponse } from '@/lib/response';
 import { sendPushToUser, scanPayload } from '@/lib/pushNotification';
 import { sendObjectFoundEmail } from '@/lib/email';
 import { Events, recordEvent } from '@/lib/events';
@@ -30,7 +30,7 @@ export async function POST(
   try {
     // Buscar objeto pelo QR code — incluindo status para distinguir protected
     const objectResult = await query(
-      `SELECT o.id, o.user_id, o.title, o.status, o.category,
+      `SELECT o.id, o.user_id, o.title, o.status, o.category, o.source,
               (o.is_legacy IS TRUE OR COALESCE(u.is_legacy, false) IS TRUE) AS legacy_blocked
          FROM objects o LEFT JOIN users u ON u.id = o.user_id
         WHERE o.qr_code = $1`,
@@ -41,7 +41,15 @@ export async function POST(
       return notFoundResponse();
     }
 
-    const object = objectResult.rows[0] as { id: string; user_id: string | null; title: string; status: string; category: string; legacy_blocked: boolean };
+    const object = objectResult.rows[0] as { id: string; user_id: string | null; title: string; status: string; category: string; source?: string | null; legacy_blocked: boolean };
+
+    // SINAL PÚBLICO (extraído de notícia/canal institucional; critério `source = 'public_signal'`, o mesmo do Feed e da página do objeto):
+    // não há dono cadastrado (o «dono» é a conta interna do sistema), então ninguém receberia este aviso. Recusa ANTES de gravar qualquer coisa:
+    // sem notificação, sem e-mail, sem push, sem evento de dono notificado e sem marcar «achado pendente de confirmação».
+    // Objetos de usuário e do legado seguem exatamente como antes.
+    if (object.source === 'public_signal') {
+      return conflictResponse('Este registro foi extraído de uma notícia pública e não tem dono cadastrado no Backfindr. Para tentar contato, procure a fonte original.');
+    }
 
     // Cooldown — se o dono já foi notificado recentemente sobre este
     // objeto, não repete. `owner_notified` é o mesmo evento gravado mais

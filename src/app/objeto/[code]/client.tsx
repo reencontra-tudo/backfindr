@@ -10,6 +10,8 @@ import { RegisteredObject } from '@/types';
 import RecoveredCelebration from '@/components/RecoveredCelebration';
 import ObjectThumb from '@/components/ObjectThumb';
 import { APP_URL } from '@/lib/constants';
+import type { SignalSource } from '@/lib/feed/signalSource';
+import { SinalPublicoAcao, SinalPublicoBanner } from './SinalPublico';
 
 const CATEGORY_EMOJI: Record<string, string> = {
   phone: '📱', wallet: '👛', keys: '🔑', bag: '🎒', pet: '🐾',
@@ -161,7 +163,9 @@ function ShareButtons({ url, title, objectId, objectCode }: { url: string; title
   );
 }
 
-export default function PublicObjectClient({ obj }: { obj: RegisteredObject }) {
+export default function PublicObjectClient({ obj, signalSource = null }: { obj: RegisteredObject; signalSource?: SignalSource | null }) {
+  // SINAL PÚBLICO (mesmo critério do Feed e da API): sem dono cadastrado, a tela não oferece «Avisar o dono». Usuário e legado: tela de sempre.
+  const isSignal = obj.source === 'public_signal';
   const [sent, setSent] = useState(false);
   const [loading, setLoading] = useState(false);
   const { open: openLightbox, close: closeLightbox, lightbox } = useLightbox();
@@ -278,6 +282,7 @@ export default function PublicObjectClient({ obj }: { obj: RegisteredObject }) {
         ) : (
           <>
             {/* ── Banner de instrução ── */}
+            {isSignal ? <SinalPublicoBanner source={signalSource} /> : (
             <div className="bg-teal-500/[0.08] border border-teal-500/[0.18] rounded-2xl px-5 py-4 mb-6 flex items-start gap-3">
               <div className="w-8 h-8 rounded-lg bg-teal-500/20 flex items-center justify-center flex-shrink-0 mt-0.5">
                 <Shield className="w-4 h-4 text-teal-400" />
@@ -296,6 +301,7 @@ export default function PublicObjectClient({ obj }: { obj: RegisteredObject }) {
                 </p>
               </div>
             </div>
+            )}
 
             {/* ── Card do objeto ── */}
             <div className="bg-white/[0.03] border border-white/[0.07] rounded-2xl overflow-hidden mb-6">
@@ -365,6 +371,8 @@ export default function PublicObjectClient({ obj }: { obj: RegisteredObject }) {
                   </div>
                 )}
 
+                {isSignal ? <SinalPublicoAcao source={signalSource} status={obj.status} category={obj.category} /> : (
+                <>
                 {/* ── Botão principal ──
                     data-widget-safe-zone: mesmo mecanismo já usado em
                     scan/[code]/client.tsx (ver AssistantWidget.tsx:742) — sem
@@ -390,6 +398,8 @@ export default function PublicObjectClient({ obj }: { obj: RegisteredObject }) {
                     O dono recebe um aviso.
                   </p>
                 </div>
+                </>
+                )}
               </div>
             </div>
 
