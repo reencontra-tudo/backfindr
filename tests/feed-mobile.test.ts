@@ -21,7 +21,7 @@ const mk = (o: Partial<FeedItem>): FeedItem => ({
   created_at: '2026-11-10T10:00:00.000Z', source_url: null, source_name: null, can_report_found: true, ...o,
 });
 const COM_FOTO = mk({});
-const SEM_FOTO = mk({ code: 'T0000002', title: 'Carteira de identidade', category: 'document', has_photo: false, photo_url: null, status: 'found', status_label: 'Achado' });
+const SEM_FOTO = mk({ code: 'T0000002', title: 'Carteira de identidade', category: 'document', has_photo: false, photo_url: null, status: 'lost', status_label: 'Perdido' }); // usuário + perdido: o único caso em que «Informar que encontrei» aparece
 const SINAL = mk({ code: 'T0000003', origin: 'sinal_publico', can_report_found: false, has_photo: false, photo_url: null });
 const lista = (n: number) => Array.from({ length: n }, (_, i) => mk({ code: `T00000${i + 1}0`, title: `Ocorrência ${i + 1}`, has_photo: i % 2 === 0, photo_url: i % 2 === 0 ? 'https://pub-test.r2.dev/a.jpg' : null }));
 const render = (items: FeedItem[], page = 1) => clean(renderToString(React.createElement(FeedClient, { initialItems: items, initialNextCursor: null, initialHasMore: false, page, regions: ['SP'] })));

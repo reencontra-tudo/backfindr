@@ -18,7 +18,7 @@ const mk = (o: Partial<FeedItem>): FeedItem => ({
   created_at: '2026-11-10T10:00:00.000Z', source_url: null, source_name: null, can_report_found: true, ...o,
 });
 const COM_FOTO = mk({});
-const SEM_FOTO = mk({ code: 'T0000002', title: 'Carteira de identidade', category: 'document', has_photo: false, photo_url: null, status: 'found', status_label: 'Achado' });
+const SEM_FOTO = mk({ code: 'T0000002', title: 'Carteira de identidade', category: 'document', has_photo: false, photo_url: null, status: 'lost', status_label: 'Perdido' }); // usuário + perdido: o único caso em que «Informar que encontrei» aparece
 const SINAL = mk({ code: 'T0000003', origin: 'sinal_publico', can_report_found: false, has_photo: false, photo_url: null, source_url: 'https://g1.globo.com/x', source_name: 'g1.globo.com' });
 
 // O React separa textos vizinhos com «<!-- -->» no HTML do servidor; o navegador junta de novo. Tira para comparar o texto.
@@ -129,7 +129,7 @@ describe('card sem foto (compacto)', () => {
     expect(a.indexOf('h-9 w-9')).toBeLessThan(a.indexOf('<h2'));         // ao lado (antes) do título
   });
   it('mesmos dados e mesmas ações do card com foto', () => {
-    for (const t of ['Carteira de identidade', 'Achado', 'Documento', 'Boa Viagem, Recife - PE', 'Registrado', 'Ver detalhes', 'Compartilhar', 'Informar que encontrei'])
+    for (const t of ['Carteira de identidade', 'Perdido', 'Documento', 'Boa Viagem, Recife - PE', 'Registrado', 'Ver detalhes', 'Compartilhar', 'Informar que encontrei'])
       expect(a, t).toContain(t);
     expect(a).toContain('href="/objeto/T0000002"');
   });

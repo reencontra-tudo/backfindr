@@ -26,7 +26,7 @@ export function feedOrigin(): string {
   } catch { return 'direto'; }
 }
 
-export type FeedCtaPosicao = 'topo' | 'fixo' | 'cabecalho';
+export type FeedCtaPosicao = 'topo' | 'fixo' | 'cabecalho' | 'fim';
 
 // Cliques nos acessos ao cadastro (sem dado pessoal): `origem` = como a pessoa chegou (igual ao feed_aberto),
 // `posicao` = onde na página clicou, `pagina` = número da página do Feed.
