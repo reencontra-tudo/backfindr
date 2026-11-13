@@ -17,14 +17,25 @@ export const CTA_ROUTES = {
 const linkBase = 'inline-flex min-h-[44px] items-center justify-center rounded-xl px-4 text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-offset-0';
 
 /** Dois botões do topo, lado a lado. */
-export function IntroButtons({ pagina }: { pagina: number }) {
+export function IntroButtons({ pagina, posicao = 'topo', compacto = false }: { pagina: number; posicao?: FeedCtaPosicao; compacto?: boolean }) {
+  // compacto (convite do fim): largura natural, à esquerda (nunca chega à área do botão de chat) e empilhados abaixo de 360 px
   return (
-    <div className="mt-3 grid grid-cols-2 gap-2">
-      <Link href={CTA_ROUTES.perdi} prefetch={false} onClick={() => feedEvents.ctaPerdi('topo', pagina)}
+    <div className={compacto ? 'mt-3 flex flex-col items-start gap-2 min-[360px]:flex-row min-[360px]:flex-wrap' : 'mt-3 grid grid-cols-2 gap-2'}>
+      <Link href={CTA_ROUTES.perdi} prefetch={false} onClick={() => feedEvents.ctaPerdi(posicao, pagina)}
         className={`${linkBase} bg-amber-300 text-[#1a1203] hover:bg-amber-200 focus:ring-amber-100`}>Perdi algo</Link>
-      <Link href={CTA_ROUTES.encontrei} prefetch={false} onClick={() => feedEvents.ctaEncontrei('topo', pagina)}
+      <Link href={CTA_ROUTES.encontrei} prefetch={false} onClick={() => feedEvents.ctaEncontrei(posicao, pagina)}
         className={`${linkBase} bg-teal-500 text-[#04110f] hover:bg-teal-400 focus:ring-teal-200`}>Encontrei algo</Link>
     </div>
+  );
+}
+
+/** Convite do fim da lista (depois do 3º lote automático, abaixo do «Ver mais», e quando não há mais cards). Mesmos botões, rotas e eventos do topo. */
+export function ConviteFim({ pagina }: { pagina: number }) {
+  return (
+    <aside aria-label="Convite para cadastrar" className="mt-8 rounded-xl bg-white/[0.05] p-4" data-feed-convite>
+      <h2 className="text-base font-semibold text-white">Não encontrou o que procurava?</h2>
+      <IntroButtons pagina={pagina} posicao="fim" compacto />
+    </aside>
   );
 }
 
