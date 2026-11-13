@@ -55,7 +55,7 @@ export default function WalletFlowClient() {
                 <span className="text-orange-400 text-xs font-medium">Aja rápido — carteiras são encontradas</span>
               </div>
               <h1 className="text-2xl font-bold text-white leading-tight mb-2">👛 Perdeu a carteira?<br />Alguém pode ter.</h1>
-              <p className="text-white/40 text-sm leading-relaxed">Registre agora. Quem encontrou pode te devolver — com segurança e sem expor seu número.</p>
+              <p className="text-white/40 text-sm leading-relaxed">Registre agora. Quem encontrou pode te devolver.</p>
             </div>
             <form onSubmit={handleStep1Submit} className="space-y-4">
               {/* Tem documentos? */}
