@@ -53,9 +53,11 @@ const CATEGORY_ICON: Record<FeedCategoryKey, LucideIcon> = {
 
 const selectCls = 'min-h-[44px] w-full rounded-xl border border-white/25 bg-[#10151c] px-3 text-sm text-white focus:outline-none focus:ring-2 focus:ring-teal-400 disabled:opacity-60';
 const actionCls = 'inline-flex min-h-[44px] items-center justify-center gap-2 rounded-xl border border-white/25 px-4 text-sm font-medium text-white hover:bg-white/10 focus:outline-none focus:ring-2 focus:ring-teal-400';
-// Ações do card: «Ver detalhes» é a principal; as outras são discretas (sem borda), todas na MESMA linha
-const primaryActionCls = 'inline-flex min-h-[44px] shrink-0 items-center justify-center rounded-xl bg-teal-500 px-4 text-sm font-semibold text-[#04110f] hover:bg-teal-400 focus:outline-none focus:ring-2 focus:ring-teal-200';
-const quietActionCls = 'inline-flex min-h-[44px] min-w-0 items-center justify-center gap-1.5 rounded-xl px-2 text-center text-xs font-medium leading-tight text-white/85 hover:bg-white/10 focus:outline-none focus:ring-2 focus:ring-teal-400';
+// Ações do card (celular): 2 linhas. 1ª: «Ver detalhes» (principal) + «Compartilhar»; 2ª: «Informar que encontrei» sozinha, sem quebrar o texto.
+// Tudo alinhado à esquerda e com largura natural: as ações nunca chegam à área do botão de chat (canto inferior direito).
+// O ícone de «Compartilhar» tem tamanho fixo (antes encolhia a um ponto). Só classes: a estrutura do HTML é a mesma.
+const primaryActionCls = 'inline-flex min-h-[44px] shrink-0 items-center justify-center whitespace-nowrap rounded-xl bg-teal-500 px-3.5 text-sm font-semibold text-[#04110f] hover:bg-teal-400 focus:outline-none focus:ring-2 focus:ring-teal-200 max-[359px]:px-2.5';
+const quietActionCls = 'inline-flex min-h-[44px] items-center justify-center gap-1.5 whitespace-nowrap rounded-xl px-2.5 text-center text-[13px] font-medium leading-tight text-white/85 hover:bg-white/10 focus:outline-none focus:ring-2 focus:ring-teal-400 max-[359px]:gap-1 max-[359px]:px-1.5 max-[359px]:text-xs [&>svg]:h-[18px] [&>svg]:w-[18px] [&>svg]:shrink-0';
 
 function buildQuery(status: string, category: string, region: Region, geo: Geo | null, cursor?: string | null) {
   const q = new URLSearchParams();
@@ -130,15 +132,15 @@ function FeedCard({ item, index }: { item: FeedItem; index: number }) {
           )}
         </p>
       )}
-      <div className="mt-3 flex items-stretch gap-1.5">
+      <div className={`mt-3 grid grid-cols-[auto_auto] items-center justify-start gap-x-1 gap-y-0.5 sm:flex sm:flex-wrap sm:gap-1.5 ${withPhoto ? '' : '-ml-12 sm:ml-0'}`}>
         <Link href={href} prefetch={false} aria-label={`Ver detalhes: ${item.title}`} className={primaryActionCls}
           onClick={() => feedEvents.cardAberto(item.origin)}>Ver detalhes</Link>
-        <span className="flex min-w-0 flex-1" onClickCapture={() => feedEvents.compartilhar(item.origin)}>
+        <span className="flex min-w-0" onClickCapture={() => feedEvents.compartilhar(item.origin)}>
           <ShareModal url={`${APP_URL}${href}`} title={item.title} description={`${item.status_label} · ${item.location_label}`}
-            buttonLabel="Compartilhar" buttonClassName={`${quietActionCls} w-full`} />
+            buttonLabel="Compartilhar" buttonClassName={quietActionCls} />
         </span>
         {item.can_report_found && (
-          <Link href="/achei?ref=feed" prefetch={false} className={`${quietActionCls} flex-1 text-teal-100`}
+          <Link href="/achei?ref=feed" prefetch={false} className={`${quietActionCls} col-span-2 justify-self-start text-teal-100 sm:col-auto`}
             onClick={() => feedEvents.informarEncontreiClique()}>Informar que encontrei</Link>
         )}
       </div>
