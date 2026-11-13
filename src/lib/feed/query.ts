@@ -51,7 +51,7 @@ export function toPublicItem(r: FeedRow): FeedItem {
   };
 }
 
-function sourceName(url: string | null): string | null {
+export function sourceName(url: string | null): string | null {
   if (!url) return null;
   try {
     const h = new URL(url).hostname.replace(/^www\./, '');
