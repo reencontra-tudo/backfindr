@@ -53,7 +53,7 @@ export default function KeysFlowClient() {
                 <span className="text-amber-400 text-xs font-medium">Não entre em pânico — cadastre agora</span>
               </div>
               <h1 className="text-2xl font-bold text-white leading-tight mb-2">🔑 Perdeu as chaves?<br />Alguém pode ter.</h1>
-              <p className="text-white/40 text-sm leading-relaxed">Registre em 30 segundos. Quem achar pode te devolver com segurança.</p>
+              <p className="text-white/40 text-sm leading-relaxed">Registre em 30 segundos. Quem achar pode te devolver.</p>
             </div>
             <form onSubmit={handleStep1Submit} className="space-y-4">
               <div>
@@ -126,7 +126,7 @@ export default function KeysFlowClient() {
             <div className="mb-7">
               <div className="inline-flex items-center gap-2 bg-teal-500/10 border border-teal-500/20 rounded-full px-3 py-1 mb-4"><CheckCircle2 className="w-3.5 h-3.5 text-teal-400" /><span className="text-teal-400 text-xs font-medium">Quase lá</span></div>
               <h2 className="text-2xl font-bold text-white leading-tight mb-2">Publique o alerta.</h2>
-              <p className="text-white/40 text-sm leading-relaxed">Conta gratuita em segundos. Quem achar suas chaves pode te devolver com segurança pelo chat.</p>
+              <p className="text-white/40 text-sm leading-relaxed">Conta gratuita em segundos. Quem achar suas chaves pode te devolver pelo chat.</p>
             </div>
             <div className="bg-white/[0.03] border border-white/[0.06] rounded-2xl p-4 mb-6 space-y-2">
               <div className="flex items-center gap-2 text-sm"><span className="text-white/40 w-20 flex-shrink-0">Categoria:</span><span className="text-white font-medium">🔑 Chaves</span></div>
