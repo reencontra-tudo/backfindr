@@ -68,6 +68,14 @@ const CARREGAMENTOS_AUTOMATICOS = LOTES_AUTOMATICOS - 1;
 /** Ainda pode carregar sozinho ao rolar? `lotesAutomaticos` = lotes que vieram sozinhos até agora (o do HTML não conta; o clique em «Ver mais» também não). */
 export const podeCarregarAutomatico = (lotesAutomaticos: number) => lotesAutomaticos < CARREGAMENTOS_AUTOMATICOS;
 
+// Faixa de situações (Todos / Perdidos / Achados / Roubados): rola na horizontal quando não cabe. Só classes (sem mudar o HTML).
+// Fundo da página: #080b0f. Camadas: 2 «tampas» do fundo (acompanham a rolagem, attachment local) por cima de 2 sombras fixas nas bordas;
+// no começo/fim da rolagem a tampa cobre a sombra daquele lado, então a sombra só aparece do lado em que ainda há mais itens.
+const faixaCls = 'flex gap-1.5 overflow-x-auto pb-1 bg-no-repeat '
+  + '[background-image:linear-gradient(to_right,#080b0f,rgba(8,11,15,0)),linear-gradient(to_left,#080b0f,rgba(8,11,15,0)),linear-gradient(to_right,rgba(255,255,255,0.28),rgba(255,255,255,0)),linear-gradient(to_left,rgba(255,255,255,0.28),rgba(255,255,255,0))] '
+  + '[background-position:left_center,right_center,left_center,right_center] [background-size:28px_100%,28px_100%,20px_100%,20px_100%] '
+  + '[background-attachment:local,local,scroll,scroll]';
+
 const selectCls = 'min-h-[44px] w-full rounded-xl border border-white/25 bg-[#10151c] px-3 text-sm text-white focus:outline-none focus:ring-2 focus:ring-teal-400 disabled:opacity-60';
 const actionCls = 'inline-flex min-h-[44px] items-center justify-center gap-2 rounded-xl border border-white/25 px-4 text-sm font-medium text-white hover:bg-white/10 focus:outline-none focus:ring-2 focus:ring-teal-400';
 // Ações do card (celular): 2 linhas. 1ª: «Ver detalhes» (principal) + «Compartilhar»; 2ª: «Informar que encontrei» sozinha, sem quebrar o texto.
@@ -416,11 +424,11 @@ export default function FeedClient({ initialItems, initialNextCursor, initialHas
   return (
     <div>
       <div className="grid gap-3" role="group" aria-label="Filtros do Feed">
-        <div className="flex gap-2 overflow-x-auto pb-1" role="group" aria-label="Situação">
+        <div className={faixaCls} role="group" aria-label="Situação">
           {STATUS_OPTIONS.map((o) => (
             <button key={o.value} type="button" aria-pressed={status === o.value}
               onClick={() => { if (status !== o.value) { feedEvents.filtroAplicado('situacao', o.value); apply(o.value, category, region); } }}
-              className={`min-h-[44px] shrink-0 rounded-full border px-4 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-teal-400 ${status === o.value ? 'border-teal-400 bg-teal-500/25 text-white' : 'border-white/25 text-white/85 hover:bg-white/10'}`}>
+              className={`min-h-[44px] shrink-0 rounded-full border px-3 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-teal-400 ${status === o.value ? 'border-teal-400 bg-teal-500/25 text-white' : 'border-white/25 text-white/85 hover:bg-white/10'}`}>
               {o.label}
             </button>
           ))}
