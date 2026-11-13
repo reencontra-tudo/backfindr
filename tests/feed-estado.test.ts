@@ -84,6 +84,13 @@ describe('validar: versão, idade, página, formato, filtros', () => {
     expect(validarEstado({ ...base, itens: [{ ...it0, photo_url: 'javascript:alert(1)' }] }, ctx)).toBeNull();
     expect(validarEstado({ ...base, itens: [{ ...it0, source_url: 'data:text/html,x' }] }, ctx)).toBeNull();
   });
+  it('códigos REAIS de produção (UUID + número = 50 caracteres) são aceitos; lixo gigante continua recusado', () => {
+    const longo = (i: number) => compactar(mk(i, { code: `9d653f41-5baf-415a-8cde-be34e91c95c8-17760284648${String(i).padStart(2, '0')}` }));
+    const itens = [...lista(30).map(compactar), longo(31), longo(32), longo(33)];
+    expect(itens[30].code.length).toBe(50);
+    expect(validarEstado(estado({ itens }), ctx)).not.toBeNull();
+    expect(validarEstado(estado({ itens: [{ ...itens[0], code: 'x'.repeat(500) }] }), ctx)).toBeNull();
+  });
   it('cursor, rolagem e lotes: tipos e limites', () => {
     expect(validarEstado(estado({ temMais: true, cursor: null }), ctx)).toBeNull();       // «tem mais» sem cursor não se sustenta
     expect(validarEstado(estado({ temMais: false, cursor: null }), ctx)).not.toBeNull();
