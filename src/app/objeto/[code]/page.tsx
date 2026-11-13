@@ -3,6 +3,7 @@ import { notFound } from 'next/navigation';
 import PublicObjectClient from './client';
 import { APP_URL } from '@/lib/constants';
 import { maskObjectForPublicPage } from '@/lib/objectPublicView';
+import { getSignalSource } from '@/lib/feed/signalSource';
 
 async function getObject(code: string) {
   try {
@@ -99,13 +100,15 @@ export default async function PublicObjectPage({ params }: { params: { code: str
   const obj = await getObject(params.code);
   if (!obj) notFound();
   const jsonLd = buildJsonLd(obj);
+  // Só SINAL PÚBLICO ganha a fonte (para a tela «extraído de notícia pública»). Objeto de usuário e do legado: nada muda (nem a prop).
+  const signalProps = obj.source === 'public_signal' ? { signalSource: await getSignalSource(String(obj.id)) } : {};
   return (
     <>
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
       />
-      <PublicObjectClient obj={obj} />
+      <PublicObjectClient obj={obj} {...signalProps} />
     </>
   );
 }
