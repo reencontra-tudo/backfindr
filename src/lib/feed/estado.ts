@@ -36,6 +36,7 @@ type StorageLike = Pick<Storage, 'getItem' | 'setItem' | 'removeItem'>;
 
 const STATUS: FeedStatus[] = ['lost', 'found', 'stolen'];
 const SITUACOES = ['all', 'lost', 'found', 'stolen'];
+// Limites só para recusar lixo/corrupção; folgados de propósito (em produção o `code` chega a 50 caracteres: UUID + número).
 const isStr = (v: unknown, max = 600): v is string => typeof v === 'string' && v.length <= max;
 const isStrOuNulo = (v: unknown, max = 600): v is string | null => v === null || isStr(v, max);
 const isHttp = (v: unknown): v is string => isStr(v, 2000) && /^https?:\/\//i.test(v);
@@ -84,7 +85,7 @@ export function criarEstado(a: {
 function itemValido(x: unknown): x is ItemSalvo {
   if (!x || typeof x !== 'object') return false;
   const i = x as Record<string, unknown>;
-  return isStr(i.code, 40) && i.code.length > 0 && isStr(i.title) && STATUS.includes(i.status as FeedStatus) && isStr(i.status_label, 40)
+  return isStr(i.code, 120) && i.code.length > 0 && isStr(i.title) && STATUS.includes(i.status as FeedStatus) && isStr(i.status_label, 40)
     && isCategoria(i.category) && (i.origin === 'usuario' || i.origin === 'sinal_publico') && isStr(i.location_label) && isStr(i.created_at, 40)
     && (i.photo_url === null || isHttp(i.photo_url)) && (i.source_url === null || isHttp(i.source_url)) && isStrOuNulo(i.source_name, 120)
     && typeof i.can_report_found === 'boolean';
