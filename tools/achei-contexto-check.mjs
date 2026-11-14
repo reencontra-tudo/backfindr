@@ -15,11 +15,12 @@ const ok = (n, c, x = '') => { if (!c) fails++; console.log(`${c ? 'PASS' : 'FAI
 const b = await chromium.launch();
 const CONFIG = "window._POSTHOG_REMOTE_CONFIG=window._POSTHOG_REMOTE_CONFIG||{};window._POSTHOG_REMOTE_CONFIG['phc_local_test_not_real']={config:{token:'phc_local_test_not_real',supportedCompression:['gzip-js','base64']},siteApps:[]};";
 
-async function abrir(W) {
+async function abrir(W, vis) {
   const mobile = W < 1000;
   const ctx = await b.newContext({ viewport: { width: W, height: mobile ? 844 : 800 }, deviceScaleFactor: 1, isMobile: mobile, hasTouch: mobile, userAgent: mobile ? UA_M : UA_D });
   const st = { eventos: [], ctxReqs: [] };
   await ctx.addInitScript(() => { Object.defineProperty(navigator, 'webdriver', { get: () => false }); Object.defineProperty(navigator, 'userAgentData', { get: () => ({ brands: [{ brand: 'Chromium', version: '124' }], mobile: true, platform: 'iOS' }) }); });
+  if (vis === 'grade') await ctx.addInitScript(() => { try { localStorage.setItem('feed-visualizacao-v1', 'grade'); } catch { /* sem problema */ } });
   await ctx.route('http://localhost:3199/**', async (route) => {
     const req = route.request(); const u = req.url();
     if (/\/array\/[^/]+\/config\.js/.test(u)) return route.fulfill({ status: 200, contentType: 'application/javascript', body: CONFIG });
@@ -37,12 +38,12 @@ async function abrir(W) {
 const banner = (p) => p.locator('[data-achei-contexto]');
 
 for (const W of [390, 1280]) {
-  const L = `[${W}]`;
-  // 1) do Feed: toca em «Informar que encontrei» de um perdido de usuário
-  { const { ctx, p, st } = await abrir(W); await p.goto(`${BASE}/feed`); await p.waitForSelector('main article'); await p.waitForTimeout(1500);
-    const alvo = await p.evaluate(() => { const a = [...document.querySelectorAll('main article')].find((x) => x.dataset.origin === 'usuario' && [...x.querySelectorAll('a')].some((l) => /Informar que encontrei/.test(l.textContent))); const t = a.querySelector('h2').textContent.trim(); const l = [...a.querySelectorAll('a')].find((x) => /Informar que encontrei/.test(x.textContent)); return { code: a.querySelector('a[href^="/objeto/"]').getAttribute('href').split('/').pop(), titulo: t, href: l.getAttribute('href') }; });
+  const L0 = `[${W}]`;
+  // 1) do Feed (nas duas visualizações): toca em «Informar que encontrei» / «Encontrei» de um perdido de usuário
+  for (const vis of ['publicacoes', 'grade']) { const L = `[${W} ${vis}]`; const { ctx, p, st } = await abrir(W, vis); await p.goto(`${BASE}/feed`); await p.waitForSelector('main article'); await p.waitForTimeout(1500);
+    const alvo = await p.evaluate(() => { const a = [...document.querySelectorAll('main article')].find((x) => x.dataset.origin === 'usuario' && [...x.querySelectorAll('a')].some((l) => /Informar que encontrei/.test(l.textContent + ' ' + (l.getAttribute('aria-label') || '')))); const t = a.querySelector('h2').textContent.trim(); const l = [...a.querySelectorAll('a')].find((x) => /Informar que encontrei/.test(x.textContent + ' ' + (x.getAttribute('aria-label') || ''))); return { code: a.querySelector('a[href^="/objeto/"]').getAttribute('href').split('/').pop(), titulo: t, href: l.getAttribute('href') }; });
     ok(`${L} o botão do card leva a /achei?ref=feed&de=<código>`, alvo.href === `/achei?ref=feed&de=${alvo.code}`, alvo.href);
-    await p.locator(`main article:has(a[href="/objeto/${alvo.code}"]) a:has-text("Informar que encontrei")`).first().click(); await p.waitForURL(/\/achei/, { timeout: 20000 });
+    await p.locator(`main article:has(a[href="/objeto/${alvo.code}"]) a[href^="/achei"]`).first().click(); await p.waitForURL(/\/achei/, { timeout: 20000 });
     await banner(p).waitFor({ timeout: 15000 });
     const txt = (await banner(p).textContent()).replace(/\s+/g, ' ');
     ok(`${L} aviso «Você está informando sobre: <título>» + categoria`, txt.includes('Você está informando sobre: ' + alvo.titulo) && /Chaves|Relógio|Celular|Pet|Carteira|Bicicleta|Documento|Outros|Joia|Bolsa|Eletrônico|Veículo|Roupa/.test(txt), txt);
@@ -62,6 +63,7 @@ for (const W of [390, 1280]) {
     ok(`${L} evento achei_contexto_exibido (1x) só com categoria e situação — sem título nem código`, ev.length === 1 && JSON.stringify(chaves) === JSON.stringify(['categoria', 'situacao']) && !JSON.stringify(Object.fromEntries(Object.entries(props).filter(([k]) => !k.startsWith('$')))).includes(alvo.titulo) && !JSON.stringify(Object.fromEntries(Object.entries(props).filter(([k]) => !k.startsWith('$')))).includes(alvo.code), `${chaves.join(',')} (o PostHog acrescenta sozinho a URL da página em $current_url, como em todo evento)`);
     ok(`${L} evento feed_informar_encontrei_clique continua`, st.eventos.some((e) => e.event === 'feed_informar_encontrei_clique'));
     await ctx.close(); }
+  const L = L0;
   // 2) /achei normal: idêntico a hoje (sem aviso, sem busca preenchida, sem pedido de contexto)
   for (const [nome, qs] of [['normal', ''], ['?ref=feed sem «de»', '?ref=feed'], ['«de» vazio', '?ref=feed&de='], ['«de» com marcação', '?ref=feed&de=%3Cscript%3Ealert(1)%3C%2Fscript%3E'], ['«de» longo demais', '?ref=feed&de=' + 'A'.repeat(300)], ['«de» repetido', '?de=USR00002&de=USR00004']]) {
     const { ctx, p, st } = await abrir(W); await p.goto(`${BASE}/achei${qs}`); await p.waitForSelector('h1'); await p.waitForTimeout(2000);

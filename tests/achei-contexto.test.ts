@@ -14,6 +14,7 @@ import { NextRequest } from 'next/server';
 const TEST_DB = process.env.TEST_DATABASE_URL;
 if (TEST_DB) process.env.DATABASE_URL = TEST_DB;
 
+import FeedClient from '@/app/feed/FeedClient';
 import { acheiHref, cadastroHref, lerDe, lerDeDaUrl, palavrasDoTitulo, validarContexto } from '@/lib/feed/contexto';
 import { LIMITE_POR_MINUTO } from '@/lib/feed/limite';
 import { FEED_ELIGIBILITY_WHERE } from '@/lib/feed/query';
@@ -53,9 +54,18 @@ describe('links', () => {
     expect(href).not.toMatch(/[ "<>]/);                                                   // nada cru na URL
     expect(cadastroHref({ titulo: 'x'.repeat(500), categoria: 'pet' }).length).toBeLessThan(260);
   });
+  it('nas duas visualizações o botão do card leva o código (Publicações «Informar que encontrei», Grade «Encontrei»)', () => {
+    const item = { code: 'T0000009', title: 'Carteira marrom', status: 'lost', status_label: 'Perdido', category: 'wallet', category_label: 'Carteira', origin: 'usuario', location_label: 'Recife - PE', has_photo: false, photo_url: null, created_at: '2026-11-10T10:00:00.000Z', source_url: null, source_name: null, can_report_found: true };
+    for (const vis of ['publicacoes', 'grade'] as const) {
+      const h = renderToString(React.createElement(FeedClient, { initialItems: [item as never], initialNextCursor: null, initialHasMore: false, page: 1, regions: [], visInicial: vis })).replace(/<!-- -->/g, '');
+      expect(h, vis).toContain('href="/achei?ref=feed&amp;de=T0000009"');
+      expect(h, vis).not.toContain('href="/achei?ref=feed"');
+    }
+  });
   it('o botão do card usa o link novo; «Informar que encontrei» continua só em perdido de usuário', () => {
     const c = read('src/app/feed/FeedClient.tsx');
-    expect(c).toContain('href={acheiHref(item.code)}'); expect(c).not.toContain('"/achei?ref=feed"');
+    expect((c.match(/href=\{acheiHref\(item\.code\)\}/g) ?? []).length).toBe(2);   // Publicações e Grade
+    expect(c).not.toContain('"/achei?ref=feed"');                                       // nenhum link sem o código do card
     expect(c).toContain("item.can_report_found && item.status === 'lost'");
     expect(c).toContain('feedEvents.informarEncontreiClique()');
   });

@@ -46,6 +46,8 @@ export const feedEvents = {
   informarEncontreiClique: () => send('feed_informar_encontrei_clique', { origem_item: 'usuario' }),
   /** A lista e a rolagem voltaram ao usar o botão «voltar» do navegador. Só a quantidade de cards (sem dado pessoal). */
   estadoRestaurado: (cards: number) => send('feed_state_restored', { cards }),
+  /** A pessoa trocou entre «Publicações» e «Grade». Só o nome da visualização (sem dado pessoal). */
+  visualizacaoAlterada: (visualizacao: 'publicacoes' | 'grade') => send('feed_visualizacao_alterada', { visualizacao }),
 };
 
 /** /achei: o aviso «Você está informando sobre…» foi exibido. Só categoria e situação (sem título, sem código, sem dado pessoal). */

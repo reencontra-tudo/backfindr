@@ -26,19 +26,18 @@ const SINAL = mk({ code: 'T0000003', origin: 'sinal_publico', can_report_found: 
 const lista = (n: number) => Array.from({ length: n }, (_, i) => mk({ code: `T00000${i + 1}0`, title: `Ocorrência ${i + 1}`, has_photo: i % 2 === 0, photo_url: i % 2 === 0 ? 'https://pub-test.r2.dev/a.jpg' : null }));
 const render = (items: FeedItem[], page = 1) => clean(renderToString(React.createElement(FeedClient, { initialItems: items, initialNextCursor: null, initialHasMore: false, page, regions: ['SP'] })));
 const articles = (html: string) => html.split('<article').slice(1).map((a) => '<article' + a.split('</article>')[0]);
-const acoesDe = (a: string) => a.slice(a.lastIndexOf('<div class="mt-3 grid'));
+const acoesDe = (a: string) => a.slice(a.lastIndexOf('<div class="mt-3 flex flex-wrap'));
 const client = read('src/app/feed/FeedClient.tsx');
 const cta = read('src/app/feed/FeedCta.tsx');
 
-describe('ações dos cards: duas linhas, sem quebra de texto', () => {
+describe('ações dos cards (Publicações): na mesma linha, sem quebra de texto', () => {
   const [cf, sf, sn] = articles(render([COM_FOTO, SEM_FOTO, SINAL]));
-  it('1ª linha: «Ver detalhes» + «Compartilhar»; 2ª linha: «Informar que encontrei» sozinha (ocupa as 2 colunas)', () => {
+  it('«Ver detalhes», «Compartilhar» e «Informar que encontrei» na MESMA linha (só quebram se não couberem): sem linha sozinha', () => {
     for (const a of [cf, sf]) {
       const x = acoesDe(a);
-      expect(x).toContain('grid grid-cols-[auto_auto]');
+      expect(x).toContain('flex flex-wrap'); expect(x).not.toContain('grid-cols'); expect(x).not.toContain('col-span-2');
       expect(x.indexOf('Ver detalhes')).toBeLessThan(x.indexOf('Compartilhar'));
       expect(x.indexOf('Compartilhar')).toBeLessThan(x.indexOf('Informar que encontrei'));
-      expect(x).toMatch(/<a [^>]*class="[^"]*col-span-2[^"]*"[^>]*>Informar que encontrei/);
     }
   });
   it('nenhum texto de botão quebra (whitespace-nowrap) e a altura mínima de toque é 44 px', () => {
@@ -68,9 +67,6 @@ describe('ações dos cards: duas linhas, sem quebra de texto', () => {
   it('largura mínima: abaixo de 360 px usa fonte e espaçamento menores (cabe antes da área do chat)', () => {
     expect(client).toContain('max-[359px]:px-2.5');
     expect(client).toContain('max-[359px]:text-xs');
-  });
-  it('desktop (sm para cima) volta à linha única de antes', () => {
-    expect(acoesDe(cf)).toContain('sm:flex sm:flex-wrap');
   });
   it('card de sinal (sem «Informar que encontrei») continua só com «Ver detalhes» e «Compartilhar»', () => {
     const x = acoesDe(sn);
@@ -112,10 +108,10 @@ describe('bloco explicativo', () => {
 });
 
 describe('botão fixo «+ Cadastrar ocorrência»', () => {
-  it('nasce visível no HTML do servidor (igual para todos) e respeita a área segura do iPhone com folga extra', () => {
+  it('nasce visível no HTML do servidor (igual para todos) e respeita a área segura do iPhone', () => {
     const h = clean(renderToString(React.createElement(RegisterMenu, { variant: 'fixed', pagina: 1 })));
     expect(h).toContain('data-recolhido="false"'); expect(h).toContain('data-sobreposto="false"');
-    expect(h).toContain('bottom-[max(1rem,calc(env(safe-area-inset-bottom)+0.5rem))]');
+    expect(h).toContain('bottom-[max(0.5rem,env(safe-area-inset-bottom))]');   // mais perto da borda, respeitando a área segura do iPhone
     expect(h).toContain('left-4'); expect(h).toContain('sm:hidden');  // canto esquerdo, só no celular (o chat fica à direita)
   });
   it('regra: só fica visível se NÃO cobrir texto nem botão; recolhe enquanto a página se mexe e ao rolar para baixo; topo e fim da página mostram', () => {
@@ -144,7 +140,7 @@ describe('botão fixo «+ Cadastrar ocorrência»', () => {
 describe('espaço no fim da página e o que não mudou', () => {
   it('a página reserva espaço embaixo do último card e do «Ver mais» (pb-32 no celular)', () => {
     const p = read('src/app/feed/[[...slug]]/page.tsx');
-    expect(p).toContain('px-4 py-6 pb-32 sm:pb-6');
+    expect(p).toMatch(/pb-32[^"]*sm:pb-6/);
   });
   it('canonical, robots, cache de 5 min e títulos iguais', () => {
     const p = read('src/app/feed/[[...slug]]/page.tsx');

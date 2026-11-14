@@ -211,7 +211,7 @@ describe.skipIf(!TEST_DB)('Feed com banco real', () => {
     const { default: FeedPage } = await import('@/app/feed/[[...slug]]/page');
     const html = renderToString(await FeedPage({ params: {} }));
     for (const n of NAMES) expect(html).not.toContain(n);
-    expect(html).toContain('Ocorrências recentes');
+    expect(html).toContain('Feed de ocorrências');
     // os sinais com nome são os mais antigos: aparecem na página 2 (links «Ver mais», também sem JavaScript)
     const html2 = renderToString(await FeedPage({ params: { slug: ['pagina', '2'] } }));
     for (const n of NAMES) expect(html2).not.toContain(n);
@@ -222,7 +222,7 @@ describe.skipIf(!TEST_DB)('Feed com banco real', () => {
     const { default: FeedPage } = await import('@/app/feed/[[...slug]]/page');
     const html = renderToString(await FeedPage({ params: {} }));
     expect((html.match(/<article/g) ?? []).length).toBe(q.FEED_PAGE_SIZE);
-    expect(html).toMatch(/<h1[^>]*>Ocorrências recentes<\/h1>/);
+    expect(html).toMatch(/<h1[^>]*>Feed de ocorrências<\/h1>/);
     expect((html.match(/<h1/g) ?? []).length).toBe(1);
     expect(html).toMatch(/href="\/objeto\/USR0000\d"[^>]*>[^<]+<\/a>/); // texto útil = título
     expect(html).toContain('href="/feed/pagina/2"');                    // «Ver mais» real
