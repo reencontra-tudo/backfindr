@@ -219,7 +219,7 @@ function FeedCard({ item, index, vis }: { item: FeedItem; index: number; vis: Vi
           )}
         </p>
       )}
-      {/* Ações na MESMA linha («Informar que encontrei» só quebra se não couber). Abaixo de 440 px «Compartilhar» vira só o ícone (nome acessível mantido) para as três caberem. */}
+      {/* Ações na MESMA linha («Informar que encontrei» só quebra se não couber; fica à ESQUERDA da linha por `order-first`, longe do balão do chat; a ordem no HTML não muda). Abaixo de 440 px «Compartilhar» vira só o ícone (nome acessível mantido) para as três caberem. */}
       <div className={`mt-3 flex flex-wrap items-center justify-start gap-x-1 gap-y-0.5 ${withPhoto ? '' : '-ml-12 sm:ml-0'}`}>
         <Link href={href} prefetch={false} aria-label={`Ver detalhes: ${item.title}`} className={`${primaryActionCls} ${porCima}`}
           onClick={() => feedEvents.cardAberto(item.origin)}>Ver detalhes</Link>
@@ -228,7 +228,7 @@ function FeedCard({ item, index, vis }: { item: FeedItem; index: number; vis: Vi
             buttonLabel="Compartilhar" buttonClassName={`${quietActionCls} ${porCima} max-[439px]:w-11 max-[439px]:gap-0 max-[439px]:!px-0 max-[439px]:text-[0px]`} />
         </span>
         {informar && (
-          <Link href="/achei?ref=feed" prefetch={false} className={`${quietBaseCls} ${porCima} ${T.acao}`}
+          <Link href="/achei?ref=feed" prefetch={false} className={`${quietBaseCls} ${porCima} order-first ${T.acao}`}
             onClick={() => feedEvents.informarEncontreiClique()}>Informar que encontrei</Link>
         )}
       </div>

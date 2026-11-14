@@ -179,6 +179,14 @@ describe('cards da Grade', () => {
     expect(share).toContain('max-[439px]:w-11'); expect(share).toContain('max-[439px]:text-[0px]'); expect(share).toContain('min-h-[44px]');
     expect(p0).toMatch(/Compartilhar<\/button>/);   // o texto continua no HTML (nome acessível)
   });
+  it('Publicações: «Informar que encontrei» fica à ESQUERDA da linha de ações (order-first), sem mudar a ordem no HTML nem ocupar linha sozinho', () => {
+    const p0 = articles(render('publicacoes'))[0];
+    const tag = p0.match(/<a [^>]*href="\/achei\?ref=feed"[^>]*>/)![0];
+    expect(tag).toContain('order-first');
+    const x = p0.slice(p0.lastIndexOf('<div class="mt-3 flex flex-wrap'));
+    expect(x.indexOf('Ver detalhes')).toBeLessThan(x.indexOf('Informar que encontrei'));   // no HTML a ordem de sempre
+    expect(x).not.toContain('grid-cols'); expect(x).not.toContain('col-span-2');
+  });
   it('Publicações: rótulo completo «Informar que encontrei» (visível e acessível), mesma linha das outras ações', () => {
     const p0 = articles(render('publicacoes'))[0];
     expect(p0).toMatch(/href="\/achei\?ref=feed">Informar que encontrei<\/a>/);
@@ -324,7 +332,9 @@ describe('título da página e cabeçalho', () => {
     expect(page).not.toMatch(/Ocorrências recentes<\/h1>/);
     expect(page).toContain('alternates: { canonical: `${APP_URL}/feed` }');
     expect(page).toContain("robots: page === 1 ? { index: true, follow: true } : { index: false, follow: true }");
-    expect(page).toContain("const DESCRIPTION = 'Veja as ocorrências mais recentes de objetos, documentos e pets perdidos, achados ou roubados registradas no Backfindr, e compartilhe para ajudar na devolução.';");
+    expect(page).toContain("const DESCRIPTION = 'Veja ocorrências de objetos, documentos e pets perdidos, achados ou roubados registradas no Backfindr, e compartilhe para ajudar na devolução.';");
+    expect(page).not.toMatch(/const DESCRIPTION = '[^']*(recentes|completa|todas as)/i);   // sem «mais recentes» nem sugestão de lista completa
+    expect(page).toMatch(/\n\s+description: DESCRIPTION,\n\s+alternates/); expect(page).toContain('openGraph: { title: `${TITLE} | Backfindr`, description: DESCRIPTION,');   // meta e og usam a mesma frase
     expect(page).toContain("openGraph: { title: `${TITLE} | Backfindr`");
   });
   it('chamada curta «Perdeu ou encontrou algo?» com «Perdi» e «Encontrei» só na página 1; o caminho «Roubaram algo meu» continua nos menus', async () => {

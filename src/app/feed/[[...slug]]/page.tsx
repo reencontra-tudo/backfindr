@@ -32,7 +32,7 @@ function pageFromSlug(slug?: string[]): number | null {
 }
 
 const TITLE = 'Feed de ocorrências de objetos perdidos e achados'; // o layout já acrescenta «| Backfindr»
-const DESCRIPTION = 'Veja as ocorrências mais recentes de objetos, documentos e pets perdidos, achados ou roubados registradas no Backfindr, e compartilhe para ajudar na devolução.';
+const DESCRIPTION = 'Veja ocorrências de objetos, documentos e pets perdidos, achados ou roubados registradas no Backfindr, e compartilhe para ajudar na devolução.';
 
 export function generateMetadata({ params }: { params: { slug?: string[] } }): Metadata {
   const page = pageFromSlug(params.slug) ?? 1;
