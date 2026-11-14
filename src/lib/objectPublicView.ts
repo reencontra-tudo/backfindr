@@ -42,3 +42,18 @@ export function maskSharedTexts<T extends { title?: string | null; description?:
     location: typeof texts.location === 'string' ? maskPersonNames(texts.location) : texts.location,
   };
 }
+
+/**
+ * SINAL PÚBLICO: a descrição vem da ingestão terminando em «Fonte: <endereço da notícia>». O endereço pode trazer nome de pessoa no próprio
+ * caminho («…documento-em-nome-de-<nome>…»), que a máscara de nomes (feita para texto com espaços) não reconhece. Para o TEXTO VISÍVEL da página,
+ * o endereço sai: quem quer a fonte usa o botão «Ver a notícia original» (com o nome do veículo). Usuário e legado: não use esta função.
+ * Só tira endereços http(s) e o rótulo «Fonte:» que os antecede; o resto da descrição fica como está.
+ */
+export function semEnderecoDeFonte(description: string | null | undefined): string {
+  if (!description) return '';
+  return String(description)
+    .replace(/\s*Fonte:\s*https?:\/\/\S*/gi, '')
+    .replace(/https?:\/\/\S+/gi, '')
+    .replace(/[ \t]{2,}/g, ' ')
+    .trim();
+}
