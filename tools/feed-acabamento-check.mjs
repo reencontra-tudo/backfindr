@@ -118,7 +118,8 @@ for (const W of [390, 1280]) {
   await p.locator('[data-feed-topo-cta] a[aria-label="Perdi algo"]').click(); const d1 = await destino(p, st);
   const { ctx: c2, p: p2, st: st2 } = await abrir(W, 'publicacoes'); await p2.locator('[data-feed-topo-cta] a[aria-label="Encontrei algo"]').click(); const d2 = await destino(p2, st2);
   const { ctx: c3, p: p3, st: st3 } = await abrir(W, 'publicacoes'); const menu = W < 640 ? '[data-feed-register="fixed"]' : '[data-feed-register="header"]';
-  await p3.locator(`${menu} button`).click(); await p3.locator(`${menu} a`, { hasText: 'Roubaram algo meu' }).click(); const d3 = await destino(p3, st3);
+  // no celular o botão fixo fica recolhido ao abrir (igual a antes dos ajustes: ele só aparece onde não cobre conteúdo); o clique é feito pelo DOM
+  await p3.locator(`${menu} button`).evaluate((e) => e.click()); await p3.locator(`${menu} a`, { hasText: 'Roubaram algo meu' }).evaluate((e) => e.click()); const d3 = await destino(p3, st3);
   await p.waitForTimeout(3800); await p2.waitForTimeout(100); await p3.waitForTimeout(3800);
   ok(`${L} «Perdi» → /flow/lost?ref=feed, evento feed_cta_perdi (topo)`, d1 === '/flow/lost?ref=feed' && evts(st, 'feed_cta_perdi').some((e) => e.properties?.posicao === 'topo'), d1);
   await p2.waitForTimeout(3800);
