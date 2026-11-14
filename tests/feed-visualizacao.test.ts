@@ -310,9 +310,9 @@ describe('topo e filtros mais limpos', () => {
     expect(h).toMatch(/<div role="group" aria-label="Visualização" class="flex justify-end gap-1">/);
   });
   it('aviso de recorte: uma linha pequena e cinza com «Ver histórico no mapa» (link /map), perto dos filtros', () => {
-    expect(h).toMatch(/<p class="my-1 text-xs [^"]*">Esta lista é só um recorte recente\. <a [^>]*href="\/map"[^>]*>Ver histórico no mapa<\/a><\/p>/);
-    expect(h.indexOf('Esta lista é só um recorte recente')).toBeGreaterThan(h.indexOf('aria-label="Cidade ou região"'));
-    expect(h.indexOf('Esta lista é só um recorte recente')).toBeLessThan(h.indexOf('<article'));
+    expect(h).toMatch(/<p class="my-1 text-xs [^"]*">Esta lista é só um recorte\. <a [^>]*href="\/map"[^>]*>Ver histórico no mapa<\/a><\/p>/);
+    expect(h.indexOf('Esta lista é só um recorte')).toBeGreaterThan(h.indexOf('aria-label="Cidade ou região"'));
+    expect(h.indexOf('Esta lista é só um recorte')).toBeLessThan(h.indexOf('<article'));
   });
   it('a geolocalização continua só ao escolher «Perto de mim» / «Só a minha cidade» (nada novo no carregamento)', () => {
     const src = read('src/app/feed/FeedClient.tsx');

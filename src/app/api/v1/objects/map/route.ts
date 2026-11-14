@@ -3,6 +3,7 @@
 // Payload ~10x menor que /objects/public. Cache de 2 minutos no Vercel Edge.
 import { NextResponse } from 'next/server';
 import { query } from '@/lib/db';
+import { arredondaCoordenada, ehCadastroDeUsuario } from '@/lib/publicLocation';
 
 export const dynamic = 'force-dynamic';
 
@@ -32,7 +33,9 @@ export async function GET() {
            COALESCE(category, type, 'other') AS category,
            latitude,
            longitude,
-           location
+           location,
+           is_legacy,
+           source
          FROM objects
          WHERE is_public = true
            AND status IN ('lost', 'found', 'stolen')
@@ -87,7 +90,10 @@ export async function GET() {
         title: row.title,
         status: row.status,
         category: row.category || 'other',
-        location: { lat, lng },
+        // Cadastro de usuário: pin com coordenada arredondada (~110 m); legado e sinal: exatamente como estão. O mapa nunca recebe endereço.
+        location: ehCadastroDeUsuario({ is_legacy: row.is_legacy as boolean | null, source: row.source as string | null })
+          ? { lat: arredondaCoordenada(lat), lng: arredondaCoordenada(lng) }
+          : { lat, lng },
       };
     }).filter(Boolean);
 

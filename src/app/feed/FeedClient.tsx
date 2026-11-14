@@ -560,7 +560,7 @@ export default function FeedClient({ initialItems, initialNextCursor, initialHas
         </div>
         {/* Aviso de que a lista é só um recorte (uma linha, pequena e cinza); o link leva ao histórico no mapa */}
         <p className={`my-1 text-xs leading-snug ${T.t3}`}>
-          Esta lista é só um recorte recente.{' '}
+          Esta lista é só um recorte.{' '}
           <Link href="/map" prefetch={false} className="inline py-3.5 font-medium underline underline-offset-2 hover:text-[color:var(--f-t1)]">Ver histórico no mapa</Link>
         </p>
       </div>

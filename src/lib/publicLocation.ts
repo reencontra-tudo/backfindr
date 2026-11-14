@@ -18,9 +18,15 @@ export function enderecoPublico(address: string | null | undefined, origem: Orig
   return maskPersonNames(label) || undefined;
 }
 
-/** Aplica a redução ao objeto `location` ({lat, lng, address}) sem mexer nas coordenadas. */
-export function localizacaoPublica<T extends { address?: string | null } | null | undefined>(loc: T, origem: OrigemDoObjeto): T {
+/** Coordenada para a saída pública: 3 casas decimais (≈110 m). Só cadastro de usuário; o banco e as contas do servidor seguem com o valor original. */
+export const arredondaCoordenada = (v: unknown): unknown => (typeof v === 'number' && Number.isFinite(v) ? Math.round(v * 1000) / 1000 : v);
+
+/** Aplica a redução ao `location` ({lat, lng, address}): endereço só bairro/cidade e coordenada arredondada. Legado e sinal: devolve o mesmo objeto. */
+export function localizacaoPublica<T extends { address?: string | null; lat?: unknown; lng?: unknown } | null | undefined>(loc: T, origem: OrigemDoObjeto): T {
   if (!loc || typeof loc !== 'object' || !ehCadastroDeUsuario(origem)) return loc;
   const reduzido = enderecoPublico(typeof loc.address === 'string' ? loc.address : undefined, origem);
-  return { ...loc, address: reduzido } as T;
+  const out: Record<string, unknown> = { ...loc, address: reduzido };
+  if ('lat' in loc) out.lat = arredondaCoordenada(loc.lat);
+  if ('lng' in loc) out.lng = arredondaCoordenada(loc.lng);
+  return out as T;
 }

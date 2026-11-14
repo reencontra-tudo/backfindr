@@ -2,6 +2,7 @@
 // (só o nome do veículo e o botão «Ver a notícia original»). SEO (meta, JSON-LD), APIs e Feed ficam como estavam. Usuário e legado: idênticos.
 // Os nomes usados aqui são inventados.
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { localizacaoPublica } from '@/lib/publicLocation';
 import React from 'react';
 import { readFileSync } from 'fs';
 import path from 'path';
@@ -138,8 +139,8 @@ describe('SEO (meta e JSON-LD) de sinal público sem o endereço da fonte; usuá
     it(`${nome}: tela idêntica à de antes (a descrição mantém o endereço que a pessoa escreveu)`, async () => {
       const o = objApi({ title: 'Mochila azul', status: 'lost', category: 'bag', ...extra });
       const h = await pagina(o, null);
-      const direto = txt(renderToString(React.createElement(PublicObjectClient, { obj: maskObjectForPublicPage(o) as unknown as RegisteredObject })));
-      // a página renderiza o MESMO que o componente recebendo o objeto sem alteração (menos o que a página acrescenta: script JSON-LD)
+      const direto = txt(renderToString(React.createElement(PublicObjectClient, { obj: { ...maskObjectForPublicPage(o), location: localizacaoPublica(o.location as { address?: string }, { is_legacy: o.is_legacy as boolean | undefined, source: o.source as string | null }) } as unknown as RegisteredObject })));
+      // a página renderiza o MESMO que o componente recebendo o objeto (menos o que a página acrescenta: script JSON-LD); o endereço de cadastro de usuário sai reduzido (#116), legado intacto
       expect(h.replace(/<script type="application\/ld\+json">[\s\S]*?<\/script>/g, '')).toBe(direto);
       expect(visivel(h)).toMatch(/https?:\/\//); expect(visivel(h)).toContain('Avisar o dono que encontrei');
     });

@@ -85,7 +85,7 @@ function ShareButtons({ url, title, objectId, objectCode }: { url: string; title
   };
 
   const downloadPoster = (format: 'square' | 'vertical' | 'a4') => {
-    const posterUrl = `/api/v1/objects/${objectId}/poster?format=${format}`;
+    const posterUrl = `/api/v1/objects/${objectId}/poster?format=${format}&publico=1`;
     const link = document.createElement('a');
     link.href = posterUrl;
     link.download = `cartaz-${objectCode}-${format}.png`;
@@ -246,8 +246,8 @@ export default function PublicObjectClient({ obj, signalSource = null }: { obj: 
                     <div className="w-px flex-1 bg-white/[0.06] mt-1" />
                   </div>
                   <div className="pb-4">
-                    <p className="text-white text-sm font-semibold">Dono recebe notificação agora</p>
-                    <p className="text-white/40 text-xs mt-0.5 leading-relaxed">Por push ou e-mail, conforme as configurações dele.</p>
+                    <p className="text-white text-sm font-semibold">Seu aviso fica registrado</p>
+                    <p className="text-white/40 text-xs mt-0.5 leading-relaxed">O aviso é gravado nesta ocorrência.</p>
                   </div>
                 </div>
                 <div className="flex gap-3">
@@ -256,8 +256,8 @@ export default function PublicObjectClient({ obj, signalSource = null }: { obj: 
                     <div className="w-px flex-1 bg-white/[0.06] mt-1" />
                   </div>
                   <div className="pb-4">
-                    <p className="text-white/70 text-sm font-semibold">Dono entra em contato</p>
-                    <p className="text-white/40 text-xs mt-0.5 leading-relaxed">A conversa acontece pelo chat da plataforma.</p>
+                    <p className="text-white/70 text-sm font-semibold">O dono pode ser avisado</p>
+                    <p className="text-white/40 text-xs mt-0.5 leading-relaxed">Push e e-mail saem só quando o dono não é legado, conforme as configurações dele. Não há garantia de resposta.</p>
                   </div>
                 </div>
                 <div className="flex gap-3">
@@ -394,8 +394,7 @@ export default function PublicObjectClient({ obj, signalSource = null }: { obj: 
                 <div className="flex items-start gap-2.5 mt-4 bg-white/[0.02] rounded-xl p-3">
                   <Shield className="w-4 h-4 text-teal-400/60 flex-shrink-0 mt-0.5" />
                   <p className="text-white/45 text-xs leading-relaxed">
-                    <span className="text-white/70 font-medium">A conversa acontece pelo chat da plataforma.</span>{' '}
-                    O dono recebe um aviso.
+                    <span className="text-white/70 font-medium">Seu aviso fica registrado nesta ocorrência.</span>
                   </p>
                 </div>
                 </>

@@ -3,6 +3,7 @@ import { NextRequest } from 'next/server';
 import { query } from '@/lib/db';
 import { buildPosterData } from '@/lib/posterFormatter';
 import { maskSharedTexts } from '@/lib/objectPublicView';
+import { enderecoPublico, ehCadastroDeUsuario, arredondaCoordenada } from '@/lib/publicLocation';
 import sharp from 'sharp';
 
 export const runtime = 'nodejs';
@@ -135,7 +136,7 @@ export async function GET(
 
     const result = await query(
       `SELECT
-        o.id, o.title, o.description, o.status, o.category, o.qr_code, o.images, o.source,
+        o.id, o.title, o.description, o.status, o.category, o.qr_code, o.images, o.source, o.is_legacy,
         o.location, o.latitude, o.longitude, o.reward_amount, o.created_at,
         CASE
           WHEN b.id IS NOT NULL AND b.status = 'active' AND b.expires_at > NOW()
@@ -155,7 +156,7 @@ export async function GET(
     const obj = result.rows[0] as {
       id: string; title: string; description: string | null;
       status: string; category: string; qr_code: string;
-      images: unknown; location: unknown; source: string | null;
+      images: unknown; location: unknown; source: string | null; is_legacy?: boolean | null;
       latitude: unknown; longitude: unknown;
       reward_amount: number | null; created_at: string;
       has_active_boost: boolean;
@@ -166,19 +167,30 @@ export async function GET(
     // Sinal público: nome de pessoa mascarado ANTES de virar imagem (usuário e legado passam sem alteração).
     const shown = maskSharedTexts(obj.source, { title: obj.title, description: obj.description, location: obj.location });
 
+    // IMAGEM DE PRÉ-VISUALIZAÇÃO PÚBLICA (?publico=1 — usada pela página /objeto para og:image e compartilhamento): cadastro de usuário
+    // sai só com «bairro, cidade - UF» e o mapa usa a coordenada arredondada. SEM este parâmetro (cartaz que o dono baixa e imprime) nada muda.
+    const publico = url.searchParams.get('publico') === '1' && ehCadastroDeUsuario({ is_legacy: obj.is_legacy, source: obj.source });
+    let localizacao: unknown = shown.location;
+    if (publico) {
+      let end: string | undefined;
+      try { const j = typeof obj.location === 'string' ? JSON.parse(obj.location) : obj.location; end = (j && typeof j === 'object') ? (j as { address?: string }).address : String(obj.location); } catch { end = String(obj.location ?? ''); }
+      localizacao = enderecoPublico(end, { is_legacy: false, source: obj.source }) ?? '';
+    }
+
     const pd = buildPosterData({
       title:       shown.title ?? obj.title,
       description: shown.description ?? null,
       category:    obj.category,
       status:      obj.status,
       created_at:  obj.created_at,
-      location:    shown.location,
+      location:    localizacao,
       reward:      obj.reward_amount,
       qr_code:     obj.qr_code,
       photo_url:   normalizeImages(obj.images)[0] ?? null,
     }, appUrl);
 
-    const coords = extractLatLng(obj.location, obj.latitude, obj.longitude);
+    const coordsExatas = extractLatLng(obj.location, obj.latitude, obj.longitude);
+    const coords = publico && coordsExatas ? { lat: arredondaCoordenada(coordsExatas.lat) as number, lng: arredondaCoordenada(coordsExatas.lng) as number } : coordsExatas;
 
     const qrSmall = 160; // QR menor — elemento funcional, não estrela
     const qrApiUrl = `https://api.qrserver.com/v1/create-qr-code/?size=${qrSmall}x${qrSmall}&data=${encodeURIComponent(pd.qrUrl)}&bgcolor=ffffff&color=0d1117&margin=6`;

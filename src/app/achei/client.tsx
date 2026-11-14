@@ -222,6 +222,8 @@ function AcheiInner() {
                             {item.location.address}
                           </p>
                         )}
+                        {/* «É este» e «Ver detalhes» lado a lado, alinhados ao centro, com folga de 12 px; se não couber (390 px), o link desce para a linha de baixo, à esquerda */}
+                        <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
                         {/* «É este»: só com contexto do card e só em ocorrência de usuário, perdida, pública e não legada */}
                         {codigoDe && (() => {
                           const cod = codigoSelecionavel(item);
@@ -229,7 +231,7 @@ function AcheiInner() {
                           const marcado = cod === codigoDe;
                           return (
                             <button type="button" aria-pressed={marcado} data-achei-selecionar={cod} onClick={() => { void selecionar(cod); }}
-                              className={`mb-2 inline-flex min-h-[44px] items-center gap-1.5 rounded-xl border px-3 text-xs font-semibold transition-colors ${marcado ? 'border-teal-400 bg-teal-500/20 text-teal-200' : 'border-white/20 text-white/80 hover:bg-white/10'}`}>
+                              className={`inline-flex min-h-[44px] items-center gap-1.5 rounded-xl border px-3 text-xs font-semibold transition-colors ${marcado ? 'border-teal-400 bg-teal-500/20 text-teal-200' : 'border-white/20 text-white/80 hover:bg-white/10'}`}>
                               {marcado ? <><Check className="h-4 w-4" aria-hidden />Selecionado</> : 'É este'}
                             </button>
                           );
@@ -238,11 +240,12 @@ function AcheiInner() {
                         {(item.unique_code ?? item.code) && (
                           <Link
                             href={`/objeto/${encodeURIComponent((item.unique_code ?? item.code) as string)}`}
-                            className="inline-flex items-center gap-1 text-xs text-teal-400 hover:text-teal-300 font-semibold transition-colors"
+                            className="inline-flex min-h-[44px] items-center gap-1 text-xs text-teal-400 hover:text-teal-300 font-semibold transition-colors"
                           >
                             Ver detalhes <ArrowRight className="w-3 h-3" />
                           </Link>
                         )}
+                        </div>
                       </div>
                     </div>
                   ))}

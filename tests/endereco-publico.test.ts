@@ -57,10 +57,11 @@ describe('função: «bairro, cidade - UF» só para usuário', () => {
     }
     expect(ehCadastroDeUsuario({ is_legacy: true })).toBe(false); expect(ehCadastroDeUsuario({ source: 'public_signal' })).toBe(false); expect(ehCadastroDeUsuario({ is_legacy: false, source: null })).toBe(true);
   });
-  it('as coordenadas não mudam e o objeto de entrada não é alterado', () => {
-    const entrada = { lat: -23.45, lng: -46.52, address: RUA };
+  it('coordenada pública com 3 casas só no usuário; legado/sinal intactos; o objeto de entrada não é alterado', () => {
+    const entrada = { lat: -23.4567891, lng: -46.5234567, address: RUA };
     const saida = localizacaoPublica(entrada, { source: null });
-    expect(saida).toEqual({ lat: -23.45, lng: -46.52, address: 'Vila Modelo, Guarulhos - SP' }); expect(entrada.address).toBe(RUA);
+    expect(saida).toEqual({ lat: -23.457, lng: -46.523, address: 'Vila Modelo, Guarulhos - SP' });   // coordenada pública: 3 casas (~110 m)
+    expect(entrada.lat).toBe(-23.4567891); expect(entrada.address).toBe(RUA);
     expect(localizacaoPublica(null, { source: null })).toBeNull();
     expect(localizacaoPublica(entrada, { is_legacy: true })).toBe(entrada);              // legado: a mesma referência
   });
@@ -114,7 +115,7 @@ describe('/api/v1/objects/scan/[code] (QR, página do objeto, mapa, metadados)',
   });
   it('a página do objeto, o mapa e a página de QR só repassam o endereço que vem desta rota (metadados e JSON-LD saem reduzidos)', () => {
     const p = read('src/app/objeto/[code]/page.tsx');
-    expect(p).toContain('/api/v1/objects/scan/${code}'); expect(p).toContain('obj.location?.address'); expect(p).not.toMatch(/location_addr|row\.location/);
+    expect(p).toContain('/api/v1/objects/scan/${code}'); expect(p).toContain('obj.location?.address'); expect(p).toContain('localizacaoPublica'); expect(p).not.toMatch(/location_addr|row\.location/);
     expect(read('src/app/scan/[code]/page.tsx')).toContain('/api/v1/objects/scan/${code}');
   });
 });
@@ -143,11 +144,10 @@ describe('o DONO continua vendo o endereço completo (rotas e telas dele)', () =
   });
 });
 
-describe('cartazes e posts sociais NÃO foram alterados', () => {
+describe('cartaz NÃO foi alterado (o dono decide o que imprime)', () => {
   it('não usam a redução pública (continuam com o que usavam)', () => {
-    for (const f of ['src/lib/posterFormatter.ts', 'src/lib/socialPost.ts', 'src/app/api/v1/objects/[id]/poster/route.tsx']) expect(read(f), f).not.toMatch(/publicLocation|enderecoPublico|localizacaoPublica/);
+    expect(read('src/lib/posterFormatter.ts')).not.toMatch(/publicLocation|enderecoPublico|localizacaoPublica/);   // a prévia pública (?publico=1) é testada em cartaz-previa-publica.test.ts
     expect(read('src/lib/posterFormatter.ts')).toContain('const locationShort = clip(locationFull, 60)');
-    expect(read('src/lib/socialPost.ts')).toContain("const location = obj.location?.address ?? '';");
   });
 });
 
@@ -174,5 +174,100 @@ describe('Feed: frase do bloco depois do 3º card', () => {
     expect(f).not.toContain('Os registros mais recentes de objetos');
     expect(f).toContain('<Link href="/map" prefetch={false} className={linkCls}>Ver no mapa</Link>');
     expect(f).toContain('Ver histórico no mapa');
+  });
+});
+
+
+// ─── Fechamento do #116: o caso que escapou (cadastro real em /objeto) e as demais saídas públicas ─────────────────────────────────────────────
+const COMPLETO = { id: 'u9', unique_code: 'YFNMFR2O', title: 'Mochila vermelha', description: 'Mochila vermelha tipo saco.', status: 'lost', category: 'bag', photos: [],
+  is_legacy: false, source: 'user', location: { lat: -23.4567891, lng: -46.5234567, address: RUA }, created_at: '2026-11-10T10:00:00Z', updated_at: '2026-11-10T10:00:00Z' };
+import * as ReactNS from 'react';
+(globalThis as { React?: unknown }).React = ReactNS;
+const comApi = async <T,>(payload: unknown, fn: () => Promise<T>): Promise<T> => {
+  const antes = globalThis.fetch;
+  globalThis.fetch = (async () => new Response(JSON.stringify(payload), { status: 200 })) as typeof fetch;
+  try { return await fn(); } finally { globalThis.fetch = antes; }
+};
+describe('/objeto e /scan: a PÁGINA reduz mesmo quando a API que ela consulta devolve o endereço completo (o caso real que escapou na prévia)', () => {
+  it('título/descrição, Open Graph, JSON-LD e o objeto passado à tela saem só com «bairro, cidade - UF» e coordenada de 3 casas', async () => {
+    const mod = await import('@/app/objeto/[code]/page');
+    const meta = await comApi(COMPLETO, () => mod.generateMetadata({ params: { code: 'YFNMFR2O' } }));
+    expect(JSON.stringify(meta)).toContain('Vila Modelo, Guarulhos - SP'); expect(JSON.stringify(meta)).not.toMatch(/Palmeiras|1224|07040/);
+    const el = await comApi({ success: true, data: COMPLETO }, () => mod.default({ params: { code: 'YFNMFR2O' } })) as { props: { children: { props: Record<string, unknown> }[] } };
+    const [script, tela] = el.props.children as unknown as { props: Record<string, any> }[];
+    const saida = JSON.stringify(script.props.dangerouslySetInnerHTML) + JSON.stringify(tela.props.obj);
+    expect(saida).not.toMatch(/Palmeiras|1224|07040|-23\.4567891|-46\.5234567/); expect(saida).toContain('Vila Modelo, Guarulhos - SP'); expect(saida).toContain('-23.457');
+  });
+  it('legado e sinal público: a página entrega exatamente o que a API devolveu', async () => {
+    const mod = await import('@/app/objeto/[code]/page');
+    const leg = { ...COMPLETO, is_legacy: true, source: 'webjetos' };
+    const el = await comApi(leg, () => mod.default({ params: { code: 'X' } })) as { props: { children: { props: Record<string, any> }[] } };
+    expect(el.props.children[1].props.obj.location).toEqual(leg.location);
+  });
+  it('/scan/[code] tem a mesma defesa', async () => {
+    const mod = await import('@/app/scan/[code]/page');
+    const meta = await comApi(COMPLETO, () => mod.generateMetadata({ params: { code: 'YFNMFR2O' } }));
+    expect(JSON.stringify(meta)).not.toMatch(/Palmeiras|1224|07040/);
+  });
+});
+
+describe('coordenada pública (3 casas) só no cadastro de usuário; o servidor segue com o valor original', () => {
+  it('/api/v1/objects/public: usuário com 3 casas; legado e sinal como estão; a ORDEM e os ids são os mesmos de antes do arredondamento', async () => {
+    const lat = (o: Record<string, unknown>, k: string, n: number) => ({ ...o, latitude: k, longitude: String(n) });
+    st.rows = [lat(USUARIO, '-23.4567891', -46.5234567), lat(LEGADO, '-23.4567891', -46.5234567), lat(SINAL, '-23.4567891', -46.5234567)];
+    const j = await call('size=50&status=all');
+    const por = (id: string) => j.items.find((i: { id: string }) => i.id === id);
+    expect(por('u1').location.lat).toBe(-23.457); expect(por('u1').location.lng).toBe(-46.523);
+    expect(por('l1').location.lat).toBe(-23.4567891); expect(por('s1').location.lng).toBe(-46.5234567);
+    const ids = j.items.map((i: { id: string }) => i.id);
+    vi.resetModules(); vi.doMock('@/lib/publicLocation', async (orig) => ({ ...(await orig() as object), localizacaoPublica: (l: unknown) => l }));
+    const base = await (await import('@/app/api/v1/objects/public/route')).GET(new NextRequest('http://localhost/api/v1/objects/public?size=50&status=all'));
+    vi.doUnmock('@/lib/publicLocation'); vi.resetModules();
+    expect((await base.json()).items.map((i: { id: string }) => i.id)).toEqual(ids);
+  });
+  it('mapa: pins de usuário com 3 casas e sem endereço; legado/sinal exatos; a consulta traz is_legacy e source', async () => {
+    const src = read('src/app/api/v1/objects/map/route.ts');
+    expect(src).toMatch(/is_legacy,\s*source/); expect(src).toContain('arredondaCoordenada');
+    st.rows = [{ id: 'm1', title: 'a', status: 'lost', category: 'bag', latitude: '-23.4567891', longitude: '-46.5234567', location: RUA, is_legacy: false, source: 'user' },
+      { id: 'm2', title: 'b', status: 'lost', category: 'bag', latitude: '-23.4567891', longitude: '-46.5234567', location: RUA, is_legacy: true, source: 'webjetos' }];
+    const { GET } = await import('@/app/api/v1/objects/map/route');
+    const j = await (await GET()).json();
+    expect(j.items.find((i: { id: string }) => i.id === 'm1').location).toEqual({ lat: -23.457, lng: -46.523 });
+    expect(j.items.find((i: { id: string }) => i.id === 'm2').location).toEqual({ lat: -23.4567891, lng: -46.5234567 });
+    expect(JSON.stringify(j)).not.toMatch(/Palmeiras|1224|07040/);
+  });
+});
+
+describe('post social: o texto que será publicado leva só «bairro, cidade - UF»', () => {
+  it('buildPostText reduz o endereço do usuário; sem endereço fica «Localização não informada»', async () => {
+    const { buildPostText } = await import('@/lib/socialPost');
+    const o = { id: 'u1', title: 'Mochila', status: 'lost', category: 'bag', unique_code: 'YFNMFR2O', location: { address: RUA } } as never;
+    const t = buildPostText(o, '📍 {location}\n{url}', 'https://x.test');
+    expect(t).toContain('Vila Modelo, Guarulhos - SP'); expect(t).not.toMatch(/Palmeiras|1224|07040/);
+    expect(buildPostText({ ...(o as object), location: { address: 'Rua Sem Cidade 10' } } as never, '📍 {location}', 'https://x.test')).toContain('Localização não informada');
+  });
+});
+
+describe('«Ver detalhes» em /buscar, aviso do Feed, layout do /achei e texto do /objeto', () => {
+  it('/buscar: «É o meu?» usa unique_code (a rota pública devolve unique_code, não code)', () => {
+    const c = read('src/app/buscar/client.tsx'); expect(c).toContain('item.unique_code ?? item.code'); expect(c).not.toContain('href={item.code ?');
+  });
+  it('Feed: aviso sem «recente» e com o link do histórico no mapa', () => {
+    const c = read('src/app/feed/FeedClient.tsx'); expect(c).toContain('Esta lista é só um recorte.'); expect(c).not.toContain('recorte recente'); expect(c).toContain('Ver histórico no mapa');
+  });
+  it('/achei: «É este» e «Ver detalhes» na mesma linha, centralizados, folga de 12 px, quebra à esquerda; toque de 44 px', () => {
+    const c = read('src/app/achei/client.tsx');
+    expect(c).toContain('flex flex-wrap items-center gap-x-3 gap-y-1'); expect(c).not.toContain('mb-2 inline-flex min-h-[44px]');
+    expect(c).toMatch(/inline-flex min-h-\[44px\] items-center gap-1 text-xs text-teal-400/);
+  });
+  it('tela de aviso enviado (/objeto e /scan): sem «chat da plataforma» nem promessa de resposta; texto fiel ao que acontece', () => {
+    for (const f of ['src/app/objeto/[code]/client.tsx', 'src/app/scan/[code]/client.tsx']) {
+      const c = read(f); expect(c, f).not.toContain('A conversa acontece pelo chat da plataforma'); expect(c, f).not.toContain('Dono entra em contato');
+      expect(c, f).toContain('Seu aviso fica registrado'); expect(c, f).toContain('Push e e-mail saem só quando o dono não é legado'); expect(c, f).toContain('Não há garantia de resposta');
+    }
+  });
+  it('/objeto (usuário): sem «chat da plataforma»/«o dono recebe um aviso» junto ao botão; texto fiel; sinal público sem o bloco', () => {
+    const c = read('src/app/objeto/[code]/client.tsx');
+    expect(c).toContain('Seu aviso fica registrado nesta ocorrência.'); expect(c).not.toContain('O dono recebe um aviso'); expect(c).not.toMatch(/<span[^>]*>A conversa acontece pelo chat da plataforma\.<\/span>/);
   });
 });

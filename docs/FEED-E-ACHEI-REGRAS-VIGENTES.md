@@ -41,15 +41,16 @@ Tudo abaixo está em produção (Feed novo: #113, `46311e6`; contexto no `/achei
 Nenhum texto promete contato protegido, SMS, chat protegido, resposta da fonte, aviso ao dono, gratuidade fora do que já é dito nos fluxos, nem limite de objetos. Nada de dado novo no banco para o Feed e o `/achei`. O card de teste `2HE93T6N` não foi tocado: o Marcos decide o que fazer com ele.
 
 ## Endereço nas saídas públicas
-- Cadastros de **usuário** saem nas telas e APIs públicas só como «bairro, cidade - UF» (mesma redução do Feed): lista pública (home, `/buscar`, mapa da home, `/achei`, passo 2 dos fluxos), leitura por código e página `/objeto/[code]` (tela, título, descrição, meta e dados para o Google).
-- **Legado e sinais públicos** saem exatamente como estão. Casamento, pontuação, ordem e ids usam o texto original. O dono vê o endereço completo no painel e na edição. As coordenadas não mudam.
-- Cartazes e posts sociais **não** usam essa redução (o cartaz mostra os primeiros 60 caracteres do endereço cadastrado; o post usa o endereço inteiro).
-- **Resultado vazio do `/achei`:** «Crie uma conta gratuita para registrar o que você encontrou.» **«Ver detalhes»** dos resultados usa o código público e leva a `/objeto/<código>`.
+- Cadastros de **usuário** saem nas telas e APIs públicas só como «bairro, cidade - UF» (mesma redução do Feed): lista pública (home, `/buscar`, mapa da home, `/achei`, passo 2 dos fluxos), leitura por código, páginas `/objeto/[code]` e `/scan/[code]` (tela, título, descrição, meta e dados para o Google) e o texto dos posts sociais. As próprias páginas `/objeto` e `/scan` fazem a redução, mesmo que a API consultada devolva o endereço completo.
+- A **imagem de pré-visualização** do cartaz (a que aparece ao compartilhar o link e no download de quem visita `/objeto`) mostra só «bairro, cidade - UF». O **cartaz que o dono baixa e imprime não muda**: sai do cadastro (o dono edita o texto na edição do objeto) e é gerado no download.
+- **Coordenadas públicas** de cadastro de usuário têm 3 casas (~110 m) na lista pública, no `/objeto` e no mapa. Casamento, pontuação, ordem, distância, Feed e `/achei` usam sempre a coordenada e o texto originais. Na lista «perto de mim» do mapa (ordenada no navegador), dois cadastros a menos de ~100 m um do outro podem trocar de posição.
+- **Legado e sinais públicos** saem exatamente como estão. O dono vê o endereço completo no painel e na edição.
+- **Resultado vazio do `/achei`:** «Crie uma conta gratuita para registrar o que você encontrou.» **«Ver detalhes»** (`/achei`) e **«É o meu?»** (`/buscar`) usam o código público e levam a `/objeto/<código>`. No `/achei`, «É este» e «Ver detalhes» ficam alinhados com folga de 12 px (se não couber, o link desce para a linha de baixo, à esquerda).
+- **Aviso ao encontrar (`/objeto` e `/scan`):** o aviso fica registrado na ocorrência; push e e-mail saem só quando o dono não é legado; não há promessa de chat nem de resposta.
+- **Feed:** a linha perto dos filtros diz «Esta lista é só um recorte.» com o link «Ver histórico no mapa».
 - **Descrições do legado:** o HTML e o «\n» literal NÃO são limpos (decisão do Marcos): os textos e os dados do legado não são tocados.
 
 ## Pendências a decidir (nenhuma foi iniciada)
-- Endereço nos cartazes e posts sociais (hoje mostram o endereço cadastrado) e arredondar as coordenadas públicas.
-- Link «Ver detalhes» da página `/buscar`: usa o mesmo campo `code`, que a rota não devolve.
 - Ícone de «Compartilhar» fica sob o balão do chat em parte da rolagem (Publicações, 390 px).
 - Balão do assistente em páginas de fundo claro fora do Feed (a classe de fundo não existe).
 - Primeiros 14 cards têm foto; depois, quase só cards sem foto.
