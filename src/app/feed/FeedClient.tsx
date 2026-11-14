@@ -178,7 +178,7 @@ function FeedCard({ item, index, vis }: { item: FeedItem; index: number; vis: Vi
           {isSignal && item.source_name && <p className={`mt-0.5 truncate text-[11px] ${T.t3}`}>Fonte: {item.source_name}</p>}
           {informar && (
             <div className="mt-auto pt-1.5">
-              <Link href="/achei?ref=feed" prefetch={false} className={`${quietBaseCls} w-fit max-w-[4.75rem] !whitespace-normal px-2 text-left !text-[11px] max-[340px]:max-w-[3.9rem] max-[340px]:!px-1 min-[430px]:max-w-[6.5rem] min-[430px]:!text-xs min-[560px]:max-w-none ${T.acao}`}
+              <Link href="/achei?ref=feed" prefetch={false} className={`${quietBaseCls} w-fit max-w-[4.75rem] !whitespace-normal -ml-2 px-2 !text-left !text-[11px] max-[340px]:max-w-[3.9rem] max-[340px]:!px-1 min-[430px]:max-w-[6.5rem] min-[430px]:!text-xs min-[560px]:max-w-none ${T.acao}`}
                 onClick={() => feedEvents.informarEncontreiClique()}>Informar que encontrei</Link>
             </div>
           )}
