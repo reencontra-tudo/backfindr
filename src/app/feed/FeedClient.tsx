@@ -275,7 +275,7 @@ function FeedAbout({ vis }: { vis: Visualizacao }) {
         <p className={`mt-1 text-sm leading-relaxed ${T.t2}`}>
           Pesquise por localização e características e descubra possíveis correspondências entre o que foi perdido e o que foi encontrado.
         </p>
-        <p className={`mt-1 text-xs leading-relaxed ${T.t3}`}>Os registros mais recentes de objetos, documentos e pets perdidos, achados ou roubados.</p>
+        <p className={`mt-1 text-xs leading-relaxed ${T.t3}`}>A lista é um recorte das ocorrências de objetos, documentos e pets perdidos, achados ou roubados; o histórico está no mapa.</p>
         <div className="-ml-3 mt-1 flex flex-wrap items-center">
           <Link href="/buscar" prefetch={false} className={linkCls}>Buscar ocorrências</Link>
           <Link href="/map" prefetch={false} className={linkCls}>Ver no mapa</Link>

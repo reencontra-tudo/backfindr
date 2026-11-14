@@ -4,6 +4,7 @@
 // (sem cores, palavras vazias nem descrições genéricas). Não usa a pontuação nem sinônimos.
 import { query } from '@/lib/db';
 import { maskSignalForPublicApi } from '@/lib/objectPublicView';
+import { enderecoPublico, localizacaoPublica } from '@/lib/publicLocation';
 import { DIAS_REGISTROS_RECENTES, MAX_REGISTROS_RECENTES, temPalavraIdentificadoraEmComum, tituloRecuperado } from './relevance';
 
 type Linha = Record<string, unknown>;
@@ -19,9 +20,10 @@ function fotos(images: unknown): unknown[] {
 function local(row: Linha) {
   const lat = row.latitude ? parseFloat(String(row.latitude)) : null;
   const lng = row.longitude ? parseFloat(String(row.longitude)) : null;
-  if (lat && lng && !isNaN(lat) && !isNaN(lng)) return { lat, lng, address: (row.location as string) || undefined };
+  // Saída pública: só «bairro, cidade - UF» nos cadastros de usuário (esta lista nunca traz legado; sinal público sai como está)
+  if (lat && lng && !isNaN(lat) && !isNaN(lng)) return { lat, lng, address: enderecoPublico((row.location as string) || undefined, { is_legacy: false, source: (row.source as string | null) ?? null }) };
   if (row.location && typeof row.location === 'string') {
-    try { const p = JSON.parse(row.location); if (p.lat && p.lng) return p; } catch { /* não é JSON */ }
+    try { const p = JSON.parse(row.location); if (p.lat && p.lng) return localizacaoPublica(p, { is_legacy: false, source: (row.source as string | null) ?? null }); } catch { /* não é JSON */ }
   }
   return null;
 }

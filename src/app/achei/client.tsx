@@ -173,7 +173,7 @@ function AcheiInner() {
                 <h3 className="text-white font-semibold mb-2">Nenhum dono encontrado ainda</h3>
                 <p className="text-white/40 text-sm mb-6 leading-relaxed">
                   O dono pode ainda não ter cadastrado o objeto.<br />
-                  Registre o que você achou — se ele procurar, a gente conecta vocês.
+                  Crie uma conta gratuita para registrar o que você encontrou.
                 </p>
                 <Link
                   href={cadastroHref(contexto, codigoDe)} onClick={aoIrParaCadastro}
@@ -235,9 +235,9 @@ function AcheiInner() {
                           );
                         })()}
                         {/* Botão "Ver detalhes" */}
-                        {item.code && (
+                        {(item.unique_code ?? item.code) && (
                           <Link
-                            href={`/objeto/${item.code}`}
+                            href={`/objeto/${encodeURIComponent((item.unique_code ?? item.code) as string)}`}
                             className="inline-flex items-center gap-1 text-xs text-teal-400 hover:text-teal-300 font-semibold transition-colors"
                           >
                             Ver detalhes <ArrowRight className="w-3 h-3" />

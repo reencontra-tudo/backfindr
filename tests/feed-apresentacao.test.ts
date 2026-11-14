@@ -234,7 +234,8 @@ describe.skipIf(!TEST_DB)('página /feed com banco real', () => {
     const arts = [...h.matchAll(/<article/g)].map((m) => m.index!);
     expect(text(h)).toContain(TEXTO_BASE_2);
     expect(h.indexOf(TEXTO_BASE_2)).toBeGreaterThan(arts[2]); expect(h.indexOf(TEXTO_BASE_2)).toBeLessThan(arts[3]);
-    expect(text(h)).toContain('Os registros mais recentes de objetos, documentos e pets perdidos, achados ou roubados.');
+    expect(text(h)).toContain('A lista é um recorte das ocorrências de objetos, documentos e pets perdidos, achados ou roubados; o histórico está no mapa.');   // frase do bloco (não diz mais «mais recentes»)
+    expect(text(h)).not.toContain('Os registros mais recentes de objetos');
     expect(h).not.toContain('Perdeu algo? Encontrou alguma coisa?');
     expect(h).toContain('<style>button[aria-label="Abrir assistente"]{background-color:#0f766e !important');   // CSS do balão chega sem aspas escapadas (válido) e sem diferença na hidratação
     expect(h).not.toContain('&quot;Abrir assistente&quot;');

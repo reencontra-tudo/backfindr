@@ -19,7 +19,7 @@ Tudo abaixo está em produção (Feed novo: #113, `46311e6`; contexto no `/achei
 - **Sinais públicos:** mostram «Fonte: <veículo>» (sem endereço escrito).
 - **Carregamento:** os 12 primeiros cards vêm no HTML; ao rolar, até 36 cards sozinhos; depois «Ver mais ocorrências» (link real para `/feed/pagina/N`).
 - **Voltar do navegador:** a lista (até 36 cards) e a rolagem são restauradas, sem chamar API. F5, nova aba e link novo começam do zero.
-- **Bloco «O Backfindr vai além das publicações»:** depois do 3º card, só na página 1, no HTML do servidor; leva o texto «O Backfindr conecta pessoas…» e a frase dos registros.
+- **Bloco «O Backfindr vai além das publicações»:** depois do 3º card, só na página 1, no HTML do servidor; leva o texto «O Backfindr conecta pessoas…» e a frase «A lista é um recorte das ocorrências de objetos, documentos e pets perdidos, achados ou roubados; o histórico está no mapa.»
 - **Cadastro de ocorrência:** botão fixo «+ Cadastrar ocorrência» no celular (canto inferior esquerdo, só aparece onde não cobre texto nem botão; no computador fica no cabeçalho), com menu «Perdi algo / Encontrei algo / Roubaram algo meu» (rotas `/flow/lost`, `/flow/found`, `/flow/stolen` com `?ref=feed`). No topo e no fim da lista ficam «Perdi» e «Encontrei».
 - **Balão do assistente:** no Feed ele tem fundo sólido (a classe de fundo dele não existe no CSS; fora do Feed segue como era).
 - **SEO:** `/feed` é indexável; `/feed/pagina/N` leva «noindex, follow»; canonical sempre `https://backfindr.com/feed`; cache de 5 minutos; descrição «Veja ocorrências de objetos, documentos e pets perdidos, achados ou roubados registradas no Backfindr, e compartilhe para ajudar na devolução.».
@@ -40,11 +40,16 @@ Tudo abaixo está em produção (Feed novo: #113, `46311e6`; contexto no `/achei
 ## Regras que não mudam
 Nenhum texto promete contato protegido, SMS, chat protegido, resposta da fonte, aviso ao dono, gratuidade fora do que já é dito nos fluxos, nem limite de objetos. Nada de dado novo no banco para o Feed e o `/achei`. O card de teste `2HE93T6N` não foi tocado: o Marcos decide o que fazer com ele.
 
+## Endereço nas saídas públicas
+- Cadastros de **usuário** saem nas telas e APIs públicas só como «bairro, cidade - UF» (mesma redução do Feed): lista pública (home, `/buscar`, mapa da home, `/achei`, passo 2 dos fluxos), leitura por código e página `/objeto/[code]` (tela, título, descrição, meta e dados para o Google).
+- **Legado e sinais públicos** saem exatamente como estão. Casamento, pontuação, ordem e ids usam o texto original. O dono vê o endereço completo no painel e na edição. As coordenadas não mudam.
+- Cartazes e posts sociais **não** usam essa redução (o cartaz mostra os primeiros 60 caracteres do endereço cadastrado; o post usa o endereço inteiro).
+- **Resultado vazio do `/achei`:** «Crie uma conta gratuita para registrar o que você encontrou.» **«Ver detalhes»** dos resultados usa o código público e leva a `/objeto/<código>`.
+- **Descrições do legado:** o HTML e o «\n» literal NÃO são limpos (decisão do Marcos): os textos e os dados do legado não são tocados.
+
 ## Pendências a decidir (nenhuma foi iniciada)
-- Endereço completo (rua e número) em cadastros de usuário aparece no `/achei`, `/buscar`, `/objeto`, home e fluxos; proposta: bairro e cidade.
-- Descrições do legado com marcação HTML e «\n» literal (cerca de 600 públicas); proposta: limpar só na exibição.
-- Frase «se ele procurar, a gente conecta vocês» (resultado vazio do `/achei`) e «Os registros mais recentes de objetos…» (bloco depois do 3º card): trocar.
-- Link «Ver detalhes» dos resultados do `/achei` nunca aparece (o código espera `code` e a API devolve `unique_code`).
+- Endereço nos cartazes e posts sociais (hoje mostram o endereço cadastrado) e arredondar as coordenadas públicas.
+- Link «Ver detalhes» da página `/buscar`: usa o mesmo campo `code`, que a rota não devolve.
 - Ícone de «Compartilhar» fica sob o balão do chat em parte da rolagem (Publicações, 390 px).
 - Balão do assistente em páginas de fundo claro fora do Feed (a classe de fundo não existe).
 - Primeiros 14 cards têm foto; depois, quase só cards sem foto.

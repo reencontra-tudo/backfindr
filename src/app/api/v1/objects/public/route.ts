@@ -5,6 +5,7 @@ import { successResponse, internalErrorResponse } from '@/lib/response';
 import { isBuscaAmpla, temPalavraEmComum, tituloRecuperado } from '@/lib/flowMatch/relevance';
 import { buscarRegistrosRecentesParecidos } from '@/lib/flowMatch/recentSimilar';
 import { maskSignalForPublicApi } from '@/lib/objectPublicView';
+import { localizacaoPublica } from '@/lib/publicLocation';
 
 // ─── Dicionário de sinônimos (PT-BR, normalizado sem acento) ───────────────
 const SINONIMOS: Record<string, string[]> = {
@@ -242,7 +243,8 @@ export async function GET(request: NextRequest) {
             return [];
           } catch { return []; }
         })(),
-        location: (() => {
+        // Endereço público só com «bairro, cidade - UF» nos cadastros de usuário (legado e sinal público saem como estão). A pontuação usa `row` (texto original).
+        location: localizacaoPublica((() => {
           const lat = row.latitude ? parseFloat(String(row.latitude)) : null;
           const lng = row.longitude ? parseFloat(String(row.longitude)) : null;
           if (lat && lng && !isNaN(lat) && !isNaN(lng)) {
@@ -255,7 +257,7 @@ export async function GET(request: NextRequest) {
             } catch { /* não é JSON */ }
           }
           return null;
-        })(),
+        })(), { is_legacy: row.is_legacy as boolean | null, source: row.source as string | null }),
         color: row.color,
         brand: row.brand,
         pet_breed: row.breed,
