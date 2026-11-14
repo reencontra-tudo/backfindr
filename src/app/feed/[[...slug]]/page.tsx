@@ -14,6 +14,7 @@ import FeedClient from '../FeedClient';
 import { IntroButtons, RegisterMenu } from '../FeedCta';
 import { APP_URL } from '@/lib/constants';
 import { getRankedFeed, pageByNumber } from '@/lib/feed/query';
+import { temaStyle } from '../tema';
 
 export const revalidate = 300;
 export const dynamicParams = true;
@@ -53,7 +54,9 @@ export default async function FeedPage({ params }: { params: { slug?: string[] }
   if (page > 1 && pg.items.length === 0) notFound();
 
   return (
-    <main className="min-h-screen bg-[#080b0f] text-white">
+    <main className="min-h-screen bg-[color:var(--f-folha)] text-[color:var(--f-t1)]" style={temaStyle()}>
+      {/* Faixa escura do topo (cabeçalho + título + apresentação + atalhos) e, por cima dela, a «folha» clara com a lista */}
+      <div className="bg-[color:var(--f-faixa)] pb-12 text-[color:var(--f-faixa-t)]">
       <header className="border-b border-white/10">
         <div className="mx-auto flex max-w-2xl items-center justify-between px-4 py-3">
           <Link href="/" className="flex min-h-[44px] items-center gap-2 font-semibold">
@@ -68,7 +71,7 @@ export default async function FeedPage({ params }: { params: { slug?: string[] }
         </div>
       </header>
 
-      <div className="mx-auto max-w-2xl px-4 py-6 pb-32 sm:pb-6">
+      <div className="mx-auto max-w-2xl px-4 pt-6">
         <h1 className="text-2xl font-bold leading-tight">Ocorrências recentes</h1>
 
         {/* Apresentação (só na página 1; no HTML do servidor, igual para todos). NÃO é um segundo h1. */}
@@ -87,9 +90,11 @@ export default async function FeedPage({ params }: { params: { slug?: string[] }
           <Link href="/map" className="inline-flex min-h-[44px] items-center font-medium underline underline-offset-2 hover:text-white">Ver histórico no mapa</Link>
         </p>
 
-        <div className="mt-2">
-          <FeedClient initialItems={pg.items} initialNextCursor={pg.nextCursor} initialHasMore={pg.hasMore} page={page} regions={ranked.ufs} />
-        </div>
+      </div>
+      </div>
+
+      <div className="relative -mt-8 rounded-t-[28px] bg-[color:var(--f-folha)] px-4 pb-32 pt-5 shadow-[0_-8px_24px_rgba(15,23,42,0.18)] sm:pb-6">
+        <FeedClient initialItems={pg.items} initialNextCursor={pg.nextCursor} initialHasMore={pg.hasMore} page={page} regions={ranked.ufs} />
       </div>
 
       {/* Botão fixo (só celular): canto inferior esquerdo, longe do chat (direito) */}

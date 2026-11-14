@@ -30,12 +30,12 @@ describe('faixa de situações: só classes', () => {
     const c = faixaCls();
     expect(c).toContain('[background-attachment:local,local,scroll,scroll]');
     expect((c.match(/linear-gradient/g) ?? []).length).toBe(4);
-    expect((c.match(/#080b0f/g) ?? []).length).toBe(2);              // as DUAS tampas têm a cor do fundo da página (precisam ser iguais a ela)
-    expect((c.match(/rgba\(8,11,15,0\)/g) ?? []).length).toBe(2);   // e terminam transparentes na mesma cor
+    expect((c.match(/var\(--f-folha\)/g) ?? []).length).toBe(2);              // as DUAS tampas têm a cor do fundo da página (precisam ser iguais a ela)
+    expect((c.match(/transparent/g) ?? []).length).toBe(4);   // todas terminam transparentes
     expect(c).toContain('bg-no-repeat');
   });
-  it('a cor das tampas é a do fundo da página e do corpo', () => {
-    expect(read('src/app/feed/[[...slug]]/page.tsx')).toContain('bg-[#080b0f]'); expect(read('src/app/globals.css')).toContain('body { background: #080b0f; }');
+  it('a cor das tampas é a da folha (variável do tema) e o corpo do site continua escuro', () => {
+    expect(read('src/app/feed/[[...slug]]/page.tsx')).toContain('bg-[color:var(--f-folha)]'); expect(read('src/app/globals.css')).toContain('body { background: #080b0f; }');
   });
   it('o resto do HTML da faixa é o de antes: grupo «Situação», aria-pressed, e filtros de categoria e região logo depois', () => {
     expect(html).toContain('role="group" aria-label="Situação"');

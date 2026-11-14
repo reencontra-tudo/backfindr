@@ -25,6 +25,8 @@ export interface EstadoSalvo {
   v: number; t: number; pagina: number;
   itens: ItemSalvo[]; cursor: string | null; temMais: boolean;
   autoLotes: number; filtros: Filtros; scrollY: number;
+  /** Visualização no momento de sair (opcional: estados guardados antes desta versão não têm o campo e continuam valendo). */
+  vis?: 'publicacoes' | 'grade';
 }
 
 /** Ponto de corte possível da lista: depois de N cards, qual era o cursor da próxima página. */
@@ -74,11 +76,12 @@ export function escolherCorte(items: FeedItem[], marcos: Marco[], atual: { curso
 }
 
 export function criarEstado(a: {
-  agora: number; pagina: number; itens: FeedItem[]; cursor: string | null; temMais: boolean; autoLotes: number; filtros: Filtros; scrollY: number;
+  agora: number; pagina: number; itens: FeedItem[]; cursor: string | null; temMais: boolean; autoLotes: number; filtros: Filtros; scrollY: number; vis?: 'publicacoes' | 'grade';
 }): EstadoSalvo {
   return {
     v: ESTADO_VERSAO, t: a.agora, pagina: a.pagina, itens: a.itens.slice(0, ESTADO_MAX_CARDS).map(compactar), cursor: a.cursor, temMais: a.temMais,
     autoLotes: a.autoLotes, filtros: a.filtros, scrollY: Math.max(0, Math.round(a.scrollY)),
+    ...(a.vis === 'grade' || a.vis === 'publicacoes' ? { vis: a.vis } : {}),
   };
 }
 
@@ -121,6 +124,7 @@ export function validarEstado(valor: unknown, ctx: ContextoValidacao): EstadoSal
     if (!isInt(e.autoLotes, 0, 50)) return null;
     if (typeof e.scrollY !== 'number' || !Number.isFinite(e.scrollY) || e.scrollY < 0 || e.scrollY > 10_000_000) return null;
     if (!filtrosValidos(e.filtros, ctx.regioes)) return null;
+    if (e.vis !== undefined && e.vis !== 'grade' && e.vis !== 'publicacoes') delete e.vis;      // valor estranho: ignora só o campo, não derruba o estado
     return e as unknown as EstadoSalvo;
   } catch { return null; }
 }

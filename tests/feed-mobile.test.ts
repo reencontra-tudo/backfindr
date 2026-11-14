@@ -144,7 +144,7 @@ describe('botão fixo «+ Cadastrar ocorrência»', () => {
 describe('espaço no fim da página e o que não mudou', () => {
   it('a página reserva espaço embaixo do último card e do «Ver mais» (pb-32 no celular)', () => {
     const p = read('src/app/feed/[[...slug]]/page.tsx');
-    expect(p).toContain('px-4 py-6 pb-32 sm:pb-6');
+    expect(p).toMatch(/pb-32[^"]*sm:pb-6/);
   });
   it('canonical, robots, cache de 5 min e títulos iguais', () => {
     const p = read('src/app/feed/[[...slug]]/page.tsx');

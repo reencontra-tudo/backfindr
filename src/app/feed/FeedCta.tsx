@@ -32,8 +32,8 @@ export function IntroButtons({ pagina, posicao = 'topo', compacto = false }: { p
 /** Convite do fim da lista (depois do 3º lote automático, abaixo do «Ver mais», e quando não há mais cards). Mesmos botões, rotas e eventos do topo. */
 export function ConviteFim({ pagina }: { pagina: number }) {
   return (
-    <aside aria-label="Convite para cadastrar" className="mt-8 rounded-xl bg-white/[0.05] p-4" data-feed-convite>
-      <h2 className="text-base font-semibold text-white">Não encontrou o que procurava?</h2>
+    <aside aria-label="Convite para cadastrar" className="mt-8 rounded-xl bg-[color:var(--f-aviso)] p-4" data-feed-convite>
+      <h2 className="text-base font-semibold text-[color:var(--f-t1)]">Não encontrou o que procurava?</h2>
       <IntroButtons pagina={pagina} posicao="fim" compacto />
     </aside>
   );
