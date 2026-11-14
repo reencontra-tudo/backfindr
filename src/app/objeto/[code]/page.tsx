@@ -3,6 +3,7 @@ import { notFound } from 'next/navigation';
 import PublicObjectClient from './client';
 import { APP_URL } from '@/lib/constants';
 import { maskObjectForPublicPage, semEnderecoDeFonte } from '@/lib/objectPublicView';
+import { localizacaoPublica } from '@/lib/publicLocation';
 import { getSignalSource } from '@/lib/feed/signalSource';
 
 /** Para metadados e JSON-LD: sinal público sem o «Fonte: <endereço>» na descrição (o endereço pode trazer nome de pessoa). Usuário e legado: o mesmo objeto. */
@@ -20,7 +21,10 @@ async function getObject(code: string) {
     const json = await res.json();
     // O endpoint retorna { success: true, data: {...} }
     // Sinal público: nome de pessoa mascarado no servidor (usuário e legado passam sem alteração).
-    return maskObjectForPublicPage(json?.data ?? json);
+    const obj = maskObjectForPublicPage(json?.data ?? json);
+    // Defesa na própria página: mesmo que a API que ela consulta (em prévia/outro ambiente pode ser outra versão) devolva o endereço completo,
+    // o HTML, o título, a descrição, o JSON-LD e o JSON embutido só levam «bairro, cidade - UF» e coordenada arredondada. Legado e sinal: iguais.
+    return obj && obj.location ? { ...obj, location: localizacaoPublica(obj.location, { is_legacy: obj.is_legacy as boolean | null, source: obj.source }) } : obj;
   } catch {
     return null;
   }
@@ -49,7 +53,7 @@ export async function generateMetadata({ params }: { params: { code: string } })
       url: canonicalUrl,
       images: [
         {
-          url: `${APP_URL}/api/v1/objects/${obj.unique_code}/poster?format=vertical`,
+          url: `${APP_URL}/api/v1/objects/${obj.unique_code}/poster?format=vertical&publico=1`,
           width: 1080,
           height: 1080,
           alt: `Cartaz de ${obj.title} - Backfindr`,
@@ -63,7 +67,7 @@ export async function generateMetadata({ params }: { params: { code: string } })
       card: 'summary_large_image',
       title: `${obj.title} | Backfindr`,
       description: descriptionFull,
-      images: [`${APP_URL}/api/v1/objects/${obj.unique_code}/poster?format=vertical`],
+      images: [`${APP_URL}/api/v1/objects/${obj.unique_code}/poster?format=vertical&publico=1`],
     },
   };
 }

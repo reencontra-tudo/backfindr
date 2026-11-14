@@ -10,6 +10,7 @@ import { MapPin, Search, ArrowRight, CheckCircle, Package, Loader2 } from 'lucid
 interface ObjectItem {
   id: string;
   code?: string;
+  unique_code?: string;
   title: string;
   description: string;
   status: string;
@@ -191,7 +192,7 @@ function BuscarInner() {
                         )}
                         {/* Botão "É o meu?" */}
                         <Link
-                          href={item.code ? `/objeto/${item.code}` : `/auth/register?intent=lost`}
+                          href={(item.unique_code ?? item.code) ? `/objeto/${encodeURIComponent((item.unique_code ?? item.code) as string)}` : `/auth/register?intent=lost`}
                           className="inline-flex items-center gap-1 text-xs text-teal-400 hover:text-teal-300 font-semibold transition-colors"
                         >
                           É o meu? <ArrowRight className="w-3 h-3" />

@@ -4,6 +4,7 @@ import { query } from '@/lib/db';
 import { successResponse, notFoundResponse, internalErrorResponse } from '@/lib/response';
 import { Events } from '@/lib/events';
 import { POST as notifyOwnerOfScan } from './notify/route';
+import { localizacaoPublica } from '@/lib/publicLocation';
 
 export async function GET(
   request: NextRequest,
@@ -33,6 +34,8 @@ export async function GET(
     } else if (row.location && typeof row.location === 'string') {
       try { const p = JSON.parse(row.location as string); if (p.lat && p.lng) location = p; } catch { /* não é JSON */ }
     }
+    // Saída pública (QR, página do objeto, mapa, metadados): só «bairro, cidade - UF» nos cadastros de usuário; legado e sinal público saem como estão.
+    location = localizacaoPublica(location, { is_legacy: row.is_legacy as boolean | null, source: row.source as string | null });
     let photos: string[] = [];
     try {
       if (Array.isArray(row.images)) photos = row.images as string[];

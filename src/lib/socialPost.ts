@@ -1,4 +1,5 @@
 import { query } from '@/lib/db';
+import { enderecoPublico } from '@/lib/publicLocation';
 
 // ─── Tipos ────────────────────────────────────────────────────────────────────
 export interface SocialPostObject {
@@ -47,7 +48,8 @@ export function buildPostText(obj: SocialPostObject, template: string, appUrl: s
   const url = `${appUrl}/objeto/${obj.unique_code ?? obj.qr_code}`;
   const statusEmoji = STATUS_EMOJI[obj.status] ?? obj.status;
   const category = CATEGORY_LABEL[obj.category] ?? obj.category;
-  const location = obj.location?.address ?? '';
+  // Texto público: só «bairro, cidade - UF» (o endereço completo fica no cadastro do dono).
+  const location = enderecoPublico(obj.location?.address, { is_legacy: false, source: (obj as { source?: string | null }).source }) ?? '';
   const rewardLine = obj.reward_amount && obj.reward_amount > 0
     ? `💰 Recompensa: R$ ${obj.reward_amount.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`
     : '';

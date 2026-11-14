@@ -275,7 +275,7 @@ function FeedAbout({ vis }: { vis: Visualizacao }) {
         <p className={`mt-1 text-sm leading-relaxed ${T.t2}`}>
           Pesquise por localização e características e descubra possíveis correspondências entre o que foi perdido e o que foi encontrado.
         </p>
-        <p className={`mt-1 text-xs leading-relaxed ${T.t3}`}>Os registros mais recentes de objetos, documentos e pets perdidos, achados ou roubados.</p>
+        <p className={`mt-1 text-xs leading-relaxed ${T.t3}`}>A lista é um recorte das ocorrências de objetos, documentos e pets perdidos, achados ou roubados; o histórico está no mapa.</p>
         <div className="-ml-3 mt-1 flex flex-wrap items-center">
           <Link href="/buscar" prefetch={false} className={linkCls}>Buscar ocorrências</Link>
           <Link href="/map" prefetch={false} className={linkCls}>Ver no mapa</Link>
@@ -560,7 +560,7 @@ export default function FeedClient({ initialItems, initialNextCursor, initialHas
         </div>
         {/* Aviso de que a lista é só um recorte (uma linha, pequena e cinza); o link leva ao histórico no mapa */}
         <p className={`my-1 text-xs leading-snug ${T.t3}`}>
-          Esta lista é só um recorte recente.{' '}
+          Esta lista é só um recorte.{' '}
           <Link href="/map" prefetch={false} className="inline py-3.5 font-medium underline underline-offset-2 hover:text-[color:var(--f-t1)]">Ver histórico no mapa</Link>
         </p>
       </div>

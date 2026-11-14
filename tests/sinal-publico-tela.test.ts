@@ -116,7 +116,7 @@ describe('objeto de USUÁRIO e do LEGADO: tela de sempre', () => {
   for (const [nome, o] of casos) {
     it(`${nome}: mantém o botão e as frases atuais`, () => {
       const h = render(o);
-      for (const f of ['Avisar o dono que encontrei', 'O dono recebe um aviso.', 'Este objeto pertence a alguém.', 'Objeto registrado na rede Backfindr', 'A conversa acontece pelo chat da plataforma.']) expect(h, f).toContain(f);
+      for (const f of ['Avisar o dono que encontrei', 'Este objeto pertence a alguém.', 'Objeto registrado na rede Backfindr', 'Seu aviso fica registrado nesta ocorrência.']) expect(h, f).toContain(f);
       expect(h).not.toContain('data-sinal-publico'); expect(h).not.toContain(SINAL_TITULO);
     });
   }
@@ -140,6 +140,6 @@ describe('regras no código', () => {
   });
   it('nada fora do escopo: o texto de usuário/legado está no mesmo arquivo e inalterado', () => {
     const c = read('src/app/objeto/[code]/client.tsx');
-    for (const f of ['Avisar o dono que encontrei', 'O dono recebe um aviso.', 'Este objeto pertence a alguém.']) expect(c).toContain(f);
+    for (const f of ['Avisar o dono que encontrei', 'Seu aviso fica registrado nesta ocorrência.', 'Este objeto pertence a alguém.']) expect(c).toContain(f);
   });
 });

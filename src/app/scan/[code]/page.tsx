@@ -1,5 +1,6 @@
 import type { Metadata } from 'next';
 import ScanClient from './client';
+import { localizacaoPublica } from '@/lib/publicLocation';
 
 const APP_URL = process.env.NEXT_PUBLIC_APP_URL ?? 'https://backfindr.com';
 
@@ -10,7 +11,9 @@ async function getObject(code: string) {
     });
     if (!res.ok) return null;
     const json = await res.json();
-    return json?.data ?? json;
+    const obj = json?.data ?? json;
+    // Mesma defesa do /objeto: só «bairro, cidade - UF» e coordenada arredondada (cadastro de usuário), qualquer que seja a versão da API consultada.
+    return obj && obj.location ? { ...obj, location: localizacaoPublica(obj.location, { is_legacy: obj.is_legacy, source: obj.source }) } : obj;
   } catch {
     return null;
   }

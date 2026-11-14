@@ -166,8 +166,8 @@ export default function ScanPage() {
                   <div className="w-px flex-1 bg-white/[0.06] mt-1" />
                 </div>
                 <div className="pb-4">
-                  <p className="text-white text-sm font-semibold">Dono recebe notificação agora</p>
-                  <p className="text-slate-500 text-xs mt-0.5 leading-relaxed">Por push ou e-mail, conforme as configurações dele.</p>
+                  <p className="text-white text-sm font-semibold">Seu aviso fica registrado</p>
+                  <p className="text-slate-500 text-xs mt-0.5 leading-relaxed">O aviso é gravado nesta ocorrência.</p>
                 </div>
               </div>
               <div className="flex gap-3">
@@ -176,8 +176,8 @@ export default function ScanPage() {
                   <div className="w-px flex-1 bg-white/[0.06] mt-1" />
                 </div>
                 <div className="pb-4">
-                  <p className="text-slate-300 text-sm font-semibold">Dono entra em contato</p>
-                  <p className="text-slate-500 text-xs mt-0.5 leading-relaxed">A conversa acontece pelo chat da plataforma.</p>
+                  <p className="text-slate-300 text-sm font-semibold">O dono pode ser avisado</p>
+                  <p className="text-slate-500 text-xs mt-0.5 leading-relaxed">Push e e-mail saem só quando o dono não é legado, conforme as configurações dele. Não há garantia de resposta.</p>
                 </div>
               </div>
               <div className="flex gap-3">
