@@ -90,7 +90,7 @@ export default async function FeedPage({ params }: { params: { slug?: string[] }
 
       {/* Balão do assistente (componente global, sem mudar posição nem comportamento): nesta página o fundo é claro e a classe de fundo dele não existe,
           então o ícone branco ficava invisível. Só aqui (a regra some com a página): fundo sólido, anel branco e sombra. */}
-      <style>{`button[aria-label="Abrir assistente"]{background-color:#0f766e !important;box-shadow:0 0 0 2px #fff,0 4px 14px rgba(15,23,42,.35) !important}`}</style>
+      <style dangerouslySetInnerHTML={{ __html: 'button[aria-label="Abrir assistente"]{background-color:#0f766e !important;box-shadow:0 0 0 2px #fff,0 4px 14px rgba(15,23,42,.35) !important}' }} />
 
       {/* Botão fixo (só celular): canto inferior esquerdo, longe do chat (direito) */}
       <RegisterMenu variant="fixed" pagina={page} />

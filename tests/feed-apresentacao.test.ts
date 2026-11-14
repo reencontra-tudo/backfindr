@@ -236,6 +236,8 @@ describe.skipIf(!TEST_DB)('página /feed com banco real', () => {
     expect(h.indexOf(TEXTO_BASE_2)).toBeGreaterThan(arts[2]); expect(h.indexOf(TEXTO_BASE_2)).toBeLessThan(arts[3]);
     expect(text(h)).toContain('Os registros mais recentes de objetos, documentos e pets perdidos, achados ou roubados.');
     expect(h).not.toContain('Perdeu algo? Encontrou alguma coisa?');
+    expect(h).toContain('<style>button[aria-label="Abrir assistente"]{background-color:#0f766e !important');   // CSS do balão chega sem aspas escapadas (válido) e sem diferença na hidratação
+    expect(h).not.toContain('&quot;Abrir assistente&quot;');
   });
   it('página 1: 12 cards, links /objeto/ com o título, «Ver mais» real, bloco depois do 3º card, 2 menus (fixo + cabeçalho)', async () => {
     const h = await page();

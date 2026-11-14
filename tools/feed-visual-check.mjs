@@ -79,6 +79,7 @@ for (const W of WIDTHS) for (const v of ['publicacoes', 'grade']) {
 for (const W of [390, 1280]) {
   const L = `[${W} alternar]`; const { ctx, p, reqs } = await abrir(W, 'publicacoes');
   await p.getByRole('button', { name: 'Perdidos', exact: true }).click(); await p.waitForTimeout(1500);
+  await rolar(p);   // lista já completa (carregamento automático esgotado): assim o teste mede o ALTERNAR, não o carregamento ao rolar
   const cod = () => p.evaluate(() => [...document.querySelectorAll('main article[data-code]')].map((a) => a.dataset.code));
   const antes = await cod(); const reqsAntes = reqs.length;
   await p.evaluate(() => { const g = document.querySelector('[aria-label="Visualização"]'); scrollTo({ top: g.getBoundingClientRect().top + scrollY - 20, behavior: 'instant' }); }); await p.waitForTimeout(400); // seletor visível (a página não rola sozinha no clique)

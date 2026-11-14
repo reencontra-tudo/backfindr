@@ -342,6 +342,7 @@ describe('título da página e cabeçalho', () => {
   });
   it('balão do assistente: regra só nesta página (fundo sólido, anel e sombra); posição e comportamento não mudam', () => {
     expect(page).toContain('button[aria-label="Abrir assistente"]{background-color:#0f766e !important');
+    expect(page).toContain('dangerouslySetInnerHTML={{ __html: \'button[aria-label=');   // sem escape de aspas: o CSS chega válido e sem diferença na hidratação
     expect(read('src/components/AssistantWidget.tsx')).toContain('aria-label="Abrir assistente"');
   });
 });

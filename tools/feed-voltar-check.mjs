@@ -105,7 +105,8 @@ async function voltaEConfere(rot, { p, st }, antes, esperadoCards) {
 {
   const c = await nova(); const { p, st } = c; await abrir(p);
   const n = await rolarAte(p, 24); ok('[24] rolagem real traz 24 cards', n === 24, `${n}`);
-  const antes = await abrirCard(p, 19);
+  // Na Grade os cards são mais baixos: abrir o 20º deixaria o fim da lista a menos de 400 px e o carregamento automático traria mais 12 antes da gravação. Abre um card mais cedo.
+  const antes = await abrirCard(p, process.env.VIS === 'grade' ? 7 : 19);
   const e24 = await estadoSalvo(p); ok('[24] estado guardado ao sair: 24 cards e a rolagem do clique', e24 && e24.cards === 24 && Math.abs(e24.scrollY - antes.y0) <= 6, JSON.stringify(e24));
   const r = await voltaEConfere('[24]', c, antes);
   await p.waitForTimeout(2500);
