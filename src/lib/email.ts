@@ -106,7 +106,7 @@ export async function sendWelcomeEmail(user: { name: string; email: string }) {
                         <td style="padding:8px 0;vertical-align:top;">
                           <span style="font-size:20px;margin-right:12px;">🤝</span>
                           <span style="color:white;font-size:14px;font-weight:600;">Devolver o que achou</span><br/>
-                          <span style="color:rgba(255,255,255,0.4);font-size:13px;">Registre o achado e fale com o dono pelo chat da plataforma.</span>
+                          <span style="color:rgba(255,255,255,0.4);font-size:13px;">Registre o achado; o aviso ao dono fica registrado na ocorrência.</span>
                         </td>
                       </tr>
                       <tr>

@@ -727,8 +727,8 @@ export default function HomePage() {
               {
                 img: '/img_step3.png',
                 number: '3',
-                title: 'Converse com segurança',
-                desc: 'A conversa acontece pelo chat da plataforma.',
+                title: 'Avise o dono',
+                desc: 'O aviso fica registrado na ocorrência; não há garantia de resposta.',
               },
             ].map((step, index) => (
               <FadeIn key={step.number} delay={index * 100}>

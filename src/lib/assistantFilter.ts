@@ -3,7 +3,7 @@
 //
 // Regras (decisão do Marcos, 28/10/2026): o texto do assistente não pode prometer proteção de
 // telefone, e-mail ou contato, nem usar "garantir" em afirmações. A única formulação permitida
-// sobre contato é "A conversa acontece pelo chat da plataforma."
+// sobre contato é "O aviso fica registrado na ocorrência; não há garantia de resposta." (trocada em 14/11/2026: não existe chat entre quem achou e o dono)
 //
 // Estratégia: substitui só a frase que casou com um padrão; recua para a resposta inteira (T3)
 // quando o corte puder deixar o texto incoerente.
@@ -22,9 +22,9 @@ export interface ResultadoFiltro {
 }
 
 // Textos fixos aprovados
-export const T1 = 'A conversa acontece pelo chat da plataforma.';
+export const T1 = 'O aviso fica registrado na ocorrência; não há garantia de resposta.';
 export const T3 =
-  'A conversa acontece pelo chat da plataforma. Para registrar o que você perdeu, foi roubado ou encontrou, acesse https://backfindr.com/perdi ou https://backfindr.com/encontrei.';
+  'O aviso fica registrado na ocorrência; não há garantia de resposta. Para registrar o que você perdeu, foi roubado ou encontrou, acesse https://backfindr.com/perdi ou https://backfindr.com/encontrei.';
 
 const ANTES = '(?<![\\p{L}\\d])';
 const DEPOIS = '(?![\\p{L}\\d])';
@@ -160,7 +160,7 @@ function acharPadroes(texto: string): { id: string; idx: number }[] {
 }
 
 const TEM_URL = /https?:\/\//i;
-const FRASE_FIXA = /a conversa acontece pelo chat da plataforma/gi;
+const FRASE_FIXA = /a conversa acontece pelo chat da plataforma|o aviso fica registrado na ocorr[êe]ncia; n[ãa]o h[áa] garantia de resposta/gi;
 const CONECTIVO_NO_INICIO = new RegExp(
   `^(?:assim|ent[ãa]o|portanto|por\\s+isso|dessa\\s+forma|desse\\s+modo|al[ée]m\\s+disso|ou\\s+seja|isso|mas|por[ée]m|e|tamb[ée]m|logo|nesse\\s+caso|com\\s+isso)${DEPOIS}`,
   'iu'

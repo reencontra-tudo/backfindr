@@ -26,7 +26,7 @@ describe('/flow/found: texto da linha abaixo do botão de publicar', () => {
   });
   it('o botão e o resto do passo ficam como estavam', () => {
     expect(found).toContain('Publicar achado agora');
-    expect(found).toContain('A conversa com o dono acontece pelo chat da plataforma.');
+    expect(found).toContain('O aviso ao dono fica registrado na ocorrência; não há garantia de resposta.');
   });
   it('a página continua noindex e sem canonical próprio', () => {
     const p = read('src/app/flow/found/page.tsx');

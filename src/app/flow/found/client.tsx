@@ -303,7 +303,7 @@ export default function FoundFlowClient() {
                 Publique o achado agora.
               </h2>
               <p className="text-white/40 text-sm leading-relaxed">
-                A conversa com o dono acontece pelo chat da plataforma.
+                O aviso ao dono fica registrado na ocorrência; não há garantia de resposta.
               </p>
             </div>
 

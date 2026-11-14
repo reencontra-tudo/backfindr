@@ -229,7 +229,7 @@ const FLOWS: Record<string, { text: string; buttons?: { label: string; action: s
 
   // ── Encontrou algo ──
   found: {
-    text: 'Boa atitude 🙏\n\nVocê pode tentar devolver com segurança — é gratuito, e a conversa acontece pelo chat da plataforma 👇\n\n' + APP_URL + '/encontrei',
+    text: 'Boa atitude 🙏\n\nVocê pode tentar devolver — é gratuito. O aviso fica registrado na ocorrência; não há garantia de resposta 👇\n\n' + APP_URL + '/encontrei',
   },
 
   // ── Prevenir / QR Code ──
@@ -329,7 +329,7 @@ const FLOWS: Record<string, { text: string; buttons?: { label: string; action: s
 
   // ── Help de funcionalidades ──
   qr_help: {
-    text: 'O QR Code não é obrigatório: é uma forma opcional de identificar bens antes de qualquer perda. A essência do Backfindr é registrar e pesquisar o que foi perdido, roubado ou encontrado.\n\nO QR Code funciona assim:\n\n1. Você cadastra o objeto\n2. O sistema gera um QR único e permanente\n3. Você imprime e cola no item\n4. Se alguém encontrar e escanear com qualquer câmera, **você recebe uma notificação**\n\nA conversa acontece pelo chat da plataforma.\n\nPara gerar o seu: Dashboard → objeto → "Imprimir QR"',
+    text: 'O QR Code não é obrigatório: é uma forma opcional de identificar bens antes de qualquer perda. A essência do Backfindr é registrar e pesquisar o que foi perdido, roubado ou encontrado.\n\nO QR Code funciona assim:\n\n1. Você cadastra o objeto\n2. O sistema gera um QR único e permanente\n3. Você imprime e cola no item\n4. Se alguém encontrar e escanear com qualquer câmera, **você recebe uma notificação**\n\nO aviso fica registrado na ocorrência; não há garantia de resposta.\n\nPara gerar o seu: Dashboard → objeto → "Imprimir QR"',
   },
   match_help: {
     text: 'Para confirmar um match:\n\n1. Clique no match pendente\n2. Veja as informações do objeto do outro lado\n3. Se parecer o seu, clique em "Confirmar"\n4. A conversa acontece pelo chat da plataforma 🤝\n\nDúvida? 👇',
@@ -344,7 +344,7 @@ const FLOWS: Record<string, { text: string; buttons?: { label: string; action: s
     text: 'Tipos de notificação:\n\n🔴 **QR escaneado** — alguém escaneou o QR do seu objeto\n🟡 **Novo match** — IA encontrou um possível par\n🟢 **Match confirmado** — os dois lados confirmaram\n📧 **Reativação** — objeto sem match por 24h, com dicas\n\nTodas ficam em: Dashboard → Notificações',
   },
   privacy_help: {
-    text: 'A conversa acontece pelo chat da plataforma.\n\nA página pública do objeto mostra apenas informações básicas do item.',
+    text: 'O aviso de quem achou fica registrado na ocorrência; não há garantia de resposta.\n\nA página pública do objeto mostra apenas informações básicas do item.',
   },
   abroad: {
     text: 'Sim. O Backfindr pode ser usado em qualquer lugar do mundo: quem perdeu e quem achou registram a ocorrência de onde estiverem. A divulgação do Backfindr hoje está concentrada no Brasil, mas não há restrição de uso por país. Quem registra uma ocorrência também pode divulgá-la nas redes sociais pelos links e integrações disponíveis no sistema, o que amplia o alcance.',
@@ -356,7 +356,7 @@ const FLOWS: Record<string, { text: string; buttons?: { label: string; action: s
     text: 'Sim, pode cancelar a qualquer momento pelo painel em:\n\nhttps://backfindr.com/dashboard/billing\n\nSem fidelidade, sem multa. O plano continua ativo até o fim do período pago.',
   },
   contact_help: {
-    text: 'Para contatar o dono:\n\n1. Clique em "Avisar dono" na página do objeto\n2. Deixe uma mensagem — o dono recebe uma notificação imediata\n3. Ele pode responder via chat interno\n\nA conversa acontece pelo chat da plataforma.',
+    text: 'Para avisar o dono:\n\n1. Clique em "Avisar o dono que encontrei" na página do objeto\n2. O aviso fica registrado na ocorrência; push e e-mail saem só quando o dono não é legado\n\nNão há garantia de resposta.',
   },
 
   // ── Planos ──

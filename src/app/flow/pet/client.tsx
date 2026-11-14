@@ -332,7 +332,7 @@ export default function PetFlowClient() {
                 <ArrowRight className="w-5 h-5" />
               </button>
               <p className="text-center text-white/30 text-xs">
-                Gratuito. A conversa acontece pelo chat da plataforma.
+                Gratuito. O aviso fica registrado na ocorrência; não há garantia de resposta.
               </p>
 
               {/* Compartilhar antes de publicar — aumenta viralização */}

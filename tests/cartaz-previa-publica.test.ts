@@ -21,25 +21,13 @@ const chama = async (qs: string) => { st.jsx = null; st.urls = []; await GET(new
 
 beforeEach(() => {
   st.rows = [base];
-  globalThis.fetch = vi.fn(async (u: unknown) => { st.urls.push(String(u)); return new Response(new Uint8Array([1, 2, 3]), { status: 200, headers: { 'content-type': 'image/png' } }); }) as unknown as typeof fetch;
+  globalThis.fetch = vi.fn(async (u: unknown) => { st.urls.push(String(u)); return new Response(new Uint8Array(Array(900).fill(7)), { status: 200, headers: { 'content-type': 'image/png' } }); }) as unknown as typeof fetch;
 });
 
 describe('cartaz: pré-visualização pública x cartaz do dono', () => {
-  it('?publico=1, cadastro de usuário (o caso real e um fictício com rua): só «bairro, cidade - UF»; mapa com coordenada de 3 casas', async () => {
+  it('?publico=1, cadastro de usuário (o caso real e um fictício com rua): só «bairro, cidade - UF»', async () => {
     const j = await chama('format=vertical&publico=1');
     expect(j).toContain('Vila Modelo, Guarulhos - SP'); expect(j).not.toMatch(/Palmeiras|1224|07040/);
-    expect(st.urls.some(u => u.includes('tile.openstreetmap.org'))).toBe(true);
-  });
-  it('mapa do cartaz público usa a coordenada arredondada (ponto escolhido na divisa de dois blocos do mapa: exato e arredondado caem em blocos diferentes)', async () => {
-    st.rows = [{ ...base, latitude: '-23.4567891', longitude: '-46.922507' }];
-    await chama('format=vertical&publico=1');
-    const bloco = (lng: number) => Math.floor((lng + 180) / 360 * 2 ** 15);
-    expect(bloco(-46.922507)).not.toBe(bloco(-46.923));
-    const xs = st.urls.filter(u => u.includes('tile.openstreetmap.org')).map(u => Number(u.split('/')[4]));
-    expect(xs).toContain(bloco(-46.923) - 1); expect(xs).not.toContain(bloco(-46.922507) + 1);   // centro do mapa = bloco do valor arredondado
-    st.rows = [{ ...base, latitude: '-23.4567891', longitude: '-46.922507' }];
-    await chama('format=vertical');
-    expect(st.urls.filter(u => u.includes('tile.openstreetmap.org')).map(u => Number(u.split('/')[4]))).toContain(bloco(-46.922507) + 1);   // cartaz do dono: coordenada exata
   });
   it('sem o parâmetro (cartaz que o dono baixa e imprime): texto original, intocado', async () => {
     const j = await chama('format=vertical');
@@ -59,5 +47,34 @@ describe('cartaz: pré-visualização pública x cartaz do dono', () => {
     expect(r('src/lib/api.ts')).toContain("poster?format=${format}`"); expect(r('src/lib/api.ts')).not.toContain('publico=1');
     expect(r('src/app/dashboard/objects/[id]/page.tsx')).not.toContain('publico=1'); expect(r('src/components/PosterModal.tsx')).not.toContain('publico=1');
     expect(r('src/lib/posterFormatter.ts')).not.toMatch(/publicLocation|enderecoPublico/);
+  });
+});
+
+// ── Mini-mapa do cartaz: uma imagem estática do Mapbox (nada de blocos do OSM), validada; sem mapa = bloco some ─────────────────────────────────
+describe('cartaz A4: mini-mapa «Local da ocorrência»', () => {
+  const mapa = () => st.urls.filter(u => u.includes('api.mapbox.com'));
+  beforeEach(() => { process.env.MAPBOX_SERVER_TOKEN = 'pk.teste-nao-real'; });
+  it('um único pedido ao Mapbox (nenhum ao OpenStreetMap); o bloco aparece; o cartaz do dono usa a coordenada original e a prévia pública a arredondada', async () => {
+    const dono = await chama('format=a4');
+    expect(st.urls.some(u => u.includes('openstreetmap'))).toBe(false); expect(mapa().length).toBe(1);
+    expect(mapa()[0]).toContain('-46.523457,-23.456789,14'); expect(dono).toContain('LOCAL DA OCORRÊNCIA');
+    const pub = await chama('format=a4&publico=1');
+    expect(mapa().length).toBe(1); expect(mapa()[0]).toContain('-46.523000,-23.457000,14'); expect(pub).toContain('LOCAL DA OCORRÊNCIA');
+  });
+  it('legado: ?publico=1 mantém a coordenada original', async () => {
+    st.rows = [{ ...base, is_legacy: true, source: 'webjetos' }]; await chama('format=a4&publico=1'); expect(mapa()[0]).toContain('-46.523457,-23.456789,14');
+  });
+  it('Mapbox recusa (403), devolve página em vez de imagem ou não há token: sem mapa — o bloco some e o texto bairro/cidade continua', async () => {
+    const proprio = globalThis.fetch;
+    for (const resp of [() => new Response(new Uint8Array(Array(900).fill(7)), { status: 403, headers: { 'content-type': 'image/png' } }), () => new Response(new Uint8Array(Array(900).fill(7)), { status: 200, headers: { 'content-type': 'text/html' } }), () => { throw new Error('rede'); }]) {
+      globalThis.fetch = vi.fn(async (u: unknown) => (String(u).includes('api.mapbox.com') ? resp() : new Response(new Uint8Array(Array(900).fill(7)), { status: 200, headers: { 'content-type': 'image/png' } }))) as unknown as typeof fetch;
+      const j = await chama('format=a4&publico=1'); expect(j).not.toContain('LOCAL DA OCORRÊNCIA'); expect(j).toContain('Vila Modelo, Guarulhos - SP');
+    }
+    globalThis.fetch = proprio; delete process.env.MAPBOX_SERVER_TOKEN; delete process.env.NEXT_PUBLIC_MAPBOX_TOKEN;
+    const j = await chama('format=a4'); expect(j).not.toContain('LOCAL DA OCORRÊNCIA'); expect(mapa().length).toBe(0);
+  });
+  it('frase do cartaz: sem «alerta imediato»; texto fiel', async () => {
+    const j = await chama('format=a4');
+    expect(j).toContain('Escaneie o QR Code para abrir a página do objeto e avisar que você o encontrou.'); expect(j).not.toMatch(/alerta imediato|ele recebe/);
   });
 });

@@ -19,7 +19,7 @@ describe('/flow/wallet', () => {
     expect(t).not.toMatch(/sem expor/i);
   });
   it('a fórmula já aceita continua exatamente como estava (passo 3)', () => {
-    expect(wallet).toContain('Conta gratuita em segundos. Quem encontrar sua carteira pode te devolver — a conversa acontece pelo chat da plataforma.');
+    expect(wallet).toContain('Conta gratuita em segundos. Quem encontrar sua carteira pode te devolver — o aviso dela fica registrado, sem garantia de resposta.');
   });
 });
 
@@ -27,8 +27,8 @@ describe('/flow/keys', () => {
   it('passo 1: «Registre em 30 segundos. Quem achar pode te devolver.» (uma vez)', () => {
     expect((keys.match(/Registre em 30 segundos\. Quem achar pode te devolver\./g) ?? []).length).toBe(1);
   });
-  it('passo 3: fórmula aceita «a conversa acontece pelo chat da plataforma» (uma vez), sem «com segurança»', () => {
-    expect((keys.match(/Quem achar suas chaves pode te devolver — a conversa acontece pelo chat da plataforma\./g) ?? []).length).toBe(1);
+  it('passo 3: texto fiel «o aviso dela fica registrado, sem garantia de resposta» (uma vez; sem «chat»), sem «com segurança»', () => {
+    expect((keys.match(/Quem achar suas chaves pode te devolver — o aviso dela fica registrado, sem garantia de resposta\./g) ?? []).length).toBe(1);
     expect(keys).not.toContain('pode te devolver pelo chat.');
   });
   it('nenhum dos dois fluxos promete contato protegido, SMS ou chat protegido', () => {
@@ -49,7 +49,7 @@ describe('o resto não mudou', () => {
     expect(read('src/app/flow/found/client.tsx')).toContain('Gratuito. Publique seu achado agora.');
   });
   it('a fórmula aceita do componente compartilhado segue igual', () => {
-    expect(read('src/components/flow/FlowLayout.tsx')).toContain('A conversa acontece pelo chat da plataforma.');
+    expect(read('src/components/flow/FlowLayout.tsx')).toContain('O aviso fica registrado na ocorrência; não há garantia de resposta.');
   });
   it('os demais fluxos não foram tocados: lost, bike, phone, vehicle, found, pet, protect, stolen não ganham nem perdem as frases de segurança que já tinham', () => {
     // vehicle e phone não tinham «com segurança»; nenhum outro fluxo ganhou o trecho
