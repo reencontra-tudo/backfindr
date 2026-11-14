@@ -30,7 +30,7 @@ import {
 import { ConviteFim } from './FeedCta';
 import { SITUACAO, T } from './tema';
 import {
-  PROPORCAO_FOTO_GRADE, classesLargura, classesLista, ehVisualizacao, lerVisualizacao, obterLocalStorage, salvarVisualizacao, type Visualizacao,
+  ALTURA_SEM_FOTO_GRADE, PROPORCAO_FOTO_GRADE, classesLargura, classesLista, ehVisualizacao, lerVisualizacao, obterLocalStorage, salvarVisualizacao, type Visualizacao,
 } from '@/lib/feed/visualizacao';
 
 interface Props {
@@ -125,6 +125,10 @@ async function detectGeo(signal: AbortSignal): Promise<Geo | null> {
   } catch { return null; }
 }
 
+/** O link do título cobre o card inteiro (::after): o toque em qualquer parte abre os detalhes. Compartilhar, «Encontrei» e links da fonte ficam por cima (z-10). */
+const cardLinkCls = `after:absolute after:inset-0 after:rounded-xl after:content-[''] hover:underline focus:outline-none focus-visible:after:ring-2 focus-visible:after:ring-[color:var(--f-foco)]`;
+const porCima = 'relative z-10';
+
 function FeedCard({ item, index, vis }: { item: FeedItem; index: number; vis: Visualizacao }) {
   const href = `/objeto/${encodeURIComponent(item.code)}`;
   const isSignal = item.origin === 'sinal_publico';
@@ -138,48 +142,47 @@ function FeedCard({ item, index, vis }: { item: FeedItem; index: number; vis: Vi
   const informar = item.can_report_found && item.status === 'lost';
 
   if (vis === 'grade') {
-    // Grade: foto 4:3 (ou bloco da MESMA proporção sem foto), selo da situação sobre a foto, título, cidade–UF e tempo.
-    const lugar = (
-      <p className={`flex items-center gap-1 text-xs ${T.t3}`}>
-        <MapPin className="h-3 w-3 shrink-0" aria-hidden />
-        <span className="min-w-0 truncate" title={item.location_label}>{item.location_label}</span>
-      </p>
-    );
+    // Grade: foto 4:3 (ou, sem foto, uma faixa baixa com o ícone da categoria), selo da situação sobre a mídia, título, cidade–UF e tempo.
     return (
       <article className={`relative flex min-w-0 flex-col overflow-hidden rounded-xl border bg-[color:var(--f-folha)] shadow-[var(--f-sombra)] ${T.linha}`}
         data-code={item.code} data-origin={item.origin} data-photo={withPhoto ? 'sim' : 'nao'} data-vis="grade">
-        <div className={`relative w-full overflow-hidden ${PROPORCAO_FOTO_GRADE} ${withPhoto ? 'bg-[color:var(--f-hover)]' : sit.suave}`}>
+        <div className={`relative w-full overflow-hidden ${withPhoto ? `${PROPORCAO_FOTO_GRADE} bg-[color:var(--f-hover)]` : `${ALTURA_SEM_FOTO_GRADE} ${sit.suave}`}`}>
           {withPhoto ? (
             // eslint-disable-next-line @next/next/no-img-element
             <img ref={imgRef} src={item.photo_url as string} alt={`Foto: ${item.title}`} loading={index < 4 ? 'eager' : 'lazy'} decoding="async"
               onError={() => setPhotoFailed(true)} className="h-full w-full object-cover" />
           ) : (
-            <span className={`flex h-full w-full items-center justify-center ${sit.texto}`} aria-hidden>
-              <Icon className="h-10 w-10 opacity-70" />
+            <span className={`flex h-full w-full items-center justify-end pr-4 ${sit.texto}`} aria-hidden>
+              <Icon className="h-8 w-8 opacity-70" />
             </span>
           )}
-          {/* Compartilhar: só o ícone (nome acessível mantido), 44 px, no canto superior esquerdo da foto (longe do balão do chat, à direita) */}
-          <span className="absolute left-1 top-1 z-10 flex" onClickCapture={() => feedEvents.compartilhar(item.origin)}>
+          {/* Compartilhar: só o ícone (nome acessível mantido), 44 px, no canto superior esquerdo da mídia (longe do balão do chat, à direita) */}
+          <span className="absolute left-1 top-1 flex" onClickCapture={() => feedEvents.compartilhar(item.origin)}>
             <ShareModal url={`${APP_URL}${href}`} title={item.title} description={`${item.status_label} · ${item.location_label}`}
               buttonLabel="Compartilhar"
-              buttonClassName={`inline-flex h-11 w-11 items-center justify-center rounded-full bg-white/90 text-[0px] shadow focus:outline-none focus:ring-2 ${T.t1} ${T.foco} [&>svg]:h-5 [&>svg]:w-5`} />
+              buttonClassName={`${porCima} inline-flex h-11 w-11 items-center justify-center rounded-full bg-white/90 text-[0px] shadow focus:outline-none focus:ring-2 ${T.t1} ${T.foco} [&>svg]:h-5 [&>svg]:w-5`} />
           </span>
           <span className={`pointer-events-none absolute bottom-2 left-2 rounded-full px-2.5 py-0.5 text-xs font-semibold text-[color:var(--f-selo-t)] ${sit.selo}`}>{item.status_label}</span>
         </div>
-        <div className="flex min-w-0 flex-1 flex-col px-2.5 pb-2.5 pt-1.5">
+        <div className="flex min-w-0 flex-1 flex-col px-2.5 pb-2 pt-1.5">
           <h2 className={`text-sm font-semibold leading-snug ${T.t1}`}>
-            <Link href={href} prefetch={false} aria-label={`Ver detalhes: ${item.title}`} className={`line-clamp-2 min-h-[44px] py-1.5 hover:underline focus:outline-none focus:ring-2 ${T.foco}`}
-              onClick={() => feedEvents.cardAberto(item.origin)}>{item.title}</Link>
+            <Link href={href} prefetch={false} aria-label={`Ver detalhes: ${item.title}`} className={cardLinkCls}
+              onClick={() => feedEvents.cardAberto(item.origin)}><span className="line-clamp-2 block">{item.title}</span></Link>
           </h2>
-          {lugar}
-          <p className={`mt-0.5 text-xs ${T.t3}`}>
+          <p className={`mt-0.5 flex items-center gap-1 text-xs ${T.t3}`}>
+            <MapPin className="h-3 w-3 shrink-0" aria-hidden />
+            <span className="min-w-0 truncate" title={item.location_label}>{item.location_label}</span>
+          </p>
+          <p className={`text-xs ${T.t3}`}>
             <time dateTime={item.created_at} suppressHydrationWarning>{relativeTimeLabel(item.created_at)}</time>
           </p>
           {isSignal && item.source_name && <p className={`mt-0.5 truncate text-[11px] ${T.t3}`}>Fonte: {item.source_name}</p>}
           {informar && (
-            <div className="mt-auto pt-1.5">
-              <Link href="/achei?ref=feed" prefetch={false} className={`${quietBaseCls} w-fit max-w-[4.75rem] !whitespace-normal -ml-2 px-2 !text-left !text-[11px] max-[340px]:max-w-[3.9rem] max-[340px]:!px-1 min-[430px]:max-w-[6.5rem] min-[430px]:!text-xs min-[560px]:max-w-none ${T.acao}`}
-                onClick={() => feedEvents.informarEncontreiClique()}>Informar que encontrei</Link>
+            <div className="mt-auto pt-1">
+              {/* Rótulo curto na Grade; o nome acessível continua «Informar que encontrei». Uma linha, 44 px, sempre à esquerda (longe do balão do chat). */}
+              <Link href="/achei?ref=feed" prefetch={false} aria-label="Informar que encontrei"
+                className={`${quietBaseCls} ${porCima} -ml-2 !px-2.5 !text-xs ${T.acao}`}
+                onClick={() => feedEvents.informarEncontreiClique()}>Encontrei</Link>
             </div>
           )}
         </div>
@@ -190,7 +193,7 @@ function FeedCard({ item, index, vis }: { item: FeedItem; index: number; vis: Vi
   const body = (
     <div className="min-w-0 flex-1">
       <h2 className={`text-lg font-semibold leading-snug ${T.t1}`}>
-        <Link href={href} prefetch={false} className={`block py-2.5 hover:underline focus:outline-none focus:ring-2 ${T.foco}`}
+        <Link href={href} prefetch={false} className={`block py-2.5 ${cardLinkCls}`}
           onClick={() => feedEvents.cardAberto(item.origin)}>{item.title}</Link>
       </h2>
       <p className={`flex items-center gap-1.5 text-xs ${T.t3}`}>
@@ -210,21 +213,22 @@ function FeedCard({ item, index, vis }: { item: FeedItem; index: number; vis: Vi
           <Newspaper className="h-3.5 w-3.5 shrink-0" aria-hidden />
           <span>Origem: notícia pública</span>
           {item.source_url && (
-            <a href={item.source_url} target="_blank" rel="nofollow noopener noreferrer" className={`inline-flex min-h-[44px] items-center underline underline-offset-2 hover:text-[color:var(--f-t1)]`}>
+            <a href={item.source_url} target="_blank" rel="nofollow noopener noreferrer" className={`${porCima} inline-flex min-h-[44px] items-center underline underline-offset-2 hover:text-[color:var(--f-t1)]`}>
               Fonte{item.source_name ? `: ${item.source_name}` : ''}
             </a>
           )}
         </p>
       )}
-      <div className={`mt-3 grid grid-cols-[auto_auto] items-center justify-start gap-x-1 gap-y-0.5 sm:flex sm:flex-wrap sm:gap-1.5 ${withPhoto ? '' : '-ml-12 sm:ml-0'}`}>
-        <Link href={href} prefetch={false} aria-label={`Ver detalhes: ${item.title}`} className={primaryActionCls}
+      {/* Ações na MESMA linha («Informar que encontrei» só quebra se não couber). Abaixo de 440 px «Compartilhar» vira só o ícone (nome acessível mantido) para as três caberem. */}
+      <div className={`mt-3 flex flex-wrap items-center justify-start gap-x-1 gap-y-0.5 ${withPhoto ? '' : '-ml-12 sm:ml-0'}`}>
+        <Link href={href} prefetch={false} aria-label={`Ver detalhes: ${item.title}`} className={`${primaryActionCls} ${porCima}`}
           onClick={() => feedEvents.cardAberto(item.origin)}>Ver detalhes</Link>
         <span className="flex min-w-0" onClickCapture={() => feedEvents.compartilhar(item.origin)}>
           <ShareModal url={`${APP_URL}${href}`} title={item.title} description={`${item.status_label} · ${item.location_label}`}
-            buttonLabel="Compartilhar" buttonClassName={quietActionCls} />
+            buttonLabel="Compartilhar" buttonClassName={`${quietActionCls} ${porCima} max-[439px]:w-11 max-[439px]:gap-0 max-[439px]:!px-0 max-[439px]:text-[0px]`} />
         </span>
         {informar && (
-          <Link href="/achei?ref=feed" prefetch={false} className={`${quietBaseCls} col-span-2 justify-self-start sm:col-auto ${T.acao}`}
+          <Link href="/achei?ref=feed" prefetch={false} className={`${quietBaseCls} ${porCima} ${T.acao}`}
             onClick={() => feedEvents.informarEncontreiClique()}>Informar que encontrei</Link>
         )}
       </div>
@@ -232,7 +236,7 @@ function FeedCard({ item, index, vis }: { item: FeedItem; index: number; vis: Vi
   );
 
   return (
-    <article className="py-5" data-code={item.code} data-origin={item.origin} data-photo={withPhoto ? 'sim' : 'nao'} data-vis="publicacoes">
+    <article className="relative py-5" data-code={item.code} data-origin={item.origin} data-photo={withPhoto ? 'sim' : 'nao'} data-vis="publicacoes">
       {withPhoto ? (
         <>
           {/* Foto em destaque, largura total, proporção fixa (sem pulo de layout) */}
@@ -256,7 +260,8 @@ function FeedCard({ item, index, vis }: { item: FeedItem; index: number; vis: Vi
   );
 }
 
-/** Bloco explicativo entre os primeiros cards (só na página 1; um único bloco). Texto fixo, igual para todos. Na Grade ocupa a linha inteira. */
+/** Bloco explicativo entre os primeiros cards (só na página 1; um único bloco). Texto fixo, igual para todos. Na Grade ocupa a linha inteira.
+ *  Recebeu o texto que ficava no topo da página (o que o Backfindr conecta e o convite a cadastrar; a frase dos registros mais recentes). */
 function FeedAbout({ vis }: { vis: Visualizacao }) {
   const linkCls = `inline-flex min-h-[44px] items-center rounded-lg px-3 text-sm font-medium underline underline-offset-2 focus:outline-none focus:ring-2 ${T.acao} ${T.hover} ${T.foco}`;
   return (
@@ -264,8 +269,12 @@ function FeedAbout({ vis }: { vis: Visualizacao }) {
       <div className={`rounded-xl p-4 ${T.aviso}`}>
         <h2 className={`text-base font-semibold ${T.t1}`}>O Backfindr vai além das publicações</h2>
         <p className={`mt-1 text-sm leading-relaxed ${T.t2}`}>
+          O Backfindr conecta pessoas que perderam e encontraram objetos, documentos, animais e veículos. Cadastre uma ocorrência e descubra possíveis correspondências.
+        </p>
+        <p className={`mt-1 text-sm leading-relaxed ${T.t2}`}>
           Pesquise por localização e características e descubra possíveis correspondências entre o que foi perdido e o que foi encontrado.
         </p>
+        <p className={`mt-1 text-xs leading-relaxed ${T.t3}`}>Os registros mais recentes de objetos, documentos e pets perdidos, achados ou roubados.</p>
         <div className="-ml-3 mt-1 flex flex-wrap items-center">
           <Link href="/buscar" prefetch={false} className={linkCls}>Buscar ocorrências</Link>
           <Link href="/map" prefetch={false} className={linkCls}>Ver no mapa</Link>
@@ -513,9 +522,8 @@ export default function FeedClient({ initialItems, initialNextCursor, initialHas
 
   return (
     <div className={classesLargura(vis)} data-vis={vis}>
-      <div className="grid grid-cols-1 gap-3" role="group" aria-label="Filtros do Feed">
-        <div className="flex min-w-0 items-start gap-2">
-        <div className={`${faixaCls} min-w-0 flex-1`} role="group" aria-label="Situação">
+      <div className="grid grid-cols-1 gap-2" role="group" aria-label="Filtros do Feed">
+        <div className={faixaCls} role="group" aria-label="Situação">
           {STATUS_OPTIONS.map((o) => (
             <button key={o.value} type="button" aria-pressed={status === o.value}
               onClick={() => { if (status !== o.value) { feedEvents.filtroAplicado('situacao', o.value); apply(o.value, category, region); } }}
@@ -524,7 +532,8 @@ export default function FeedClient({ initialItems, initialNextCursor, initialHas
             </button>
           ))}
         </div>
-        <div role="group" aria-label="Visualização" className="flex shrink-0 gap-1">
+        {/* Seletor de visualização: linha própria, à direita */}
+        <div role="group" aria-label="Visualização" className="flex justify-end gap-1">
           {([['publicacoes', 'Publicações', Rows3], ['grade', 'Grade', LayoutGrid]] as const).map(([valor, nome, Ic]) => (
             <button key={valor} type="button" aria-pressed={vis === valor} aria-label={nome} title={nome} onClick={() => escolherVis(valor)} data-vis-botao={valor}
               className={`inline-flex h-11 w-11 items-center justify-center rounded-xl border focus:outline-none focus:ring-2 ${T.foco} ${vis === valor ? 'border-[color:var(--f-chip-ativo)] bg-[color:var(--f-chip-ativo)] text-[color:var(--f-chip-ativo-t)]' : `${T.borda} ${T.t1} ${T.hover}`}`}>
@@ -532,26 +541,27 @@ export default function FeedClient({ initialItems, initialNextCursor, initialHas
             </button>
           ))}
         </div>
+        {/* Categoria e região lado a lado, sem rótulo visível (nome acessível pelo aria-label; primeira opção = «todas») */}
+        <div className="grid grid-cols-2 gap-2">
+          <select aria-label="Categoria" className={`${selectCls} !px-2.5 !text-[13px]`} value={category}
+            onChange={(e) => { feedEvents.filtroAplicado('categoria', e.target.value); apply(status, e.target.value, region); }}>
+            <option value="all">Todas as categorias</option>
+            {(Object.keys(FEED_CATEGORY_LABELS) as Array<keyof typeof FEED_CATEGORY_LABELS>).map((k) => (
+              <option key={k} value={k}>{FEED_CATEGORY_LABELS[k]}</option>
+            ))}
+          </select>
+          <select aria-label="Cidade ou região" className={`${selectCls} !px-2.5 !text-[13px]`} value={region} disabled={locating} onChange={(e) => { void chooseRegion(e.target.value); }}>
+            <option value="todas">Todas as regiões</option>
+            <option value="auto">Perto de mim</option>
+            <option value="cidade">Só a minha cidade</option>
+            {regions.map((u) => <option key={u} value={u}>Estado: {u}</option>)}
+          </select>
         </div>
-        <div className="grid grid-cols-1 gap-3 min-[420px]:grid-cols-2">
-          <label className={`block text-xs ${T.t2}`}>Categoria
-            <select className={`${selectCls} mt-1`} value={category}
-              onChange={(e) => { feedEvents.filtroAplicado('categoria', e.target.value); apply(status, e.target.value, region); }}>
-              <option value="all">Todas as categorias</option>
-              {(Object.keys(FEED_CATEGORY_LABELS) as Array<keyof typeof FEED_CATEGORY_LABELS>).map((k) => (
-                <option key={k} value={k}>{FEED_CATEGORY_LABELS[k]}</option>
-              ))}
-            </select>
-          </label>
-          <label className={`block text-xs ${T.t2}`}>Cidade ou região
-            <select className={`${selectCls} mt-1`} value={region} disabled={locating} onChange={(e) => { void chooseRegion(e.target.value); }}>
-              <option value="todas">Todas as regiões</option>
-              <option value="auto">Perto de mim</option>
-              <option value="cidade">Só a minha cidade</option>
-              {regions.map((u) => <option key={u} value={u}>Estado: {u}</option>)}
-            </select>
-          </label>
-        </div>
+        {/* Aviso de que a lista é só um recorte (uma linha, pequena e cinza); o link leva ao histórico no mapa */}
+        <p className={`my-1 text-xs leading-snug ${T.t3}`}>
+          Esta lista é só um recorte recente.{' '}
+          <Link href="/map" prefetch={false} className="inline py-3.5 font-medium underline underline-offset-2 hover:text-[color:var(--f-t1)]">Ver histórico no mapa</Link>
+        </p>
       </div>
 
       {geoNotice && (

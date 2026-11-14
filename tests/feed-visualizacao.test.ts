@@ -11,7 +11,7 @@ import { renderToString } from 'react-dom/server';
 import FeedClient from '@/app/feed/FeedClient';
 import { TEMA_CLARO, TEMA_ESCURO, TEMA_ATIVO } from '@/app/feed/tema';
 import {
-  CHAVE_VISUALIZACAO, PROPORCAO_FOTO_GRADE, classesLargura, classesLista, lerVisualizacao, salvarVisualizacao, type Visualizacao,
+  ALTURA_SEM_FOTO_GRADE, CHAVE_VISUALIZACAO, PROPORCAO_FOTO_GRADE, classesLargura, classesLista, lerVisualizacao, salvarVisualizacao, type Visualizacao,
 } from '@/lib/feed/visualizacao';
 import { criarEstado, validarEstado } from '@/lib/feed/estado';
 import type { FeedItem } from '@/lib/feed/query';
@@ -140,11 +140,17 @@ describe('cards da Grade', () => {
     expect(a).toContain(PROPORCAO_FOTO_GRADE); expect(a).toContain('<img');
     expect(a).toMatch(/absolute bottom-2 left-2[^"]*"[^>]*>Perdido</);
   });
-  it('card SEM foto tem o MESMO bloco de foto (mesma proporção) que o com foto, com ícone da categoria', () => {
-    const bloco = (a: string) => a.match(/<div class="relative w-full overflow-hidden (aspect-\[4\/3\])[^"]*"/)![1];
-    expect(bloco(grade[1])).toBe(bloco(grade[0])); expect(bloco(grade[2])).toBe(bloco(grade[0]));
+  it('card SEM foto: faixa de mídia BAIXA (h-20) com ícone da categoria e cor suave, bem mais baixa que a foto 4:3; com foto continua 4:3', () => {
+    const midia = (a: string) => a.match(/<div class="relative w-full overflow-hidden ([^"]*)"/)![1];
+    expect(midia(grade[0])).toContain('aspect-[4/3]');
+    for (const i of [1, 2]) { expect(midia(grade[i])).toContain(ALTURA_SEM_FOTO_GRADE); expect(midia(grade[i])).not.toContain('aspect-'); expect(midia(grade[i])).toContain('--f-'); }
+    expect(ALTURA_SEM_FOTO_GRADE).toBe('h-20');   // 80 px (a foto 4:3 passa de 100 px em qualquer largura da Grade)
     expect(grade[1]).not.toContain('<img'); expect(grade[1]).toContain('<svg');
-    expect(grade[1]).toMatch(/<span class="flex h-full w-full items-center justify-center [^"]*" aria-hidden="true"><svg/);   // o ícone está visível e ocupa o bloco inteiro (não escondido)
+    expect(grade[1]).toMatch(/<span class="flex h-full w-full items-center justify-end [^"]*" aria-hidden="true"><svg/);   // ícone visível dentro da faixa
+  });
+  it('sem espaço vazio forçado no card: nada de altura mínima no título e «Encontrei» só aparece quando existe', () => {
+    for (const a of grade) { expect(a).not.toMatch(/min-h-\[(?!44)/); }
+    expect(grade[1]).not.toMatch(/h-\[(1\d\d|2\d\d)px\]/);
   });
   it('em Publicações o card sem foto continua compacto (sem bloco 4:3)', () => {
     const pub = articles(render('publicacoes'));
@@ -155,9 +161,27 @@ describe('cards da Grade', () => {
     const selo = (a: string) => a.match(/absolute bottom-2 left-2 rounded-full[^"]*(bg-\[color:var\(--f-(?:perdido|achado|roubado)\)\])/)![1];
     expect(new Set([selo(grade[0]), selo(grade[3]), selo(grade[2])]).size).toBe(3);
   });
-  it('«Informar que encontrei» só em perdido de usuário; sinais nunca', () => {
+  it('«Informar que encontrei» só em perdido de usuário; sinais e roubado nunca', () => {
     expect(grade[0]).toContain('Informar que encontrei'); expect(grade[1]).toContain('Informar que encontrei');
     expect(grade[2]).not.toContain('Informar que encontrei'); expect(grade[3]).not.toContain('Informar que encontrei');
+    const roubadoUsuario = articles(render('grade', [mk({ code: 'T0000009', status: 'stolen', status_label: 'Roubado', can_report_found: true })]))[0];
+    expect(roubadoUsuario).not.toContain('Informar que encontrei'); expect(roubadoUsuario).not.toContain('>Encontrei<');
+  });
+  it('Grade: rótulo visível «Encontrei», nome acessível «Informar que encontrei», mesmo destino, 1 linha e 44 px', () => {
+    const tag = grade[0].match(/<a[^>]*href="\/achei\?ref=feed"[^>]*>/)![0];
+    expect(tag).toContain('aria-label="Informar que encontrei"'); expect(grade[0]).toMatch(/href="\/achei\?ref=feed">Encontrei<\/a>/);
+    expect(tag).toContain('min-h-[44px]'); expect(tag).toContain('whitespace-nowrap'); expect(tag).not.toContain('whitespace-normal');
+    expect(read('src/app/feed/FeedClient.tsx')).toContain('feedEvents.informarEncontreiClique()');
+  });
+  it('Publicações: abaixo de 440 px «Compartilhar» vira só o ícone (nome acessível mantido) para as três ações caberem na mesma linha', () => {
+    const p0 = articles(render('publicacoes'))[0];
+    const share = p0.match(/<button[^>]*>/g)!.find((t) => t.includes('Compartilhar') || t.includes('max-[439px]'))!;
+    expect(share).toContain('max-[439px]:w-11'); expect(share).toContain('max-[439px]:text-[0px]'); expect(share).toContain('min-h-[44px]');
+    expect(p0).toMatch(/Compartilhar<\/button>/);   // o texto continua no HTML (nome acessível)
+  });
+  it('Publicações: rótulo completo «Informar que encontrei» (visível e acessível), mesma linha das outras ações', () => {
+    const p0 = articles(render('publicacoes'))[0];
+    expect(p0).toMatch(/href="\/achei\?ref=feed">Informar que encontrei<\/a>/);
   });
   it('sinal mostra «Fonte: <veículo>» pequena e nunca o endereço', () => {
     expect(grade[2]).toContain('Fonte: g1.globo.com'); expect(grade[2]).not.toContain('https://g1.globo.com'); expect(grade[2]).not.toContain('target="_blank"');
@@ -230,5 +254,94 @@ describe('tema: uma constante, um tema por vez, contraste WCAG AA', () => {
   it('o tema só se aplica na página do Feed (um style no <main>); o layout do site não é tocado', () => {
     expect(read('src/app/feed/[[...slug]]/page.tsx')).toContain('style={temaStyle()}');
     expect(read('src/app/layout.tsx')).not.toContain('--f-');
+  });
+});
+
+describe('card inteiro clicável (um único link por card, sem elementos interativos aninhados)', () => {
+  const por = (v: Visualizacao) => articles(render(v));
+  it('o link do título cobre o card (::after inset-0) e é o mesmo destino de sempre', () => {
+    for (const v of ['publicacoes', 'grade'] as const) for (const [i, a] of por(v).entries()) {
+      const links = a.match(/<a [^>]*after:inset-0[^>]*>/g) ?? [];
+      expect(links, `${v} card ${i}`).toHaveLength(1);
+      expect(links[0]).toContain(`href="/objeto/${ITENS[i].code}"`);
+      expect(a).toMatch(/^<article class="relative /);   // o card é o referencial do ::after
+    }
+  });
+  it('compartilhar, «Informar que encontrei», «Ver detalhes» e o link da fonte ficam por cima (z-10)', () => {
+    for (const v of ['publicacoes', 'grade'] as const) for (const a of por(v)) {
+      for (const t of a.match(/<button[^>]*>/g) ?? []) if (t.includes('Compartilhar') || t.includes('text-[0px]') || t.includes('quiet')) expect(t).toContain('z-10');
+      const botoesShare = a.match(/<button[^>]*class="[^"]*"[^>]*>/g) ?? [];
+      for (const t of botoesShare) expect(t, t.slice(0, 90)).toContain('z-10');
+      for (const t of a.match(/<a [^>]*href="(\/achei|https?:)[^>]*>/g) ?? []) expect(t).toContain('z-10');
+    }
+    expect(por('publicacoes')[0]).toMatch(/<a [^>]*aria-label="Ver detalhes: [^"]*"[^>]*z-10|<a [^>]*z-10[^>]*aria-label="Ver detalhes/);
+  });
+  it('nenhum link ou botão dentro de outro (HTML válido, foco correto)', () => {
+    for (const v of ['publicacoes', 'grade'] as const) for (const a of por(v)) {
+      for (const m of a.matchAll(/<a [^>]*>([\s\S]*?)<\/a>/g)) expect(m[1]).not.toMatch(/<a |<button/);
+      for (const m of a.matchAll(/<button[^>]*>([\s\S]*?)<\/button>/g)) expect(m[1]).not.toMatch(/<a |<button/);
+    }
+  });
+  it('o evento de abertura continua no link do título (um toque = um evento) e o compartilhar não passa por ele', () => {
+    const src = read('src/app/feed/FeedClient.tsx');
+    expect((src.match(/feedEvents\.cardAberto\(item\.origin\)/g) ?? []).length).toBe(3);   // título (Grade), título e «Ver detalhes» (Publicações): um por link
+    expect(src).not.toMatch(/<article[^>]*onClick/);                                        // o card em si não tem onClick (o toque cai no link)
+  });
+});
+
+describe('topo e filtros mais limpos', () => {
+  const h = render('publicacoes');
+  it('Categoria e Região lado a lado, sem rótulo visível, com nome acessível e a 1ª opção «todas»', () => {
+    const area = h.slice(h.indexOf('aria-label="Filtros do Feed"'));
+    expect(area).not.toMatch(/<label/);
+    expect(area).toMatch(/<div class="grid grid-cols-2 gap-2"><select aria-label="Categoria"[\s\S]*?<option value="all"[^>]*>Todas as categorias<\/option>[\s\S]*?<select aria-label="Cidade ou região"[\s\S]*?<option value="todas"[^>]*selected[^>]*>Todas as regiões<\/option>/);
+  });
+  it('seletor de visualização em linha própria, à direita, fora da linha dos chips', () => {
+    const chips = h.split('aria-label="Situação"')[1].split('aria-label="Visualização"')[0];
+    expect(chips).not.toContain('data-vis-botao');
+    expect(h).toMatch(/<div role="group" aria-label="Visualização" class="flex justify-end gap-1">/);
+  });
+  it('aviso de recorte: uma linha pequena e cinza com «Ver histórico no mapa» (link /map), perto dos filtros', () => {
+    expect(h).toMatch(/<p class="my-1 text-xs [^"]*">Esta lista é só um recorte recente\. <a [^>]*href="\/map"[^>]*>Ver histórico no mapa<\/a><\/p>/);
+    expect(h.indexOf('Esta lista é só um recorte recente')).toBeGreaterThan(h.indexOf('aria-label="Cidade ou região"'));
+    expect(h.indexOf('Esta lista é só um recorte recente')).toBeLessThan(h.indexOf('<article'));
+  });
+  it('a geolocalização continua só ao escolher «Perto de mim» / «Só a minha cidade» (nada novo no carregamento)', () => {
+    const src = read('src/app/feed/FeedClient.tsx');
+    expect((src.match(/detectGeo\(/g) ?? []).length).toBe(2);
+  });
+  it('chips «Todos / Perdidos / Achados / Roubados» continuam, com degradê (#109)', () => {
+    for (const t of ['>Todos<', '>Perdidos<', '>Achados<', '>Roubados<']) expect(h).toContain(t);
+    expect(h).toContain('[background-attachment:local,local,scroll,scroll]');
+  });
+});
+
+describe('título da página e cabeçalho', () => {
+  const page = read('src/app/feed/[[...slug]]/page.tsx');
+  it('H1 e título da aba: «Feed de ocorrências»; canonical, noindex 2+ e descrição como estavam', () => {
+    expect(page).toContain("const TITLE = 'Feed de ocorrências de objetos perdidos e achados'");
+    expect(page).toContain('>Feed de ocorrências</h1>');
+    expect(page).not.toMatch(/Ocorrências recentes<\/h1>/);
+    expect(page).toContain('alternates: { canonical: `${APP_URL}/feed` }');
+    expect(page).toContain("robots: page === 1 ? { index: true, follow: true } : { index: false, follow: true }");
+    expect(page).toContain("const DESCRIPTION = 'Veja as ocorrências mais recentes de objetos, documentos e pets perdidos, achados ou roubados registradas no Backfindr, e compartilhe para ajudar na devolução.';");
+    expect(page).toContain("openGraph: { title: `${TITLE} | Backfindr`");
+  });
+  it('chamada curta «Perdeu ou encontrou algo?» com «Perdi» e «Encontrei» só na página 1; o caminho «Roubaram algo meu» continua nos menus', async () => {
+    expect(page).toContain('{page === 1 && (');
+    expect(page).toContain('Perdeu ou encontrou algo?');
+    const cta = read('src/app/feed/FeedCta.tsx');
+    expect(cta).toContain('Roubaram algo meu'); expect(cta).toContain('feedEvents.ctaRoubado(posicao, pagina)');
+    const { TopoBotoes } = await import('@/app/feed/FeedCta');
+    const t = clean(renderToString(React.createElement(TopoBotoes, { pagina: 1 })));
+    const [perdi, encontrei] = t.match(/<a [^>]*>[^<]*<\/a>/g)!;
+    expect(perdi).toContain('href="/flow/lost?ref=feed"'); expect(perdi).toContain('aria-label="Perdi algo"'); expect(perdi).toMatch(/>Perdi<\/a>$/);
+    expect(encontrei).toContain('href="/flow/found?ref=feed"'); expect(encontrei).toContain('aria-label="Encontrei algo"'); expect(encontrei).toMatch(/>Encontrei<\/a>$/);
+    expect((t.match(/min-h-\[44px\]/g) ?? []).length).toBe(2);
+    expect(cta).toContain("feedEvents.ctaPerdi('topo', pagina)"); expect(cta).toContain("feedEvents.ctaEncontrei('topo', pagina)");
+  });
+  it('balão do assistente: regra só nesta página (fundo sólido, anel e sombra); posição e comportamento não mudam', () => {
+    expect(page).toContain('button[aria-label="Abrir assistente"]{background-color:#0f766e !important');
+    expect(read('src/components/AssistantWidget.tsx')).toContain('aria-label="Abrir assistente"');
   });
 });

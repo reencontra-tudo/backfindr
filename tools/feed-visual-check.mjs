@@ -43,7 +43,8 @@ for (const W of WIDTHS) for (const v of ['publicacoes', 'grade']) {
       const linhas = {}; a.forEach((x) => { const r = x.getBoundingClientRect(); (linhas[Math.round(r.top + scrollY)] ||= []).push(r.height); });
       return { com: com.length, sem: sem.length, hs: [...new Set(foto.map((x) => Math.round(x.h)))], ws: [...new Set(foto.map((x) => Math.round(x.w)))], linhasIguais: Object.values(linhas).every((l) => Math.max(...l) - Math.min(...l) < 1) };
     });
-    ok(`${L} card sem foto com a MESMA altura de foto dos cards com foto (${g.sem} sem / ${g.com} com)`, g.com > 0 && g.sem > 0 && g.hs.length <= 2 && Math.max(...g.hs) - Math.min(...g.hs) <= 1, `alturas ${g.hs}`);
+    { const semH = await p.evaluate(() => { const l = (f) => [...document.querySelectorAll(`main article[data-photo="${f}"]`)].map((x) => Math.round(x.firstElementChild.getBoundingClientRect().height)); return { sem: l('nao'), com: l('sim') }; });
+      ok(`${L} card sem foto: faixa de mídia baixa (80 px), bem mais baixa que a foto (${Math.min(...semH.com)}–${Math.max(...semH.com)} px)`, semH.sem.length > 0 && semH.sem.every((h) => h === 80) && semH.com.every((h) => h > 80), JSON.stringify([...new Set(semH.sem)])); }
     ok(`${L} todos os cards da mesma linha têm a mesma altura`, g.linhasIguais);
     ok(`${L} cards com a mesma largura`, g.ws.length <= 2 && Math.max(...g.ws) - Math.min(...g.ws) <= 1, `larguras ${g.ws}`);
     const sobre = await p.evaluate(() => { const s = document.querySelector('[data-feed-about]'); const l = document.querySelector('main [data-vis]>div[aria-busy]'); if (!s || !l) return null; const a = s.getBoundingClientRect(), c = l.getBoundingClientRect(); return { cheio: Math.abs(a.width - c.width) < 1, antes: [...l.children].indexOf(s) }; });
@@ -51,7 +52,7 @@ for (const W of WIDTHS) for (const v of ['publicacoes', 'grade']) {
   }
   // toques de 44 px
   const toques = await p.evaluate(() => {
-    const seletores = ['[role=group][aria-label="Situação"] button', '[aria-label="Visualização"] button', 'main article h2 a', 'main article a[href^="/achei"]', 'main article button', 'main nav a'];
+    const seletores = ['[role=group][aria-label="Situação"] button', '[aria-label="Visualização"] button', '[data-feed-topo-cta] a', 'main article a[href^="/achei"]', 'main article button', 'main nav a'];
     const ruim = []; for (const s of seletores) for (const e of document.querySelectorAll(s)) { const r = e.getBoundingClientRect(); if (r.width && (r.height < 43.5 || (s.includes('button') && r.width < 43.5))) ruim.push(s + ' ' + Math.round(r.width) + 'x' + Math.round(r.height)); }
     return ruim.slice(0, 5);
   });

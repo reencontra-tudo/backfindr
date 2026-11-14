@@ -1,4 +1,6 @@
 #!/usr/bin/env node
+// ATENÇÃO: as conferências de topo, atalhos e ações dos cards deste arquivo descrevem o layout ANTERIOR aos ajustes de acabamento (F-20: título «Feed de ocorrências»,
+// topo com «Perdi»/«Encontrei», ações na mesma linha). Para o layout atual use tools/feed-acabamento-check.mjs e tools/feed-visual-check.mjs.
 // Verificação de navegador do Feed (Playwright, fora das dependências do projeto).
 //   node tools/feed-browser-check.mjs <baseUrl> [caminho/para/axe.min.js]
 // Requer o app rodando (next start) com NEXT_PUBLIC_POSTHOG_KEY falsa e NEXT_PUBLIC_POSTHOG_HOST=http://localhost:3199

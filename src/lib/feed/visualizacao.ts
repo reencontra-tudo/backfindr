@@ -43,5 +43,7 @@ export function classesLargura(v: Visualizacao): string {
   return v === 'grade' ? 'mx-auto w-full max-w-6xl' : 'mx-auto w-full max-w-2xl';
 }
 
-/** O card sem foto da Grade usa um bloco com a MESMA proporção da foto (4:3), para a altura ser a mesma dos cards com foto. */
+/** Foto do card da Grade: proporção 4:3. */
 export const PROPORCAO_FOTO_GRADE = 'aspect-[4/3]';
+/** Card SEM foto na Grade (94% do Feed): faixa de mídia baixa (ícone da categoria + cor suave), bem mais baixa que a foto 4:3. As linhas da grade esticam os cards para a mesma altura. */
+export const ALTURA_SEM_FOTO_GRADE = 'h-20';

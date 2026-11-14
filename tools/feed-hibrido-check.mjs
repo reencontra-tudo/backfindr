@@ -67,7 +67,7 @@ for (const W of WIDTHS) {
   await p.evaluate(() => scrollTo({ top: document.documentElement.scrollHeight, behavior: 'instant' })); await p.waitForTimeout(2500);
   ok(`${L} depois de rolar até o fim de novo continuam 60 e o convite segue abaixo do botão`, (await cards(p)) === 60 && (await p.locator('aside[data-feed-convite]').count()) === 1);
   // 4) «Informar que encontrei»: só em perdido de usuário (HTML e lista carregada)
-  const regras = await p.evaluate(() => [...document.querySelectorAll('main article')].map((a) => ({ rot: (a.querySelector('p span.font-semibold, span.absolute.rounded-full')?.textContent || '').trim(), orig: a.dataset.origin, inf: !![...a.querySelectorAll('a')].find((x) => /Informar que encontrei/.test(x.textContent)), ver: !![...a.querySelectorAll('a')].find((x) => x.textContent.trim() === 'Ver detalhes' || (x.getAttribute('aria-label') || '').startsWith('Ver detalhes: ')), comp: !![...a.querySelectorAll('button')].find((x) => /Compartilhar/.test(x.textContent)) })));
+  const regras = await p.evaluate(() => [...document.querySelectorAll('main article')].map((a) => ({ rot: (a.querySelector('p span.font-semibold, span.absolute.rounded-full')?.textContent || '').trim(), orig: a.dataset.origin, inf: !![...a.querySelectorAll('a')].find((x) => /Informar que encontrei/.test(x.textContent + ' ' + (x.getAttribute('aria-label') || ''))), ver: !![...a.querySelectorAll('a')].find((x) => x.textContent.trim() === 'Ver detalhes' || (x.getAttribute('aria-label') || '').startsWith('Ver detalhes: ')), comp: !![...a.querySelectorAll('button')].find((x) => /Compartilhar/.test(x.textContent)) })));
   const roubados = regras.filter((c) => c.rot === 'Roubado'), perdidosUsuario = regras.filter((c) => c.rot === 'Perdido' && c.orig === 'usuario');
   ok(`${L} nenhum card «Roubado» tem «Informar que encontrei» (${roubados.length} cards roubados na lista de 60)`, roubados.length > 0 && roubados.every((c) => !c.inf), `com botão: ${roubados.filter((c) => c.inf).length}`);
   ok(`${L} cards «Perdido» de usuário TÊM o botão (${perdidosUsuario.length})`, perdidosUsuario.length > 0 && perdidosUsuario.every((c) => c.inf));
@@ -77,7 +77,7 @@ for (const W of WIDTHS) {
   if (mobile) {
     const chat = await p.evaluate(async () => {
       const c = document.querySelector('button[aria-label="Abrir assistente"]'); if (!c) return { achou: false };
-      const acao = (e) => /^(Ver detalhes|.*Compartilhar|Informar que encontrei|Ver mais ocorrências|Perdi algo|Encontrei algo)$/.test(e.textContent.trim().replace(/\s+/g, ' '));
+      const acao = (e) => /^(Ver detalhes|.*Compartilhar|Informar que encontrei|Encontrei|Perdi|Ver mais ocorrências|Perdi algo|Encontrei algo)$/.test(e.textContent.trim().replace(/\s+/g, ' '));
       let col = 0, passos = 0; const alt = document.documentElement.scrollHeight - innerHeight;
       for (let y = 0; y <= alt; y += 40) { scrollTo({ top: y, behavior: 'instant' }); await new Promise((r) => requestAnimationFrame(() => r())); passos++; const q = c.getBoundingClientRect();
         for (const e of document.querySelectorAll('main a, main button')) { if (!acao(e)) continue; const r = e.getBoundingClientRect(); if (r.width && !(r.right <= q.left || q.right <= r.left || r.bottom <= q.top || q.bottom <= r.top)) col++; } }

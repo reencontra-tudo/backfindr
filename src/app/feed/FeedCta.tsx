@@ -16,7 +16,20 @@ export const CTA_ROUTES = {
 
 const linkBase = 'inline-flex min-h-[44px] items-center justify-center rounded-xl px-4 text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-offset-0';
 
-/** Dois botões do topo, lado a lado. */
+/** Dois botões compactos do topo («Perdi» / «Encontrei»): mesmos destinos e eventos; o nome acessível continua «Perdi algo» / «Encontrei algo». */
+export function TopoBotoes({ pagina }: { pagina: number }) {
+  const base = 'inline-flex min-h-[44px] min-w-[44px] items-center justify-center rounded-xl px-5 text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-offset-0';
+  return (
+    <div className="mt-2 flex gap-2" data-feed-topo-cta>
+      <Link href={CTA_ROUTES.perdi} prefetch={false} aria-label="Perdi algo" onClick={() => feedEvents.ctaPerdi('topo', pagina)}
+        className={`${base} bg-amber-300 text-[#1a1203] hover:bg-amber-200 focus:ring-amber-100`}>Perdi</Link>
+      <Link href={CTA_ROUTES.encontrei} prefetch={false} aria-label="Encontrei algo" onClick={() => feedEvents.ctaEncontrei('topo', pagina)}
+        className={`${base} bg-teal-500 text-[#04110f] hover:bg-teal-400 focus:ring-teal-200`}>Encontrei</Link>
+    </div>
+  );
+}
+
+/** Dois botões lado a lado (usados no convite do fim da lista). */
 export function IntroButtons({ pagina, posicao = 'topo', compacto = false }: { pagina: number; posicao?: FeedCtaPosicao; compacto?: boolean }) {
   // compacto (convite do fim): largura natural, à esquerda (nunca chega à área do botão de chat) e empilhados abaixo de 360 px
   return (
@@ -132,7 +145,7 @@ export function RegisterMenu({ variant, pagina }: { variant: 'fixed' | 'header';
   }, [open]);
 
   const wrap = variant === 'fixed'
-    ? 'fixed bottom-[max(1rem,calc(env(safe-area-inset-bottom)+0.5rem))] left-4 z-40 sm:hidden'   // canto inferior ESQUERDO: o chat fica no direito
+    ? 'fixed bottom-[max(0.5rem,env(safe-area-inset-bottom))] left-4 z-40 sm:hidden'   // canto inferior ESQUERDO: o chat fica no direito
     : 'relative hidden sm:block';
   const trigger = variant === 'fixed'
     ? 'inline-flex min-h-[44px] items-center gap-1.5 rounded-full border border-teal-400/70 bg-[#10151c]/95 px-4 text-sm font-semibold text-teal-100 shadow-lg shadow-black/40 backdrop-blur hover:bg-[#16202a] focus:outline-none focus:ring-2 focus:ring-teal-300'

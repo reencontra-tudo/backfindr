@@ -97,14 +97,13 @@ describe('card com foto (estilo publicação)', () => {
     expect(a).toMatch(/<h2[^>]*text-lg/);
     expect(a).toMatch(/<a [^>]*href="\/objeto\/T0000001"[^>]*>Celular azul perdido<\/a>/);
   });
-  it('ações: «Ver detalhes» é a principal e as outras são discretas; textos iguais aos de antes; em duas linhas no celular', () => {
-    const acoes = a.slice(a.lastIndexOf('<div class="mt-3 grid'));
+  it('ações: «Ver detalhes» é a principal e as outras são discretas; textos iguais aos de antes; na mesma linha', () => {
+    const acoes = a.slice(a.lastIndexOf('<div class="mt-3 flex flex-wrap'));
     for (const t of ['Ver detalhes', 'Compartilhar', 'Informar que encontrei']) expect(acoes).toContain(t);
     expect(acoes).toMatch(/bg-\[color:var\(--f-prim\)\][^"]*"[^>]*>Ver detalhes|aria-label="Ver detalhes[^"]*" class="[^"]*bg-\[color:var\(--f-prim\)\]/);
     expect((acoes.match(/bg-\[color:var\(--f-prim\)\]/g) ?? []).length).toBe(1); // só a principal é «cheia»
     expect(acoes).toContain('href="/achei?ref=feed"');
-    expect(acoes).toContain('grid-cols-[auto_auto]');              // 1ª linha: Ver detalhes + Compartilhar
-    expect(acoes).toMatch(/<a [^>]*class="[^"]*col-span-2[^"]*"[^>]*>Informar que encontrei/); // 2ª linha: sozinha
+    expect(acoes).not.toContain('grid-cols'); expect(acoes).not.toMatch(/col-span-2/);       // as três ações na mesma linha, sem linha sozinha
     expect(a).not.toMatch(/flex-wrap gap-2 pt-1/); // sem a linha de botões antiga que quebrava
   });
   it('menos caixas: o card não tem borda nem fundo próprios (divisória fina entre publicações)', () => {

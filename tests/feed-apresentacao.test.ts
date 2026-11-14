@@ -22,7 +22,7 @@ const clean = (html: string) => html.replace(/<!-- -->/g, '');
 const html = (el: React.ReactElement) => clean(renderToString(el));
 const text = (h: string) => h.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ');
 
-const TEXTO_BASE_1 = 'Perdeu algo? Encontrou alguma coisa?';
+const TEXTO_BASE_1 = 'Perdeu ou encontrou algo?';   // chamada curta do topo (substituiu «Perdeu algo? Encontrou alguma coisa?»)
 const TEXTO_BASE_2 = 'O Backfindr conecta pessoas que perderam e encontraram objetos, documentos, animais e veículos. Cadastre uma ocorrência e descubra possíveis correspondências.';
 const BLOCO_TITULO = 'O Backfindr vai além das publicações';
 // Nada de promessa de preço, contato protegido, SMS ou canal de conversa (nada confirmado)
@@ -150,10 +150,10 @@ describe('botão fixo: some ao rolar para baixo e volta ao rolar para cima', () 
 
 describe('regras de texto (nada de promessa não confirmada)', () => {
   it('apresentação, bloco, botões e menu: sem gratuito/preço, contato protegido, SMS, chat ou conversa', () => {
-    const src = ['src/app/feed/FeedCta.tsx', 'src/app/feed/[[...slug]]/page.tsx'].map(read).join('\n') + client(lista(4));
-    const visivel = text(src.replace(/\/\/.*$/gm, '').replace(/\/\*[\s\S]*?\*\//g, ''));
+    const src = ['src/app/feed/FeedCta.tsx', 'src/app/feed/[[...slug]]/page.tsx'].map(read).join('\n');
+    const visivel = text(src.replace(/\/\/.*$/gm, '').replace(/\/\*[\s\S]*?\*\//g, '')) + ' ' + text(client(lista(4)));
     for (const frase of [TEXTO_BASE_1, TEXTO_BASE_2]) expect(visivel).toContain(frase);
-    for (const trecho of [TEXTO_BASE_1, TEXTO_BASE_2, 'Perdi algo', 'Encontrei algo', 'Roubaram algo meu', '+ Cadastrar ocorrência', BLOCO_TITULO])
+    for (const trecho of [TEXTO_BASE_1, TEXTO_BASE_2, 'Perdi algo', 'Encontrei algo', 'Perdi', 'Encontrei', 'Roubaram algo meu', '+ Cadastrar ocorrência', BLOCO_TITULO])
       expect(trecho).not.toMatch(PROIBIDO);
   });
 });
@@ -193,7 +193,7 @@ describe('o que NÃO mudou', () => {
     expect(p).toContain('export const revalidate = 300');
     expect(p).toContain("alternates: { canonical: `${APP_URL}/feed` }");
     expect(p).toContain("robots: page === 1 ? { index: true, follow: true } : { index: false, follow: true }");
-    expect(p).toContain("const TITLE = 'Ocorrências recentes de objetos perdidos e achados'");
+    expect(p).toContain("const TITLE = 'Feed de ocorrências de objetos perdidos e achados'");
     expect(p).toContain('getRankedFeed({})');
     expect(p.replace(/\/\/.*$/gm, '').replace(/\/\*[\s\S]*?\*\//g, '')).not.toMatch(/force-dynamic|no-store|headers\(\)|cookies\(\)/);
   });
@@ -217,14 +217,25 @@ describe.skipIf(!TEST_DB)('página /feed com banco real', () => {
   });
   afterAll(async () => { await pool?.end(); });
 
-  it('página 1: UM h1 («Ocorrências recentes»), apresentação logo depois e ANTES dos filtros, com os dois botões', async () => {
+  it('página 1: UM h1 («Feed de ocorrências»), chamada curta e os dois botões logo depois e ANTES dos filtros; o texto longo foi para o bloco depois do 3º card', async () => {
     const h = await page();
     expect((h.match(/<h1/g) ?? []).length).toBe(1);
-    expect(h).toMatch(/<h1[^>]*>Ocorrências recentes<\/h1>/);
-    const i1 = h.indexOf('</h1>'), iT = h.indexOf(TEXTO_BASE_1), iB = h.indexOf('href="/flow/found?ref=feed"', h.indexOf(TEXTO_BASE_1)), iF = h.indexOf('aria-label="Filtros do Feed"');
+    expect(h).toMatch(/<h1[^>]*>Feed de ocorrências<\/h1>/);
+    expect(h).not.toContain('Ocorrências recentes</h1>');
+    const i1 = h.indexOf('</h1>'), iT = h.indexOf(TEXTO_BASE_1), iB = h.indexOf('href="/flow/found?ref=feed"', iT), iF = h.indexOf('aria-label="Filtros do Feed"');
     expect(i1).toBeGreaterThan(-1); expect(iT).toBeGreaterThan(i1); expect(iB).toBeGreaterThan(iT); expect(iF).toBeGreaterThan(iB);
+    // os dois botões compactos: rótulo curto, nome acessível de sempre, mesmos destinos
+    const topo = h.slice(iT, iF);
+    const [perdi, encontrei] = topo.match(/<a [^>]*>[^<]*<\/a>/g)!;
+    expect(perdi).toContain('href="/flow/lost?ref=feed"'); expect(perdi).toContain('aria-label="Perdi algo"'); expect(perdi).toMatch(/>Perdi<\/a>$/);
+    expect(encontrei).toContain('href="/flow/found?ref=feed"'); expect(encontrei).toContain('aria-label="Encontrei algo"'); expect(encontrei).toMatch(/>Encontrei<\/a>$/);
+    // o texto explicativo longo saiu do topo e continua no HTML do servidor, dentro do bloco depois do 3º card
+    expect(h.slice(0, iF)).not.toContain(TEXTO_BASE_2);
+    const arts = [...h.matchAll(/<article/g)].map((m) => m.index!);
     expect(text(h)).toContain(TEXTO_BASE_2);
-    expect(h).toMatch(/<section aria-label="Sobre o Backfindr"/);
+    expect(h.indexOf(TEXTO_BASE_2)).toBeGreaterThan(arts[2]); expect(h.indexOf(TEXTO_BASE_2)).toBeLessThan(arts[3]);
+    expect(text(h)).toContain('Os registros mais recentes de objetos, documentos e pets perdidos, achados ou roubados.');
+    expect(h).not.toContain('Perdeu algo? Encontrou alguma coisa?');
   });
   it('página 1: 12 cards, links /objeto/ com o título, «Ver mais» real, bloco depois do 3º card, 2 menus (fixo + cabeçalho)', async () => {
     const h = await page();
