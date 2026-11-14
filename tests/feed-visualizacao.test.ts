@@ -144,6 +144,7 @@ describe('cards da Grade', () => {
     const bloco = (a: string) => a.match(/<div class="relative w-full overflow-hidden (aspect-\[4\/3\])[^"]*"/)![1];
     expect(bloco(grade[1])).toBe(bloco(grade[0])); expect(bloco(grade[2])).toBe(bloco(grade[0]));
     expect(grade[1]).not.toContain('<img'); expect(grade[1]).toContain('<svg');
+    expect(grade[1]).toMatch(/<span class="flex h-full w-full items-center justify-center [^"]*" aria-hidden="true"><svg/);   // o ícone está visível e ocupa o bloco inteiro (não escondido)
   });
   it('em Publicações o card sem foto continua compacto (sem bloco 4:3)', () => {
     const pub = articles(render('publicacoes'));
