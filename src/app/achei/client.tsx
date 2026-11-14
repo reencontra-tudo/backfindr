@@ -1,16 +1,19 @@
 'use client';
 
-import { useState, useCallback, useEffect, Suspense } from 'react';
+import { useState, useCallback, useEffect, useRef, Suspense } from 'react';
 import { ImageLightbox, useLightbox } from '@/components/ImageLightbox';
 import ObjectThumb from '@/components/ObjectThumb';
 import Link from 'next/link';
-import { MapPin, Search, ArrowRight, AlertTriangle, Package, Loader2 } from 'lucide-react';
-import { buscarContexto, cadastroHref, lerDeDaUrl, palavrasDoTitulo, type ContextoAchei } from '@/lib/feed/contexto';
+import { MapPin, Search, ArrowRight, AlertTriangle, Package, Loader2, Check } from 'lucide-react';
+import { buscarContexto, cadastroHref, codigoSelecionavel, lerDeDaUrl, palavrasDoTitulo, type ContextoAchei } from '@/lib/feed/contexto';
 import { acheiEvents } from '@/lib/feed/analytics';
 
 interface ObjectItem {
   id: string;
   code?: string;
+  unique_code?: string;
+  is_legacy?: boolean;
+  source?: string | null;
   title: string;
   description: string;
   status: string;
@@ -33,8 +36,10 @@ function AcheiInner() {
 
   // Contexto do card do Feed (?de=<código>): só no navegador, depois de carregar (o HTML do servidor é o de sempre). Sem «de», com «de» inválido
   // ou sem contexto elegível: nada muda na página.
-  const [contexto, setContexto] = useState<ContextoAchei | null>(null);
-  const [codigoDe, setCodigoDe] = useState<string | null>(null);   // código do card (só com contexto válido); vai junto ao cadastro
+  const [contexto, setContexto] = useState<ContextoAchei | null>(null);   // contexto SELECIONADO (começa no card de origem)
+  const [codigoDe, setCodigoDe] = useState<string | null>(null);           // código do card selecionado (só com contexto válido); vai junto ao cadastro
+  const cacheContexto = useRef(new Map<string, ContextoAchei>());           // código → contexto já validado pela rota (não repete pedido)
+  const pedidoSelecao = useRef(0);
   useEffect(() => {
     const de = lerDeDaUrl(window.location.search);
     if (!de) return;
@@ -42,6 +47,7 @@ function AcheiInner() {
     (async () => {
       const c = await buscarContexto(de, ctl.signal);
       if (!c || ctl.signal.aborted) return;   // sem contexto: a página fica como sempre
+      cacheContexto.current.set(de, c);
       setContexto(c); setCodigoDe(de);
       const kw = palavrasDoTitulo(c.titulo);
       if (kw) setKeyword((atual) => atual || kw);   // pré-preenche a busca de sempre (não digita por cima do que a pessoa já escreveu)
@@ -49,6 +55,16 @@ function AcheiInner() {
     })();
     return () => ctl.abort();
   }, []);
+  // «É este»: escolhe OUTRA ocorrência da lista. O título e a categoria vêm sempre da rota de contexto (validada e mascarada), nunca da lista nem da URL.
+  const selecionar = async (codigo: string) => {
+    if (codigo === codigoDe) return;
+    const id = ++pedidoSelecao.current;
+    let c = cacheContexto.current.get(codigo) ?? null;
+    if (!c) { c = await buscarContexto(codigo); if (c) cacheContexto.current.set(codigo, c); }
+    if (!c || id !== pedidoSelecao.current) return;   // sem contexto (ou escolha mais nova): a seleção anterior fica
+    setContexto(c); setCodigoDe(codigo);
+    acheiEvents.contextoAlterado(c.categoria, c.situacao);
+  };
   const aoIrParaCadastro = () => { if (contexto) acheiEvents.cadastroClique(contexto.categoria, contexto.situacao); };
 
   const doSearch = useCallback(async (kw: string) => {
@@ -206,6 +222,18 @@ function AcheiInner() {
                             {item.location.address}
                           </p>
                         )}
+                        {/* «É este»: só com contexto do card e só em ocorrência de usuário, perdida, pública e não legada */}
+                        {codigoDe && (() => {
+                          const cod = codigoSelecionavel(item);
+                          if (!cod) return null;
+                          const marcado = cod === codigoDe;
+                          return (
+                            <button type="button" aria-pressed={marcado} data-achei-selecionar={cod} onClick={() => { void selecionar(cod); }}
+                              className={`mb-2 inline-flex min-h-[44px] items-center gap-1.5 rounded-xl border px-3 text-xs font-semibold transition-colors ${marcado ? 'border-teal-400 bg-teal-500/20 text-teal-200' : 'border-white/20 text-white/80 hover:bg-white/10'}`}>
+                              {marcado ? <><Check className="h-4 w-4" aria-hidden />Selecionado</> : 'É este'}
+                            </button>
+                          );
+                        })()}
                         {/* Botão "Ver detalhes" */}
                         {item.code && (
                           <Link

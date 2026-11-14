@@ -15,7 +15,7 @@ const TEST_DB = process.env.TEST_DATABASE_URL;
 if (TEST_DB) process.env.DATABASE_URL = TEST_DB;
 
 import FeedClient from '@/app/feed/FeedClient';
-import { acheiHref, buscarContexto, cadastroHref, lerDe, lerDeDaUrl, palavrasDoTitulo, validarContexto } from '@/lib/feed/contexto';
+import { acheiHref, buscarContexto, cadastroHref, codigoSelecionavel, lerDe, lerDeDaUrl, palavrasDoTitulo, validarContexto } from '@/lib/feed/contexto';
 import AcheiClient from '@/app/achei/client';
 import { LIMITE_POR_MINUTO } from '@/lib/feed/limite';
 import { FEED_ELIGIBILITY_WHERE } from '@/lib/feed/query';
@@ -288,5 +288,52 @@ describe('texto «É um desses?» sem promessa de chat protegido', () => {
   it('sem contexto, o HTML do servidor do /achei não traz aviso de contexto nem código', () => {
     const h = renderToString(React.createElement(AcheiClient));
     expect(h).not.toContain('Você está informando sobre'); expect(h).not.toContain('data-achei-contexto');
+  });
+});
+
+describe('escolher outra ocorrência da lista («É este»)', () => {
+  const base = { unique_code: 'USR00013', is_legacy: false, source: null, status: 'lost' };
+  it('selecionável: só usuário, perdido, não legado, com código válido', () => {
+    expect(codigoSelecionavel(base)).toBe('USR00013');
+    expect(codigoSelecionavel({ ...base, source: 'web' })).toBe('USR00013');
+    expect(codigoSelecionavel({ ...base, unique_code: '2HE93T6N' })).toBe('2HE93T6N');
+  });
+  it('não selecionável: legado, campo de legado ausente, sinal público, achado, roubado, sem código, código inválido ou com marcação', () => {
+    for (const ruim of [{ ...base, is_legacy: true }, { ...base, is_legacy: undefined }, { ...base, is_legacy: null }, { ...base, source: 'public_signal' }, { ...base, status: 'found' }, { ...base, status: 'stolen' }, { ...base, status: undefined },
+      { ...base, unique_code: undefined }, { ...base, unique_code: '' }, { ...base, unique_code: 'ab' }, { ...base, unique_code: '<script>alert(1)</script>' }, { ...base, unique_code: 'A'.repeat(200) }, { ...base, unique_code: 12345678 }])
+      expect(codigoSelecionavel(ruim as never), JSON.stringify(ruim)).toBeNull();
+  });
+  const c = read('src/app/achei/client.tsx');
+  it('o botão só existe com contexto do card (sem contexto o HTML é o de sempre) e usa a regra de elegibilidade', () => {
+    expect(c).toContain('{codigoDe && (() => {'); expect(c).toContain('const cod = codigoSelecionavel(item);'); expect(c).toContain('if (!cod) return null;');
+    const h = renderToString(React.createElement(AcheiClient));
+    expect(h).not.toContain('data-achei-selecionar'); expect(h).not.toContain('É este'); expect(h).not.toContain('Selecionado');
+  });
+  it('o card de origem começa selecionado e o estado é indicado por texto («Selecionado») e por aria-pressed, não só por cor', () => {
+    expect(c).toContain('const marcado = cod === codigoDe;'); expect(c).toContain('aria-pressed={marcado}'); expect(c).toContain('Selecionado'); expect(c).toContain("'É este'");
+    expect(c).toContain('min-h-[44px]');
+  });
+  it('ao escolher, título e categoria vêm da rota de contexto validada — nunca da lista nem da URL — e o contexto muda junto com o código', () => {
+    const sel = c.slice(c.indexOf('const selecionar = async'), c.indexOf('const aoIrParaCadastro'));
+    expect(sel).toContain('buscarContexto(codigo)'); expect(sel).toContain('setContexto(c); setCodigoDe(codigo);');
+    expect(sel).not.toMatch(/item\.|prefill|window\.location|title/);
+    expect(sel).toContain('if (!c || id !== pedidoSelecao.current) return;');       // sem contexto ou escolha mais nova: fica a anterior
+    expect(sel).toContain('cacheContexto.current.get(codigo)');                       // não repete pedido (limite de pedidos)
+    expect(sel).toContain('acheiEvents.contextoAlterado(c.categoria, c.situacao)');
+  });
+  it('os dois botões de cadastro usam o card ESCOLHIDO', () => {
+    expect((c.match(/cadastroHref\(contexto, codigoDe\)/g) ?? []).length).toBe(2);
+    expect(c).not.toMatch(/cadastroHref\(contexto, [^c]/);   // nenhum usa um código fixo (como o do card de origem)
+  });
+  it('o texto do botão não promete contato protegido, SMS, chat, aviso ao dono nem resposta, e não fala de cobrança', () => {
+    const bloco = c.slice(c.indexOf('«É este»: só com contexto'), c.indexOf('{/* Botão "Ver detalhes" */}'));
+    expect(bloco).not.toMatch(/protegid|SMS|chat|avis|respond|resposta|pre[çc]o|cobran|limite|plano|dono/i);
+  });
+  it('evento achei_contexto_alterado só com categoria e situação', () => {
+    expect(read('src/lib/feed/analytics.ts')).toContain("send('achei_contexto_alterado', { categoria, situacao })");
+  });
+  it('a rota de contexto, o limite e a elegibilidade não foram alterados por esta mudança', () => {
+    const r = read('src/app/api/v1/feed/contexto/route.ts');
+    expect(r).toContain("o.status = 'lost' AND o.source IS DISTINCT FROM 'public_signal'"); expect(r).toContain('limitar(ip)');
   });
 });

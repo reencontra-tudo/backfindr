@@ -71,6 +71,44 @@ for (const W of [390, 1280]) {
     ok(`${L} evento feed_informar_encontrei_clique continua`, st.eventos.some((e) => e.event === 'feed_informar_encontrei_clique'));
     await ctx.close(); }
   const L = L0;
+  // 1b) escolher OUTRA ocorrência da lista («É este»): o aviso e os dois botões de cadastro passam a levar o card escolhido (códigos do Feed grande de teste)
+  { const L2 = `[${W} seleção]`; const { ctx, p, st } = await abrir(W, 'publicacoes'); let itensApi = [];
+    p.on('response', async (r) => { if (r.url().includes('/api/v1/objects/public')) { try { itensApi = (await r.json()).items || []; } catch { /* sem corpo */ } } });
+    const buscar = async (q) => { await p.locator('input[type=text]').fill(q); await p.getByRole('button', { name: /Ver se o dono/ }).click(); await p.waitForSelector('h3', { timeout: 15000 }); await p.waitForTimeout(900); };
+    const botoes = () => p.evaluate(() => [...document.querySelectorAll('[data-achei-selecionar]')].map((b) => ({ cod: b.dataset.acheiSelecionar, marcado: b.getAttribute('aria-pressed') === 'true', texto: b.textContent.trim(), h: Math.round(b.getBoundingClientRect().height) })));
+    await p.goto(`${BASE}/achei?ref=feed&de=USR00002`); await banner(p).waitFor({ timeout: 15000 });
+    const reqs0 = st.ctxReqs.length;
+    await buscar('chaves');
+    let btns = await botoes();
+    const elegiveis = itensApi.filter((i) => i.is_legacy === false && i.source !== 'public_signal' && i.status === 'lost' && i.unique_code).map((i) => i.unique_code).sort();
+    ok(`${L2} só os elegíveis (usuário, perdido, público, não legado) ganham o botão; sinal público/legado não`, JSON.stringify(btns.map((b) => b.cod).sort()) === JSON.stringify(elegiveis) && itensApi.some((i) => i.source === 'public_signal'), `botões=${btns.length}, elegíveis=${elegiveis.length}, resultados=${itensApi.length}`);
+    ok(`${L2} o card de origem já vem selecionado («Selecionado») e é o único`, btns.filter((b) => b.marcado).length === 1 && btns.find((b) => b.marcado)?.cod === 'USR00002' && /Selecionado/.test(btns.find((b) => b.marcado).texto), JSON.stringify(btns.find((b) => b.marcado)));
+    ok(`${L2} botões com 44 px de altura e sem rolagem horizontal`, btns.every((b) => b.h >= 43.5) && (await p.evaluate(() => document.documentElement.scrollWidth <= innerWidth)), btns.map((b) => b.h).join(','));
+    await buscar('celular carteira mochila'); btns = await botoes();
+    ok(`${L2} nova busca: 3 cards de usuário com «É este»; a seleção anterior continua valendo (nenhum marcado, porque o card de origem saiu da lista)`, btns.length === 3 && btns.every((b) => !b.marcado && b.texto === 'É este'), JSON.stringify(btns.map((b) => b.cod)));
+    const tituloOutro = await p.evaluate(() => document.querySelector('[data-achei-selecionar="USR00014"]').closest('div.flex-1').querySelector('h3').textContent.trim());
+    const antes1 = st.ctxReqs.length;
+    await p.locator('[data-achei-selecionar="USR00014"]').click(); await p.waitForFunction(() => document.querySelector('[data-achei-selecionar="USR00014"]')?.getAttribute('aria-pressed') === 'true', null, { timeout: 10000 });
+    const depois = await p.evaluate(() => ({ marcados: [...document.querySelectorAll('[data-achei-selecionar][aria-pressed="true"]')].map((b) => b.dataset.acheiSelecionar), banner: document.querySelector('[data-achei-contexto]').textContent.replace(/\s+/g, ' '), hrefs: [...document.querySelectorAll('a[href^="/auth/register?intent=found"]')].map((a) => a.getAttribute('href')) }));
+    ok(`${L2} ao escolher outro, só ele fica selecionado e o aviso muda para o título dele («${tituloOutro}»)`, depois.marcados.length === 1 && depois.marcados[0] === 'USR00014' && depois.banner.includes('Você está informando sobre: ' + tituloOutro) && !depois.banner.includes('Chaves'), depois.banner);
+    ok(`${L2} os botões de cadastro levam o card escolhido (de=USR00014), com título e categoria dele`, depois.hrefs.length > 0 && depois.hrefs.every((h) => { const q = new URLSearchParams(h.split('?')[1]); return q.get('de') === 'USR00014' && q.get('intent') === 'found' && q.get('prefill_title') === tituloOutro && q.get('prefill_category') === 'bag'; }), depois.hrefs[0]);
+    ok(`${L2} uma escolha nova = 1 pedido à rota de contexto`, st.ctxReqs.length - antes1 === 1, `${st.ctxReqs.length - antes1}`);
+    await p.locator('[data-achei-selecionar="USR00011"]').click(); await p.waitForFunction(() => document.querySelector('[data-achei-selecionar="USR00011"]')?.getAttribute('aria-pressed') === 'true', null, { timeout: 10000 });
+    const antes2 = st.ctxReqs.length; await p.locator('[data-achei-selecionar="USR00014"]').click(); await p.waitForTimeout(1000);
+    ok(`${L2} voltar a um card já escolhido usa o contexto guardado (0 pedidos novos)`, st.ctxReqs.length === antes2 && (await p.locator('[data-achei-selecionar="USR00014"]').getAttribute('aria-pressed')) === 'true', `${st.ctxReqs.length - antes2}`);
+    await p.locator('a[href^="/auth/register?intent=found"]').first().click(); await p.waitForURL(/\/auth\/register/, { timeout: 20000 }); await p.locator('[data-cadastro-contexto]').waitFor({ timeout: 15000 });
+    const q = new URL(p.url()).searchParams; const btxt = (await p.locator('[data-cadastro-contexto]').textContent()).replace(/\s+/g, ' ');
+    ok(`${L2} o cadastro mostra o card ESCOLHIDO (de=USR00014 e aviso com o título dele)`, q.get('de') === 'USR00014' && btxt.includes('Você está informando sobre: ' + tituloOutro), `${q.get('de')} | ${btxt}`);
+    await p.waitForTimeout(3800);
+    const alt = st.eventos.filter((e) => e.event === 'achei_contexto_alterado');
+    const chv = Object.keys(alt[0]?.properties ?? {}).filter((k) => !k.startsWith('$') && !['token', 'distinct_id', 'time', 'uuid'].includes(k)).sort().join();
+    ok(`${L2} evento achei_contexto_alterado (3 escolhas) só com categoria e situação`, alt.length === 3 && chv === 'categoria,situacao', `${alt.length}x ${chv}`);
+    await p.screenshot({ path: `${OUT}/${W}-4-cadastro-card-escolhido.png` });
+    await ctx.close(); }
+  // 1c) tela de resultados com o card escolhido (captura)
+  { const { ctx, p } = await abrir(W, 'publicacoes'); await p.goto(`${BASE}/achei?ref=feed&de=USR00002`); await banner(p).waitFor({ timeout: 15000 });
+    await p.locator('input[type=text]').fill('celular carteira mochila'); await p.getByRole('button', { name: /Ver se o dono/ }).click(); await p.waitForSelector('[data-achei-selecionar]', { timeout: 15000 }); await p.waitForTimeout(600);
+    await p.locator('[data-achei-selecionar="USR00014"]').click(); await p.waitForTimeout(900); await p.screenshot({ path: `${OUT}/${W}-3-lista-com-selecao.png` }); await ctx.close(); }
   // 2) /achei normal: idêntico a hoje (sem aviso, sem busca preenchida, sem pedido de contexto)
   for (const [nome, qs] of [['normal', ''], ['?ref=feed sem «de»', '?ref=feed'], ['«de» vazio', '?ref=feed&de='], ['«de» com marcação', '?ref=feed&de=%3Cscript%3Ealert(1)%3C%2Fscript%3E'], ['«de» longo demais', '?ref=feed&de=' + 'A'.repeat(300)], ['«de» repetido', '?de=USR00002&de=USR00004']]) {
     const { ctx, p, st } = await abrir(W); await p.goto(`${BASE}/achei${qs}`); await p.waitForSelector('h1'); await p.waitForTimeout(2000);

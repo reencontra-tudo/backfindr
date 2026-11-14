@@ -22,6 +22,18 @@ export function lerDeDaUrl(search: string | null | undefined): string | null {
   } catch { return null; }
 }
 
+/**
+ * Um resultado da busca do /achei pode ser SELECIONADO («É este») quando é uma ocorrência de usuário, perdida, pública e não legada
+ * (a mesma regra de elegibilidade da rota de contexto). Aqui é só para decidir se o botão aparece: a rota confere de novo e é ela que
+ * devolve o título (mascarado) e a categoria. Legado, sinal público, achado e item sem código: não selecionáveis.
+ */
+export function codigoSelecionavel(item: { unique_code?: unknown; is_legacy?: unknown; source?: unknown; status?: unknown }): string | null {
+  if (item.is_legacy !== false) return null;                  // legado (ou campo ausente): nunca
+  if (item.source === 'public_signal') return null;           // sinal público: nunca
+  if (item.status !== 'lost') return null;                    // só perdido
+  return typeof item.unique_code === 'string' ? lerDe(item.unique_code) : null;
+}
+
 /** Destino do botão «Informar que encontrei» do card (código com encoding correto). */
 export const acheiHref = (code: string) => `/achei?ref=feed&de=${encodeURIComponent(code)}`;
 

@@ -53,6 +53,8 @@ export const feedEvents = {
 /** /achei: o aviso «Você está informando sobre…» foi exibido. Só categoria e situação (sem título, sem código, sem dado pessoal). */
 export const acheiEvents = {
   contextoExibido: (categoria: string, situacao: string) => send('achei_contexto_exibido', { categoria, situacao }),
+  /** O achador escolheu OUTRA ocorrência da lista («É este»). Só categoria e situação (sem título, sem código). */
+  contextoAlterado: (categoria: string, situacao: string) => send('achei_contexto_alterado', { categoria, situacao }),
   /** O botão que leva ao cadastro foi tocado COM contexto do card (sem título, sem código). */
   cadastroClique: (categoria: string, situacao: string) => send('achei_contexto_cadastro_clique', { categoria, situacao }),
 };
