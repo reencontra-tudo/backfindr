@@ -110,7 +110,7 @@ describe('bloco «Não encontrou o que procurava?»', () => {
     const an = read('src/lib/feed/analytics.ts');
     expect(an).toContain("'topo' | 'fixo' | 'cabecalho' | 'fim'");
     const eventos = [...an.matchAll(/'(feed_[a-z_]+)'/g)].map((m) => m[1]);
-    expect([...new Set(eventos)].sort()).toEqual(['feed_aberto', 'feed_card_aberto', 'feed_compartilhar', 'feed_cta_cadastrar', 'feed_cta_encontrei', 'feed_cta_perdi', 'feed_cta_roubado', 'feed_filtro_aplicado', 'feed_informar_encontrei_clique', 'feed_state_restored'].sort());
+    expect([...new Set(eventos)].sort()).toEqual(['feed_aberto', 'feed_card_aberto', 'feed_compartilhar', 'feed_cta_cadastrar', 'feed_cta_encontrei', 'feed_cta_perdi', 'feed_cta_roubado', 'feed_filtro_aplicado', 'feed_informar_encontrei_clique', 'feed_state_restored', 'feed_visualizacao_alterada'].sort());
   });
 });
 
@@ -131,7 +131,7 @@ describe('«Informar que encontrei» só em PERDIDO de usuário', () => {
     });
   }
   it('o botão leva ao mesmo destino de sempre (/achei?ref=feed) e a condição está no código (cliente: HTML do servidor e lista carregada)', () => {
-    expect(client).toContain("{item.can_report_found && item.status === 'lost' && (");
+    expect(client).toContain("const informar = item.can_report_found && item.status === 'lost';");
     expect(client).toContain('href="/achei?ref=feed"');
     const lote = render([...lista(2), mk({ code: 'T9', status: 'stolen', status_label: 'Roubado' })]);
     expect((lote.match(/>Informar que encontrei</g) ?? []).length).toBe(2);   // só os 2 perdidos
@@ -151,7 +151,7 @@ describe('o que não mudou', () => {
   });
   it('o chat, o botão fixo e o espaço reservado continuam como estavam', () => {
     expect(cta).toContain("const escondido = variant === 'fixed' && !open && !comFoco && (recolhido || rolando || sobreposto)");
-    expect(read('src/app/feed/[[...slug]]/page.tsx')).toContain('px-4 py-6 pb-32 sm:pb-6');
+    expect(read('src/app/feed/[[...slug]]/page.tsx')).toMatch(/pb-32[^"]*sm:pb-6/);
     expect(client + cta).not.toContain('data-widget-safe-zone');
   });
 });

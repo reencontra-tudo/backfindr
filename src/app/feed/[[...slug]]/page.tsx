@@ -1,4 +1,4 @@
-// /feed — «Ocorrências recentes» (Fase 1). INDEXÁVEL pelo Google; renderizada no servidor.
+// /feed — «Feed de ocorrências» (Fase 1). INDEXÁVEL pelo Google; renderizada no servidor.
 //
 // Cache: renderização estática incremental com revalidação a cada 5 min (sem force-dynamic, sem no-store).
 // Rotas: /feed (1ª página, a única indexável) e /feed/pagina/N (links «Ver mais» que funcionam sem JavaScript).
@@ -11,9 +11,10 @@ import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { MapPin } from 'lucide-react';
 import FeedClient from '../FeedClient';
-import { IntroButtons, RegisterMenu } from '../FeedCta';
+import { RegisterMenu, TopoBotoes } from '../FeedCta';
 import { APP_URL } from '@/lib/constants';
 import { getRankedFeed, pageByNumber } from '@/lib/feed/query';
+import { temaStyle } from '../tema';
 
 export const revalidate = 300;
 export const dynamicParams = true;
@@ -30,8 +31,8 @@ function pageFromSlug(slug?: string[]): number | null {
   return null;
 }
 
-const TITLE = 'Ocorrências recentes de objetos perdidos e achados'; // o layout já acrescenta «| Backfindr»
-const DESCRIPTION = 'Veja as ocorrências mais recentes de objetos, documentos e pets perdidos, achados ou roubados registradas no Backfindr, e compartilhe para ajudar na devolução.';
+const TITLE = 'Feed de ocorrências de objetos perdidos e achados'; // o layout já acrescenta «| Backfindr»
+const DESCRIPTION = 'Veja ocorrências de objetos, documentos e pets perdidos, achados ou roubados registradas no Backfindr, e compartilhe para ajudar na devolução.';
 
 export function generateMetadata({ params }: { params: { slug?: string[] } }): Metadata {
   const page = pageFromSlug(params.slug) ?? 1;
@@ -53,7 +54,9 @@ export default async function FeedPage({ params }: { params: { slug?: string[] }
   if (page > 1 && pg.items.length === 0) notFound();
 
   return (
-    <main className="min-h-screen bg-[#080b0f] text-white">
+    <main className="min-h-screen bg-[color:var(--f-folha)] text-[color:var(--f-t1)]" style={temaStyle()}>
+      {/* Faixa escura do topo (cabeçalho + título + apresentação + atalhos) e, por cima dela, a «folha» clara com a lista */}
+      <div className="bg-[color:var(--f-faixa)] pb-9 text-[color:var(--f-faixa-t)]">
       <header className="border-b border-white/10">
         <div className="mx-auto flex max-w-2xl items-center justify-between px-4 py-3">
           <Link href="/" className="flex min-h-[44px] items-center gap-2 font-semibold">
@@ -68,29 +71,26 @@ export default async function FeedPage({ params }: { params: { slug?: string[] }
         </div>
       </header>
 
-      <div className="mx-auto max-w-2xl px-4 py-6 pb-32 sm:pb-6">
-        <h1 className="text-2xl font-bold leading-tight">Ocorrências recentes</h1>
+      <div className="mx-auto max-w-2xl px-4 pt-3">
+        <h1 className="text-xl font-bold leading-tight">Feed de ocorrências</h1>
 
-        {/* Apresentação (só na página 1; no HTML do servidor, igual para todos). NÃO é um segundo h1. */}
+        {/* Chamada curta com os dois atalhos (só na página 1). O texto explicativo longo que ficava aqui agora está no bloco «O Backfindr vai além das publicações» (após o 3º card). */}
         {page === 1 && (
-          <section aria-label="Sobre o Backfindr" className="mt-3">
-            <p className="text-base font-semibold leading-snug text-white">Perdeu algo? Encontrou alguma coisa?</p>
-            <p className="mt-1 text-sm leading-relaxed text-white/80">
-              O Backfindr conecta pessoas que perderam e encontraram objetos, documentos, animais e veículos. Cadastre uma ocorrência e descubra possíveis correspondências.
-            </p>
-            <IntroButtons pagina={page} />
+          <section aria-label="Cadastrar ocorrência" className="mt-1">
+            <p className="text-sm font-medium leading-snug text-[color:var(--f-faixa-t)]">Perdeu ou encontrou algo?</p>
+            <TopoBotoes pagina={page} />
           </section>
         )}
-
-        <p className="mt-3 text-xs leading-relaxed text-white/70">
-          Os registros mais recentes de objetos, documentos e pets perdidos, achados ou roubados. É só um recorte recente:{' '}
-          <Link href="/map" className="inline-flex min-h-[44px] items-center font-medium underline underline-offset-2 hover:text-white">Ver histórico no mapa</Link>
-        </p>
-
-        <div className="mt-2">
-          <FeedClient initialItems={pg.items} initialNextCursor={pg.nextCursor} initialHasMore={pg.hasMore} page={page} regions={ranked.ufs} />
-        </div>
       </div>
+      </div>
+
+      <div className="relative -mt-6 rounded-t-[28px] bg-[color:var(--f-folha)] px-4 pb-32 pt-5 shadow-[0_-8px_24px_rgba(15,23,42,0.18)] sm:pb-6">
+        <FeedClient initialItems={pg.items} initialNextCursor={pg.nextCursor} initialHasMore={pg.hasMore} page={page} regions={ranked.ufs} />
+      </div>
+
+      {/* Balão do assistente (componente global, sem mudar posição nem comportamento): nesta página o fundo é claro e a classe de fundo dele não existe,
+          então o ícone branco ficava invisível. Só aqui (a regra some com a página): fundo sólido, anel branco e sombra. */}
+      <style dangerouslySetInnerHTML={{ __html: 'button[aria-label="Abrir assistente"]{background-color:#0f766e !important;box-shadow:0 0 0 2px #fff,0 4px 14px rgba(15,23,42,.35) !important}' }} />
 
       {/* Botão fixo (só celular): canto inferior esquerdo, longe do chat (direito) */}
       <RegisterMenu variant="fixed" pagina={page} />

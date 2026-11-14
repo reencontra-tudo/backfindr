@@ -1,4 +1,6 @@
 // Medição do acabamento mobile do Feed (Playwright, fora das dependências do projeto).
+// ATENÇÃO: as conferências de topo, atalhos e ações dos cards deste arquivo descrevem o layout ANTERIOR aos ajustes de acabamento (F-20: título «Feed de ocorrências»,
+// topo com «Perdi»/«Encontrei», ações na mesma linha). Para o layout atual use tools/feed-acabamento-check.mjs e tools/feed-visual-check.mjs.
 //   node tools/feed-mobile-check.mjs <baseUrl> <rótulo> <pastaCapturas> [larguras separadas por vírgula, ex.: 320,360,390,430,1280]
 // Só leitura (GET). Emula iPhone no Chromium (tela, toque, UA); NÃO testa o Safari/WebKit de verdade nem a área segura real do iPhone.
 // Mede: texto dos botões sem quebra, alvos de 44 px, ícone de compartilhar, balão do chat nunca sobre uma ação de card (rolagem inteira),
