@@ -15,7 +15,8 @@ const TEST_DB = process.env.TEST_DATABASE_URL;
 if (TEST_DB) process.env.DATABASE_URL = TEST_DB;
 
 import FeedClient from '@/app/feed/FeedClient';
-import { acheiHref, cadastroHref, lerDe, lerDeDaUrl, palavrasDoTitulo, validarContexto } from '@/lib/feed/contexto';
+import { acheiHref, buscarContexto, cadastroHref, lerDe, lerDeDaUrl, palavrasDoTitulo, validarContexto } from '@/lib/feed/contexto';
+import AcheiClient from '@/app/achei/client';
 import { LIMITE_POR_MINUTO } from '@/lib/feed/limite';
 import { FEED_ELIGIBILITY_WHERE } from '@/lib/feed/query';
 
@@ -93,7 +94,7 @@ describe('a página /achei', () => {
   it('o contexto só é lido no navegador depois de carregar (o HTML do servidor não muda) e a busca continua a mesma', () => {
     expect(c).not.toContain('useSearchParams');
     expect(c).toContain('window.location.search'); expect(c).toContain('lerDeDaUrl(');
-    expect(c).toContain('/api/v1/feed/contexto?de=');
+    expect(c).toContain('buscarContexto(de, ctl.signal)'); expect(read('src/lib/feed/contexto.ts')).toContain('/api/v1/feed/contexto?de=');
     expect(c).toContain("params.set('status', 'lost')"); expect(c).toContain('/api/v1/objects/public?');
   });
   it('aviso «Você está informando sobre: <título>» + categoria; nenhuma promessa nova', () => {
@@ -107,7 +108,7 @@ describe('a página /achei', () => {
     expect(a).toContain("send('achei_contexto_exibido', { categoria, situacao })");
   });
   it('sem contexto os dois links de cadastro são idênticos aos de hoje', () => {
-    expect((c.match(/cadastroHref\(contexto\)/g) ?? []).length).toBe(2);
+    expect((c.match(/cadastroHref\(contexto, codigoDe\)/g) ?? []).length).toBe(2);
     expect(cadastroHref(null)).toBe('/auth/register?intent=found');
   });
   it('a página do servidor (metadados, canonical) não foi tocada', () => {
@@ -208,5 +209,84 @@ describe.skipIf(!TEST_DB)('rota /api/v1/feed/contexto — banco real', () => {
       expect(j.contexto !== null, `${o.qr_code}`).toBe(elegivel);
       resetLimite();
     }
+  });
+});
+
+describe('botão «Entrar em contato com o dono» leva o contexto ao cadastro', () => {
+  const ctx = { titulo: 'Carteira marrom perdida', categoria: 'wallet' as const };
+  it('com contexto válido o link leva intent=found, prefill_title, prefill_category e o código do card (de), tudo codificado', () => {
+    const href = cadastroHref({ titulo: 'Câmera Ñ & café #1', categoria: 'electronics' }, '2HE93T6N');
+    const q = new URLSearchParams(href.split('?')[1]);
+    expect(href.startsWith('/auth/register?')).toBe(true);
+    expect(q.get('intent')).toBe('found'); expect(q.get('prefill_title')).toBe('Câmera Ñ & café #1'); expect(q.get('prefill_category')).toBe('electronics'); expect(q.get('de')).toBe('2HE93T6N');
+    expect(href).not.toMatch(/[ "<>]/);
+  });
+  it('sem contexto (nulo) o link é o de sempre, mesmo que haja um código; código inválido não vai junto', () => {
+    expect(cadastroHref(null)).toBe('/auth/register?intent=found');
+    expect(cadastroHref(null, '2HE93T6N')).toBe('/auth/register?intent=found');
+    expect(new URLSearchParams(cadastroHref(ctx, '<script>').split('?')[1]).has('de')).toBe(false);
+    expect(new URLSearchParams(cadastroHref(ctx, null).split('?')[1]).has('de')).toBe(false);
+  });
+  it('buscarContexto: contexto válido → objeto; ausente, inválido, não elegível, erro de rede ou resposta estranha → null', async () => {
+    const orig = globalThis.fetch;
+    const resp = (corpo: unknown, ok = true) => (async () => ({ ok, json: async () => corpo })) as unknown as typeof fetch;
+    try {
+      globalThis.fetch = resp({ contexto: { titulo: 'Carteira', categoria: 'wallet', categoria_rotulo: 'x', situacao: 'lost' } });
+      expect(await buscarContexto('2HE93T6N')).toEqual({ titulo: 'Carteira', categoria: 'wallet', categoria_rotulo: 'Carteira', situacao: 'lost' });
+      for (const ruim of [{ contexto: null }, {}, null, 'x', { contexto: { titulo: 'x', categoria: 'wallet', situacao: 'found' } }]) { globalThis.fetch = resp(ruim); expect(await buscarContexto('2HE93T6N'), JSON.stringify(ruim)).toBeNull(); }
+      globalThis.fetch = resp({ contexto: null }, false); expect(await buscarContexto('2HE93T6N')).toBeNull();
+      globalThis.fetch = (async () => { throw new Error('rede'); }) as unknown as typeof fetch; expect(await buscarContexto('2HE93T6N')).toBeNull();
+    } finally { globalThis.fetch = orig; }
+  });
+  it('o /achei leva o código ao cadastro só com contexto válido e registra o clique com contexto (sem título nem código)', () => {
+    const c = read('src/app/achei/client.tsx');
+    expect(c).toContain('setContexto(c); setCodigoDe(de);');
+    expect(c).toContain('onClick={aoIrParaCadastro}');
+    expect(c).toContain('if (contexto) acheiEvents.cadastroClique(contexto.categoria, contexto.situacao)');
+    expect(read('src/lib/feed/analytics.ts')).toContain("send('achei_contexto_cadastro_clique', { categoria, situacao })");
+  });
+  it('usuário já logado: o /achei não lê login nem muda o destino (continua o cadastro de hoje)', () => {
+    const c = read('src/app/achei/client.tsx');
+    expect(c).not.toMatch(/useAuth|Cookies|access_token|localStorage|sessionStorage/);
+    expect(c).not.toContain('/dashboard/objects/new'); expect(c).not.toContain('/flow/found');
+  });
+});
+
+describe('cadastro (/auth/register) com o contexto do card', () => {
+  const r = read('src/app/auth/register/page.tsx');
+  it('lê o código «de», pede o contexto à API e mostra «Você está informando sobre: <título>» + categoria; sem contexto não mostra nada', () => {
+    expect(r).toContain("lerDe(searchParams.get('de'))"); expect(r).toContain('buscarContexto(deParam, ctl.signal)');
+    expect(r).toContain('{ctxAchei && ('); expect(r).toContain('Você está informando sobre: '); expect(r).toContain('{ctxAchei.titulo}'); expect(r).toContain('{ctxAchei.categoria_rotulo}');
+  });
+  it('o título mostrado vem da API validada, NUNCA do texto da URL (prefill_title não é exibido)', () => {
+    const jsx = r.slice(r.indexOf('return ('));
+    expect(jsx).not.toMatch(/\{prefillTitle\}|\{prefillCategory\}/);
+    expect(r).toContain("params.set('prefill_title',    prefillTitle)");   // o que segue ao cadastro do objeto continua como sempre
+  });
+  it('o aviso do cadastro não promete contato protegido, SMS, chat, aviso ao dono nem resposta', () => {
+    const bloco = r.slice(r.indexOf('{ctxAchei && ('), r.indexOf('<h1 className="text-2xl font-bold text-white tracking-tight mb-1">Criar sua conta'));
+    expect(bloco).not.toMatch(/avis|contato|SMS|chat|protegid|resposta|dono|gratuit|grátis/i);
+  });
+  it('o fluxo de cadastro e o destino depois dele não mudaram (intent, prefill e checkout)', () => {
+    expect(r).toContain("router.push(`/dashboard/objects/new?${params.toString()}`)"); expect(r).toContain("params.set('prefill_category', prefillCategory)");
+  });
+});
+
+describe('texto «É um desses?» sem promessa de chat protegido', () => {
+  it('«A conversa acontece pelo chat da plataforma» não aparece mais em nenhum arquivo do /achei nem no HTML dele', () => {
+    for (const f of ['src/app/achei/client.tsx', 'src/app/achei/page.tsx']) { expect(read(f)).not.toMatch(/chat da plataforma|conversa acontece/i); }
+    const h = renderToString(React.createElement(AcheiClient));
+    expect(h).not.toMatch(/chat da plataforma|conversa acontece/i);
+    expect(read('src/app/achei/client.tsx')).toContain('Crie uma conta gratuita para registrar o que você encontrou e entrar em contato.');
+  });
+  it('o texto novo não promete contato protegido, SMS, chat, aviso ao dono nem resposta, e não fala de cobrança nem de limite', () => {
+    const c = read('src/app/achei/client.tsx');
+    const bloco = c.slice(c.indexOf('É um desses?'), c.indexOf('</Link>', c.indexOf('Entrar em contato com o dono')));
+    expect(bloco).not.toMatch(/protegid|SMS|chat|avis|respond|resposta|pre[çc]o|cobran|limite|plano|\bat[ée] \d/i);
+    expect(bloco).toContain('gratuita');
+  });
+  it('sem contexto, o HTML do servidor do /achei não traz aviso de contexto nem código', () => {
+    const h = renderToString(React.createElement(AcheiClient));
+    expect(h).not.toContain('Você está informando sobre'); expect(h).not.toContain('data-achei-contexto');
   });
 });

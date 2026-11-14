@@ -48,8 +48,19 @@ export function palavrasDoTitulo(titulo: string): string {
 }
 
 /** Destino do cadastro: o que o cadastro já aceita (intent=found, prefill_title, prefill_category), com encoding correto. Sem contexto: o link de sempre. */
-export function cadastroHref(ctx: Pick<ContextoAchei, 'titulo' | 'categoria'> | null): string {
+export function cadastroHref(ctx: Pick<ContextoAchei, 'titulo' | 'categoria'> | null, de?: string | null): string {
   if (!ctx) return '/auth/register?intent=found';
   const q = new URLSearchParams({ intent: 'found', prefill_title: ctx.titulo.slice(0, 120), prefill_category: ctx.categoria });
+  const codigo = lerDe(de);
+  if (codigo) q.set('de', codigo);   // o cadastro usa o código para mostrar «Você está informando sobre…» (título validado pela API, nunca o texto da URL)
   return `/auth/register?${q.toString()}`;
+}
+
+/** Pede à API o contexto do card (o mesmo pedido do /achei e do cadastro). null = sem contexto (qualquer motivo): a tela fica como sempre. */
+export async function buscarContexto(de: string, signal?: AbortSignal): Promise<ContextoAchei | null> {
+  try {
+    const r = await fetch(`/api/v1/feed/contexto?de=${encodeURIComponent(de)}`, { signal, headers: { Accept: 'application/json' } });
+    if (!r.ok) return null;
+    return validarContexto(await r.json());
+  } catch { return null; }
 }

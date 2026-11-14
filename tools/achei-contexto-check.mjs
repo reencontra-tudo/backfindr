@@ -57,10 +57,17 @@ for (const W of [390, 1280]) {
     const href0 = reg[0]; await p.locator(`a[href="${href0}"]`).first().click(); await p.waitForURL(/\/auth\/register/, { timeout: 20000 });
     const q = new URL(p.url()).searchParams;
     ok(`${L} cadastro abre com título e categoria`, q.get('intent') === 'found' && q.get('prefill_title') === alvo.titulo && !!q.get('prefill_category'), p.url().replace(BASE, ''));
+    ok(`${L} cadastro leva o código do card (de=…)`, q.get('de') === alvo.code, q.get('de'));
+    await p.locator('[data-cadastro-contexto]').waitFor({ timeout: 15000 });
+    const bt = (await p.locator('[data-cadastro-contexto]').textContent()).replace(/\s+/g, ' ');
+    ok(`${L} tela de cadastro mostra «Você está informando sobre: <título>» e a categoria`, bt.includes('Você está informando sobre: ' + alvo.titulo) && bt.length > ('Você está informando sobre: ' + alvo.titulo).length, bt);
+    ok(`${L} tela de cadastro continua com o título «Criar sua conta grátis» e o formulário`, (await p.locator('h1').textContent()).trim() === 'Criar sua conta grátis' && (await p.locator('form input').count()) >= 3);
+    await p.screenshot({ path: `${OUT}/${W}-${vis}-3-cadastro-com-contexto.png` });
     await p.waitForTimeout(3800);
     const ev = st.eventos.filter((e) => e.event === 'achei_contexto_exibido');
     const props = ev[0]?.properties ?? {}; const chaves = Object.keys(props).filter((k) => !k.startsWith('$') && !['token', 'distinct_id', 'time', 'uuid'].includes(k)).sort();
     ok(`${L} evento achei_contexto_exibido (1x) só com categoria e situação — sem título nem código`, ev.length === 1 && JSON.stringify(chaves) === JSON.stringify(['categoria', 'situacao']) && !JSON.stringify(Object.fromEntries(Object.entries(props).filter(([k]) => !k.startsWith('$')))).includes(alvo.titulo) && !JSON.stringify(Object.fromEntries(Object.entries(props).filter(([k]) => !k.startsWith('$')))).includes(alvo.code), `${chaves.join(',')} (o PostHog acrescenta sozinho a URL da página em $current_url, como em todo evento)`);
+    ok(`${L} evento achei_contexto_cadastro_clique (1x) só com categoria e situação`, (() => { const e = st.eventos.filter((x) => x.event === 'achei_contexto_cadastro_clique'); const ch = Object.keys(e[0]?.properties ?? {}).filter((k) => !k.startsWith('$') && !['token', 'distinct_id', 'time', 'uuid'].includes(k)).sort().join(); return e.length === 1 && ch === 'categoria,situacao'; })());
     ok(`${L} evento feed_informar_encontrei_clique continua`, st.eventos.some((e) => e.event === 'feed_informar_encontrei_clique'));
     await ctx.close(); }
   const L = L0;
@@ -69,6 +76,19 @@ for (const W of [390, 1280]) {
     const { ctx, p, st } = await abrir(W); await p.goto(`${BASE}/achei${qs}`); await p.waitForSelector('h1'); await p.waitForTimeout(2000);
     const r = await p.evaluate(() => ({ banner: !!document.querySelector('[data-achei-contexto]'), valor: document.querySelector('input[type=text]').value, h1: document.querySelector('h1').textContent, script: !!document.querySelector('script[src*="alert"]') }));
     ok(`${L} /achei ${nome}: sem aviso, busca vazia, sem pedido de contexto`, !r.banner && r.valor === '' && r.h1 === 'Encontrou algo?' && st.ctxReqs.length === 0, `pedidos=${st.ctxReqs.length}`);
+    await ctx.close();
+  }
+  // 2b) SEM contexto: da busca ao cadastro, o link é o de sempre e o cadastro não mostra aviso (também com «de» inválido, de objeto não elegível e com sessão de login simulada)
+  for (const [nome, qs, logado] of [['/achei normal', '', false], ['«de» inválido', '?ref=feed&de=%3Cscript%3E', false], ['«de» de achado (não elegível)', '?ref=feed&de=USR00001', false], ['/achei normal, já com login', '', true]]) {
+    const { ctx, p, st } = await abrir(W, 'publicacoes'); if (logado) await ctx.addCookies([{ name: 'access_token', value: 'token-de-teste-invalido', url: BASE }]);
+    await p.goto(`${BASE}/achei${qs}`); await p.waitForSelector('h1'); await p.waitForTimeout(1500);
+    await p.locator('input[type=text]').fill('carteira'); await p.getByRole('button', { name: /Ver se o dono/ }).click(); await p.waitForTimeout(2500);
+    const hs = await p.evaluate(() => [...document.querySelectorAll('a[href^="/auth/register?intent=found"]')].map((a) => a.getAttribute('href')));
+    if (nome === '/achei normal') { const t = await p.locator('body').innerText();
+      ok(`${L} texto «É um desses?» sem «chat da plataforma» no /achei (resultados na tela)`, /É um desses\?/.test(t) && !/chat da plataforma|conversa acontece/i.test(t) && /Crie uma conta gratuita para registrar o que você encontrou e entrar em contato\./.test(t), /É um desses\?/.test(t) ? 'bloco presente, texto novo' : 'bloco «É um desses?» não apareceu'); }
+    ok(`${L} ${nome}: links de cadastro idênticos aos de sempre`, hs.length > 0 && hs.every((h) => h === '/auth/register?intent=found'), hs.join(' | '));
+    await p.locator(`a[href="/auth/register?intent=found"]`).first().click(); await p.waitForURL(/\/auth\/register/, { timeout: 20000 }); await p.waitForSelector('h1'); await p.waitForTimeout(1800);
+    ok(`${L} ${nome}: cadastro sem aviso e sem pedido de contexto`, (await p.locator('[data-cadastro-contexto]').count()) === 0 && new URL(p.url()).search === '?intent=found' && st.ctxReqs.length <= 1, `${new URL(p.url()).search} pedidos=${st.ctxReqs.length}`);
     await ctx.close();
   }
   // 3) «de» bem formado mas NÃO elegível: o pedido é feito e nada aparece (sem pista)

@@ -5,7 +5,7 @@ import { ImageLightbox, useLightbox } from '@/components/ImageLightbox';
 import ObjectThumb from '@/components/ObjectThumb';
 import Link from 'next/link';
 import { MapPin, Search, ArrowRight, AlertTriangle, Package, Loader2 } from 'lucide-react';
-import { cadastroHref, lerDeDaUrl, palavrasDoTitulo, validarContexto, type ContextoAchei } from '@/lib/feed/contexto';
+import { buscarContexto, cadastroHref, lerDeDaUrl, palavrasDoTitulo, type ContextoAchei } from '@/lib/feed/contexto';
 import { acheiEvents } from '@/lib/feed/analytics';
 
 interface ObjectItem {
@@ -34,24 +34,22 @@ function AcheiInner() {
   // Contexto do card do Feed (?de=<código>): só no navegador, depois de carregar (o HTML do servidor é o de sempre). Sem «de», com «de» inválido
   // ou sem contexto elegível: nada muda na página.
   const [contexto, setContexto] = useState<ContextoAchei | null>(null);
+  const [codigoDe, setCodigoDe] = useState<string | null>(null);   // código do card (só com contexto válido); vai junto ao cadastro
   useEffect(() => {
     const de = lerDeDaUrl(window.location.search);
     if (!de) return;
     const ctl = new AbortController();
     (async () => {
-      try {
-        const r = await fetch(`/api/v1/feed/contexto?de=${encodeURIComponent(de)}`, { signal: ctl.signal, headers: { Accept: 'application/json' } });
-        if (!r.ok) return;
-        const c = validarContexto(await r.json());
-        if (!c || ctl.signal.aborted) return;
-        setContexto(c);
-        const kw = palavrasDoTitulo(c.titulo);
-        if (kw) setKeyword((atual) => atual || kw);   // pré-preenche a busca de sempre (não digita por cima do que a pessoa já escreveu)
-        acheiEvents.contextoExibido(c.categoria, c.situacao);
-      } catch { /* sem contexto: a página fica como sempre */ }
+      const c = await buscarContexto(de, ctl.signal);
+      if (!c || ctl.signal.aborted) return;   // sem contexto: a página fica como sempre
+      setContexto(c); setCodigoDe(de);
+      const kw = palavrasDoTitulo(c.titulo);
+      if (kw) setKeyword((atual) => atual || kw);   // pré-preenche a busca de sempre (não digita por cima do que a pessoa já escreveu)
+      acheiEvents.contextoExibido(c.categoria, c.situacao);
     })();
     return () => ctl.abort();
   }, []);
+  const aoIrParaCadastro = () => { if (contexto) acheiEvents.cadastroClique(contexto.categoria, contexto.situacao); };
 
   const doSearch = useCallback(async (kw: string) => {
     setLoading(true);
@@ -162,7 +160,7 @@ function AcheiInner() {
                   Registre o que você achou — se ele procurar, a gente conecta vocês.
                 </p>
                 <Link
-                  href={cadastroHref(contexto)}
+                  href={cadastroHref(contexto, codigoDe)} onClick={aoIrParaCadastro}
                   className="inline-flex items-center gap-2 bg-teal-500 hover:bg-teal-400 text-white font-bold px-6 py-3.5 rounded-xl transition-all text-sm"
                   style={{ boxShadow: '0 0 0 1px rgba(20,184,166,0.4),0 4px 20px rgba(20,184,166,0.15)' }}
                 >
@@ -226,10 +224,10 @@ function AcheiInner() {
                 <div className="bg-teal-500/[0.08] border border-teal-500/20 rounded-2xl p-5 text-center">
                   <h3 className="text-white font-semibold mb-1">É um desses?</h3>
                   <p className="text-white/50 text-sm mb-4">
-                    Crie uma conta gratuita para entrar em contato com o dono. A conversa acontece pelo chat da plataforma.
+                    Crie uma conta gratuita para registrar o que você encontrou e entrar em contato.
                   </p>
                   <Link
-                    href={cadastroHref(contexto)}
+                    href={cadastroHref(contexto, codigoDe)} onClick={aoIrParaCadastro}
                     className="inline-flex items-center gap-2 bg-teal-500 hover:bg-teal-400 text-white font-bold px-6 py-3 rounded-xl transition-all text-sm"
                   >
                     <span>Entrar em contato com o dono</span>
