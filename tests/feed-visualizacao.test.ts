@@ -340,6 +340,14 @@ describe('título da página e cabeçalho', () => {
     expect((t.match(/min-h-\[44px\]/g) ?? []).length).toBe(2);
     expect(cta).toContain("feedEvents.ctaPerdi('topo', pagina)"); expect(cta).toContain("feedEvents.ctaEncontrei('topo', pagina)");
   });
+  it('«Roubaram algo meu» continua no menu «Cadastrar ocorrência» (cabeçalho e botão fixo), com o destino e o evento de sempre, e visível ao abrir', async () => {
+    const { RegisterMenu } = await import('@/app/feed/FeedCta');
+    for (const variant of ['header', 'fixed'] as const) {
+      const h = clean(renderToString(React.createElement(RegisterMenu, { variant, pagina: 1 })));
+      const link = h.match(/<a [^>]*>Roubaram algo meu<\/a>/)![0];
+      expect(link).toContain('href="/flow/stolen?ref=feed"'); expect(link).not.toMatch(/\bhidden\b|aria-hidden|display:none/);
+    }
+  });
   it('balão do assistente: regra só nesta página (fundo sólido, anel e sombra); posição e comportamento não mudam', () => {
     expect(page).toContain('button[aria-label="Abrir assistente"]{background-color:#0f766e !important');
     expect(page).toContain('dangerouslySetInnerHTML={{ __html: \'button[aria-label=');   // sem escape de aspas: o CSS chega válido e sem diferença na hidratação
