@@ -104,14 +104,30 @@ describe('/objeto de sinal público: nenhum endereço de fonte em texto visível
   });
 });
 
-describe('o que NÃO muda neste PR: SEO (meta e JSON-LD), usuário e legado', () => {
-  it('JSON-LD e meta description continuam gerados do objeto original (a decisão de mexer neles fica para depois)', async () => {
+describe('SEO (meta e JSON-LD) de sinal público sem o endereço da fonte; usuário e legado idênticos', () => {
+  it('JSON-LD e meta description de SINAL PÚBLICO não levam mais «Fonte: <endereço>»', async () => {
     const o = objApi();
     const h = await pagina(o, URL_NOME);
     const ld = [...h.matchAll(/<script type="application\/ld\+json">([\s\S]*?)<\/script>/g)].map((m) => JSON.parse(m[1].replace(/&quot;/g, '"')));
-    expect(ld[0].description).toBe(o.description);                       // inalterado (ainda traz a «Fonte: <endereço>»)
+    const doObjeto = ld.find((x) => x['@type'] === 'Thing')!;
+    expect(doObjeto.description).toBe(semEnderecoDeFonte(o.description as string));
+    expect(JSON.stringify(ld)).not.toMatch(/https?:\/\/(?!schema\.org|backfindr)/);          // nenhum endereço de fonte (só schema.org e o próprio site)
     st.obj = o; const meta = await generateMetadata({ params: { code: 'ABC12345' } });
-    expect(meta.description).toBe(`Achado: ${o.title} — bairro Colonial, Cascavel, PR. ${o.description}`.slice(0, 160));
+    expect(String(meta.description)).not.toMatch(/https?:|Fonte:/);
+    expect(meta.description).toBe(`Achado: ${o.title} — bairro Colonial, Cascavel, PR. ${semEnderecoDeFonte(o.description as string)}`.slice(0, 160));
+    expect(JSON.stringify(meta.openGraph)).not.toMatch(/cgn\.inf\.br|Fonte:/);
+  });
+  it('o resto do JSON-LD continua (nome, url, status, categoria)', async () => {
+    const h = await pagina(objApi(), URL_NOME);
+    const ld = [...h.matchAll(/<script type="application\/ld\+json">([\s\S]*?)<\/script>/g)].map((m) => JSON.parse(m[1].replace(/&quot;/g, '"'))).find((x) => x['@type'] === 'Thing')!;
+    expect(ld.name).toBe('Documento encontrado em nome de (nome omitido)'); expect(ld.url).toMatch(/\/objeto\/ABC12345$/); expect(ld.identifier).toBe('ABC12345');
+  });
+  it('usuário: JSON-LD e meta com a descrição original (inclusive endereço que a própria pessoa escreveu)', async () => {
+    const o = objApi({ source: null, title: 'Mochila azul', status: 'lost', category: 'bag', description: 'Veja https://exemplo.com/meu-anuncio-123 obrigado' });
+    const h = await pagina(o, null);
+    const ld = [...h.matchAll(/<script type="application\/ld\+json">([\s\S]*?)<\/script>/g)].map((m) => JSON.parse(m[1].replace(/&quot;/g, '"'))).find((x) => x['@type'] === 'Thing')!;
+    expect(ld.description).toBe(o.description);
+    st.obj = o; expect(String((await generateMetadata({ params: { code: 'ABC12345' } })).description)).toContain('https://exemplo.com/meu-anuncio-123');
   });
   const outros: [string, Record<string, unknown>][] = [
     ['usuário', { source: null, user_id: 'u1', description: 'Perdi na rua. Mais info em https://exemplo.com/meu-anuncio-123 obrigado' }],
@@ -157,12 +173,12 @@ describe('Feed: nenhum endereço em texto visível nem rótulo; link da fonte co
 });
 
 describe('regras no código', () => {
-  it('só o que a TELA recebe perde o endereço; metadados e JSON-LD seguem usando o objeto original', () => {
+  it('a TELA, os metadados e o JSON-LD perdem o endereço da descrição (só sinal público)', () => {
     const p = read('src/app/objeto/[code]/page.tsx');
     expect(p).toContain("const objTela = obj.source === 'public_signal' ? { ...obj, description: semEnderecoDeFonte(obj.description) } : obj;");
     expect(p).toContain('<PublicObjectClient obj={objTela} {...signalProps} />');
-    expect(p).toContain('const jsonLd = buildJsonLd(obj);');
-    expect(p).toMatch(/\$\{obj\.description \?\? ''\}/);               // generateMetadata continua com a descrição original
+    expect(p).toContain('const jsonLd = buildJsonLd(paraSeo(obj));');          // JSON-LD e meta usam a descrição sem o endereço (só sinal público)
+    expect(p).toContain('const obj = paraSeo(bruto);');
   });
   it('a API pública do objeto e a consulta do Feed não foram tocadas', () => {
     expect(read('src/app/api/v1/objects/scan/[code]/route.ts')).not.toMatch(/semEnderecoDeFonte/);

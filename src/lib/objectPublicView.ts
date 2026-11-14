@@ -57,3 +57,15 @@ export function semEnderecoDeFonte(description: string | null | undefined): stri
     .replace(/[ \t]{2,}/g, ' ')
     .trim();
 }
+
+/**
+ * Saída das APIs públicas de LISTA (/api/v1/objects/public e o apoio do passo 2): para SINAL PÚBLICO devolve título, descrição e endereço do local
+ * com a máscara de nome de pessoa e SEM o «Fonte: <endereço da notícia>» (o endereço pode trazer nome no caminho).
+ * Regra de uso: chamar DEPOIS de filtrar, pontuar, ordenar e cortar a lista. O casamento da busca e a pontuação usam o texto ORIGINAL no servidor;
+ * só o que sai na resposta é mascarado. Usuário e legado: devolve o MESMO objeto (mesma referência).
+ */
+export function maskSignalForPublicApi<T extends object>(item: T): T {
+  if (!item || (item as { source?: unknown }).source !== 'public_signal') return item;
+  const m = maskObjectForPublicPage(item as unknown as PublicObjectLike) as PublicObjectLike;
+  return { ...m, description: typeof m.description === 'string' ? semEnderecoDeFonte(m.description) : m.description } as T;
+}
