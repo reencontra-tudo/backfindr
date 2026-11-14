@@ -5,6 +5,11 @@ import { APP_URL } from '@/lib/constants';
 import { maskObjectForPublicPage, semEnderecoDeFonte } from '@/lib/objectPublicView';
 import { getSignalSource } from '@/lib/feed/signalSource';
 
+/** Para metadados e JSON-LD: sinal público sem o «Fonte: <endereço>» na descrição (o endereço pode trazer nome de pessoa). Usuário e legado: o mesmo objeto. */
+function paraSeo<T extends { source?: string | null; description?: string | null }>(obj: T): T {
+  return obj.source === 'public_signal' ? { ...obj, description: semEnderecoDeFonte(obj.description) } : obj;
+}
+
 async function getObject(code: string) {
   try {
     // Usa o endpoint local do Next.js (não depende do FastAPI)
@@ -22,8 +27,9 @@ async function getObject(code: string) {
 }
 
 export async function generateMetadata({ params }: { params: { code: string } }): Promise<Metadata> {
-  const obj = await getObject(params.code);
-  if (!obj) return { title: 'Objeto não encontrado' };
+  const bruto = await getObject(params.code);
+  if (!bruto) return { title: 'Objeto não encontrado' };
+  const obj = paraSeo(bruto);
 
   const statusLabel: Record<string, string> = {
     lost: 'Perdido', found: 'Achado', returned: 'Recuperado', stolen: 'Roubado',
@@ -99,7 +105,7 @@ function buildJsonLd(obj: Record<string, unknown>) {
 export default async function PublicObjectPage({ params }: { params: { code: string } }) {
   const obj = await getObject(params.code);
   if (!obj) notFound();
-  const jsonLd = buildJsonLd(obj);
+  const jsonLd = buildJsonLd(paraSeo(obj));
   // Só SINAL PÚBLICO ganha a fonte (para a tela «extraído de notícia pública»). Objeto de usuário e do legado: nada muda (nem a prop).
   const signalProps = obj.source === 'public_signal' ? { signalSource: await getSignalSource(String(obj.id)) } : {};
   // Texto VISÍVEL da página (e o JSON que o Next embute para ela): sem o endereço da fonte, que pode trazer nome de pessoa no caminho. Só sinal público.

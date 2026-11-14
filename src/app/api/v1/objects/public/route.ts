@@ -4,6 +4,7 @@ import { query } from '@/lib/db';
 import { successResponse, internalErrorResponse } from '@/lib/response';
 import { isBuscaAmpla, temPalavraEmComum, tituloRecuperado } from '@/lib/flowMatch/relevance';
 import { buscarRegistrosRecentesParecidos } from '@/lib/flowMatch/recentSimilar';
+import { maskSignalForPublicApi } from '@/lib/objectPublicView';
 
 // ─── Dicionário de sinônimos (PT-BR, normalizado sem acento) ───────────────
 const SINONIMOS: Record<string, string[]> = {
@@ -282,13 +283,17 @@ export async function GET(request: NextRequest) {
     );
 
     // Filtra por score mínimo e ordena por relevância (quando há keyword)
-    const items = keyword.length > 0
+    const selecionados = keyword.length > 0
       ? allItems
           .filter(item => item._score >= SCORE_MIN_BUSCA)
           .filter(passaStrict)
           .sort((a, b) => b._score - a._score)
           .slice(0, requestedSize)
       : allItems.slice(0, requestedSize);
+
+    // Só SINAL PÚBLICO: nome de pessoa mascarado e sem o endereço da fonte, na RESPOSTA. O casamento da busca, a pontuação, o filtro do passo 2,
+    // a ordem e o corte acima usaram o texto original; usuário e legado passam sem alteração.
+    const items = selecionados.map(maskSignalForPublicApi);
 
     const nextCursor = items.length === requestedSize
       ? String(items[items.length - 1].updated_at)
