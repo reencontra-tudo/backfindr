@@ -34,7 +34,7 @@ export function salvarVisualizacao(storage: StorageLike | null, v: Visualizacao)
 export function classesLista(v: Visualizacao, ocupado: boolean): string {
   const base = `mt-3 transition-opacity ${ocupado ? 'opacity-60' : ''}`;
   return v === 'grade'
-    ? `${base} grid grid-cols-2 gap-3 min-[560px]:grid-cols-3 lg:grid-cols-4 lg:gap-4`
+    ? `${base} grid grid-flow-dense grid-cols-2 gap-3 min-[560px]:grid-cols-3 lg:grid-cols-4 lg:gap-4`
     : `${base} divide-y divide-[color:var(--f-linha)]`;
 }
 

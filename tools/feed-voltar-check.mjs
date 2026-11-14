@@ -23,6 +23,7 @@ async function nova({ geo = true } = {}) {
     Object.defineProperty(navigator, 'webdriver', { get: () => false });
     Object.defineProperty(navigator, 'userAgentData', { get: () => ({ brands: [{ brand: 'Chromium', version: '124' }], mobile: true, platform: 'iOS' }) });
   });
+  if (process.env.VIS) await ctx.addInitScript((v) => { try { localStorage.setItem('feed-visualizacao-v1', v); } catch { /* sem problema */ } }, process.env.VIS); // VIS=grade: abre na Grade
   const p = await ctx.newPage();
   const instalar = async (p) => {
     p.on('request', (r) => { const u = r.url(); if (u.startsWith(BASE)) st.reqs.push(u.replace(BASE, '')); });

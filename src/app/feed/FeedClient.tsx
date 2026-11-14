@@ -158,6 +158,12 @@ function FeedCard({ item, index, vis }: { item: FeedItem; index: number; vis: Vi
               <Icon className="h-10 w-10 opacity-70" />
             </span>
           )}
+          {/* Compartilhar: só o ícone (nome acessível mantido), 44 px, no canto superior esquerdo da foto (longe do balão do chat, à direita) */}
+          <span className="absolute left-1 top-1 z-10 flex" onClickCapture={() => feedEvents.compartilhar(item.origin)}>
+            <ShareModal url={`${APP_URL}${href}`} title={item.title} description={`${item.status_label} · ${item.location_label}`}
+              buttonLabel="Compartilhar"
+              buttonClassName={`inline-flex h-11 w-11 items-center justify-center rounded-full bg-white/90 text-[0px] shadow focus:outline-none focus:ring-2 ${T.t1} ${T.foco} [&>svg]:h-5 [&>svg]:w-5`} />
+          </span>
           <span className={`pointer-events-none absolute bottom-2 left-2 rounded-full px-2.5 py-0.5 text-xs font-semibold text-[color:var(--f-selo-t)] ${sit.selo}`}>{item.status_label}</span>
         </div>
         <div className="flex min-w-0 flex-1 flex-col px-2.5 pb-2.5 pt-1.5">
@@ -170,17 +176,12 @@ function FeedCard({ item, index, vis }: { item: FeedItem; index: number; vis: Vi
             <time dateTime={item.created_at} suppressHydrationWarning>{relativeTimeLabel(item.created_at)}</time>
           </p>
           {isSignal && item.source_name && <p className={`mt-0.5 truncate text-[11px] ${T.t3}`}>Fonte: {item.source_name}</p>}
-          <div className="mt-auto flex flex-wrap items-center gap-1 pt-1.5">
-            <span className="flex" onClickCapture={() => feedEvents.compartilhar(item.origin)}>
-              <ShareModal url={`${APP_URL}${href}`} title={item.title} description={`${item.status_label} · ${item.location_label}`}
-                buttonLabel="Compartilhar"
-                buttonClassName={`inline-flex h-11 w-11 items-center justify-center rounded-xl text-[0px] focus:outline-none focus:ring-2 ${T.acao} ${T.hover} ${T.foco}`} />
-            </span>
-            {informar && (
-              <Link href="/achei?ref=feed" prefetch={false} className={`${quietBaseCls} min-w-0 flex-1 !whitespace-normal px-2 text-left !text-xs ${T.acao}`}
+          {informar && (
+            <div className="mt-auto pt-1.5">
+              <Link href="/achei?ref=feed" prefetch={false} className={`${quietBaseCls} w-fit max-w-[4.75rem] !whitespace-normal px-2 text-left !text-[11px] max-[340px]:max-w-[3.9rem] max-[340px]:!px-1 min-[430px]:max-w-[6.5rem] min-[430px]:!text-xs min-[560px]:max-w-none ${T.acao}`}
                 onClick={() => feedEvents.informarEncontreiClique()}>Informar que encontrei</Link>
-            )}
-          </div>
+            </div>
+          )}
         </div>
       </article>
     );
@@ -442,8 +443,15 @@ export default function FeedClient({ initialItems, initialNextCursor, initialHas
     const a = ancora.current;
     if (!a) return;
     ancora.current = null;
-    const el = Array.from(document.querySelectorAll<HTMLElement>('article[data-code]')).find((x) => x.dataset.code === a.code);
-    if (el) window.scrollBy({ top: el.getBoundingClientRect().top - a.top, left: 0, behavior: 'instant' as ScrollBehavior });
+    const alvoTop = Math.max(a.top, 0);   // se o card estava cortado em cima, ele passa a começar no topo da tela
+    // Idempotente: confere de novo no quadro seguinte (o navegador pode ajustar a rolagem sozinho quando a altura da lista muda).
+    const ajustar = () => {
+      const el = Array.from(document.querySelectorAll<HTMLElement>('article[data-code]')).find((x) => x.dataset.code === a.code);
+      if (el) window.scrollBy({ top: el.getBoundingClientRect().top - alvoTop, left: 0, behavior: 'instant' as ScrollBehavior });
+    };
+    ajustar();
+    const raf = requestAnimationFrame(() => { ajustar(); });
+    return () => cancelAnimationFrame(raf);
   }, [vis]);
 
   const apply = (s: string, c: string, r: Region, g: Geo | null = geo) => {
@@ -505,8 +513,8 @@ export default function FeedClient({ initialItems, initialNextCursor, initialHas
 
   return (
     <div className={classesLargura(vis)} data-vis={vis}>
-      <div className="grid gap-3" role="group" aria-label="Filtros do Feed">
-        <div className="flex items-start gap-2">
+      <div className="grid grid-cols-1 gap-3" role="group" aria-label="Filtros do Feed">
+        <div className="flex min-w-0 items-start gap-2">
         <div className={`${faixaCls} min-w-0 flex-1`} role="group" aria-label="Situação">
           {STATUS_OPTIONS.map((o) => (
             <button key={o.value} type="button" aria-pressed={status === o.value}

@@ -29,6 +29,7 @@ async function rolarAteEstabilizar(p, maxVezes = 40) {
 for (const W of WIDTHS) {
   const mobile = W < 1000; const L = `[${W}]`;
   const ctx = await b.newContext({ viewport: { width: W, height: mobile ? 844 : 800 }, deviceScaleFactor: 2, isMobile: mobile, hasTouch: mobile, userAgent: mobile ? UA : undefined });
+  if (process.env.VIS) await ctx.addInitScript((v) => { try { localStorage.setItem('feed-visualizacao-v1', v); } catch { /* sem problema */ } }, process.env.VIS); // VIS=grade: abre na Grade
   const p = await ctx.newPage(); const eventos = [];
   await p.route(/localhost:3199|google|clarity|facebook|mapbox|ipapi/, (r) => r.abort());
   if (PHOTO) await p.route('https://pub-test.r2.dev/**', (r) => r.fulfill({ status: 200, contentType: 'image/jpeg', body: PHOTO }));
@@ -66,7 +67,7 @@ for (const W of WIDTHS) {
   await p.evaluate(() => scrollTo({ top: document.documentElement.scrollHeight, behavior: 'instant' })); await p.waitForTimeout(2500);
   ok(`${L} depois de rolar até o fim de novo continuam 60 e o convite segue abaixo do botão`, (await cards(p)) === 60 && (await p.locator('aside[data-feed-convite]').count()) === 1);
   // 4) «Informar que encontrei»: só em perdido de usuário (HTML e lista carregada)
-  const regras = await p.evaluate(() => [...document.querySelectorAll('main article')].map((a) => ({ rot: (a.querySelector('p span.font-semibold')?.textContent || '').trim(), orig: a.dataset.origin, inf: !![...a.querySelectorAll('a')].find((x) => /Informar que encontrei/.test(x.textContent)), ver: !![...a.querySelectorAll('a')].find((x) => x.textContent.trim() === 'Ver detalhes'), comp: !![...a.querySelectorAll('button')].find((x) => /Compartilhar/.test(x.textContent)) })));
+  const regras = await p.evaluate(() => [...document.querySelectorAll('main article')].map((a) => ({ rot: (a.querySelector('p span.font-semibold, span.absolute.rounded-full')?.textContent || '').trim(), orig: a.dataset.origin, inf: !![...a.querySelectorAll('a')].find((x) => /Informar que encontrei/.test(x.textContent)), ver: !![...a.querySelectorAll('a')].find((x) => x.textContent.trim() === 'Ver detalhes' || (x.getAttribute('aria-label') || '').startsWith('Ver detalhes: ')), comp: !![...a.querySelectorAll('button')].find((x) => /Compartilhar/.test(x.textContent)) })));
   const roubados = regras.filter((c) => c.rot === 'Roubado'), perdidosUsuario = regras.filter((c) => c.rot === 'Perdido' && c.orig === 'usuario');
   ok(`${L} nenhum card «Roubado» tem «Informar que encontrei» (${roubados.length} cards roubados na lista de 60)`, roubados.length > 0 && roubados.every((c) => !c.inf), `com botão: ${roubados.filter((c) => c.inf).length}`);
   ok(`${L} cards «Perdido» de usuário TÊM o botão (${perdidosUsuario.length})`, perdidosUsuario.length > 0 && perdidosUsuario.every((c) => c.inf));
