@@ -13,7 +13,9 @@ const UA = 'Mozilla/5.0 (iPhone; CPU iPhone OS 17_5 like Mac OS X) AppleWebKit/6
 const CHAVE = 'feed-state-v1';
 let fails = 0;
 const ok = (n, c, x = '') => { if (!c) fails++; console.log(`${c ? 'PASS' : 'FAIL'}  ${n}${x !== '' ? '  — ' + x : ''}`); };
-const b = await chromium.launch();
+// PROD=1: contra a produção (somente leitura) pelo proxy do ambiente; a analítica é bloqueada (eventos só se verificam pelo código e por captura local)
+const PROD = process.env.PROD === '1';
+const b = await chromium.launch(PROD ? { proxy: { server: process.env.HTTPS_PROXY } } : {});
 
 async function nova({ geo = true } = {}) {
   const ctx = await b.newContext({ viewport: { width: WIDTH, height: 844 }, deviceScaleFactor: 2, isMobile: true, hasTouch: true, userAgent: UA });
@@ -88,7 +90,7 @@ async function voltaEConfere(rot, { p, st }, antes, esperadoCards) {
   const marca = st.reqs.length; const evtAntes = restauradoEvt(st).length;
   await p.goBack(); await p.waitForSelector('main article', { timeout: 15000 }); await p.waitForTimeout(3500);
   const n = await cards(p), h = await hrefs(p), y = await p.evaluate(() => Math.round(scrollY));
-  for (let i = 0; i < 30 && restauradoEvt(st).length === evtAntes; i++) await p.waitForTimeout(300); // o PostHog envia em lotes: espera até ~9 s
+  for (let i = 0; i < 30 && !PROD && restauradoEvt(st).length === evtAntes; i++) await p.waitForTimeout(300); // o PostHog envia em lotes: espera até ~9 s
   const evt = restauradoEvt(st).slice(evtAntes);
   ok(`${rot}: voltou ao /feed`, new URL(p.url()).pathname === '/feed');
   ok(`${rot}: mesmos cards (${esperadoCards ?? antes.lista.length}), na mesma ordem`, igual(h, esperadoCards ? antes.lista.slice(0, esperadoCards) : antes.lista), `${n} cards`);
@@ -96,7 +98,7 @@ async function voltaEConfere(rot, { p, st }, antes, esperadoCards) {
   ok(`${rot}: mesma posição (tolerância de 6 px)`, Math.abs(y - antes.y0) <= 6, `antes ${antes.y0}px, depois ${y}px`);
   ok(`${rot}: o card aberto está na tela`, await p.evaluate((href) => { const a = [...document.querySelectorAll('main article')].find((x) => x.querySelector(`a[href="${href}"]`)); const r = a?.getBoundingClientRect(); return !!r && r.bottom > 0 && r.top < innerHeight; }, antes.href));
   ok(`${rot}: NENHUMA chamada a /api/v1/feed/geo nem a /api/v1/feed ao restaurar`, geoReqs(st, marca) === 0 && feedReqs(st, marca) === 0, `geo=${geoReqs(st, marca)} feed=${feedReqs(st, marca)}`);
-  ok(`${rot}: evento feed_state_restored com a quantidade de cards (e mais nada)`, evt.length === 1 && evt[0].properties.cards === n && Object.keys(evt[0].properties).filter((k) => !k.startsWith('$') && k !== 'token' && k !== 'distinct_id').join() === 'cards', JSON.stringify(evt[0]?.properties && { cards: evt[0].properties.cards }));
+  if (PROD) console.log(`INFO  ${rot}: evento feed_state_restored não verificável em produção (analítica bloqueada de propósito): conferido pelo código e pela captura local`); else ok(`${rot}: evento feed_state_restored com a quantidade de cards (e mais nada)`, evt.length === 1 && evt[0].properties.cards === n && Object.keys(evt[0].properties).filter((k) => !k.startsWith('$') && k !== 'token' && k !== 'distinct_id').join() === 'cards', JSON.stringify(evt[0]?.properties && { cards: evt[0].properties.cards }));
   ok(`${rot}: history.scrollRestoration em «manual» enquanto restaurado`, (await modoRolagem(p)) === 'manual');
   return { n, y };
 }

@@ -11,7 +11,9 @@ const PHOTO = existsSync('/tmp/claude-0/sample-photo.jpg') ? readFileSync('/tmp/
 const UA = 'Mozilla/5.0 (iPhone; CPU iPhone OS 17_5 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.5 Mobile/15E148 Safari/604.1';
 let fails = 0;
 const ok = (n, c, x = '') => { if (!c) fails++; console.log(`${c ? 'PASS' : 'FAIL'}  ${n}${x ? '  — ' + x : ''}`); };
-const b = await chromium.launch();
+// PROD=1: contra a produção (somente leitura) pelo proxy do ambiente; a analítica é bloqueada (eventos só se verificam pelo código e por captura local)
+const PROD = process.env.PROD === '1';
+const b = await chromium.launch(PROD ? { proxy: { server: process.env.HTTPS_PROXY } } : {});
 const colunasEsperadas = (v, W) => (v === 'publicacoes' ? 1 : W >= 1024 ? 4 : W >= 560 ? 3 : 2);
 
 async function abrir(W, v) {
@@ -20,8 +22,8 @@ async function abrir(W, v) {
   if (v === 'grade') await ctx.addInitScript(() => { try { localStorage.setItem('feed-visualizacao-v1', 'grade'); } catch { /* sem problema */ } });
   const p = await ctx.newPage(); const reqs = [];
   p.on('request', (r) => { if (r.url().includes('/api/v1/feed')) reqs.push(r.url()); });
-  await p.route(/localhost:3199|google|clarity|facebook|mapbox|ipapi/, (r) => r.abort());
-  if (PHOTO) await p.route('https://pub-test.r2.dev/**', (r) => r.fulfill({ status: 200, contentType: 'image/jpeg', body: PHOTO }));
+  await p.route(/localhost:3199|google|clarity|facebook|mapbox|ipapi|posthog|vercel-insights|vitals/i, (r) => r.abort());
+  if (PHOTO) await p.route(/^https:\/\/pub-[a-z0-9]+\.r2\.dev\//, (r) => r.fulfill({ status: 200, contentType: 'image/jpeg', body: PHOTO }));
   await p.goto(`${BASE}/feed`); await p.waitForSelector(`[data-vis="${v}"] article`); await p.waitForTimeout(1200);
   return { ctx, p, reqs };
 }

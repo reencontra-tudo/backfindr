@@ -12,7 +12,9 @@ const PHOTO = existsSync('/tmp/claude-0/sample-photo.jpg') ? readFileSync('/tmp/
 const UA = 'Mozilla/5.0 (iPhone; CPU iPhone OS 17_5 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.5 Mobile/15E148 Safari/604.1';
 let fails = 0; const info = [];
 const ok = (n, c, x = '') => { if (!c) fails++; console.log(`${c ? 'PASS' : 'FAIL'}  ${n}${x ? '  — ' + x : ''}`); };
-const b = await chromium.launch();
+// PROD=1: contra a produção (somente leitura) pelo proxy do ambiente; a analítica é bloqueada (eventos só se verificam pelo código e por captura local)
+const PROD = process.env.PROD === '1';
+const b = await chromium.launch(PROD ? { proxy: { server: process.env.HTTPS_PROXY } } : {});
 
 const cards = (p) => p.evaluate(() => document.querySelectorAll('main article').length);
 // «rolagem real»: leva a página ao fim e espera o carregamento automático (se houver); devolve quantas vezes foi preciso rolar
@@ -31,8 +33,8 @@ for (const W of WIDTHS) {
   const ctx = await b.newContext({ viewport: { width: W, height: mobile ? 844 : 800 }, deviceScaleFactor: 2, isMobile: mobile, hasTouch: mobile, userAgent: mobile ? UA : undefined });
   if (process.env.VIS) await ctx.addInitScript((v) => { try { localStorage.setItem('feed-visualizacao-v1', v); } catch { /* sem problema */ } }, process.env.VIS); // VIS=grade: abre na Grade
   const p = await ctx.newPage(); const eventos = [];
-  await p.route(/localhost:3199|google|clarity|facebook|mapbox|ipapi/, (r) => r.abort());
-  if (PHOTO) await p.route('https://pub-test.r2.dev/**', (r) => r.fulfill({ status: 200, contentType: 'image/jpeg', body: PHOTO }));
+  await p.route(/localhost:3199|google|clarity|facebook|mapbox|ipapi|posthog|vercel-insights|vitals/i, (r) => r.abort());
+  if (PHOTO) await p.route(/^https:\/\/pub-[a-z0-9]+\.r2\.dev\//, (r) => r.fulfill({ status: 200, contentType: 'image/jpeg', body: PHOTO }));
   p.on('request', (r) => { if (/\/api\/v1\/feed\?/.test(r.url())) eventos.push(r.url().replace(BASE, '')); });
   await p.goto(`${BASE}/feed`); await p.addStyleTag({ content: 'html{scroll-behavior:auto !important}' }); await p.waitForTimeout(2500);
 

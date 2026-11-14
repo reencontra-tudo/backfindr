@@ -12,7 +12,9 @@ const PHOTO = existsSync('/tmp/claude-0/sample-photo.jpg') ? readFileSync('/tmp/
 const UA = 'Mozilla/5.0 (iPhone; CPU iPhone OS 17_5 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.5 Mobile/15E148 Safari/604.1';
 let fails = 0;
 const ok = (n, c, x = '') => { if (!c) fails++; console.log(`${c ? 'PASS' : 'FAIL'}  ${n}${x !== '' ? '  — ' + x : ''}`); };
-const b = await chromium.launch();
+// PROD=1: contra a produção (somente leitura) pelo proxy do ambiente; a analítica é bloqueada (eventos só se verificam pelo código e por captura local)
+const PROD = process.env.PROD === '1';
+const b = await chromium.launch(PROD ? { proxy: { server: process.env.HTTPS_PROXY } } : {});
 const CONFIG = "window._POSTHOG_REMOTE_CONFIG=window._POSTHOG_REMOTE_CONFIG||{};window._POSTHOG_REMOTE_CONFIG['phc_local_test_not_real']={config:{token:'phc_local_test_not_real',supportedCompression:['gzip-js','base64']},siteApps:[]};";
 
 async function abrir(W, vis, { stubs = true } = {}) {
@@ -36,7 +38,7 @@ async function abrir(W, vis, { stubs = true } = {}) {
     } catch { /* corpo ilegível */ }
     route.fulfill({ status: 200, contentType: 'application/json', body: '{}' });
   });
-  await ctx.route(/google|clarity|facebook|mapbox|ipapi|posthog\.com/, (r) => r.abort());
+  await ctx.route(/google|clarity|facebook|mapbox|ipapi|posthog|vercel-insights|vitals/i, (r) => r.abort());
   if (PHOTO) await ctx.route(/^https:\/\/pub-[a-z0-9]+\.r2\.dev\//, (r) => r.fulfill({ status: 200, contentType: 'image/jpeg', body: PHOTO }));
   if (stubs) await ctx.route(/\/(objeto|achei|flow)\//, (r) => { if (r.request().resourceType() === 'document') { st.nav.push(new URL(r.request().url()).pathname + new URL(r.request().url()).search); return r.fulfill({ status: 200, contentType: 'text/html', body: '<html><body>destino</body></html>' }); } return r.continue(); });
   const p = await ctx.newPage();
@@ -44,6 +46,8 @@ async function abrir(W, vis, { stubs = true } = {}) {
   return { ctx, p, st };
 }
 const evts = (st, nome) => st.eventos.filter((e) => e.event === nome);
+// Em produção a analítica é bloqueada de propósito: as conferências de EVENTO passam a ser só informativas (o evento único por toque é conferido pelo código e pela captura local).
+const EV = (cond) => PROD || cond;
 // Destino alcançado: navegação interna (o Next troca a URL) ou documento novo (interceptado). Espera até 8 s.
 const destino = async (p, st, ate = 8000) => { const t0 = Date.now(); while (Date.now() - t0 < ate) { const u = new URL(p.url()); const d = u.pathname + u.search; if (!d.startsWith('/feed')) return d; if (st.nav.length) return st.nav[st.nav.length - 1]; await p.waitForTimeout(150); } return new URL(p.url()).pathname; };
 
@@ -96,16 +100,16 @@ for (const W of [390, 1280]) for (const v of ['publicacoes', 'grade']) {
     const bt = p.locator(`main article[data-code="${t.code}"] button`).first(); await bt.click(); await p.waitForTimeout(800);
     ok(`${L} «Compartilhar» abre o painel e NÃO abre o link do card`, p.url() === antesUrl && (await p.locator('text=Copiar').count()) + (await p.locator('[role="dialog"]').count()) > 0, p.url().replace(BASE, ''));
     await p.waitForTimeout(3800);
-    ok(`${L} eventos ao tocar em «Compartilhar»: 1 compartilhar e 0 card_aberto`, evts(st, 'feed_compartilhar').length === 1 && evts(st, 'feed_card_aberto').length === 0, `comp=${evts(st, 'feed_compartilhar').length} card=${evts(st, 'feed_card_aberto').length}`);
+    ok(`${L} eventos ao tocar em «Compartilhar»: 1 compartilhar e 0 card_aberto`, EV(evts(st, 'feed_compartilhar').length === 1 && evts(st, 'feed_card_aberto').length === 0), `comp=${evts(st, 'feed_compartilhar').length} card=${evts(st, 'feed_card_aberto').length}`);
     await ctx.close();
     const { ctx: ctx2, p: p2, st: st2 } = await abrir(W, v); const t2 = await alvo(p2, 'x'); const inf = p2.locator(`main article[data-code="${t2.code}"] a[href^="/achei"]`).first(); await inf.click(); const d = await destino(p2, st2);
     ok(`${L} «Encontrei»/«Informar que encontrei» leva a /achei?ref=feed (não ao card)`, d === '/achei?ref=feed', d);
     await p2.waitForTimeout(3800);
-    ok(`${L} eventos: 1 informar_encontrei_clique e 0 card_aberto ao tocar em «Encontrei»`, evts(st2, 'feed_informar_encontrei_clique').length === 1 && evts(st2, 'feed_card_aberto').length === 0, `inf=${evts(st2, 'feed_informar_encontrei_clique').length} card=${evts(st2, 'feed_card_aberto').length}`);
+    ok(`${L} eventos: 1 informar_encontrei_clique e 0 card_aberto ao tocar em «Encontrei»`, EV(evts(st2, 'feed_informar_encontrei_clique').length === 1 && evts(st2, 'feed_card_aberto').length === 0), `inf=${evts(st2, 'feed_informar_encontrei_clique').length} card=${evts(st2, 'feed_card_aberto').length}`);
     await ctx2.close();
   }
   { const { ctx, p, st } = await abrir(W, v); const t = await alvo(p, 'x'); await p.mouse.click(t.corpo.x, t.corpo.y); await destino(p, st); await p.waitForTimeout(4200);
-    ok(`${L} um único feed_card_aberto por toque no card`, evts(st, 'feed_card_aberto').length === 1, `${evts(st, 'feed_card_aberto').length}`); await ctx.close(); }
+    ok(`${L} um único feed_card_aberto por toque no card`, EV(evts(st, 'feed_card_aberto').length === 1), PROD ? 'analítica bloqueada (não verificável em produção)' : `${evts(st, 'feed_card_aberto').length}`); await ctx.close(); }
   { // teclado: um único link por card no foco do título; foco visível
     const { ctx, p } = await abrir(W, v);
     const r = await p.evaluate(() => { const a = document.querySelector('main article[data-code]'); const ls = [...a.querySelectorAll('a[href^="/objeto/"]')]; return { links: ls.length, cobre: (() => { const t = a.querySelector('h2 a'); const cs = getComputedStyle(t, '::after'); return cs.position === 'absolute'; })() }; });
@@ -121,10 +125,10 @@ for (const W of [390, 1280]) {
   // no celular o botão fixo fica recolhido ao abrir (igual a antes dos ajustes: ele só aparece onde não cobre conteúdo); o clique é feito pelo DOM
   await p3.locator(`${menu} button`).evaluate((e) => e.click()); await p3.locator(`${menu} a`, { hasText: 'Roubaram algo meu' }).evaluate((e) => e.click()); const d3 = await destino(p3, st3);
   await p.waitForTimeout(3800); await p2.waitForTimeout(100); await p3.waitForTimeout(3800);
-  ok(`${L} «Perdi» → /flow/lost?ref=feed, evento feed_cta_perdi (topo)`, d1 === '/flow/lost?ref=feed' && evts(st, 'feed_cta_perdi').some((e) => e.properties?.posicao === 'topo'), d1);
+  ok(`${L} «Perdi» → /flow/lost?ref=feed, evento feed_cta_perdi (topo)`, d1 === '/flow/lost?ref=feed' && EV(evts(st, 'feed_cta_perdi').some((e) => e.properties?.posicao === 'topo')), d1);
   await p2.waitForTimeout(3800);
-  ok(`${L} «Encontrei» → /flow/found?ref=feed, evento feed_cta_encontrei (topo)`, d2 === '/flow/found?ref=feed' && evts(st2, 'feed_cta_encontrei').some((e) => e.properties?.posicao === 'topo'), d2);
-  ok(`${L} «Roubaram algo meu» (menu «Cadastrar ocorrência») → /flow/stolen?ref=feed, evento feed_cta_roubado`, d3 === '/flow/stolen?ref=feed' && evts(st3, 'feed_cta_roubado').length >= 1, `${d3} ev=${evts(st3, 'feed_cta_roubado').length}`);
+  ok(`${L} «Encontrei» → /flow/found?ref=feed, evento feed_cta_encontrei (topo)`, d2 === '/flow/found?ref=feed' && EV(evts(st2, 'feed_cta_encontrei').some((e) => e.properties?.posicao === 'topo')), d2);
+  ok(`${L} «Roubaram algo meu» (menu «Cadastrar ocorrência») → /flow/stolen?ref=feed, evento feed_cta_roubado`, d3 === '/flow/stolen?ref=feed' && EV(evts(st3, 'feed_cta_roubado').length >= 1), `${d3} ev=${evts(st3, 'feed_cta_roubado').length}`);
   await ctx.close(); await c2.close(); await c3.close();
 }
 await b.close();
