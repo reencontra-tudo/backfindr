@@ -102,7 +102,7 @@ describe('card com foto (estilo publicação)', () => {
     for (const t of ['Ver detalhes', 'Compartilhar', 'Informar que encontrei']) expect(acoes).toContain(t);
     expect(acoes).toMatch(/bg-\[color:var\(--f-prim\)\][^"]*"[^>]*>Ver detalhes|aria-label="Ver detalhes[^"]*" class="[^"]*bg-\[color:var\(--f-prim\)\]/);
     expect((acoes.match(/bg-\[color:var\(--f-prim\)\]/g) ?? []).length).toBe(1); // só a principal é «cheia»
-    expect(acoes).toContain('href="/achei?ref=feed"');
+    expect(acoes).toMatch(/href="\/achei\?ref=feed&amp;de=[A-Za-z0-9_-]+"/);   // leva o código do card
     expect(acoes).not.toContain('grid-cols'); expect(acoes).not.toMatch(/col-span-2/);       // as três ações na mesma linha, sem linha sozinha
     expect(a).not.toMatch(/flex-wrap gap-2 pt-1/); // sem a linha de botões antiga que quebrava
   });

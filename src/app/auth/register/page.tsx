@@ -11,6 +11,7 @@ import { Eye, EyeOff, ArrowRight, Loader2, Check, Zap, Building2 } from 'lucide-
 import { useAuthStore } from '@/hooks/useAuth';
 import Cookies from 'js-cookie';
 import { analytics } from '@/providers/PostHogProvider';
+import { buscarContexto, lerDe, type ContextoAchei } from '@/lib/feed/contexto';
 
 const schema = z.object({
   name: z.string().min(2, 'Nome muito curto'),
@@ -47,6 +48,16 @@ function RegisterForm() {
   const prefillColor    = searchParams.get('prefill_color')    || '';
   const prefillName     = searchParams.get('prefill_name')     || '';
   const planInfo = PLAN_INFO[planSlug] || null;
+  // Veio do «Informar que encontrei» de um card do Feed (?de=<código>): mostra de qual ocorrência a pessoa está falando. O título vem da API
+  // (validado, mascarado, só perdido de usuário elegível), nunca do texto da URL. Sem contexto válido, a tela fica como sempre.
+  const deParam = lerDe(searchParams.get('de'));
+  const [ctxAchei, setCtxAchei] = useState<ContextoAchei | null>(null);
+  useEffect(() => {
+    if (!deParam) return;
+    const ctl = new AbortController();
+    void buscarContexto(deParam, ctl.signal).then((c) => { if (c && !ctl.signal.aborted) setCtxAchei(c); });
+    return () => ctl.abort();
+  }, [deParam]);
 
   const { register: registerUser, isLoading } = useAuthStore();
   const [showPass, setShowPass] = useState(false);
@@ -193,6 +204,13 @@ function RegisterForm() {
                 <p className="text-xs text-white/40">Você está assinando</p>
                 <p className="font-semibold text-sm text-white">Plano {planInfo.name} — {planInfo.price}</p>
               </div>
+            </div>
+          )}
+
+          {ctxAchei && (
+            <div role="status" data-cadastro-contexto className="mb-6 rounded-xl border border-teal-500/30 bg-teal-500/[0.08] px-4 py-3">
+              <p className="text-sm text-white/90"><span className="text-white/60">Você está informando sobre: </span><strong className="font-semibold">{ctxAchei.titulo}</strong></p>
+              <p className="mt-0.5 text-xs text-white/60">{ctxAchei.categoria_rotulo}</p>
             </div>
           )}
 
