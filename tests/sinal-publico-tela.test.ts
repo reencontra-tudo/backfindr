@@ -131,7 +131,7 @@ describe('regras no código', () => {
     expect(read('src/app/objeto/[code]/client.tsx')).toContain("const isSignal = obj.source === 'public_signal';");
     const p = read('src/app/objeto/[code]/page.tsx');
     expect(p).toContain("obj.source === 'public_signal' ? { signalSource: await getSignalSource(String(obj.id)) } : {}");
-    expect(p).toContain('<PublicObjectClient obj={obj} {...signalProps} />');
+    expect(p).toContain('<PublicObjectClient obj={objTela} {...signalProps} />');   // objTela = o mesmo objeto, sem o endereço da fonte na descrição de sinal público
     expect(read('src/lib/objectPublicView.ts')).toContain("obj.source !== 'public_signal'");
   });
   it('a API pública do objeto NÃO mudou (a fonte vem direto do banco na página, não de um campo novo da API)', () => {

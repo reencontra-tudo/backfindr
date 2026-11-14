@@ -2,7 +2,7 @@ import { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import PublicObjectClient from './client';
 import { APP_URL } from '@/lib/constants';
-import { maskObjectForPublicPage } from '@/lib/objectPublicView';
+import { maskObjectForPublicPage, semEnderecoDeFonte } from '@/lib/objectPublicView';
 import { getSignalSource } from '@/lib/feed/signalSource';
 
 async function getObject(code: string) {
@@ -102,13 +102,16 @@ export default async function PublicObjectPage({ params }: { params: { code: str
   const jsonLd = buildJsonLd(obj);
   // Só SINAL PÚBLICO ganha a fonte (para a tela «extraído de notícia pública»). Objeto de usuário e do legado: nada muda (nem a prop).
   const signalProps = obj.source === 'public_signal' ? { signalSource: await getSignalSource(String(obj.id)) } : {};
+  // Texto VISÍVEL da página (e o JSON que o Next embute para ela): sem o endereço da fonte, que pode trazer nome de pessoa no caminho. Só sinal público.
+  // Título/descrição do SEO (generateMetadata) e o JSON-LD continuam como estavam (decisão: não mexer neles neste PR).
+  const objTela = obj.source === 'public_signal' ? { ...obj, description: semEnderecoDeFonte(obj.description) } : obj;
   return (
     <>
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
       />
-      <PublicObjectClient obj={obj} {...signalProps} />
+      <PublicObjectClient obj={objTela} {...signalProps} />
     </>
   );
 }
