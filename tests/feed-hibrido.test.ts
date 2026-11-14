@@ -132,7 +132,7 @@ describe('«Informar que encontrei» só em PERDIDO de usuário', () => {
   }
   it('o botão leva ao mesmo destino de sempre (/achei?ref=feed) e a condição está no código (cliente: HTML do servidor e lista carregada)', () => {
     expect(client).toContain("const informar = item.can_report_found && item.status === 'lost';");
-    expect(client).toContain('href="/achei?ref=feed"');
+    expect(client).toContain('href={acheiHref(item.code)}');   // /achei?ref=feed&de=<código do card> (ver tests/achei-contexto.test.ts)
     const lote = render([...lista(2), mk({ code: 'T9', status: 'stolen', status_label: 'Roubado' })]);
     expect((lote.match(/>Informar que encontrei</g) ?? []).length).toBe(2);   // só os 2 perdidos
   });

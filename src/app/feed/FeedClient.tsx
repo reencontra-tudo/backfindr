@@ -22,6 +22,7 @@ import { APP_URL } from '@/lib/constants';
 import { relativeTimeLabel } from '@/lib/feed/time';
 import { FEED_CATEGORY_LABELS, type FeedCategoryKey } from '@/lib/feed/category';
 import { feedEvents, feedOrigin } from '@/lib/feed/analytics';
+import { acheiHref } from '@/lib/feed/contexto';
 import type { FeedItem } from '@/lib/feed/query';
 import {
   ESTADO_MAX_CARDS, consumirVoltou, criarEstado, deveRestaurar, descartarEstado, escolherCorte, expandir, instalarRastreadorVoltar,
@@ -180,7 +181,7 @@ function FeedCard({ item, index, vis }: { item: FeedItem; index: number; vis: Vi
           {informar && (
             <div className="mt-auto pt-1">
               {/* Rótulo curto na Grade; o nome acessível continua «Informar que encontrei». Uma linha, 44 px, sempre à esquerda (longe do balão do chat). */}
-              <Link href="/achei?ref=feed" prefetch={false} aria-label="Informar que encontrei"
+              <Link href={acheiHref(item.code)} prefetch={false} aria-label="Informar que encontrei"
                 className={`${quietBaseCls} ${porCima} -ml-2 !px-2.5 !text-xs ${T.acao}`}
                 onClick={() => feedEvents.informarEncontreiClique()}>Encontrei</Link>
             </div>
@@ -228,7 +229,7 @@ function FeedCard({ item, index, vis }: { item: FeedItem; index: number; vis: Vi
             buttonLabel="Compartilhar" buttonClassName={`${quietActionCls} ${porCima} max-[439px]:w-11 max-[439px]:gap-0 max-[439px]:!px-0 max-[439px]:text-[0px]`} />
         </span>
         {informar && (
-          <Link href="/achei?ref=feed" prefetch={false} className={`${quietBaseCls} ${porCima} order-first ${T.acao}`}
+          <Link href={acheiHref(item.code)} prefetch={false} className={`${quietBaseCls} ${porCima} order-first ${T.acao}`}
             onClick={() => feedEvents.informarEncontreiClique()}>Informar que encontrei</Link>
         )}
       </div>

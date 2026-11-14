@@ -85,7 +85,7 @@ describe('o CONTEÚDO do HTML do servidor não muda', () => {
   });
   it('os textos dos botões do card são exatamente os de antes', () => {
     for (const t of ['Ver detalhes', 'Compartilhar', 'Informar que encontrei']) expect(client).toContain(t);
-    expect(client).toContain('href="/achei?ref=feed"');
+    expect(client).toContain('href={acheiHref(item.code)}');   // /achei?ref=feed&de=<código do card>
   });
   it('só aparência: nenhuma mudança em dados, filtros, endpoints, paginação nem eventos', () => {
     expect(client).toContain("'/api/v1/feed/geo'");

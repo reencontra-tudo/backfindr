@@ -239,7 +239,7 @@ describe.skipIf(!TEST_DB)('Feed com banco real', () => {
     }
     const { default: FeedPage } = await import('@/app/feed/[[...slug]]/page');
     const html = renderToString(await FeedPage({ params: {} }));
-    expect(html).toContain('href="/achei?ref=feed"');
+    expect(html).toMatch(/href="\/achei\?ref=feed&amp;de=[A-Za-z0-9_-]+"/);   // leva o código do card
     expect(html).toContain('Origem: notícia pública');
     // nenhum sinal público com o botão
     const articles = html.split('<article').slice(1);

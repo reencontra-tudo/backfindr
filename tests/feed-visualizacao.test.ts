@@ -168,8 +168,8 @@ describe('cards da Grade', () => {
     expect(roubadoUsuario).not.toContain('Informar que encontrei'); expect(roubadoUsuario).not.toContain('>Encontrei<');
   });
   it('Grade: rótulo visível «Encontrei», nome acessível «Informar que encontrei», mesmo destino, 1 linha e 44 px', () => {
-    const tag = grade[0].match(/<a[^>]*href="\/achei\?ref=feed"[^>]*>/)![0];
-    expect(tag).toContain('aria-label="Informar que encontrei"'); expect(grade[0]).toMatch(/href="\/achei\?ref=feed">Encontrei<\/a>/);
+    const tag = grade[0].match(/<a[^>]*href="\/achei\?ref=feed&amp;de=[A-Za-z0-9_-]+"[^>]*>/)![0];
+    expect(tag).toContain('aria-label="Informar que encontrei"'); expect(grade[0]).toMatch(/href="\/achei\?ref=feed&amp;de=[A-Za-z0-9_-]+">Encontrei<\/a>/);
     expect(tag).toContain('min-h-[44px]'); expect(tag).toContain('whitespace-nowrap'); expect(tag).not.toContain('whitespace-normal');
     expect(read('src/app/feed/FeedClient.tsx')).toContain('feedEvents.informarEncontreiClique()');
   });
@@ -181,7 +181,7 @@ describe('cards da Grade', () => {
   });
   it('Publicações: «Informar que encontrei» fica à ESQUERDA da linha de ações (order-first), sem mudar a ordem no HTML nem ocupar linha sozinho', () => {
     const p0 = articles(render('publicacoes'))[0];
-    const tag = p0.match(/<a [^>]*href="\/achei\?ref=feed"[^>]*>/)![0];
+    const tag = p0.match(/<a [^>]*href="\/achei\?ref=feed&amp;de=[A-Za-z0-9_-]+"[^>]*>/)![0];
     expect(tag).toContain('order-first');
     const x = p0.slice(p0.lastIndexOf('<div class="mt-3 flex flex-wrap'));
     expect(x.indexOf('Ver detalhes')).toBeLessThan(x.indexOf('Informar que encontrei'));   // no HTML a ordem de sempre
@@ -189,7 +189,7 @@ describe('cards da Grade', () => {
   });
   it('Publicações: rótulo completo «Informar que encontrei» (visível e acessível), mesma linha das outras ações', () => {
     const p0 = articles(render('publicacoes'))[0];
-    expect(p0).toMatch(/href="\/achei\?ref=feed">Informar que encontrei<\/a>/);
+    expect(p0).toMatch(/href="\/achei\?ref=feed&amp;de=[A-Za-z0-9_-]+">Informar que encontrei<\/a>/);
   });
   it('sinal mostra «Fonte: <veículo>» pequena e nunca o endereço', () => {
     expect(grade[2]).toContain('Fonte: g1.globo.com'); expect(grade[2]).not.toContain('https://g1.globo.com'); expect(grade[2]).not.toContain('target="_blank"');
