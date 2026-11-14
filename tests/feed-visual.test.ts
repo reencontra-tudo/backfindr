@@ -102,7 +102,7 @@ describe('card com foto (estilo publicação)', () => {
     for (const t of ['Ver detalhes', 'Compartilhar', 'Informar que encontrei']) expect(acoes).toContain(t);
     expect(acoes).toMatch(/bg-teal-500[^"]*"[^>]*>Ver detalhes|aria-label="Ver detalhes[^"]*" class="[^"]*bg-teal-500/);
     expect((acoes.match(/bg-teal-500/g) ?? []).length).toBe(1); // só a principal é «cheia»
-    expect(acoes).toContain('href="/achei?ref=feed"');
+    expect(acoes).toMatch(/href="\/achei\?ref=feed&amp;de=[A-Za-z0-9_-]+"/);   // leva o código do card
     expect(acoes).toContain('grid-cols-[auto_auto]');              // 1ª linha: Ver detalhes + Compartilhar
     expect(acoes).toMatch(/<a [^>]*class="[^"]*col-span-2[^"]*"[^>]*>Informar que encontrei/); // 2ª linha: sozinha
     expect(a).not.toMatch(/flex-wrap gap-2 pt-1/); // sem a linha de botões antiga que quebrava

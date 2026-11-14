@@ -47,3 +47,8 @@ export const feedEvents = {
   /** A lista e a rolagem voltaram ao usar o botão «voltar» do navegador. Só a quantidade de cards (sem dado pessoal). */
   estadoRestaurado: (cards: number) => send('feed_state_restored', { cards }),
 };
+
+/** /achei: o aviso «Você está informando sobre…» foi exibido. Só categoria e situação (sem título, sem código, sem dado pessoal). */
+export const acheiEvents = {
+  contextoExibido: (categoria: string, situacao: string) => send('achei_contexto_exibido', { categoria, situacao }),
+};

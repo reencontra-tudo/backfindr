@@ -22,6 +22,7 @@ import { APP_URL } from '@/lib/constants';
 import { relativeTimeLabel } from '@/lib/feed/time';
 import { FEED_CATEGORY_LABELS, type FeedCategoryKey } from '@/lib/feed/category';
 import { feedEvents, feedOrigin } from '@/lib/feed/analytics';
+import { acheiHref } from '@/lib/feed/contexto';
 import type { FeedItem } from '@/lib/feed/query';
 import {
   ESTADO_MAX_CARDS, consumirVoltou, criarEstado, deveRestaurar, descartarEstado, escolherCorte, expandir, instalarRastreadorVoltar,
@@ -165,7 +166,7 @@ function FeedCard({ item, index }: { item: FeedItem; index: number }) {
             buttonLabel="Compartilhar" buttonClassName={quietActionCls} />
         </span>
         {item.can_report_found && item.status === 'lost' && (
-          <Link href="/achei?ref=feed" prefetch={false} className={`${quietActionCls} col-span-2 justify-self-start text-teal-100 sm:col-auto`}
+          <Link href={acheiHref(item.code)} prefetch={false} className={`${quietActionCls} col-span-2 justify-self-start text-teal-100 sm:col-auto`}
             onClick={() => feedEvents.informarEncontreiClique()}>Informar que encontrei</Link>
         )}
       </div>

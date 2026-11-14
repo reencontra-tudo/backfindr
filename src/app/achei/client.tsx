@@ -1,10 +1,12 @@
 'use client';
 
-import { useState, useCallback, Suspense } from 'react';
+import { useState, useCallback, useEffect, Suspense } from 'react';
 import { ImageLightbox, useLightbox } from '@/components/ImageLightbox';
 import ObjectThumb from '@/components/ObjectThumb';
 import Link from 'next/link';
 import { MapPin, Search, ArrowRight, AlertTriangle, Package, Loader2 } from 'lucide-react';
+import { cadastroHref, lerDeDaUrl, palavrasDoTitulo, validarContexto, type ContextoAchei } from '@/lib/feed/contexto';
+import { acheiEvents } from '@/lib/feed/analytics';
 
 interface ObjectItem {
   id: string;
@@ -28,6 +30,28 @@ function AcheiInner() {
   const [loading, setLoading] = useState(false);
   const [searched, setSearched] = useState(false);
   const { open: openLightbox, close: closeLightbox, lightbox } = useLightbox();
+
+  // Contexto do card do Feed (?de=<código>): só no navegador, depois de carregar (o HTML do servidor é o de sempre). Sem «de», com «de» inválido
+  // ou sem contexto elegível: nada muda na página.
+  const [contexto, setContexto] = useState<ContextoAchei | null>(null);
+  useEffect(() => {
+    const de = lerDeDaUrl(window.location.search);
+    if (!de) return;
+    const ctl = new AbortController();
+    (async () => {
+      try {
+        const r = await fetch(`/api/v1/feed/contexto?de=${encodeURIComponent(de)}`, { signal: ctl.signal, headers: { Accept: 'application/json' } });
+        if (!r.ok) return;
+        const c = validarContexto(await r.json());
+        if (!c || ctl.signal.aborted) return;
+        setContexto(c);
+        const kw = palavrasDoTitulo(c.titulo);
+        if (kw) setKeyword((atual) => atual || kw);   // pré-preenche a busca de sempre (não digita por cima do que a pessoa já escreveu)
+        acheiEvents.contextoExibido(c.categoria, c.situacao);
+      } catch { /* sem contexto: a página fica como sempre */ }
+    })();
+    return () => ctl.abort();
+  }, []);
 
   const doSearch = useCallback(async (kw: string) => {
     setLoading(true);
@@ -79,6 +103,12 @@ function AcheiInner() {
       </div>
 
       <div className="max-w-2xl mx-auto px-5 py-8">
+        {contexto && (
+          <div role="status" data-achei-contexto className="mb-6 rounded-xl border border-teal-500/30 bg-teal-500/[0.08] px-4 py-3">
+            <p className="text-sm text-white/90"><span className="text-white/60">Você está informando sobre: </span><strong className="font-semibold">{contexto.titulo}</strong></p>
+            <p className="mt-0.5 text-xs text-white/60">{contexto.categoria_rotulo}</p>
+          </div>
+        )}
         {/* Título */}
         <div className="mb-8">
           <h1 className="text-2xl font-bold text-white mb-2">Encontrou algo?</h1>
@@ -132,7 +162,7 @@ function AcheiInner() {
                   Registre o que você achou — se ele procurar, a gente conecta vocês.
                 </p>
                 <Link
-                  href="/auth/register?intent=found"
+                  href={cadastroHref(contexto)}
                   className="inline-flex items-center gap-2 bg-teal-500 hover:bg-teal-400 text-white font-bold px-6 py-3.5 rounded-xl transition-all text-sm"
                   style={{ boxShadow: '0 0 0 1px rgba(20,184,166,0.4),0 4px 20px rgba(20,184,166,0.15)' }}
                 >
@@ -199,7 +229,7 @@ function AcheiInner() {
                     Crie uma conta gratuita para entrar em contato com o dono. A conversa acontece pelo chat da plataforma.
                   </p>
                   <Link
-                    href="/auth/register?intent=found"
+                    href={cadastroHref(contexto)}
                     className="inline-flex items-center gap-2 bg-teal-500 hover:bg-teal-400 text-white font-bold px-6 py-3 rounded-xl transition-all text-sm"
                   >
                     <span>Entrar em contato com o dono</span>
