@@ -1,5 +1,6 @@
 export const dynamic = 'force-dynamic';
 import { NextRequest } from 'next/server';
+import { mascararDigitosLongos, camposDeDocumento } from '@/lib/documentPrivacy';
 import { query } from '@/lib/db';
 import { verifyToken, extractTokenFromHeader } from '@/lib/jwt';
 import { successResponse, unauthorizedResponse, internalErrorResponse } from '@/lib/response';
@@ -170,8 +171,23 @@ export async function POST(request: NextRequest) {
     // ──────────────────────────────────────────────────────────────────────
 
     const body = await request.json();
-    const { title, description, status, type, category, location, images, reward_amount, reward_description, confirm_duplicate, ...categoryFields } = body;
+    const { title: tituloBruto, description: descricaoBruta, status, type, category, location, images, reward_amount, reward_description, confirm_duplicate, ...categoryFields } = body;
     let { latitude, longitude } = body;
+
+    // Documento de USUÁRIO: o número nunca fica inteiro (só os 4 últimos dígitos); sequências longas no texto livre são mascaradas.
+    // Só esta categoria muda; as demais seguem exatamente como antes.
+    const ehDocumento = (category || type) === 'document';
+    const mascarar = (t: unknown) => (ehDocumento && typeof t === 'string' ? mascararDigitosLongos(t) : t);
+    const title = mascarar(tituloBruto) as typeof tituloBruto;
+    const description = mascarar(descricaoBruta) as typeof descricaoBruta;
+    const doc = ehDocumento ? camposDeDocumento(body) : null;
+    if (ehDocumento) {
+      // Lista fechada: só coordenadas (como já era) e os 4 últimos dígitos. Nada de número inteiro, e nenhuma chave desconhecida, no banco.
+      for (const k of Object.keys(categoryFields)) {
+        if (k !== 'latitude' && k !== 'longitude') delete (categoryFields as Record<string, unknown>)[k];
+      }
+      if (doc!.last4) (categoryFields as Record<string, unknown>).document_last4 = doc!.last4;
+    }
 
     if (!title || (!type && !category)) {
       return successResponse({ detail: 'Title and type/category are required' }, 400);
@@ -227,10 +243,10 @@ export async function POST(request: NextRequest) {
     const qrCode = `${Math.random().toString(36).substring(2, 10).toUpperCase()}`;
 
     const result = await query(
-      `INSERT INTO objects (user_id, title, description, status, category, type, location, latitude, longitude, qr_code, images, is_public, reward_amount, reward_description, category_fields, created_at, updated_at)
-       VALUES ($1, $2, $3, $4, $5, $5, $6, $7, $8, $9, $10, true, $11, $12, $13, NOW(), NOW())
+      `INSERT INTO objects (user_id, title, description, status, category, type, location, latitude, longitude, qr_code, images, is_public, reward_amount, reward_description, category_fields, subject_name, document_type, created_at, updated_at)
+       VALUES ($1, $2, $3, $4, $5, $5, $6, $7, $8, $9, $10, true, $11, $12, $13, $14, $15, NOW(), NOW())
        RETURNING id, title, description, status, category, type, location, latitude, longitude, qr_code, images, reward_amount, reward_description, category_fields, created_at, updated_at`,
-      [payload.sub, title, description || null, status || 'lost', cat, location || null, latitude || null, longitude || null, qrCode, JSON.stringify(images || []), reward_amount || null, reward_description || null, JSON.stringify(categoryFields)]
+      [payload.sub, title, description || null, status || 'lost', cat, location || null, latitude || null, longitude || null, qrCode, JSON.stringify(images || []), reward_amount || null, reward_description || null, JSON.stringify(categoryFields), doc?.subjectName ?? null, doc?.documentType ?? null]
     );
 
     const newObject = normalizeObject(result.rows[0] as Record<string, unknown>);

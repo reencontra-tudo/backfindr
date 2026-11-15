@@ -5,6 +5,7 @@ import { useParams, useRouter } from 'next/navigation';
 import { ChevronLeft, Save, Loader2, MapPin, Tag, FileText, AlertCircle } from 'lucide-react';
 import Link from 'next/link';
 import { objectsApi } from '@/lib/api';
+import { DynamicCategoryFields } from '@/components/ui/DynamicCategoryFields';
 import { LocationPicker } from '@/components/ui/LocationPicker';
 import type { RegisteredObject, ObjectCategory, ObjectStatus } from '@/types';
 
@@ -48,6 +49,7 @@ export default function EditObjectPage() {
   const [status, setStatus]             = useState<ObjectStatus>('lost');
   const [rewardAmount, setRewardAmount] = useState('');
   const [rewardDesc, setRewardDesc]     = useState('');
+  const [docFields, setDocFields]       = useState<Record<string, unknown>>({});
   const [locationVal, setLocationVal]   = useState<{ address: string; lat?: number; lng?: number }>({ address: '' });
 
   // ── Carregar objeto ──────────────────────────────────────────────────────────
@@ -63,6 +65,7 @@ export default function EditObjectPage() {
         setStatus(o.status ?? 'lost');
         setRewardAmount(o.reward_amount != null ? String(o.reward_amount) : '');
         setRewardDesc(o.reward_description ?? '');
+        setDocFields({ document_type: o.document_type ?? '', document_owner_name: o.document_owner_name ?? '', document_last4: o.document_last4 ?? '' });
         setLocationVal({
           address: o.location?.address ?? '',
           lat: o.location?.lat,
@@ -89,6 +92,12 @@ export default function EditObjectPage() {
         longitude:          locationVal.lng ?? undefined,
         reward_amount:      rewardAmount ? parseFloat(rewardAmount) : null,
         reward_description: rewardDesc.trim() || null,
+        // Documento: mesmo comportamento da criação (titular público por escolha do dono; só os 4 últimos dígitos).
+        ...(category === 'document' ? {
+          document_type: String(docFields.document_type ?? ''),
+          document_owner_name: String(docFields.document_owner_name ?? '').trim(),
+          document_last4: String(docFields.document_last4 ?? '').replace(/\D/g, '').slice(-4),
+        } : {}),
       });
       setSuccess(true);
       setTimeout(() => router.push(`/dashboard/objects/${id}`), 1200);
@@ -179,6 +188,17 @@ export default function EditObjectPage() {
             />
           </div>
         </div>
+
+        {/* Documento: titular (público por escolha do dono) e final do número */}
+        {category === 'document' && (
+          <div className="glass rounded-2xl p-5">
+            <DynamicCategoryFields
+              category="document"
+              values={docFields}
+              onChange={(name, value) => setDocFields((prev) => ({ ...prev, [name]: value }))}
+            />
+          </div>
+        )}
 
         {/* Categoria e Status */}
         <div className="glass rounded-2xl p-5 space-y-4">

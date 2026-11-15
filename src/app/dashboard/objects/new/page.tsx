@@ -31,6 +31,9 @@ const schema = z.object({
   pet_breed: z.string().optional(),
   pet_microchip: z.string().optional(),
   pet_color: z.string().optional(),
+  document_type: z.string().optional(),
+  document_owner_name: z.string().max(100).optional(),
+  document_last4: z.string().max(4).optional(),
   reward_amount: z.number().min(0).optional().nullable(),
   reward_description: z.string().max(500).optional().nullable(),
 });
@@ -306,6 +309,14 @@ function NewObjectForm() {
         if (data.pet_breed) payload.pet_breed = data.pet_breed;
         if (data.pet_microchip) payload.pet_microchip = data.pet_microchip;
         if (data.pet_color) payload.pet_color = data.pet_color;
+      }
+
+      // Documento: nome do titular (público por escolha do dono), tipo e só os 4 últimos dígitos (o número inteiro nunca é pedido).
+      if (data.category === 'document') {
+        if (data.document_type) payload.document_type = data.document_type;
+        if (data.document_owner_name?.trim()) payload.document_owner_name = data.document_owner_name.trim();
+        const final4 = (data.document_last4 ?? '').replace(/\D/g, '').slice(-4);
+        if (final4) payload.document_last4 = final4;
       }
 
       if (offerReward && data.reward_amount) {

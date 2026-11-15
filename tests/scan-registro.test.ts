@@ -59,7 +59,7 @@ describe.skipIf(!TEST_DB)('registro de escaneamentos', () => {
       CREATE TABLE objects (id uuid PRIMARY KEY, user_id uuid, title varchar, description text, status varchar, type varchar, location varchar,
         latitude numeric, longitude numeric, qr_code varchar, images jsonb, created_at timestamp DEFAULT now(), updated_at timestamp DEFAULT now(),
         category varchar, color varchar, brand varchar, breed varchar, is_legacy boolean DEFAULT false, source varchar,
-        reward_amount numeric, reward_description text);
+        reward_amount numeric, reward_description text, subject_name varchar, category_fields jsonb);
       CREATE TABLE object_events (id serial PRIMARY KEY, object_id uuid, type text, title text, description text, source text,
         actor_type text, actor_id text, user_id uuid, metadata jsonb, created_at timestamptz DEFAULT now());
       INSERT INTO users (id, is_legacy) VALUES ('${OWNER}', false), ('${LEGACY_OWNER}', true);

@@ -71,7 +71,8 @@ describe.skipIf(!TEST_DB)('POST /api/v1/objects — aviso de objeto parecido', (
       type varchar NOT NULL, location varchar, latitude numeric, longitude numeric,
       qr_code varchar NOT NULL UNIQUE, images jsonb DEFAULT '[]', created_at timestamp DEFAULT now(),
       updated_at timestamp DEFAULT now(), category varchar, is_public boolean DEFAULT true,
-      reward_amount numeric, reward_description text, category_fields jsonb DEFAULT '{}')`);
+      reward_amount numeric, reward_description text, category_fields jsonb DEFAULT '{}',
+      subject_name varchar, document_type varchar)`);
     await pool.query('CREATE INDEX idx_objects_user_id ON objects (user_id)');
     await pool.query('CREATE INDEX idx_objects_title_trgm ON objects USING gin (title gin_trgm_ops)');
     vi.stubGlobal('fetch', vi.fn(() => Promise.resolve(new Response('{}'))));

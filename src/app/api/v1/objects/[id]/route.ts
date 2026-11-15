@@ -4,6 +4,7 @@ import { query } from '@/lib/db';
 import { verifyToken, extractTokenFromHeader } from '@/lib/jwt';
 import { successResponse, errorResponse, unauthorizedResponse, notFoundResponse, internalErrorResponse } from '@/lib/response';
 import { Events } from '@/lib/events';
+import { mascararDigitosLongos, camposDeDocumento } from '@/lib/documentPrivacy';
 
 // Consolidado em 25/08/2026 — esta rota aceitava QUALQUER string em `status`,
 // sem validação nenhuma (achado no mapeamento de status pedido em 23/08).
@@ -52,6 +53,11 @@ function normalizeObject(row: Record<string, unknown>) {
     found_pending_since: row.found_pending_since ?? null,
     created_at: row.created_at,
     updated_at: row.updated_at,
+    // Documento de usuário: titular, tipo e final (4 dígitos). Só aparecem quando existem; os demais objetos saem idênticos.
+    ...(row.subject_name ? { document_owner_name: row.subject_name } : {}),
+    ...(row.document_type ? { document_type: row.document_type } : {}),
+    ...(typeof (row.category_fields as Record<string, unknown> | null)?.document_last4 === 'string'
+      ? { document_last4: (row.category_fields as Record<string, string>).document_last4 } : {}),
   };
 }
 
@@ -68,6 +74,7 @@ export async function GET(
       `SELECT id, title, description, status, category, type, location, latitude, longitude,
               qr_code, images, color, brand, breed, is_legacy, source, user_id,
               reward_amount, reward_description, found_pending_confirmation, found_pending_since,
+              subject_name, document_type, category_fields,
               created_at, updated_at
        FROM objects WHERE id = $1 AND user_id = $2`,
       [params.id, payload.sub]
@@ -90,7 +97,7 @@ export async function PATCH(
     if (!payload) return unauthorizedResponse();
     const body = await request.json();
     const {
-      title, description, status, category, type, location, latitude, longitude, images,
+      title: tituloBruto, description: descricaoBruta, status, category, type, location, latitude, longitude, images,
       reward_amount, reward_description,
       // found_pending_confirmation: só o dono some com o sinal (confirmando
       // devolução ou descartando via "Ainda não recebi") — ver FoundBanner.
@@ -103,10 +110,19 @@ export async function PATCH(
 
     // Buscar status atual antes do update (para evento statusChanged)
     const currentResult = await query(
-      'SELECT status FROM objects WHERE id = $1 AND user_id = $2',
+      'SELECT status, category, source, is_legacy FROM objects WHERE id = $1 AND user_id = $2',
       [params.id, payload.sub]
     );
     const previousStatus = currentResult.rows[0]?.status as string | undefined;
+
+    // Documento de USUÁRIO: número nunca inteiro (só 4 últimos dígitos); sequências longas no texto livre são mascaradas.
+    // Sinal público, legado e as demais categorias não passam por aqui.
+    const atual = currentResult.rows[0] as { category?: string; source?: string | null; is_legacy?: boolean | null } | undefined;
+    const categoriaFinal = (category || type || atual?.category) as string | undefined;
+    const ehDocumento = categoriaFinal === 'document' && !!atual && atual.source !== 'public_signal' && atual.is_legacy !== true;
+    const mascarar = (t: unknown) => (ehDocumento && typeof t === 'string' ? mascararDigitosLongos(t) : t);
+    const title = mascarar(tituloBruto) as typeof tituloBruto;
+    const description = mascarar(descricaoBruta) as typeof descricaoBruta;
 
     const result = await query(
       `UPDATE objects
@@ -142,6 +158,26 @@ export async function PATCH(
     );
     if (result.rows.length === 0) return notFoundResponse();
 
+    // Documento de usuário: titular, tipo e 4 últimos dígitos (só o que veio no corpo; vazio apaga). Número inteiro nunca é guardado.
+    let linhaFinal = result.rows[0] as Record<string, unknown>;
+    if (ehDocumento) {
+      const d = camposDeDocumento(body);
+      if (d.temNome || d.temTipo || d.temFinal) {
+        const up = await query(
+          `UPDATE objects
+           SET subject_name = CASE WHEN $1::boolean THEN $2 ELSE subject_name END,
+               document_type = CASE WHEN $3::boolean THEN $4 ELSE document_type END,
+               category_fields = CASE WHEN $5::boolean
+                 THEN (COALESCE(category_fields, '{}'::jsonb) - 'document_last4') || CASE WHEN $6::text IS NULL THEN '{}'::jsonb ELSE jsonb_build_object('document_last4', $6::text) END
+                 ELSE category_fields END
+           WHERE id = $7 AND user_id = $8
+           RETURNING subject_name, document_type, category_fields`,
+          [d.temNome, d.subjectName, d.temTipo, d.documentType, d.temFinal, d.last4, params.id, payload.sub]
+        );
+        if (up.rows[0]) linhaFinal = { ...linhaFinal, ...(up.rows[0] as Record<string, unknown>) };
+      }
+    }
+
     // ── Eventos de status ──────────────────────────────────────────────
     if (status && previousStatus && status !== previousStatus) {
       Events.statusChanged(params.id, previousStatus, status, payload.sub as string).catch(() => {});
@@ -150,7 +186,7 @@ export async function PATCH(
       }
     }
 
-    return successResponse(normalizeObject(result.rows[0] as Record<string, unknown>));
+    return successResponse(normalizeObject(linhaFinal));
   } catch (error) {
     return internalErrorResponse(error);
   }

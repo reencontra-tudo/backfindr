@@ -18,6 +18,7 @@ export async function GET(
       `SELECT id, title, description, status, category, type, location, latitude, longitude,
               qr_code, images, color, brand, breed, is_legacy, source,
               reward_amount, reward_description, created_at, updated_at,
+              subject_name, category_fields->>'document_last4' AS document_last4,
               (is_legacy IS TRUE OR EXISTS (SELECT 1 FROM users u WHERE u.id = objects.user_id AND u.is_legacy IS TRUE)) AS legacy_blocked
        FROM objects
        WHERE ${isUUID ? 'id::text = $1 OR qr_code = $1' : 'qr_code = $1'}`,
@@ -53,6 +54,15 @@ export async function GET(
       Events.qrScanned(row.id as string).catch(() => {});
     }
 
+    // Documento de USUÁRIO: o nome do titular é público por escolha do dono (ele mesmo cadastra) e o número só aparece pelos 4 últimos dígitos.
+    // Só cadastro de usuário: sinal público (que segue com a máscara de nome) e legado nunca recebem estes campos. Sem dado, as chaves nem existem.
+    const ehDocumentoDeUsuario = row.category === 'document' && row.source !== 'public_signal' && row.is_legacy !== true && row.legacy_blocked !== true;
+    const dadosDoDocumento: Record<string, string> = {};
+    if (ehDocumentoDeUsuario) {
+      if (typeof row.subject_name === 'string' && row.subject_name.trim()) dadosDoDocumento.titular = row.subject_name.trim();
+      if (typeof row.document_last4 === 'string' && /^\d{1,4}$/.test(row.document_last4)) dadosDoDocumento.documento_final = row.document_last4;
+    }
+
     // Sinal público: título, descrição e endereço do local saem com a máscara de nome e sem o «Fonte: <endereço>» (o mesmo da lista pública). Usuário e legado: idêntico.
     return successResponse(maskSignalForPublicApi({
       id: row.id, title: row.title, description: row.description || '',
@@ -63,6 +73,7 @@ export async function GET(
       reward_amount: row.reward_amount ? parseFloat(String(row.reward_amount)) : null,
       reward_description: row.reward_description || null,
       created_at: row.created_at, updated_at: row.updated_at,
+      ...dadosDoDocumento,
     }));
   } catch (error) {
     return internalErrorResponse(error);

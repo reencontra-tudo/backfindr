@@ -678,7 +678,7 @@ export default function ObjectDetailPage() {
                     <div className="pt-3 mt-1 border-t border-surface-border space-y-3">
                       {Object.entries(obj.category_fields).map(([key, value]) => {
                         if (!value) return null;
-                        const label = key.split('_').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ');
+                        const label = key === 'document_last4' ? 'Final do documento' : key.split('_').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ');
                         return (
                           <div key={key} className="flex items-start gap-3 text-sm">
                             <Info className="w-4 h-4 text-brand-400 flex-shrink-0 mt-0.5" />

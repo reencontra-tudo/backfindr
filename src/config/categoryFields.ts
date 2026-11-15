@@ -19,6 +19,8 @@ export interface FieldDefinition {
   options?: { value: string; label: string }[];
   required?: boolean;
   hint?: string;
+  maxLength?: number;
+  inputMode?: 'numeric' | 'text';
 }
 
 export const CATEGORY_FIELDS: Record<string, CategoryFieldConfig> = {
@@ -381,33 +383,25 @@ export const CATEGORY_FIELDS: Record<string, CategoryFieldConfig> = {
       },
       {
         name: 'document_owner_name',
-        label: 'Nome do Proprietário',
+        label: 'Nome do titular',
         type: 'text',
-        placeholder: 'Nome completo',
+        placeholder: 'Nome como está no documento',
         required: true,
+        hint: 'Este nome aparecerá publicamente na página do objeto, para quem achar o documento reconhecer o titular.',
+        maxLength: 100,
       },
       {
-        name: 'document_number',
-        label: 'Número do Documento',
+        name: 'document_last4',
+        label: 'Últimos 4 dígitos do documento (opcional)',
         type: 'text',
-        placeholder: 'Ex: 123456789-00',
-        required: true,
+        placeholder: 'Ex: 1234',
+        hint: 'O número completo nunca é pedido nem mostrado. Aparece só como «final 1234».',
+        maxLength: 4,
+        inputMode: 'numeric',
       },
     ],
-    optionalFields: [
-      {
-        name: 'document_issuer',
-        label: 'Órgão Emissor',
-        type: 'text',
-        placeholder: 'Ex: SSP-SP, Polícia Federal',
-      },
-      {
-        name: 'document_expiry',
-        label: 'Data de Validade',
-        type: 'text',
-        placeholder: 'Ex: 15/03/2030',
-      },
-    ],
+    // Órgão emissor e validade eram pedidos mas nunca enviados: não são mais pedidos.
+    optionalFields: [],
   },
 
   keys: {

@@ -54,8 +54,10 @@ export function DynamicCategoryFields({
           <input
             type="text"
             value={String(value)}
-            onChange={(e) => onChange(field.name, e.target.value)}
+            onChange={(e) => onChange(field.name, field.inputMode === 'numeric' ? e.target.value.replace(/\D/g, '').slice(0, field.maxLength ?? 4) : e.target.value)}
             placeholder={field.placeholder}
+            maxLength={field.maxLength}
+            inputMode={field.inputMode}
             className={`w-full bg-surface border rounded-xl px-4 py-3 text-slate-100 placeholder-slate-500 text-sm outline-none focus:border-brand-500 transition-colors ${
               error ? 'border-red-500' : 'border-surface-border'
             }`}
