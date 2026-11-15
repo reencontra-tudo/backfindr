@@ -136,7 +136,7 @@ Cada par (perdido × achado) recebe um **score de 0 a 100%**. Matches acima de 7
 
 ## Como funciona o contato
 
-A conversa entre quem perdeu e quem achou acontece pelo chat da plataforma.
+Quem achou pode avisar pelo botão da página do objeto. O aviso fica registrado na ocorrência; push e e-mail saem só quando o dono não é legado, e não há garantia de resposta.
 
 ## Resultados
 

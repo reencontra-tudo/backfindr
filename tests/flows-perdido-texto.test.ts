@@ -51,7 +51,7 @@ describe('o resto não mudou', () => {
   });
   it('found, pet, protect e stolen mantêm os textos que já tinham', () => {
     expect(read('src/app/flow/found/client.tsx')).toContain('Gratuito. Publique seu achado agora.');
-    expect(read('src/app/flow/pet/client.tsx')).toContain('Gratuito. A conversa acontece pelo chat da plataforma.');
+    expect(read('src/app/flow/pet/client.tsx')).toContain('Gratuito. O aviso fica registrado na ocorrência; não há garantia de resposta.');
     expect(read('src/app/flow/protect/client.tsx')).toContain('Gratuito. Você gerencia todos os seus itens protegidos em um só lugar.');
     expect(read('src/app/flow/stolen/client.tsx')).toContain('Gratuito. Você será notificado se o item aparecer na rede.');
     for (const f of ['found', 'pet', 'protect', 'stolen']) expect(read(`src/app/flow/${f}/client.tsx`)).not.toContain('Publique seu alerta agora');

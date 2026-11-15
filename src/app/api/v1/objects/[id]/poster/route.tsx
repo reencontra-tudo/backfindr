@@ -68,38 +68,23 @@ async function cropToDataUrl(imageUrl: string | null, w: number, h: number): Pro
   } catch { return null; }
 }
 
-// ── Mapa OSM via tile interno ─────────────────────────────────────────────────
-// Converte lat/lng para coordenadas de tile OSM no zoom desejado
-function latLngToTile(lat: number, lng: number, zoom: number) {
-  const n = Math.pow(2, zoom);
-  const x = Math.floor((lng + 180) / 360 * n);
-  const latRad = lat * Math.PI / 180;
-  const y = Math.floor((1 - Math.log(Math.tan(latRad) + 1 / Math.cos(latRad)) / Math.PI) / 2 * n);
-  return { x, y };
-}
-
-async function buildMapDataUrl(lat: number, lng: number, tileSize = 256): Promise<string | null> {
+// ── Mini-mapa: UMA imagem estática do Mapbox (mesmo token do mapa do site) ──────────────────────────────────────────────────────
+// Antes o cartaz buscava 9 blocos em tile.openstreetmap.org sem User-Agent nem Referer, sem cache, a partir de IPs compartilhados da Vercel. O OSM
+// responde a isso com um bloco-imagem «Access blocked» (status 200), que ia parar dentro do cartaz. Agora é um único pedido, com resposta validada
+// (status 200 e tipo imagem); qualquer falha ou falta de token = SEM mapa (o bloco «Local da ocorrência» some e o texto bairro/cidade fica).
+const MAPA_LARGURA = 640;
+const MAPA_ALTURA = 480;
+async function buildMapImage(lat: number, lng: number): Promise<string | null> {
+  const token = process.env.MAPBOX_SERVER_TOKEN || process.env.NEXT_PUBLIC_MAPBOX_TOKEN;
+  if (!token || !Number.isFinite(lat) || !Number.isFinite(lng)) return null;
   try {
-    const zoom = 15;
-    const { x, y } = latLngToTile(lat, lng, zoom);
-    // Busca tile central + 2x2 vizinhos para ter área suficiente (3x3 grid)
-    const offsets = [-1, 0, 1];
-    const tiles: { dx: number; dy: number; data: string }[] = [];
-
-    await Promise.all(
-      offsets.flatMap(dy =>
-        offsets.map(async dx => {
-          const url = `https://tile.openstreetmap.org/${zoom}/${x + dx}/${y + dy}.png`;
-          const data = await toDataUrl(url);
-          if (data) tiles.push({ dx, dy, data });
-        })
-      )
-    );
-
-    if (tiles.length === 0) return null;
-
-    // Retorna apenas os dados dos tiles para composição no JSX
-    return JSON.stringify({ tiles, tileSize, zoom, cx: x, cy: y, lat, lng });
+    const url = `https://api.mapbox.com/styles/v1/mapbox/streets-v12/static/${lng.toFixed(6)},${lat.toFixed(6)},14,0/${MAPA_LARGURA}x${MAPA_ALTURA}?access_token=${encodeURIComponent(token)}`;
+    const res = await fetch(url, { headers: { Referer: 'https://backfindr.com/', 'User-Agent': 'Backfindr-Cartaz/1.0 (+https://backfindr.com)' }, signal: AbortSignal.timeout(8000) });
+    const tipo = res.headers.get('content-type') ?? '';
+    if (!res.ok || !tipo.startsWith('image/')) return null;
+    const buf = Buffer.from(await res.arrayBuffer());
+    if (buf.length < 500) return null;
+    return `data:${tipo};base64,${buf.toString('base64')}`;
   } catch { return null; }
 }
 
@@ -198,90 +183,11 @@ export async function GET(
     // Para o quadrado, preparar versão cropada
     const photoCropped = format === 'square' ? await cropToDataUrl(pd.photoUrl, 1080, 580) : null;
 
-    const [photo, qr, mapRaw] = await Promise.all([
+    const [photo, qr, mapImg] = await Promise.all([
       toDataUrl(pd.photoUrl),
       toDataUrl(qrApiUrl),
-      coords ? buildMapDataUrl(coords.lat, coords.lng) : Promise.resolve(null),
+      coords ? buildMapImage(coords.lat, coords.lng) : Promise.resolve(null),
     ]);
-
-    // Parse dos dados do mapa
-    type TileData = { dx: number; dy: number; data: string };
-    let mapTiles: TileData[] = [];
-    const TILE = 256;
-
-    if (mapRaw) {
-      try {
-        const parsed = JSON.parse(mapRaw) as { tiles: TileData[] };
-        mapTiles = parsed.tiles;
-      } catch { /* ignorar */ }
-    }
-
-    // ─────────────────────────────────────────────────────────────────────────
-    // HELPER: Mini mapa composto por tiles OSM (3×3 grid, 256px cada)
-    // Tamanho total renderizado: 3×256 = 768px → escalamos para o tamanho desejado
-    // ─────────────────────────────────────────────────────────────────────────
-    const renderMap = (sizePx: number) => {
-      if (mapTiles.length === 0) {
-        // Fallback sem mapa: mostra só o endereço
-        return pd.locationShort ? (
-          <div style={{
-            width: `${sizePx}px`, height: `${Math.round(sizePx * 0.55)}px`,
-            background: '#1a2535', borderRadius: '12px',
-            display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
-          }}>
-            <span style={{ color: 'rgba(255,255,255,0.4)', fontSize: `${Math.round(sizePx * 0.07)}px`, display: 'flex' }}>
-              📍 {pd.locationShort}
-            </span>
-          </div>
-        ) : null;
-      }
-
-      const mapH = Math.round(sizePx * 0.55);
-      const gridPx = TILE * 3; // 768px virtual
-
-      return (
-        <div style={{
-          width: `${sizePx}px`, height: `${mapH}px`,
-          overflow: 'hidden', borderRadius: '12px',
-          position: 'relative', flexShrink: 0,
-          display: 'flex',
-        }}>
-          {/* Tiles */}
-          {mapTiles.map(t => (
-            <img
-              key={`${t.dx}-${t.dy}`}
-              src={t.data}
-              style={{
-                position: 'absolute',
-                left: `${((t.dx + 1) * TILE / gridPx) * sizePx}px`,
-                top: `${((t.dy + 1) * TILE / gridPx) * mapH}px`,
-                width: `${(TILE / gridPx) * sizePx}px`,
-                height: `${(TILE / gridPx) * mapH}px`,
-              }}
-            />
-          ))}
-          {/* Pin central */}
-          <div style={{
-            position: 'absolute',
-            left: `${sizePx / 2 - 10}px`,
-            top: `${mapH / 2 - 24}px`,
-            display: 'flex', flexDirection: 'column', alignItems: 'center',
-          }}>
-            <div style={{
-              width: '20px', height: '20px', background: '#ef4444',
-              borderRadius: '50% 50% 50% 0', transform: 'rotate(-45deg)',
-              border: '3px solid #fff', display: 'flex',
-            }} />
-          </div>
-          {/* Overlay escuro nas bordas */}
-          <div style={{
-            position: 'absolute', inset: 0,
-            background: 'linear-gradient(to bottom, rgba(13,17,23,0.2) 0%, transparent 30%, transparent 70%, rgba(13,17,23,0.5) 100%)',
-            display: 'flex',
-          }} />
-        </div>
-      );
-    };
 
     // ─────────────────────────────────────────────────────────────────────────
     // TEMPLATE QUADRADO — 1080×1080
@@ -699,7 +605,7 @@ export async function GET(
               </div>
 
               {/* Mini mapa */}
-              {mapTiles.length > 0 && (
+              {mapImg && (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', flex: 1 }}>
                   <span style={{ color: tealA4, fontSize: '40px', fontWeight: 800, letterSpacing: '2px', display: 'flex' }}>
                     LOCAL DA OCORRÊNCIA
@@ -709,22 +615,7 @@ export async function GET(
                     position: 'relative', display: 'flex',
                     border: `3px solid ${tealA4}`,
                   }}>
-                    {mapTiles.map(t => {
-                      const mW = 500; const mH = 380;
-                      return (
-                        <img
-                          key={`a4-${t.dx}-${t.dy}`}
-                          src={t.data}
-                          style={{
-                            position: 'absolute',
-                            left: `${((t.dx + 1) * TILE / (TILE * 3)) * mW}px`,
-                            top: `${((t.dy + 1) * TILE / (TILE * 3)) * mH}px`,
-                            width: `${(TILE / (TILE * 3)) * mW}px`,
-                            height: `${(TILE / (TILE * 3)) * mH}px`,
-                          }}
-                        />
-                      );
-                    })}
+                    <img src={mapImg} style={{ position: 'absolute', left: '0px', top: '0px', width: '100%', height: '100%', objectFit: 'cover' }} />
                     <div style={{
                       position: 'absolute', left: '238px', top: '162px',
                       width: '24px', height: '24px',
@@ -756,7 +647,7 @@ export async function GET(
                 ESCANEIE SE VOCÊ VIU
               </span>
               <span style={{ color: '#374151', fontSize: '56px', fontWeight: 600, lineHeight: 1.3, display: 'flex', flexWrap: 'wrap' }}>
-                O QR Code abre a página do objeto. Avise o dono — ele recebe um alerta imediato.
+                Escaneie o QR Code para abrir a página do objeto e avisar que você o encontrou.
               </span>
               <span style={{ color: tealA4, fontSize: '48px', fontWeight: 700, display: 'flex' }}>
                 backfindr.com/scan/{obj.qr_code}
