@@ -79,6 +79,7 @@ export default function ChatPage() {
   const [input, setInput] = useState('');
   const [sending, setSending] = useState(false);
   const [match, setMatch] = useState<Match | null>(null);
+  const [bloqueado, setBloqueado] = useState(false);
   const [object, setObject] = useState<RegisteredObject | null>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
@@ -103,16 +104,18 @@ export default function ChatPage() {
   }, [matchId]);
 
   useEffect(() => {
+    let vivo = true;
     matchesApi.list().then(({ data }) => {
+      if (!vivo) return;
       const m = (data?.matches ?? []).find((m: Match) => m.id === matchId);
-      if (m) {
-        setMatch(m);
-        objectsApi.get(m.lost_object_id).then(({ data }) => setObject(data));
-      }
-    });
-    loadMessages();
-    pollRef.current = setInterval(() => loadMessages(true), 3000);
-    return () => clearInterval(pollRef.current);
+      // A conversa só abre com o match confirmado (a API também recusa); sem isso, só um aviso e nada de leitura.
+      if (!m || m.status !== 'confirmed') { if (m) setMatch(m); setBloqueado(true); return; }
+      setMatch(m);
+      objectsApi.get(m.lost_object_id).then(({ data }) => setObject(data));
+      loadMessages();
+      pollRef.current = setInterval(() => loadMessages(true), 3000);
+    }).catch(() => { if (vivo) setBloqueado(true); });
+    return () => { vivo = false; clearInterval(pollRef.current); };
   }, [matchId, loadMessages]);
 
   useEffect(() => {
@@ -140,6 +143,16 @@ export default function ChatPage() {
   };
 
   const groups = groupByDate(messages);
+
+  if (bloqueado) {
+    return (
+      <div className="flex flex-col items-center justify-center h-full text-center gap-3 p-10" data-chat-bloqueado>
+        <p className="font-semibold text-white">A conversa ainda não está aberta</p>
+        <p className="text-white/40 text-sm max-w-xs">A conversa só abre depois que o match é confirmado. Veja seus matches e confirme se for o seu objeto.</p>
+        <Link href="/dashboard/matches" className="mt-2 inline-flex items-center gap-2 bg-teal-500 hover:bg-teal-400 text-white font-semibold px-5 py-2.5 rounded-xl text-sm">Ver matches</Link>
+      </div>
+    );
+  }
 
   return (
     <div className="flex flex-col h-full">
@@ -178,7 +191,7 @@ export default function ChatPage() {
       {/* Privacy notice */}
       <div className="flex items-center gap-2 px-6 py-2 bg-teal-500/[0.04] border-b border-teal-500/[0.08] flex-shrink-0">
         <Shield className="w-3.5 h-3.5 text-teal-500 flex-shrink-0" />
-        <p className="text-xs text-white/30">Conversa mediada pelo Backfindr. Seus dados não são expostos.</p>
+        <p className="text-xs text-white/30">Mensagens deste match. Não envie telefone, e-mail nem endereço.</p>
       </div>
 
       {/* Messages */}
@@ -189,7 +202,7 @@ export default function ChatPage() {
               <Package className="w-7 h-7 text-white/20" />
             </div>
             <p className="font-semibold text-white">Nenhuma mensagem ainda</p>
-            <p className="text-white/30 text-sm max-w-xs">Inicie a conversa para combinar a devolução do objeto de forma segura.</p>
+            <p className="text-white/30 text-sm max-w-xs">Inicie a conversa para combinar a devolução do objeto.</p>
           </div>
         ) : (
           groups.map(({ label, msgs }) => (
