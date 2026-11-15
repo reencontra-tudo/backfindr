@@ -12,7 +12,7 @@ describe('helpers de payload: textos e urls idênticos aos de antes', () => {
     expect(m.matchPayload('m1', 'Chave', 0.874)).toEqual({
       title: '🔍 Match encontrado!',
       body: 'Possível correspondência para "Chave" com 87% de similaridade.',
-      url: '/dashboard/chat/m1', tag: 'match-m1', actions: [{ action: 'view', title: 'Ver match' }],
+      url: '/dashboard/matches', tag: 'match-m1', actions: [{ action: 'view', title: 'Ver match' }],   // pendente: a conversa só abre depois de confirmar
     });
     expect(m.matchConfirmedPayload('m1', 'Chave')).toEqual({
       title: '✅ Match confirmado!',
@@ -25,12 +25,11 @@ describe('helpers de payload: textos e urls idênticos aos de antes', () => {
       url: '/dashboard/objects/o1', tag: 'scan-o1', actions: [{ action: 'view', title: 'Ver objeto' }],
     });
     expect(m.chatPayload('Ana', 'm1', 'oi')).toEqual({
-      title: '💬 Nova mensagem de Ana', body: 'oi',
+      title: '💬 Nova mensagem', body: 'Você tem uma nova mensagem no Backfindr.',   // texto fixo: não reproduz a mensagem nem o nome
       url: '/dashboard/chat/m1', // CORRIGIDO: antes '/dashboard/matches/m1' (rota inexistente, 404)
       tag: 'chat-m1', actions: [{ action: 'reply', title: 'Responder' }],
     });
-    const long = 'x'.repeat(100);
-    expect(m.chatPayload('Ana', 'm1', long).body).toBe('x'.repeat(77) + '…');
+    expect(JSON.stringify(m.chatPayload('Ana', 'm1', 'segredo 123'))).not.toMatch(/Ana|segredo/);
   });
   it('a rota antiga /dashboard/matches/{id} não existe; /dashboard/chat/{matchId} existe', async () => {
     const { existsSync } = await import('fs');

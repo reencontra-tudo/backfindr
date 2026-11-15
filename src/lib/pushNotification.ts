@@ -130,7 +130,7 @@ export function matchPayload(matchId: string, objectTitle: string, score: number
   return {
     title: '🔍 Match encontrado!',
     body: `Possível correspondência para "${objectTitle}" com ${Math.round(score * 100)}% de similaridade.`,
-    url: `/dashboard/chat/${matchId}`,
+    url: '/dashboard/matches', // match pendente: a conversa só abre depois da confirmação
     tag: `match-${matchId}`,
     actions: [{ action: 'view', title: 'Ver match' }],
   };
@@ -156,10 +156,11 @@ export function scanPayload(objectTitle: string, objectId: string): PushPayload 
   };
 }
 
-export function chatPayload(senderName: string, matchId: string, preview: string): PushPayload {
+// Texto FIXO: o push não reproduz a mensagem nem o nome de quem escreveu (tela de bloqueio). Os parâmetros ficam só por compatibilidade das chamadas.
+export function chatPayload(_senderName: string, matchId: string, _preview: string): PushPayload {
   return {
-    title: `💬 Nova mensagem de ${senderName}`,
-    body: preview.length > 80 ? preview.slice(0, 77) + '…' : preview,
+    title: '💬 Nova mensagem',
+    body: 'Você tem uma nova mensagem no Backfindr.',
     url: `/dashboard/chat/${matchId}`,
     tag: `chat-${matchId}`,
     actions: [{ action: 'reply', title: 'Responder' }],

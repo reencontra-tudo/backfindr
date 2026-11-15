@@ -2,7 +2,7 @@ export const dynamic = 'force-dynamic';
 import { NextRequest } from 'next/server';
 import { query } from '@/lib/db';
 import { verifyToken, extractTokenFromHeader } from '@/lib/jwt';
-import { successResponse, unauthorizedResponse, notFoundResponse, internalErrorResponse } from '@/lib/response';
+import { successResponse, unauthorizedResponse, notFoundResponse, conflictResponse, internalErrorResponse } from '@/lib/response';
 import { sendPushToUser, chatPayload } from '@/lib/pushNotification';
 import { awaitSends } from '@/lib/awaitSends';
 
@@ -27,7 +27,7 @@ export async function GET(
 
     // Verificar se o usuário é parte do match
     const matchResult = await query(
-      `SELECT m.id, lo.user_id as lost_user_id, fo.user_id as found_user_id
+      `SELECT m.id, m.status, lo.user_id as lost_user_id, fo.user_id as found_user_id
        FROM matches m
        LEFT JOIN objects lo ON m.lost_object_id = lo.id
        LEFT JOIN objects fo ON m.found_object_id = fo.id
@@ -44,12 +44,20 @@ export async function GET(
       return unauthorizedResponse();
     }
 
+    // A conversa só existe com o match CONFIRMADO (pendente ou rejeitado: nem ler nem escrever).
+    if (match.status !== 'confirmed') {
+      return conflictResponse('A conversa só abre depois que o match é confirmado.');
+    }
+
     // Buscar mensagens
     const messagesResult = await query(
-      `SELECT id, match_id, sender_id, message, created_at 
-       FROM chat_messages 
-       WHERE match_id = $1 
-       ORDER BY created_at ASC`,
+      `SELECT cm.id, cm.match_id, cm.sender_id, cm.message, cm.created_at,
+              COALESCE(u.name, 'Alguém') AS sender_name,
+              (cm.message_type = 'system') AS is_system
+         FROM chat_messages cm
+         LEFT JOIN users u ON u.id = cm.sender_id
+        WHERE cm.match_id = $1
+        ORDER BY cm.created_at ASC`,
       [params.matchId]
     );
 
@@ -91,7 +99,7 @@ export async function POST(
 
     // Verificar se o usuário é parte do match
     const matchResult = await query(
-      `SELECT m.id, lo.user_id as lost_user_id, fo.user_id as found_user_id
+      `SELECT m.id, m.status, lo.user_id as lost_user_id, fo.user_id as found_user_id
        FROM matches m
        LEFT JOIN objects lo ON m.lost_object_id = lo.id
        LEFT JOIN objects fo ON m.found_object_id = fo.id
@@ -108,11 +116,16 @@ export async function POST(
       return unauthorizedResponse();
     }
 
+    // A conversa só existe com o match CONFIRMADO (pendente ou rejeitado: nem ler nem escrever).
+    if (match.status !== 'confirmed') {
+      return conflictResponse('A conversa só abre depois que o match é confirmado.');
+    }
+
      // Inserir mensagem
     const result = await query(
       `INSERT INTO chat_messages (match_id, sender_id, message, created_at)
        VALUES ($1, $2, $3, NOW())
-       RETURNING id, match_id, sender_id, message, created_at`,
+       RETURNING id, match_id, sender_id, message, created_at, message_type`,
       [params.matchId, payload.sub, message]
     );
     const row = result.rows[0];
