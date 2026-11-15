@@ -53,6 +53,11 @@ export default function ScanPage() {
   const [sending, setSending] = useState(false);
   const { open: openLightbox, close: closeLightbox, lightbox } = useLightbox();
 
+  // Com a área de mensagens ligada, o aviso «encontrei» (conta + primeira mensagem) vive em /objeto/<código>; o QR físico leva para lá.
+  useEffect(() => {
+    api.get('/conversas/config').then(({ data }) => { if (data?.ativo === true) window.location.replace(`/objeto/${encodeURIComponent(String(code))}`); }).catch(() => {});
+  }, [code]);
+
   useEffect(() => {
     api.get(`/objects/scan/${code}`)
       .then(({ data }) => setObj(data))

@@ -18,6 +18,7 @@ import WelcomeModal from '@/components/ui/WelcomeModal';
 import OnboardingTour, { TourStep } from '@/components/ui/OnboardingTour';
 import CondominioContextBanner from '@/components/CondominioContextBanner';
 import ActivitySummary from '@/components/activity/ActivitySummary';
+import { sinalizadosReais } from '@/lib/conversasCliente';
 import PushPromptCard from '@/components/PushPromptCard';
 import ObjectThumb from '@/components/ObjectThumb';
 
@@ -265,7 +266,9 @@ export default function DashboardPage() {
           <ActivitySummary
             objectsCount={objects.length}
             activeCount={objects.filter(o => o.status === 'lost' || o.status === 'stolen' || o.status === 'found').length}
-            foundCount={objects.filter(o => o.status === 'found').length}
+            // «Alguém pode ter encontrado um dos seus objetos» só com sinalização REAL (marca found_pending_confirmation, que agora vem do «É o meu»).
+            // Antes contava objetos com status «found», ou seja, os que a própria pessoa registrou como «encontrei».
+            foundCount={sinalizadosReais(objects)}
             pendingMatches={pending}
             loading={loading}
           />

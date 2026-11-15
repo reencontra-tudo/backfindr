@@ -53,6 +53,21 @@ Nenhum texto promete contato protegido, SMS, chat protegido, resposta da fonte, 
 - **Feed:** a linha perto dos filtros diz «Esta lista é só um recorte.» com o link «Ver histórico no mapa».
 - **Descrições do legado:** o HTML e o «\n» literal NÃO são limpos (decisão do Marcos): os textos e os dados do legado não são tocados.
 
+## Mensagens entre quem achou e o dono (Fase 1: pronta, desligada até a ordem do Marcos)
+- **Só liga com a chave `MENSAGENS_ATIVO=1`.** A migration 025 já está aplicada em produção (15/11/2026) e a função segue desligada. Sem a chave, o aviso «encontrei» funciona como sempre.
+- **Quem achou precisa de conta** (gratuita). Sem conta, entra ou se cadastra e volta ao objeto. A primeira mensagem tem até 280 caracteres; não conte o detalhe que só o dono saberia.
+- **O aviso não muda o objeto.** Fica «aguardando o dono». O dono vê em «Mensagens» e escolhe «Aceitar conversa» ou «Não é meu». Aceitar também não muda o objeto. Só «É o meu» faz o objeto virar «achado pendente»; «Confirmar devolução» usa o mesmo caminho do banner e encerra a conversa.
+- **Dono legado:** o aviso fica guardado; nada é enviado (sem push, e-mail nem sino). Se ele atualizar a conta e voltar, vê o aviso e aceita como qualquer dono. Nada do legado é alterado.
+- **Prazos:** o achador vê «sem resposta» depois de 30 dias e pode cancelar; o dono ainda pode aceitar por 12 meses; conversa aberta parada 30 dias é arquivada. Lembretes D+1, D+3 e D+7 só para dono não legado. O descarte automático de D+14 não mexe em objeto com «É o meu».
+- **Limites:** 1 aviso ativo por achador e objeto, 5 avisos novos por dia, pausa de 15 minutos por objeto, 2.000 caracteres por mensagem e 20 mensagens por minuto.
+- **E-mail do aviso ao dono (com a área ligada):** assunto «Alguém avisou sobre <objeto>»; diz só que alguém avisou que pode ter encontrado o objeto e que o dono decide se quer conversar; não leva a mensagem de quem achou nem promessa de proteção; o botão abre a conversa.
+- **Sino (notificações):** nova mensagem (uma linha por conversa até ser lida), «É o meu», «Não é meu», cancelamento e encerramento, com texto fixo e sem o conteúdo da mensagem; abrir a conversa marca as dela como lidas. Dono legado não recebe nada.
+- **Lista de Mensagens:** abre na aba que tem algo novo («Aguardando você» se há aviso esperando; senão «Abertas» com mensagem não lida).
+- **Avisos por push:** texto fixo, sem reproduzir a mensagem; mensagem e resposta saem sempre, inclusive no horário de silêncio (hoje desligado).
+- **Textos:** «Seu aviso foi registrado. Não há garantia de resposta.», «A pessoa informou que este objeto não é dela.», «Conversa encerrada.». A frase «a conversa acontece pelo chat da plataforma» só volta depois que a área existir em produção e o Marcos mandar.
+- **Guarda:** a data-limite de guarda é gravada (12 meses depois de encerrar; até 3 anos em denúncia ou disputa, na Fase 2). Nada é apagado nesta fase; o apagamento depende da revisão jurídica.
+- **Fase 2 (não feita):** filtro de telefone, e-mail e link; denunciar e bloquear; prova de dono com trava.
+
 ## Pendências a decidir (nenhuma foi iniciada)
 - Definição oficial do produto e metadados do site e dos planos que ainda dizem «chat mediado»; frases «notificação imediata» fora do cartaz.
 - Ícone de «Compartilhar» fica sob o balão do chat em parte da rolagem (Publicações, 390 px).

@@ -4,6 +4,7 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { setTokens } from '@/lib/api';
 import { useAuthStore } from '@/hooks/useAuth';
 import { getPostLoginRedirect } from '@/lib/redirectByRole';
+import { consumirProximaPagina } from '@/lib/proximaPagina';
 
 function MagicSuccessContent() {
   const router = useRouter();
@@ -24,7 +25,7 @@ function MagicSuccessContent() {
       fetchMe()
         .then(() => {
           const { user } = useAuthStore.getState();
-          router.replace(getPostLoginRedirect(user?.role));
+          router.replace(consumirProximaPagina() ?? getPostLoginRedirect(user?.role));
         })
         .catch(() => router.replace('/auth/login?error=magic_session_failed'));
     } else {

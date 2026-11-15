@@ -1,5 +1,6 @@
 export const dynamic = 'force-dynamic';
-import { NextRequest } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
+import { MENSAGENS_ATIVO, ehTabelaAusente } from '@/lib/conversas';
 import { query } from '@/lib/db';
 import { successResponse, notFoundResponse, conflictResponse, internalErrorResponse } from '@/lib/response';
 import { sendPushToUser, scanPayload } from '@/lib/pushNotification';
@@ -28,6 +29,21 @@ export async function POST(
   { params }: { params: { code: string } }
 ) {
   try {
+    // ÁREA DE MENSAGENS (MENSAGENS_ATIVO=1): o aviso exige conta, NÃO marca mais o objeto (a marca só vem do «É o meu» do dono) e
+    // cria uma conversa «aguardando o dono». Sem a chave, tudo abaixo segue exatamente como antes (aviso anônimo + marca).
+    if (MENSAGENS_ATIVO()) {
+      // import tardio: sem a função ligada, esta rota não carrega nada novo (nem exige SECRET_KEY no carregamento)
+      const { verifyToken, extractTokenFromHeader } = await import('@/lib/jwt');
+      const { criarAviso } = await import('@/lib/conversasAviso');
+      const token = extractTokenFromHeader(_request.headers.get('authorization'));
+      const payload = token ? verifyToken(token) : null;
+      if (!payload) return NextResponse.json({ detail: 'Entre ou crie uma conta gratuita para avisar.', login_necessario: true }, { status: 401 });
+      const corpo = await _request.json().catch(() => ({}));
+      const r = await criarAviso(payload.sub, params.code, corpo?.mensagem);
+      if (!r.ok) return NextResponse.json({ detail: r.detail, conversa_id: r.conversaId ?? null }, { status: r.status });
+      return successResponse({ message: 'Aviso registrado', conversa_id: r.conversaId }, 201);
+    }
+
     // Buscar objeto pelo QR code — incluindo status para distinguir protected
     const objectResult = await query(
       `SELECT o.id, o.user_id, o.title, o.status, o.category, o.source,
@@ -150,6 +166,7 @@ export async function POST(
 
     return successResponse({ message: 'Owner notified successfully' });
   } catch (error) {
+    if (MENSAGENS_ATIVO() && ehTabelaAusente(error)) return NextResponse.json({ detail: 'Mensagens indisponíveis no momento.' }, { status: 503 });
     return internalErrorResponse(error);
   }
 }

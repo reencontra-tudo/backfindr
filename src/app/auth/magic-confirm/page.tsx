@@ -4,6 +4,7 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { setTokens } from '@/lib/api';
 import { useAuthStore } from '@/hooks/useAuth';
 import { getPostLoginRedirect } from '@/lib/redirectByRole';
+import { consumirProximaPagina } from '@/lib/proximaPagina';
 
 // Proteção real contra pre-fetch do iCloud Mail / Gmail:
 // O token só é consumido quando o usuário clica no botão.
@@ -56,7 +57,7 @@ function MagicConfirmContent() {
 
       await fetchMe();
       const { user } = useAuthStore.getState();
-      router.replace(getPostLoginRedirect(user?.role));
+      router.replace(consumirProximaPagina() ?? getPostLoginRedirect(user?.role));
     } catch {
       setStatus('error');
       setErrorMsg('Erro ao verificar o link. Tente novamente.');

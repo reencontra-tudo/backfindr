@@ -3,10 +3,11 @@
 import { useEffect, useState, useRef } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
+import { proximaPaginaSegura } from '@/lib/proximaPagina';
 import {
   LayoutDashboard, Package, Map,
   QrCode, Bell, Settings, LogOut, Plus, Menu, X, CreditCard, Building2, Truck,
-  Lock,
+  Lock, MessageSquare,
 } from 'lucide-react';
 import Cookies from 'js-cookie';
 import { toast } from 'sonner';
@@ -37,6 +38,7 @@ const NAV = [
   { href: '/dashboard/objects',       icon: Package,         label: 'Meus Objetos',  superOnly: false, requiresObjects: true  },
   { href: '/dashboard/mapa',          icon: Map,             label: 'Mapa',          superOnly: false, requiresObjects: false },
   { href: '/dashboard/matches',       icon: QrCode,          label: 'Matches',       superOnly: false, requiresObjects: true  },
+  { href: '/dashboard/mensagens',     icon: MessageSquare,   label: 'Mensagens',     superOnly: false, requiresObjects: false, soComMensagens: true }, // só com MENSAGENS_ATIVO=1
   { href: '/dashboard/notifications', icon: Bell,            label: 'Notificações',  superOnly: false, requiresObjects: false },
   { href: '/dashboard/encomendas',    icon: Package,         label: 'Encomendas',    superOnly: true,  requiresObjects: false }, // em implantação
   { href: '/dashboard/delivery',      icon: Truck,           label: 'Delivery',      superOnly: true,  requiresObjects: false }, // em implantação
@@ -46,6 +48,8 @@ const NAV = [
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
+  // Quem chega por um link de mensagens (push, e-mail, sino) sem estar logado volta à conversa depois de entrar
+  const irParaLogin = () => { const next = proximaPaginaSegura(pathname); router.replace(next ? `/auth/login?next=${encodeURIComponent(next)}` : '/auth/login'); };
   const router = useRouter();
   const { user, isAuthenticated, logout, fetchMe } = useAuthStore();
   usePushSound();
@@ -53,6 +57,9 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const [pendingMatches, setPendingMatches] = useState(0);
   const [unreadNotifs, setUnreadNotifs] = useState(0);
   const [unreadChat, setUnreadChat] = useState(0);
+  // Área de mensagens (aviso «encontrei» → conversa): o item do menu só existe com a função ligada no servidor
+  const [mensagensAtivas, setMensagensAtivas] = useState(false);
+  const [mensagensNovas, setMensagensNovas] = useState(0);
   const [objectCount, setObjectCount] = useState<number | null>(null); // null = ainda carregando
   const [hydrated, setHydrated] = useState(false);
   const initDone = useRef(false);
@@ -76,16 +83,16 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     if (!isAuthenticated) {
       const token = Cookies.get('access_token') || Cookies.get('refresh_token');
       if (token) {
-        fetchMe().catch(() => router.replace('/auth/login'));
+        fetchMe().catch(() => irParaLogin());
       } else {
-        router.replace('/auth/login');
+        irParaLogin();
       }
     }
   }, [hydrated, isAuthenticated, fetchMe, router]);
 
   // Redireciona se perder autenticação após já estar hidratado
   useEffect(() => {
-    if (hydrated && !isAuthenticated && initDone.current) router.replace('/auth/login');
+    if (hydrated && !isAuthenticated && initDone.current) irParaLogin();
   }, [hydrated, isAuthenticated, router]);
 
   // Buscar contagem de objetos do usuário
@@ -175,6 +182,15 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         })
         .catch(() => {});
 
+      // Área de mensagens: pergunta se está ligada e, se estiver, quantos avisos/mensagens esperam o usuário
+      fetch('/api/v1/conversas/config').then(r => r.ok ? r.json() : null).then((c: { ativo?: boolean } | null) => {
+        if (cancelled || !c?.ativo) return;
+        setMensagensAtivas(true);
+        return fetch('/api/v1/conversas/resumo', { headers: { Authorization: `Bearer ${token}` } })
+          .then(r => r.ok ? r.json() : null)
+          .then((d: { total?: number } | null) => { if (!cancelled && d) setMensagensNovas(Number(d.total) || 0); });
+      }).catch(() => {});
+
       // Mensagens de chat não lidas (entram no número do sino; sem som nem toast)
       fetch('/api/v1/chat/unread', { headers: { Authorization: `Bearer ${token}` } })
         .then(r => r.ok ? r.json() : null)
@@ -233,11 +249,14 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       <nav className="flex-1 px-3 py-2 space-y-0.5 overflow-y-auto" data-tour-id="sidebar-nav">
         {NAV
           .filter(item => !item.superOnly || isSuperAdmin)
+          .filter(item => !('soComMensagens' in item) || mensagensAtivas)
           .map(({ href, icon: Icon, label, requiresObjects }) => {
             const active = pathname === href || (href !== '/dashboard' && pathname.startsWith(href));
             const isMatches = href === '/dashboard/matches';
             const isNotifications = href === '/dashboard/notifications';
+            const isMensagens = href === '/dashboard/mensagens';
             const badge =
+              isMensagens && mensagensNovas > 0 ? mensagensNovas :
               isMatches && pendingMatches > 0 ? pendingMatches :
               isNotifications && unreadNotifs + unreadChat > 0 ? unreadNotifs + unreadChat :
               null;
@@ -281,7 +300,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                   // encontrou seu objeto" pede atenção, não é uma boa notícia
                   // passiva). Matches continua teal — natureza diferente de aviso.
                   <span className={`text-white text-xs font-bold w-5 h-5 rounded-full flex items-center justify-center ${
-                    isNotifications ? 'bg-amber-500' : 'bg-teal-500'
+                    isNotifications || isMensagens ? 'bg-amber-500' : 'bg-teal-500'
                   }`}>
                     {badge}
                   </span>
