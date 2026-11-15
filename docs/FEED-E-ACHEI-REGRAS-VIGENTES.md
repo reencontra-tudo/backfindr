@@ -76,11 +76,12 @@ Nenhum texto promete contato protegido, SMS, chat protegido, resposta da fonte, 
 - **Pendências (dependem do Marcos):** decidir se o texto enviado à OpenAI na correspondência deve ser mascarado; nome parcial («José P.») para sinais públicos e «encontrei», com o titular em campo próprio; formulário «perdi» de documento (campos pedidos e descartados no envio). AutoPost do n8n conferido: não lê objetos.
 
 ## Documento cadastrado por usuário («perdi»)
+- **Mesclado em 15/11/2026 (PR #125, commit `4fa5502`).**
 - **Nome do titular:** é público por escolha do dono. O formulário avisa que ele aparecerá publicamente; aparece como linha «Titular» na página do objeto, no QR e na leitura por código. Não entra no título do Feed nem do mapa, nem na lista pública, no cartaz ou no SEO.
 - **Número do documento:** nunca é pedido nem guardado inteiro. O campo é «Últimos 4 dígitos (opcional)»; o servidor guarda no máximo 4 dígitos (o que passar é cortado) e mostra «final 1234».
 - **Texto livre:** em título e descrição de documento, sequências de 6 ou mais dígitos (inclusive CPF, RG e CNPJ com pontos, hífens ou espaços, e telefones) são mascaradas ao criar e ao editar, ficando só os 4 últimos. Datas, CEP e números curtos não mudam.
 - **Não muda:** a máscara de nomes continua só para sinal público; legado e sinais públicos saem como antes; outras categorias e objetos já gravados também.
-- **Pendências (dependem do Marcos):** nome parcial para sinais públicos e «encontrei»; prova de titularidade antes de revelar mais dados; texto enviado à OpenAI no matching; a busca ainda não acha pelo nome do titular.
+- **Pendências (dependem do Marcos):** nome do titular obrigatório ou opcional (hoje o asterisco não é imposto); incluir o titular na busca e no matching, junto com o nome parcial para sinais públicos e «encontrei»; prova de titularidade antes de revelar mais dados; texto enviado à OpenAI no matching; conferir no navegador o aviso e o campo de 4 dígitos do formulário.
 
 ## Pendências a decidir (nenhuma foi iniciada)
 - Definição oficial do produto e metadados do site e dos planos que ainda dizem «chat mediado»; frases «notificação imediata» fora do cartaz.
