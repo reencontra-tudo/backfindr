@@ -329,6 +329,12 @@ export default function ScanPage() {
         <div className="rounded-3xl bg-[#111118] border border-white/5 p-5 mb-5">
           <p className="text-[#00d4aa] text-xs font-semibold tracking-widest uppercase mb-3">Descrição</p>
           <p className="text-slate-300 text-sm leading-relaxed">{obj.description}</p>
+          {obj.titular && (
+            <p className="text-slate-300 text-sm mt-3"><span className="text-slate-500 text-xs uppercase tracking-wide mr-2">Titular</span>{obj.titular}</p>
+          )}
+          {obj.documento_final && (
+            <p className="text-slate-300 text-sm mt-1"><span className="text-slate-500 text-xs uppercase tracking-wide mr-2">Documento</span>final {obj.documento_final}</p>
+          )}
         </div>
 
         {/* Pet details */}

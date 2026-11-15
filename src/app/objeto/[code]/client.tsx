@@ -371,6 +371,18 @@ export default function PublicObjectClient({ obj, signalSource = null }: { obj: 
                   </div>
                 )}
 
+                {/* Documento de usuário: titular (público por escolha do dono) e final do número */}
+                {(obj.titular || obj.documento_final) && (
+                  <div className="mb-5">
+                    {obj.titular && (
+                      <p className="text-white/70 text-sm"><span className="text-white/35 text-xs uppercase tracking-wide mr-2">Titular</span>{obj.titular}</p>
+                    )}
+                    {obj.documento_final && (
+                      <p className="text-white/70 text-sm mt-1"><span className="text-white/35 text-xs uppercase tracking-wide mr-2">Documento</span>final {obj.documento_final}</p>
+                    )}
+                  </div>
+                )}
+
                 {/* Detalhes do pet */}
                 {obj.category === 'pet' && (obj.pet_breed || obj.pet_color || obj.pet_species) && (
                   <div className="bg-white/[0.03] border border-white/[0.06] rounded-xl p-4 mb-5">
