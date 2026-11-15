@@ -4,7 +4,7 @@ import { query } from '@/lib/db';
 import { recordEvent } from '@/lib/events';
 import { successResponse } from '@/lib/response';
 import { exigirParte, erro, tratarErro } from '@/lib/conversasHttp';
-import { podeFazer, registrarSistema, meses, MESES_GUARDA_APOS_ENCERRAR, TEXTOS } from '@/lib/conversas';
+import { podeFazer, registrarSistema, donoRecebeAvisos, notificarSino, meses, MESES_GUARDA_APOS_ENCERRAR, TEXTOS } from '@/lib/conversas';
 
 // POST /api/v1/conversas/[id]/encerrar — corpo: { motivo: 'devolvido' | 'desisti' }.
 // «devolvido» só o dono, depois do «É o meu»; a mudança do objeto para «devolvido» é feita pelo caminho que já existia («Confirmar devolução»).
@@ -23,6 +23,9 @@ export async function POST(request: NextRequest, { params }: { params: { id: str
     );
     if (r.rows.length === 0) return erro('Não é possível encerrar a conversa assim agora.', 409);
     await registrarSistema(c.id, TEXTOS.encerrada);
+    // Avisa a outra parte no sino (texto fixo; sem push). Legado: nada.
+    const outra = papel === 'dono' ? c.achador_id : c.dono_id;
+    if (outra && await donoRecebeAvisos(outra, null)) await notificarSino(outra, { tipo: 'conversa_encerrada', titulo: TEXTOS.tituloEncerrada, texto: motivo === 'devolvido' ? TEXTOS.encerradaDevolvido : TEXTOS.encerrada, conversaId: c.id });
     if (c.object_id) recordEvent({ object_id: c.object_id, type: 'conversa_encerrada', title: 'Conversa encerrada', source: 'owner', actor_type: 'user', actor_id: userId, metadata: { conversa_id: c.id, motivo } }).catch(() => {});
     return successResponse({ id: c.id, estado: 'encerrada', motivo });
   } catch (e) { return tratarErro(e); }

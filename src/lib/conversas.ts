@@ -8,6 +8,9 @@ import { query } from '@/lib/db';
 
 export const MENSAGENS_ATIVO = (): boolean => process.env.MENSAGENS_ATIVO === '1';
 
+/** Título sem espaços nas pontas, só para montar textos (o título gravado no banco não é alterado). Vazio vira «seu objeto». */
+export const tituloLimpo = (t: string | null | undefined): string => (typeof t === 'string' ? t.trim() : '') || 'seu objeto';
+
 // Limites básicos (Fase 1)
 export const LIMITE_PRIMEIRA_MENSAGEM = 280;
 export const LIMITE_MENSAGEM = 2000;
@@ -26,7 +29,7 @@ export const ESTADOS_ATIVOS: Estado[] = ['aguardando', 'aberta'];
 export type Filtro = 'aguardando_voce' | 'aguardando_dono' | 'abertas' | 'encerradas';
 
 export const TEXTOS = {
-  avisoDono: (titulo: string) => `Alguém avisou que pode ter encontrado "${titulo}". Veja o aviso e decida se quer conversar.`,
+  avisoDono: (titulo: string) => `Alguém avisou que pode ter encontrado "${tituloLimpo(titulo)}". Veja o aviso e decida se quer conversar.`,
   tituloAvisoDono: '🔔 Aviso sobre o seu objeto',
   aceitar: 'Ao aceitar, vocês trocam mensagens aqui, dentro do Backfindr. Não envie telefone, e-mail nem endereço.',
   recusadaParaAchador: 'A pessoa informou que este objeto não é dela.',
@@ -34,6 +37,13 @@ export const TEXTOS = {
   aguardando: 'Seu aviso foi registrado. Não há garantia de resposta.',
   aceitaParaAchador: 'O dono aceitou conversar. Vocês podem trocar mensagens agora.',
   pushMensagem: 'Você tem uma nova mensagem no Backfindr.',
+  tituloMensagem: '💬 Nova mensagem',
+  tituloEOMeu: 'O dono respondeu ao seu aviso',
+  eOMeu: 'O dono confirmou que o objeto é dele.',
+  tituloCancelado: 'Aviso cancelado',
+  cancelado: (titulo: string) => `Quem avisou cancelou o aviso sobre "${tituloLimpo(titulo)}".`,
+  tituloEncerrada: 'Conversa encerrada',
+  encerradaDevolvido: 'O dono confirmou a devolução. Conversa encerrada.',
 } as const;
 
 export const ehTabelaAusente = (e: unknown): boolean => {
@@ -110,4 +120,27 @@ export function validarTexto(raw: unknown, limite: number): { ok: true; texto: s
   if (texto.length === 0) return { ok: false, erro: 'Escreva uma mensagem.' };
   if (texto.length > limite) return { ok: false, erro: `A mensagem pode ter no máximo ${limite} caracteres.` };
   return { ok: true, texto };
+}
+
+/**
+ * Linha no sino (tabela notifications) com texto FIXO, nunca com o conteúdo da mensagem. `unicaNaoLida`: se já existe uma
+ * linha não lida do mesmo tipo e da mesma conversa para esta pessoa, não cria outra (o contador não infla). Falha não derruba nada.
+ * Quem chama decide se a pessoa pode receber (donoRecebeAvisos): legado e conta de sistema ficam de fora.
+ */
+export async function notificarSino(userId: string, n: { tipo: string; titulo: string; texto: string; conversaId: string; unicaNaoLida?: boolean }): Promise<void> {
+  const url = `/dashboard/mensagens/${n.conversaId}`;
+  try {
+    if (n.unicaNaoLida) {
+      const ja = await query(`SELECT 1 FROM notifications WHERE user_id = $1 AND type = $2 AND url = $3 AND read IS NOT TRUE LIMIT 1`, [userId, n.tipo, url]);
+      if (ja.rows.length > 0) return;
+    }
+    await query(`INSERT INTO notifications (user_id, title, message, type, url, created_at) VALUES ($1, $2, $3, $4, $5, NOW())`, [userId, n.titulo, n.texto, n.tipo, url]);
+  } catch (e) { console.error('[conversas] notificação falhou:', e); }
+}
+
+/** Marca como lidas as notificações desta conversa para esta pessoa (abrir a conversa zera o sino dela). */
+export async function marcarSinoLido(userId: string, conversaId: string, tipo?: string): Promise<void> {
+  try {
+    await query(`UPDATE notifications SET read = true WHERE user_id = $1 AND url = $2 AND read IS NOT TRUE${tipo ? ' AND type = $3' : ''}`, tipo ? [userId, `/dashboard/mensagens/${conversaId}`, tipo] : [userId, `/dashboard/mensagens/${conversaId}`]);
+  } catch (e) { console.error('[conversas] marcar lido falhou:', e); }
 }

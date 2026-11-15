@@ -1036,6 +1036,64 @@ export async function sendObjectFoundEmail(
   const categoryLabel = CATEGORY_LABEL_EMAIL[obj.category] ?? 'objeto';
   // Com a área de mensagens, o link leva direto à conversa do aviso; sem ela, à página do objeto (como sempre).
   const objectUrl = obj.conversaId ? `${APP_URL}/dashboard/mensagens/${obj.conversaId}` : `${APP_URL}/dashboard/objects/${obj.id}`;
+  // AVISO COM CONVERSA (área de mensagens): texto neutro, sem festa; só diz que alguém avisou e que o dono decide se quer
+  // conversar. NÃO leva a mensagem de quem achou, nem promessa de proteção; o botão vai direto à conversa.
+  if (obj.conversaId) {
+    const tituloEmail = (obj.title ?? '').trim() || 'seu objeto';
+    const assunto = `Alguém avisou sobre ${tituloEmail.length > 70 ? tituloEmail.slice(0, 67) + '…' : tituloEmail}`;
+    const htmlConversa = `
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>${esc(assunto)}</title>
+</head>
+<body style="margin:0;padding:0;background:#080b0f;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;">
+  <table width="100%" cellpadding="0" cellspacing="0" style="background:#080b0f;padding:40px 20px;">
+    <tr>
+      <td align="center">
+        <table width="100%" cellpadding="0" cellspacing="0" style="max-width:520px;background:#0f1318;border:1px solid rgba(255,255,255,0.08);border-radius:20px;overflow:hidden;">
+          <tr>
+            <td style="padding:32px 32px 0;text-align:center;">
+              <span style="color:white;font-size:18px;font-weight:700;">Backfindr</span>
+            </td>
+          </tr>
+          <tr>
+            <td style="padding:24px 32px 32px;">
+              <h1 style="color:white;font-size:20px;font-weight:700;margin:0 0 12px;text-align:center;line-height:1.3;">Olá, ${firstName}</h1>
+              <p style="color:rgba(255,255,255,0.6);font-size:14px;line-height:1.6;margin:0 0 24px;text-align:center;">
+                Alguém avisou que pode ter encontrado <strong style="color:white;">${esc(tituloEmail)}</strong>. Você decide se quer conversar.
+              </p>
+              <table width="100%" cellpadding="0" cellspacing="0">
+                <tr>
+                  <td align="center">
+                    <a href="${objectUrl}"
+                       style="display:inline-block;background:#14b8a6;color:white;font-size:15px;font-weight:700;text-decoration:none;padding:14px 32px;border-radius:12px;">
+                      Ver o aviso
+                    </a>
+                  </td>
+                </tr>
+              </table>
+            </td>
+          </tr>
+          <tr>
+            <td style="padding:20px 32px;border-top:1px solid rgba(255,255,255,0.06);text-align:center;">
+              <p style="color:rgba(255,255,255,0.2);font-size:12px;margin:0;">
+                © 2026 Backfindr · <a href="${APP_URL}" style="color:rgba(255,255,255,0.3);text-decoration:none;">${APP_HOST}</a>
+              </p>
+            </td>
+          </tr>
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>
+    `.trim();
+    return deliverEmail({ to: user.email, subject: assunto, html: htmlConversa, category: 'service', source: 'object_found' });
+  }
+
   const subject = obj.isProtected
     ? `📍 O QR Code do seu ${categoryLabel} foi escaneado`
     : `🎉 Alguém pode ter encontrado seu ${categoryLabel}`;

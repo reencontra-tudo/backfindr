@@ -349,6 +349,65 @@ describe.skipIf(!TEST_DB)('área de mensagens (banco real)', () => {
     });
   });
 
+  describe('notificações no sino (texto fixo, sem a mensagem, sem inflar o contador)', () => {
+    const sino = (quem: string, tipo?: string) => q(`SELECT type, title, message, url, read FROM notifications WHERE user_id = $1${tipo ? ' AND type = $2' : ''} ORDER BY created_at, id`, tipo ? [U[quem], tipo] : [U[quem]]);
+    const lida = (id: string, quem: string) => agir('lida', quem, id);
+    it('cada passo cria a linha certa para a outra parte; nenhuma leva o conteúdo da mensagem', async () => {
+      const id = (await aviso('achador', 'OBJ00001', 'Mensagem secreta do achador 123')).json.conversa_id;
+      expect((await sino('dono')).map((n) => n.type)).toEqual(['conversa_aviso']);
+      await agir('aceitar', 'dono', id);
+      expect((await sino('achador')).map((n) => n.type)).toEqual(['conversa_aceita']); expect((await sino('dono', 'conversa_aviso'))[0].read).toBe(true);   // o aviso tratado sai do contador
+      await agir('enviar', 'dono', id, { texto: 'Texto privado do dono 456' });
+      expect((await sino('achador', 'conversa_mensagem')).map((n) => [n.title, n.message])).toEqual([['💬 Nova mensagem', 'Você tem uma nova mensagem no Backfindr.']]);
+      await agir('eOMeu', 'dono', id);
+      expect((await sino('achador', 'conversa_e_o_meu'))[0]).toMatchObject({ title: 'O dono respondeu ao seu aviso', message: 'O dono confirmou que o objeto é dele.', url: `/dashboard/mensagens/${id}` });
+      await agir('encerrar', 'dono', id, { motivo: 'devolvido' });
+      expect((await sino('achador', 'conversa_encerrada'))[0].message).toBe('O dono confirmou a devolução. Conversa encerrada.');
+      const todas = JSON.stringify([...(await sino('dono')), ...(await sino('achador'))]); expect(todas).not.toMatch(/secreta|privado|123|456/);
+    });
+    it('«Não é meu» e cancelamento: a linha certa; o dono é avisado do cancelamento e o aviso antigo dele sai do contador', async () => {
+      const a = (await aviso('achador')).json.conversa_id; await agir('recusar', 'dono', a);
+      expect((await sino('achador', 'conversa_recusada'))[0].message).toBe('A pessoa informou que este objeto não é dela.');
+      await q(`UPDATE conversas SET criada_em = now() - interval '1 hour'`);
+      const b = (await aviso('achador2')).json.conversa_id; expect((await sino('dono', 'conversa_aviso')).filter((n) => !n.read).length).toBe(1);
+      await agir('cancelar', 'achador2', b);
+      expect((await sino('dono', 'conversa_cancelada'))[0].message).toBe('Quem avisou cancelou o aviso sobre "Mochila vermelha".');
+      expect((await sino('dono', 'conversa_aviso')).filter((n) => !n.read).length).toBe(0);
+    });
+    it('várias mensagens seguidas = UMA linha não lida (push continua um por mensagem); abrir a conversa zera; a próxima mensagem cria outra', async () => {
+      const id = await novaConversa('aberta'); h.pushes.length = 0;
+      for (let i = 0; i < 4; i++) await agir('enviar', 'dono', id, { texto: `m${i}` });
+      expect((await sino('achador', 'conversa_mensagem')).filter((n) => !n.read).length).toBe(1); expect(h.pushes.length).toBe(4);
+      await lida(id, 'achador'); expect((await sino('achador', 'conversa_mensagem')).filter((n) => !n.read).length).toBe(0);
+      await agir('enviar', 'dono', id, { texto: 'depois' }); expect((await sino('achador', 'conversa_mensagem')).filter((n) => !n.read).length).toBe(1);
+      expect((await sino('dono', 'conversa_mensagem')).length).toBe(0);                                              // quem escreve não recebe a própria
+    });
+    it('dono legado: nenhuma linha no sino em nenhum passo (nem cancelamento); e-mail e push também não', async () => {
+      const id = (await aviso('achador', 'LEG00001')).json.conversa_id; await agir('cancelar', 'achador', id);
+      expect((await q(`SELECT count(*)::int n FROM notifications`))[0].n).toBe(0); expect(h.pushes.length).toBe(0); expect(h.emails.length).toBe(0);
+    });
+    it('«É o meu» não dispara push novo (só o registro no sino)', async () => {
+      const id = await novaConversa('aberta'); h.pushes.length = 0; await agir('eOMeu', 'dono', id); expect(h.pushes.length).toBe(0);
+    });
+  });
+
+  describe('títulos com espaço no fim: textos limpos, título gravado do objeto intacto', () => {
+    it('aviso, push, e-mail, sino e conversa usam o título sem espaços; objects.title não muda', async () => {
+      await q(`UPDATE objects SET title = 'Gatinho doméstico ' WHERE qr_code = 'OBJ00001'`);
+      const id = (await aviso('achador')).json.conversa_id;
+      const n = (await q(`SELECT message FROM notifications WHERE user_id = $1`, [U.dono]))[0].message; expect(n).toBe('Alguém avisou que pode ter encontrado "Gatinho doméstico". Veja o aviso e decida se quer conversar.');
+      expect(h.pushes[0].payload.body).toBe(n); expect(h.emails[0].obj.title).toBe('Gatinho doméstico');
+      expect((await q(`SELECT objeto_titulo FROM conversas WHERE id = $1`, [id]))[0].objeto_titulo).toBe('Gatinho doméstico');
+      expect((await q(`SELECT title FROM objects WHERE qr_code = 'OBJ00001'`))[0].title).toBe('Gatinho doméstico ');   // banco intacto
+      await agir('cancelar', 'achador', id); expect((await q(`SELECT message FROM notifications WHERE type = 'conversa_cancelada'`))[0].message).toBe('Quem avisou cancelou o aviso sobre "Gatinho doméstico".');
+    });
+    it('conversa antiga com título sujo no banco: lista e detalhe devolvem o dado; a tela limpa (testado na tela); lembrete do cron usa o título limpo', async () => {
+      const id = await novaConversa('aguardando', { objeto_titulo: 'Gatinho doméstico  ' }); await q(`UPDATE conversas SET criada_em = now() - interval '1 day 2 hours' WHERE id = $1`, [id]);
+      h.pushes.length = 0; await R.cron.GET(new NextRequest('http://localhost/x', { headers: { authorization: 'Bearer cron-teste' } }));
+      expect(h.pushes[0].payload.body).toBe('Alguém avisou que pode ter encontrado "Gatinho doméstico". Veja o aviso e decida se quer conversar.');
+    });
+  });
+
   describe('cron: lembretes, arquivamento e descarte que não pode apagar o que não deve', () => {
     const rodar = () => R.cron.GET(new NextRequest('http://localhost/api/v1/cron/found-pending-reminders', { headers: { authorization: 'Bearer cron-teste' } })).then((r: Response) => r.json());
     it('lembretes D+1/3/7 só para dono não legado, uma vez só; nada altera o objeto', async () => {

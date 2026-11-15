@@ -4,7 +4,7 @@ import { query } from '@/lib/db';
 import { recordEvent } from '@/lib/events';
 import { successResponse } from '@/lib/response';
 import { exigirParte, erro, tratarErro } from '@/lib/conversasHttp';
-import { podeFazer, registrarSistema } from '@/lib/conversas';
+import { podeFazer, registrarSistema, donoRecebeAvisos, notificarSino, TEXTOS } from '@/lib/conversas';
 
 // POST /api/v1/conversas/[id]/e-o-meu — o dono diz «É o meu». É AQUI (e só aqui) que o objeto vira «achado pendente»
 // (found_pending_confirmation), com a mesma condição que a rota antiga usava (objeto perdido ou protegido). Objeto legado não é alterado.
@@ -30,6 +30,8 @@ export async function POST(request: NextRequest, { params }: { params: { id: str
       recordEvent({ object_id: c.object_id, type: 'conversa_confirmada_dono', title: 'Dono disse que o objeto é dele', source: 'owner', actor_type: 'user', actor_id: userId, metadata: { conversa_id: c.id, objeto_marcado: objetoMarcado } }).catch(() => {});
     }
     await registrarSistema(c.id, 'O dono confirmou que o objeto é dele.');
+    // Sino de quem achou (texto fixo). Não há push novo aqui: só o registro.
+    if (c.achador_id && await donoRecebeAvisos(c.achador_id, null)) await notificarSino(c.achador_id, { tipo: 'conversa_e_o_meu', titulo: TEXTOS.tituloEOMeu, texto: TEXTOS.eOMeu, conversaId: c.id });
     return successResponse({ id: c.id, estado: 'aberta', confirmado: true, objeto_marcado: objetoMarcado });
   } catch (e) { return tratarErro(e); }
 }

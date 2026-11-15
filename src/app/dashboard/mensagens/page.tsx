@@ -6,6 +6,7 @@ import { MessageSquare, Clock } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { conversasApi, parseApiError, type FiltroConversas } from '@/lib/api';
+import { abaInicial } from '@/lib/conversasCliente';
 
 interface Item { id: string; estado: string; estado_visivel: string; papel: 'dono' | 'achador'; objeto_titulo: string | null; primeira_mensagem: string; ultima_atividade: string; nao_lidas: number }
 
@@ -20,17 +21,29 @@ const ROTULO_ESTADO: Record<string, string> = {
 };
 
 export default function MensagensPage() {
-  const [aba, setAba] = useState<FiltroConversas>('aguardando_voce');
+  const [aba, setAba] = useState<FiltroConversas | null>(null);   // null = ainda escolhendo a aba inicial
   const [itens, setItens] = useState<Item[] | null>(null);
   const [erro, setErro] = useState<string | null>(null);
 
+  // Aba inicial: a que tem algo novo ou pendente. 1º «Aguardando você» (avisos esperando a decisão); 2º «Abertas» com mensagem não lida;
+  // senão fica como sempre foi («Aguardando você»). Falha ao consultar: comportamento de sempre.
   useEffect(() => {
+    let vivo = true;
+    conversasApi.list().then(({ data }) => {
+      if (!vivo) return;
+      setAba(abaInicial((data?.conversas ?? []) as { estado: string; papel: string; nao_lidas: number }[]));
+    }).catch(() => { if (vivo) setAba('aguardando_voce'); });
+    return () => { vivo = false; };
+  }, []);
+
+  useEffect(() => {
+    if (!aba) return;
     let vivo = true; setItens(null); setErro(null);
     conversasApi.list(aba).then(({ data }) => { if (vivo) setItens(data?.conversas ?? []); }).catch((e) => { if (vivo) { setItens([]); setErro(parseApiError(e)); } });
     return () => { vivo = false; };
   }, [aba]);
 
-  const atual = ABAS.find((a) => a.id === aba)!;
+  const atual = ABAS.find((a) => a.id === (aba ?? 'aguardando_voce'))!;
   return (
     <div className="p-4 sm:p-8" data-mensagens-lista>
       <div className="mb-6">
@@ -46,7 +59,7 @@ export default function MensagensPage() {
         ))}
       </div>
       {erro && <p className="text-amber-300 text-sm mb-3">{erro}</p>}
-      {itens === null ? (
+      {aba === null || itens === null ? (
         <div className="space-y-3">{[1, 2, 3].map((i) => <div key={i} className="h-20 bg-surface-card rounded-2xl animate-pulse" />)}</div>
       ) : itens.length === 0 ? (
         <div className="text-center py-16" data-mensagens-vazio><MessageSquare className="w-10 h-10 text-white/20 mx-auto mb-3" aria-hidden /><p className="text-white/50 text-sm">{atual.vazio}</p></div>
@@ -57,7 +70,7 @@ export default function MensagensPage() {
               <Link href={`/dashboard/mensagens/${c.id}`} data-conversa={c.id} className="block glass rounded-2xl p-4 hover:bg-white/[0.06] transition-colors">
                 <div className="flex items-start justify-between gap-3">
                   <div className="min-w-0">
-                    <p className="text-white font-semibold text-sm truncate">{c.objeto_titulo ?? 'Objeto'}</p>
+                    <p className="text-white font-semibold text-sm truncate">{c.objeto_titulo?.trim() || 'Objeto'}</p>
                     <p className="text-white/40 text-xs mt-0.5">{c.papel === 'dono' ? 'Alguém avisou sobre o seu objeto' : 'Seu aviso'}</p>
                     <p className="text-white/60 text-sm mt-2 line-clamp-2">{c.primeira_mensagem}</p>
                   </div>

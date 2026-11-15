@@ -5,7 +5,7 @@ import { sendPushToUser } from '@/lib/pushNotification';
 import { awaitSends } from '@/lib/awaitSends';
 import { successResponse } from '@/lib/response';
 import { exigirParte, erro, tratarErro } from '@/lib/conversasHttp';
-import { podeFazer, validarTexto, donoRecebeAvisos, LIMITE_MENSAGEM, LIMITE_MENSAGENS_POR_MINUTO, TEXTOS } from '@/lib/conversas';
+import { podeFazer, validarTexto, donoRecebeAvisos, notificarSino, LIMITE_MENSAGEM, LIMITE_MENSAGENS_POR_MINUTO, TEXTOS } from '@/lib/conversas';
 
 // POST /api/v1/conversas/[id]/enviar — mensagem de texto (só com a conversa aberta). Corpo: { texto }.
 // Limites: até 2.000 caracteres e 20 mensagens por minuto por pessoa e conversa. O push tem texto FIXO e sai sempre.
@@ -24,6 +24,8 @@ export async function POST(request: NextRequest, { params }: { params: { id: str
     await query(`UPDATE conversas SET ultima_atividade = NOW() WHERE id = $1`, [c.id]);
     const outro = papel === 'dono' ? c.achador_id : c.dono_id;
     if (outro && await donoRecebeAvisos(outro, null)) {
+      // sino com texto fixo, uma linha não lida por conversa (o contador não infla a cada mensagem)
+      await notificarSino(outro, { tipo: 'conversa_mensagem', titulo: TEXTOS.tituloMensagem, texto: TEXTOS.pushMensagem, conversaId: c.id, unicaNaoLida: true });
       await awaitSends([sendPushToUser(outro, { title: '💬 Nova mensagem', body: TEXTOS.pushMensagem, url: `/dashboard/mensagens/${c.id}`, tag: `conversa-${c.id}` }, { event: 'chat_message' }).catch(() => {})]);
     }
     return successResponse({ id: ins.rows[0].id, criada_em: ins.rows[0].criada_em }, 201);

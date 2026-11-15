@@ -4,7 +4,7 @@ import { sendPushToUser } from '@/lib/pushNotification';
 import { sendObjectFoundEmail } from '@/lib/email';
 import { awaitSends } from '@/lib/awaitSends';
 import { Events, recordEvent } from '@/lib/events';
-import { TEXTOS, LIMITE_PRIMEIRA_MENSAGEM, LIMITE_AVISOS_NOVOS_POR_DIA, PAUSA_POR_OBJETO_MIN, donoRecebeAvisos, validarTexto } from '@/lib/conversas';
+import { TEXTOS, LIMITE_PRIMEIRA_MENSAGEM, LIMITE_AVISOS_NOVOS_POR_DIA, PAUSA_POR_OBJETO_MIN, donoRecebeAvisos, validarTexto, notificarSino, tituloLimpo } from '@/lib/conversas';
 
 export type ResultadoAviso =
   | { ok: true; conversaId: string }
@@ -13,16 +13,14 @@ export type ResultadoAviso =
 /** Aviso ao dono (sino, push de texto fixo, e-mail) — só quando o dono pode receber (não legado, não conta de sistema). Falha de envio não derruba nada. */
 async function avisarDono(donoId: string, conversaId: string, objeto: { id: string; title: string; category: string; status: string }) {
   const url = `/dashboard/mensagens/${conversaId}`;
-  await query(
-    `INSERT INTO notifications (user_id, title, message, type, url, created_at) VALUES ($1, $2, $3, 'conversa_aviso', $4, NOW())`,
-    [donoId, TEXTOS.tituloAvisoDono, TEXTOS.avisoDono(objeto.title), url],
-  ).catch((e) => console.error('[conversas] notificação falhou:', e));
-  const push = sendPushToUser(donoId, { title: TEXTOS.tituloAvisoDono, body: TEXTOS.avisoDono(objeto.title), url, tag: `conversa-${conversaId}` }, { event: 'qr_scan' })
+  const titulo = tituloLimpo(objeto.title);
+  await notificarSino(donoId, { tipo: 'conversa_aviso', titulo: TEXTOS.tituloAvisoDono, texto: TEXTOS.avisoDono(titulo), conversaId });
+  const push = sendPushToUser(donoId, { title: TEXTOS.tituloAvisoDono, body: TEXTOS.avisoDono(titulo), url, tag: `conversa-${conversaId}` }, { event: 'qr_scan' })
     .catch((e) => console.error('[conversas] push falhou:', e));
   const email = query(`SELECT name, email FROM users WHERE id = $1`, [donoId]).then((r) => {
     const dono = r.rows[0] as { name: string; email: string } | undefined;
     if (!dono?.email) return;
-    return sendObjectFoundEmail(dono, { id: objeto.id, title: objeto.title, category: objeto.category, isProtected: objeto.status === 'protected', conversaId });
+    return sendObjectFoundEmail(dono, { id: objeto.id, title: titulo, category: objeto.category, isProtected: objeto.status === 'protected', conversaId });
   }).catch((e) => console.error('[conversas] e-mail falhou:', e));
   await awaitSends([push, email]);
 }
@@ -65,7 +63,7 @@ export async function criarAviso(achadorId: string, codigo: string, mensagemBrut
     const ins = await query(
       `INSERT INTO conversas (object_id, objeto_titulo, achador_id, dono_id, estado, primeira_mensagem)
        VALUES ($1, $2, $3, $4, 'aguardando', $5) RETURNING id`,
-      [obj.id, obj.title, achadorId, obj.user_id, msg.texto],
+      [obj.id, tituloLimpo(obj.title), achadorId, obj.user_id, msg.texto],
     );
     conversaId = ins.rows[0].id as string;
   } catch (e) {

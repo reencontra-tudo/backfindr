@@ -25,11 +25,13 @@ export default function ConversaPage() {
   const [ocupado, setOcupado] = useState<string | null>(null);
   const fim = useRef<HTMLDivElement>(null);
   const ultimaLida = useRef('');
+  const abertaRef = useRef(false);
 
   const carregar = useCallback(async (silencioso = false) => {
     try {
       const { data } = await conversasApi.get(id);
       setD(data);
+      if (!abertaRef.current) { abertaRef.current = true; conversasApi.lida(id).catch(() => {}); }   // abrir a conversa zera o sino dela
       const ultima = [...(data.mensagens as Msg[])].reverse().find((m) => m.autor === 'outro')?.id;
       if (ultima && ultima !== ultimaLida.current) { ultimaLida.current = ultima; conversasApi.lida(id).catch(() => { ultimaLida.current = ''; }); }
     } catch (e) {
@@ -75,7 +77,7 @@ export default function ConversaPage() {
       <div className="flex items-center gap-3 px-4 sm:px-6 py-4 border-b border-white/[0.06] flex-shrink-0">
         <button onClick={() => router.push('/dashboard/mensagens')} aria-label="Voltar para Mensagens" className="w-9 h-9 flex items-center justify-center text-white/50 hover:text-white"><ChevronLeft className="w-5 h-5" /></button>
         <div className="min-w-0 flex-1">
-          <p className="font-semibold text-white text-sm truncate">{d.objeto_titulo ?? 'Objeto'}</p>
+          <p className="font-semibold text-white text-sm truncate">{d.objeto_titulo?.trim() || 'Objeto'}</p>
           <p className="text-xs text-white/40">{d.papel === 'dono' ? 'Alguém avisou sobre o seu objeto' : 'Seu aviso'}</p>
         </div>
         {d.papel === 'dono' && d.object_id && <Link href={`/dashboard/objects/${d.object_id}`} className="text-teal-400 text-xs flex items-center gap-1"><Package className="w-3.5 h-3.5" aria-hidden />Ver objeto</Link>}
@@ -92,7 +94,7 @@ export default function ConversaPage() {
         )}
         {d.estado === 'aguardando' && d.papel === 'dono' && (
           <div data-aguardando-voce>
-            <p className="text-white text-sm font-semibold">Alguém avisou que pode ter encontrado “{d.objeto_titulo}”. Veja o aviso e decida se quer conversar.</p>
+            <p className="text-white text-sm font-semibold">Alguém avisou que pode ter encontrado “{d.objeto_titulo?.trim() || 'seu objeto'}”. Veja o aviso e decida se quer conversar.</p>
             <p className="text-white/50 text-xs mt-1">{d.textos.aceitar}</p>
             <div className="flex flex-wrap gap-2 mt-3">
               {a.aceitar && <button onClick={() => agir('aceitar', () => conversasApi.aceitar(id))} disabled={!!ocupado} data-acao="aceitar" className={`${botao} bg-teal-500 hover:bg-teal-400 text-white`}>Aceitar conversa</button>}
@@ -128,7 +130,8 @@ export default function ConversaPage() {
       </div>
 
       {a.enviar && (
-        <div className="px-4 sm:px-6 py-3 border-t border-white/[0.06] flex-shrink-0">
+        // A bolha flutuante do assistente fica no canto inferior direito e cobria o botão de enviar: espaço só nesta tela (nada global).
+        <div className="px-4 sm:px-6 pt-3 pb-24 border-t border-white/[0.06] flex-shrink-0" data-composer>
           <div className="flex items-end gap-3">
             <textarea value={texto} onChange={(e) => setTexto(e.target.value)} maxLength={2000} rows={1} placeholder="Digite sua mensagem..." aria-label="Mensagem"
               onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); void enviar(); } }}

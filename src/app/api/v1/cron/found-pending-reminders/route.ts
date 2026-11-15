@@ -3,7 +3,7 @@ import { NextRequest } from 'next/server';
 import { query } from '@/lib/db';
 import { sendPushToUser } from '@/lib/pushNotification';
 import { recordEvent } from '@/lib/events';
-import { MENSAGENS_ATIVO, DIAS_ABERTA_PARADA, MESES_GUARDA_APOS_ENCERRAR, meses } from '@/lib/conversas';
+import { MENSAGENS_ATIVO, DIAS_ABERTA_PARADA, MESES_GUARDA_APOS_ENCERRAR, meses, tituloLimpo } from '@/lib/conversas';
 
 /**
  * Rota de Cron Job — item 3a do ciclo found→returned (25/08/2026, opção D
@@ -225,7 +225,7 @@ export async function GET(request: NextRequest) {
             );
             for (const row of r.rows as { id: string; dono_id: string; titulo: string; object_id: string }[]) {
               try {
-                await sendPushToUser(row.dono_id, { title: titulo, body: texto(row.titulo), url: `/dashboard/mensagens/${row.id}`, tag: `conversa-${tipo}-${row.id}-${dia}` }, { event: 'qr_scan' });
+                await sendPushToUser(row.dono_id, { title: titulo, body: texto(tituloLimpo(row.titulo)), url: `/dashboard/mensagens/${row.id}`, tag: `conversa-${tipo}-${row.id}-${dia}` }, { event: 'qr_scan' });
                 await query(`INSERT INTO user_lifecycle_events (user_id, object_id, event_type, created_at) VALUES ($1, $2, $3, NOW())`, [row.dono_id, row.object_id, `conversa_${tipo}_d${dia}`]).catch(() => {});
                 (results as unknown as Record<string, number>).conversas_lembretes = ((results as unknown as Record<string, number>).conversas_lembretes ?? 0) + 1;
               } catch (err) { results.errors.push(`Erro no lembrete da conversa ${row.id}: ${err}`); }

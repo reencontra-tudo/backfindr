@@ -54,6 +54,8 @@ function normalizeObject(row: Record<string, unknown>) {
     reward_amount: row.reward_amount ? parseFloat(String(row.reward_amount)) : null,
     reward_description: row.reward_description || null,
     category_fields: row.category_fields || {},
+    // Só a lista do próprio dono precisa: o painel usa para o aviso «alguém pode ter encontrado» (marca real, não o status do objeto).
+    found_pending_confirmation: row.found_pending_confirmation === true,
     created_at: row.created_at,
     updated_at: row.updated_at,
   };
@@ -88,7 +90,8 @@ export async function GET(request: NextRequest) {
     const result = await query(
       `SELECT id, title, description, status, category, type, location, latitude, longitude,
               qr_code, images, color, brand, breed, is_legacy, source, user_id,
-              reward_amount, reward_description, category_fields, created_at, updated_at
+              reward_amount, reward_description, category_fields, created_at, updated_at,
+              found_pending_confirmation
        FROM objects
        ${whereClause}
        ORDER BY created_at DESC
