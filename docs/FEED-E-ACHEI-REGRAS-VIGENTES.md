@@ -70,10 +70,10 @@ Nenhum texto promete contato protegido, SMS, chat protegido, resposta da fonte, 
 
 ## Nome de pessoa em sinais públicos
 - **Toda saída que mostra título ou descrição de sinal público passa pela máscara central** (`(nome omitido)`): página do objeto, QR (`/scan`), leitura por código, lista pública, Feed, mapa, cartaz, e-mail de alerta de correspondência e lista de correspondências do dono. Usuário e legado saem como foram escritos.
-- **O título gravado continua o original** e a busca por nome do documento continua funcionando (busca, pontuação e correspondência usam o original no servidor).
+- **O título gravado continua o original** e a busca por nome do documento continua funcionando (busca, pontuação e correspondência usam o original no servidor). O texto enviado à OpenAI na correspondência não foi alterado, e nada foi gravado mascarado (sem backfill). Objetos de usuário e do legado saem idênticos aos de antes.
 - **Ainda escapa:** nome sozinho, sem sobrenome («RG de Maria»), e nome depois de traço.
 - **Mesclado em 15/11/2026 (PR #123, commit `0232155`);** a decisão de manter o título gravado original segue em vigor (sem backfill).
-- **Pendências (dependem do Marcos):** decidir se o texto enviado à OpenAI na correspondência deve ser mascarado; nome parcial («José P.») para sinais públicos e «encontrei»; formulário «perdi» de documento (campos pedidos e descartados no envio). AutoPost do n8n conferido: não lê objetos.
+- **Pendências (dependem do Marcos):** decidir se o texto enviado à OpenAI na correspondência deve ser mascarado; nome parcial («José P.») para sinais públicos e «encontrei», com o titular em campo próprio; formulário «perdi» de documento (campos pedidos e descartados no envio). AutoPost do n8n conferido: não lê objetos.
 
 ## Pendências a decidir (nenhuma foi iniciada)
 - Definição oficial do produto e metadados do site e dos planos que ainda dizem «chat mediado»; frases «notificação imediata» fora do cartaz.
