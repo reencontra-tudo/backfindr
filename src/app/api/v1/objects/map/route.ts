@@ -3,6 +3,7 @@
 // Payload ~10x menor que /objects/public. Cache de 2 minutos no Vercel Edge.
 import { NextResponse } from 'next/server';
 import { query } from '@/lib/db';
+import { tituloPublico } from '@/lib/objectPublicView';
 import { arredondaCoordenada, ehCadastroDeUsuario } from '@/lib/publicLocation';
 
 export const dynamic = 'force-dynamic';
@@ -87,7 +88,7 @@ export async function GET() {
 
       return {
         id: row.id,
-        title: row.title,
+        title: tituloPublico(row.title as string, row.source as string | null),   // sinal público: nome mascarado; usuário e legado: igual
         status: row.status,
         category: row.category || 'other',
         // Cadastro de usuário: pin com coordenada arredondada (~110 m); legado e sinal: exatamente como estão. O mapa nunca recebe endereço.

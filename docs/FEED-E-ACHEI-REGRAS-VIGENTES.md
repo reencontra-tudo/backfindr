@@ -68,6 +68,12 @@ Nenhum texto promete contato protegido, SMS, chat protegido, resposta da fonte, 
 - **Guarda:** a data-limite de guarda é gravada (12 meses depois de encerrar; até 3 anos em denúncia ou disputa, na Fase 2). Nada é apagado nesta fase; o apagamento depende da revisão jurídica.
 - **Fase 2 (não feita):** filtro de telefone, e-mail e link; denunciar e bloquear; prova de dono com trava.
 
+## Nome de pessoa em sinais públicos
+- **Toda saída que mostra título ou descrição de sinal público passa pela máscara central** (`(nome omitido)`): página do objeto, QR (`/scan`), leitura por código, lista pública, Feed, mapa, cartaz, e-mail de alerta de correspondência e lista de correspondências do dono. Usuário e legado saem como foram escritos.
+- **O título gravado continua o original** e a busca por nome do documento continua funcionando (busca, pontuação e correspondência usam o original no servidor).
+- **Ainda escapa:** nome sozinho, sem sobrenome («RG de Maria»), e nome depois de traço.
+- **Pendências:** decidir se o texto enviado à OpenAI na correspondência deve ser mascarado; conferir o AutoPost do n8n.
+
 ## Pendências a decidir (nenhuma foi iniciada)
 - Definição oficial do produto e metadados do site e dos planos que ainda dizem «chat mediado»; frases «notificação imediata» fora do cartaz.
 - Ícone de «Compartilhar» fica sob o balão do chat em parte da rolagem (Publicações, 390 px).

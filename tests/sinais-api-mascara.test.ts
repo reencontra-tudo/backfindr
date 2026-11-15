@@ -127,8 +127,8 @@ describe('no código', () => {
     expect(r).toContain('(LOWER(title) LIKE $${p} OR LOWER(description) LIKE $${p}');                                 // casamento no SQL sobre o texto original
     expect(r).toContain('const nextCursor = items.length === requestedSize');
   });
-  it('mapa, API do Feed, API do objeto e sitemap NÃO foram alterados por este PR', () => {
-    for (const f of ['src/app/api/v1/objects/map/route.ts', 'src/app/api/v1/feed/route.ts', 'src/app/api/v1/objects/scan/[code]/route.ts', 'src/app/sitemap.ts']) expect(read(f), f).not.toMatch(/maskSignalForPublicApi|semEnderecoDeFonte/);
+  it('API do Feed e sitemap seguem sem a máscara de endereço; o mapa e a API do objeto (leitura por código) passaram a mascarar o nome do sinal (decisão posterior, testada em sinais-saidas-mascara.test.ts)', () => {
+    for (const f of ['src/app/api/v1/feed/route.ts', 'src/app/sitemap.ts']) expect(read(f), f).not.toMatch(/maskSignalForPublicApi|semEnderecoDeFonte|maskPersonNames/);
     expect(read('src/lib/feed/query.ts')).toContain('source_url: url, source_name: sourceName(url),');                 // o botão da fonte do card continua dependendo disso
   });
   it('a máscara de nomes em texto não ganhou regra para endereço: um endereço só pode ser ocultado, nunca «mascarado» (o link precisa continuar funcionando)', () => {

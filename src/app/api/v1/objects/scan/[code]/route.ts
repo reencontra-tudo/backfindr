@@ -4,6 +4,7 @@ import { query } from '@/lib/db';
 import { successResponse, notFoundResponse, internalErrorResponse } from '@/lib/response';
 import { Events } from '@/lib/events';
 import { POST as notifyOwnerOfScan } from './notify/route';
+import { maskSignalForPublicApi } from '@/lib/objectPublicView';
 import { localizacaoPublica } from '@/lib/publicLocation';
 
 export async function GET(
@@ -52,7 +53,8 @@ export async function GET(
       Events.qrScanned(row.id as string).catch(() => {});
     }
 
-    return successResponse({
+    // Sinal público: título, descrição e endereço do local saem com a máscara de nome e sem o «Fonte: <endereço>» (o mesmo da lista pública). Usuário e legado: idêntico.
+    return successResponse(maskSignalForPublicApi({
       id: row.id, title: row.title, description: row.description || '',
       status: row.status, category: row.category || row.type || 'other',
       unique_code: row.qr_code, photos, location,
@@ -61,7 +63,7 @@ export async function GET(
       reward_amount: row.reward_amount ? parseFloat(String(row.reward_amount)) : null,
       reward_description: row.reward_description || null,
       created_at: row.created_at, updated_at: row.updated_at,
-    });
+    }));
   } catch (error) {
     return internalErrorResponse(error);
   }

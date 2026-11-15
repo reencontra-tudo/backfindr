@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { query } from '@/lib/db';
 import { Events } from '@/lib/events';
 import { sendMatchAlertEmail } from '@/lib/email';
+import { tituloPublico } from '@/lib/objectPublicView';
 import { sendPushToUser, matchPayload } from '@/lib/pushNotification';
 import { awaitSends, sendWaitBudget } from '@/lib/awaitSends';
 import {
@@ -180,10 +181,10 @@ export async function GET(request: NextRequest) {
             pendingSends.push(
               sendMatchAlertEmail(
                 { name: owner.name, email: owner.email },
-                object.title as string,
+                tituloPublico(object.title as string, object.source as string | null) as string,
                 matchId,
                 finalScore,
-                candidate.title as string
+                tituloPublico(candidate.title as string, candidate.source as string | null) as string   // sinal público: nome mascarado no e-mail
               ).catch(() => {}),
               sendPushToUser(
                 owner.id as string,
