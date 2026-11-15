@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import ScanClient from './client';
 import { localizacaoPublica } from '@/lib/publicLocation';
+import { maskSignalForPublicApi } from '@/lib/objectPublicView';
 
 const APP_URL = process.env.NEXT_PUBLIC_APP_URL ?? 'https://backfindr.com';
 
@@ -13,7 +14,9 @@ async function getObject(code: string) {
     const json = await res.json();
     const obj = json?.data ?? json;
     // Mesma defesa do /objeto: só «bairro, cidade - UF» e coordenada arredondada (cadastro de usuário), qualquer que seja a versão da API consultada.
-    return obj && obj.location ? { ...obj, location: localizacaoPublica(obj.location, { is_legacy: obj.is_legacy, source: obj.source }) } : obj;
+    const base = obj && obj.location ? { ...obj, location: localizacaoPublica(obj.location, { is_legacy: obj.is_legacy, source: obj.source }) } : obj;
+    // Sinal público: título, descrição e endereço mascarados também aqui (o título e a meta do QR vão para o Google e para a pré-visualização do link), qualquer que seja a versão da API consultada.
+    return base ? maskSignalForPublicApi(base) : base;
   } catch {
     return null;
   }

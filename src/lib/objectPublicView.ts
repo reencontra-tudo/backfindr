@@ -69,3 +69,12 @@ export function maskSignalForPublicApi<T extends object>(item: T): T {
   const m = maskObjectForPublicPage(item as unknown as PublicObjectLike) as PublicObjectLike;
   return { ...m, description: typeof m.description === 'string' ? semEnderecoDeFonte(m.description) : m.description } as T;
 }
+
+/**
+ * Título para QUALQUER saída que vai a terceiros (e-mail, mapa, lista do dono…): SINAL PÚBLICO sai com a máscara de nome; usuário e legado
+ * devolvem o MESMO texto. O título gravado no banco continua o original (a busca e o casamento seguem usando o original no servidor).
+ */
+export function tituloPublico<T extends string | null | undefined>(title: T, source: string | null | undefined): T | string {
+  if (source !== 'public_signal' || typeof title !== 'string') return title;
+  return maskPersonNames(title) || title;
+}

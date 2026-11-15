@@ -4,6 +4,7 @@ import { query } from '@/lib/db';
 import { verifyToken, extractTokenFromHeader } from '@/lib/jwt';
 import { successResponse, unauthorizedResponse, internalErrorResponse } from '@/lib/response';
 import { sendMatchAlertEmail } from '@/lib/email';
+import { tituloPublico } from '@/lib/objectPublicView';
 import { sendPushToUser, matchPayload } from '@/lib/pushNotification';
 import { awaitSends, sendWaitBudget } from '@/lib/awaitSends';
 import { Events, recordEvent } from '@/lib/events';
@@ -249,10 +250,10 @@ async function processMatch(
         pendingSends.push(
           sendMatchAlertEmail(
             { name: owner.name, email: owner.email },
-            lostObj.title as string,
+            tituloPublico(lostObj.title as string, lostObj.source as string | null) as string,
             newMatch.id,
             score,
-            foundObj.title as string
+            tituloPublico(foundObj.title as string, foundObj.source as string | null) as string   // sinal público: nome mascarado no e-mail
           ).catch(err => console.error('[matching] Falha ao enviar e-mail de match:', err))
         );
 
