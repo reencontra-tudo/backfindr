@@ -47,12 +47,14 @@ Nenhum texto promete contato protegido, SMS, chat protegido, resposta da fonte, 
 - **Legado e sinais públicos** saem exatamente como estão. O dono vê o endereço completo no painel e na edição.
 - **Resultado vazio do `/achei`:** «Crie uma conta gratuita para registrar o que você encontrou.» **«Ver detalhes»** (`/achei`) e **«É o meu?»** (`/buscar`) usam o código público e levam a `/objeto/<código>`. No `/achei`, «É este» e «Ver detalhes» ficam alinhados com folga de 12 px (se não couber, o link desce para a linha de baixo, à esquerda).
 - **Cartaz:** o mini-mapa «Local da ocorrência» (só no A4) é uma imagem estática do Mapbox; se o mapa não carregar ou não houver chave, o bloco some e fica só o texto bairro/cidade. A frase do A4 é «Escaneie o QR Code para abrir a página do objeto e avisar que você o encontrou.» O dono baixa o cartaz com coordenada e texto originais; a prévia pública usa bairro, cidade e coordenada arredondada.
+- **Mapa do cartaz público:** decisão do Marcos: fica como está (coordenada arredondada, zoom atual). Só o A4 usa o Mapbox (um pedido por cartaz); o limite gratuito e o uso devem ser conferidos na conta do Mapbox (não confirmado na página oficial).
 - **Chat:** não existe chat de conversa entre quem achou e o dono; por isso nenhum texto diz que «a conversa acontece pelo chat da plataforma» nesse contexto. O chat existe só para as correspondências confirmadas.
 - **Aviso ao encontrar (`/objeto` e `/scan`):** o aviso fica registrado na ocorrência; push e e-mail saem só quando o dono não é legado; não há promessa de chat nem de resposta.
 - **Feed:** a linha perto dos filtros diz «Esta lista é só um recorte.» com o link «Ver histórico no mapa».
 - **Descrições do legado:** o HTML e o «\n» literal NÃO são limpos (decisão do Marcos): os textos e os dados do legado não são tocados.
 
 ## Pendências a decidir (nenhuma foi iniciada)
+- Definição oficial do produto e metadados do site e dos planos que ainda dizem «chat mediado»; frases «notificação imediata» fora do cartaz.
 - Ícone de «Compartilhar» fica sob o balão do chat em parte da rolagem (Publicações, 390 px).
 - Balão do assistente em páginas de fundo claro fora do Feed (a classe de fundo não existe).
 - Primeiros 14 cards têm foto; depois, quase só cards sem foto.
