@@ -15,7 +15,7 @@ import ActivityCenterCard from '@/components/object-detail/ActivityCenterCard';
 import { toast } from 'sonner';
 import { format, formatDistanceToNow } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
-import { objectsApi, parseApiError } from '@/lib/api';
+import { objectsApi, conversasApi, parseApiError } from '@/lib/api';
 import { ImageLightbox, useLightbox } from '@/components/ImageLightbox';
 import { RegisteredObject, ObjectStatus } from '@/types';
 import Cookies from 'js-cookie';
@@ -271,6 +271,23 @@ function StatusBadge({ status }: { status: string }) {
 // truque de buscar `previous_status` no evento `owner_notified` só pra
 // poder reverter — não tem mais nada pra reverter, só descartar a
 // sinalização (`dismissPending`).
+// Avisos de quem achou que esperam a decisão do dono (só com a área de mensagens ligada). O objeto NÃO muda por causa deles.
+function AvisosAguardando({ objectId }: { objectId: string }) {
+  const [ids, setIds] = useState<string[]>([]);
+  useEffect(() => {
+    conversasApi.config().then(({ data }) => (data?.ativo === true ? conversasApi.list('aguardando_voce', objectId) : null))
+      .then((r) => { if (r) setIds((r.data?.conversas ?? []).map((c: { id: string }) => c.id)); }).catch(() => {});
+  }, [objectId]);
+  if (ids.length === 0) return null;
+  return (
+    <div className="mb-5 rounded-2xl border border-amber-500/30 bg-amber-500/[0.07] p-4 sm:p-5" data-avisos-aguardando>
+      <p className="text-amber-300 font-display font-semibold text-sm">{ids.length === 1 ? 'Alguém avisou que pode ter encontrado este objeto' : `${ids.length} pessoas avisaram que podem ter encontrado este objeto`}</p>
+      <p className="text-white/45 text-xs mt-0.5">Veja o aviso e decida se quer conversar.</p>
+      <Link href={ids.length === 1 ? `/dashboard/mensagens/${ids[0]}` : '/dashboard/mensagens'} className="mt-3 inline-flex min-h-[44px] items-center justify-center px-4 rounded-xl bg-amber-500/20 border border-amber-500/30 text-amber-200 text-sm font-medium">Ver aviso</Link>
+    </div>
+  );
+}
+
 function FoundBanner({
   object,
   onUpdated,
@@ -281,6 +298,8 @@ function FoundBanner({
   onConfirmedReturn: () => void;
 }) {
   const [loadingAction, setLoadingAction] = useState<'confirm' | 'dismiss' | null>(null);
+  const [mensagensAtivas, setMensagensAtivas] = useState(false);
+  useEffect(() => { conversasApi.config().then(({ data }) => setMensagensAtivas(data?.ativo === true)).catch(() => {}); }, []);
 
   const confirmReturn = async () => {
     setLoadingAction('confirm');
@@ -320,8 +339,8 @@ function FoundBanner({
           <Package className="w-4 h-4 text-amber-400" />
         </div>
         <div>
-          <p className="text-amber-300 font-display font-semibold text-sm">Alguém sinalizou que encontrou este objeto</p>
-          <p className="text-white/45 text-xs mt-0.5">{timeAgo} · o finder é anônimo, sem contato direto disponível ainda</p>
+          <p className="text-amber-300 font-display font-semibold text-sm">Há uma sinalização de que este objeto foi encontrado</p>
+          <p className="text-white/45 text-xs mt-0.5">{timeAgo}{mensagensAtivas ? ' · ' : ''}{mensagensAtivas && <Link href="/dashboard/mensagens" className="underline">Ver em Mensagens</Link>}</p>
         </div>
       </div>
       <div className="flex flex-col sm:flex-row gap-2">
@@ -604,6 +623,7 @@ export default function ObjectDetailPage() {
               fechamento do ciclo, 22/08/2026). Gatilho trocado de `status ===
               'found'` pra `found_pending_confirmation` em 25/08/2026 — /notify
               não muda mais `status` sozinho (ver comentário em FoundBanner). ── */}
+          <AvisosAguardando objectId={obj.id} />
           {obj.found_pending_confirmation && (
             <div className="mb-5">
               <FoundBanner object={obj} onUpdated={(updated) => setObj(updated)} onConfirmedReturn={() => setShowRecoveredModal(true)} />

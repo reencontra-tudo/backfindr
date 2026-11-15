@@ -3,6 +3,7 @@
 import { useState, useEffect, Suspense } from 'react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
+import { guardarProximaPagina, consumirProximaPagina } from '@/lib/proximaPagina';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -40,6 +41,7 @@ function RegisterForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const planSlug        = searchParams.get('plan')             || '';
+  useEffect(() => { guardarProximaPagina(searchParams.get('next')); }, [searchParams]);
   const intentSlug      = searchParams.get('intent')           || '';
   const prefillTitle    = searchParams.get('prefill_title')    || '';
   const prefillCategory = searchParams.get('prefill_category') || '';
@@ -120,9 +122,13 @@ function RegisterForm() {
       }
       toast.success('Conta criada com sucesso!');
 
+      const proximo = consumirProximaPagina();
       // Se veio de um plano pago, redirecionar para checkout
       if (planSlug && planSlug !== 'free') {
         await redirectToCheckout(planSlug);
+      } else if (proximo) {
+        // Veio de um aviso «encontrei» (QR): volta à página do objeto (destino já validado)
+        router.push(proximo);
       } else if (intentSlug) {
         // Veio da triagem de intenção da home — ir direto para o formulário com prefill
         const params = new URLSearchParams();

@@ -1,11 +1,12 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import Cookies from 'js-cookie';
 import { ImageLightbox, useLightbox } from '@/components/ImageLightbox';
 import Link from 'next/link';
 import { MapPin, MessageCircle, CheckCircle2, ChevronRight, Shield, Share2, Download } from 'lucide-react';
 import { toast } from 'sonner';
-import { api, parseApiError } from '@/lib/api';
+import { api, conversasApi, parseApiError } from '@/lib/api';
 import { RegisteredObject } from '@/types';
 import RecoveredCelebration from '@/components/RecoveredCelebration';
 import ObjectThumb from '@/components/ObjectThumb';
@@ -168,12 +169,28 @@ export default function PublicObjectClient({ obj, signalSource = null }: { obj: 
   const isSignal = obj.source === 'public_signal';
   const [sent, setSent] = useState(false);
   const [loading, setLoading] = useState(false);
+  // Área de mensagens (MENSAGENS_ATIVO=1 no servidor): o aviso exige conta e abre uma conversa «aguardando o dono». Desligada: tudo como antes.
+  const [ativo, setAtivo] = useState(false);
+  const [logado, setLogado] = useState(false);
+  const [primeiraMensagem, setPrimeiraMensagem] = useState('');
+  const [conversaId, setConversaId] = useState<string | null>(null);
+  useEffect(() => {
+    setLogado(!!Cookies.get('access_token'));
+    api.get('/conversas/config').then(({ data }) => setAtivo(data?.ativo === true)).catch(() => {});
+  }, []);
+  const destinoDoAviso = `/objeto/${obj.unique_code}`;
   const { open: openLightbox, close: closeLightbox, lightbox } = useLightbox();
 
   const notifyOwner = async () => {
+    if (ativo && !logado) { window.location.href = `/auth/login?next=${encodeURIComponent(destinoDoAviso)}`; return; }
     setLoading(true);
     try {
-      await api.post(`/objects/scan/${obj.unique_code}/notify`);
+      if (ativo) {
+        const { data } = await conversasApi.criar(String(obj.unique_code), primeiraMensagem);
+        setConversaId(data?.conversa_id ?? null);
+      } else {
+        await api.post(`/objects/scan/${obj.unique_code}/notify`);
+      }
       setSent(true);
     } catch (e) {
       toast.error(parseApiError(e));
@@ -226,7 +243,7 @@ export default function PublicObjectClient({ obj, signalSource = null }: { obj: 
               </div>
               <h1 className="text-2xl font-bold text-white mb-2">Boa ação registrada!</h1>
               <p className="text-white/50 text-sm max-w-xs mx-auto leading-relaxed">
-                O dono foi notificado. Obrigado por ajudar — isso faz diferença de verdade. 🙏
+                {ativo ? 'Seu aviso foi registrado. Não há garantia de resposta.' : 'O dono foi notificado. Obrigado por ajudar — isso faz diferença de verdade. 🙏'}
               </p>
             </div>
 
@@ -236,6 +253,14 @@ export default function PublicObjectClient({ obj, signalSource = null }: { obj: 
               <p className="text-white font-medium text-base">{CATEGORY_EMOJI[obj.category]} {obj.title}</p>
             </div>
 
+            {ativo ? (
+              <div className="bg-white/[0.03] border border-white/[0.07] rounded-2xl p-5 mb-6" data-aviso-registrado>
+                <p className="text-white/60 text-xs font-semibold uppercase tracking-wider mb-2">Aguardando o dono</p>
+                <p className="text-white/70 text-sm leading-relaxed">Você acompanha o aviso, e cancela se quiser, na área de Mensagens.</p>
+                <Link href={conversaId ? `/dashboard/mensagens/${conversaId}` : '/dashboard/mensagens'} className="mt-3 inline-flex min-h-[44px] items-center justify-center w-full bg-teal-500 hover:bg-teal-400 text-white font-semibold rounded-xl text-sm">Ver em Mensagens</Link>
+              </div>
+            ) : (
+            <>
             {/* O que acontece agora — timeline */}
             <div className="bg-white/[0.03] border border-white/[0.07] rounded-2xl p-5 mb-6">
               <p className="text-white/60 text-xs font-semibold uppercase tracking-wider mb-4">O que acontece agora</p>
@@ -269,6 +294,8 @@ export default function PublicObjectClient({ obj, signalSource = null }: { obj: 
                 </div>
               </div>
             </div>
+            </>
+            )}
 
             {/* CTA secundário — sem pressão */}
             <p className="text-center text-white/30 text-xs mb-3">Quer receber avisos se alguém encontrar seus objetos também?</p>
@@ -379,17 +406,29 @@ export default function PublicObjectClient({ obj, signalSource = null }: { obj: 
                     isso, o FAB do chat fica livre pra sobrepor este botão em
                     viewports de pouca altura (confirmado em produção a
                     375×600) e engolir o toque sem nenhum feedback visível. */}
+                {ativo && logado && (
+                  <div className="mb-3" data-primeira-mensagem>
+                    <label htmlFor="primeira-mensagem" className="block text-white/60 text-xs mb-1.5">Escreva uma mensagem curta para o dono (até 280 caracteres)</label>
+                    <textarea id="primeira-mensagem" value={primeiraMensagem} onChange={(e) => setPrimeiraMensagem(e.target.value)} maxLength={280} rows={3}
+                      placeholder="Onde e quando você achou o objeto."
+                      className="w-full bg-white/[0.04] border border-white/[0.1] rounded-xl px-4 py-3 text-white placeholder-white/25 text-sm outline-none focus:border-teal-500/50 resize-none" />
+                    <p className="text-white/35 text-xs mt-1.5 leading-relaxed">Não conte o detalhe que só o dono saberia, para ele poder descrevê-lo depois. Não envie telefone, e-mail nem endereço.</p>
+                  </div>
+                )}
                 <button
                   onClick={notifyOwner}
-                  disabled={loading}
+                  disabled={loading || (ativo && logado && primeiraMensagem.trim().length === 0)}
                   data-widget-safe-zone
                   className="w-full flex items-center justify-center gap-3 bg-teal-500 hover:bg-teal-400 active:bg-teal-600 disabled:opacity-60 text-white font-bold py-4 rounded-xl transition-all text-base"
                   style={{ boxShadow: '0 0 0 1px rgba(20,184,166,0.5), 0 8px 24px rgba(20,184,166,0.2)' }}
                 >
                   <MessageCircle className="w-5 h-5" />
-                  {loading ? 'Enviando aviso...' : 'Avisar o dono que encontrei'}
+                  {loading ? 'Enviando aviso...' : ativo && !logado ? 'Entrar para avisar o dono' : 'Avisar o dono que encontrei'}
                 </button>
 
+                {ativo && !logado && (
+                  <p className="text-center text-white/50 text-xs mt-3">Ainda não tem conta? <Link href={`/auth/register?next=${encodeURIComponent(destinoDoAviso)}`} className="text-teal-300 underline" data-criar-conta>Criar conta gratuita</Link></p>
+                )}
                 {/* Nota de privacidade */}
                 <div className="flex items-start gap-2.5 mt-4 bg-white/[0.02] rounded-xl p-3">
                   <Shield className="w-4 h-4 text-teal-400/60 flex-shrink-0 mt-0.5" />

@@ -3,6 +3,7 @@ import { NextRequest } from 'next/server';
 import { query } from '@/lib/db';
 import { sendPushToUser } from '@/lib/pushNotification';
 import { recordEvent } from '@/lib/events';
+import { MENSAGENS_ATIVO, DIAS_ABERTA_PARADA, MESES_GUARDA_APOS_ENCERRAR, meses } from '@/lib/conversas';
 
 /**
  * Rota de Cron Job — item 3a do ciclo found→returned (25/08/2026, opção D
@@ -28,6 +29,12 @@ import { recordEvent } from '@/lib/events';
  * (user_id, object_id, event_type), pra nunca mandar o mesmo lembrete duas
  * vezes mesmo se o cron rodar mais de uma vez no mesmo dia.
  */
+// Com a área de mensagens ligada, a marca «achado pendente» vem do «É o meu» do dono e pertence a uma conversa: os lembretes dela
+// e o descarte automático NÃO mexem nessas marcas (o dono disse que o objeto é dele; nada o desfaz sozinho). Só as marcas antigas, sem conversa, seguem como antes.
+const SEM_CONVERSA = (alias = 'o') => MENSAGENS_ATIVO()
+  ? `AND NOT EXISTS (SELECT 1 FROM conversas cv WHERE cv.object_id = ${alias}.id AND cv.confirmado_dono_em IS NOT NULL)`
+  : '';
+
 export async function GET(request: NextRequest) {
   const authHeader = request.headers.get('authorization');
   const cronSecret = process.env.CRON_SECRET;
@@ -59,6 +66,7 @@ export async function GET(request: NextRequest) {
             AND o.found_pending_since >  NOW() - INTERVAL '2 days'
             AND o.user_id IS NOT NULL
             AND o.is_legacy IS NOT TRUE
+            ${SEM_CONVERSA()}
             AND NOT EXISTS (SELECT 1 FROM users ux WHERE ux.id = o.user_id AND (ux.is_legacy IS TRUE OR ux.is_system_account IS TRUE))
             AND (SELECT COUNT(*) FROM user_lifecycle_events
                   WHERE user_id = o.user_id AND object_id = o.id
@@ -97,6 +105,7 @@ export async function GET(request: NextRequest) {
             AND o.found_pending_since >  NOW() - INTERVAL '4 days'
             AND o.user_id IS NOT NULL
             AND o.is_legacy IS NOT TRUE
+            ${SEM_CONVERSA()}
             AND NOT EXISTS (SELECT 1 FROM users ux WHERE ux.id = o.user_id AND (ux.is_legacy IS TRUE OR ux.is_system_account IS TRUE))
             AND (SELECT COUNT(*) FROM user_lifecycle_events
                   WHERE user_id = o.user_id AND object_id = o.id
@@ -135,6 +144,7 @@ export async function GET(request: NextRequest) {
             AND o.found_pending_since >  NOW() - INTERVAL '8 days'
             AND o.user_id IS NOT NULL
             AND o.is_legacy IS NOT TRUE
+            ${SEM_CONVERSA()}
             AND NOT EXISTS (SELECT 1 FROM users ux WHERE ux.id = o.user_id AND (ux.is_legacy IS TRUE OR ux.is_system_account IS TRUE))
             AND (SELECT COUNT(*) FROM user_lifecycle_events
                   WHERE user_id = o.user_id AND object_id = o.id
@@ -172,6 +182,7 @@ export async function GET(request: NextRequest) {
                 updated_at = NOW()
           WHERE found_pending_confirmation = true
             AND found_pending_since <= NOW() - INTERVAL '14 days'
+            ${SEM_CONVERSA('objects')}
           RETURNING id, user_id`
       );
       for (const row of d14Result.rows as { id: string; user_id: string | null }[]) {
@@ -188,6 +199,50 @@ export async function GET(request: NextRequest) {
       }
     } catch (err) {
       results.errors.push(`Erro ao descartar sinalizações D+14: ${err}`);
+    }
+
+    // ─── Conversas (área de mensagens; só com MENSAGENS_ATIVO=1) ─────────────────────────────────────────────────────
+    // (a) lembretes D+1, D+3, D+7 ao dono NÃO legado: aviso aguardando a decisão dele (contado da criação do aviso) e
+    //     «É o meu» aguardando «Confirmar devolução» (contado do «É o meu»); (b) conversa aberta parada há 30 dias é arquivada.
+    // Nada disso altera objeto algum. Push de texto fixo. Dedup por user_lifecycle_events (um lembrete por objeto e dia-marco).
+    if (MENSAGENS_ATIVO()) {
+      try {
+        for (const [tipo, coluna, titulo, texto, estado] of [
+          ['aguardando', 'c.criada_em', '👀 Aviso aguardando sua resposta', (t: string) => `Alguém avisou que pode ter encontrado "${t}". Veja o aviso e decida se quer conversar.`, `c.estado = 'aguardando' AND c.confirmado_dono_em IS NULL`],
+          ['e_o_meu', 'c.confirmado_dono_em', '👀 Devolução aguardando confirmação', (t: string) => `Quando "${t}" for devolvido, confirme a devolução na conversa.`, `c.estado = 'aberta' AND c.confirmado_dono_em IS NOT NULL`],
+        ] as [string, string, string, (t: string) => string, string][]) {
+          for (const dia of [1, 3, 7]) {
+            const r = await query(
+              `SELECT c.id, c.dono_id, COALESCE(c.objeto_titulo, 'seu objeto') AS titulo, c.object_id
+                 FROM conversas c JOIN users u ON u.id = c.dono_id
+                WHERE ${estado}
+                  AND ${coluna} <= NOW() - INTERVAL '${dia} days' AND ${coluna} > NOW() - INTERVAL '${dia + 1} days'
+                  AND COALESCE(u.is_legacy, false) = false AND COALESCE(u.is_system_account, false) = false
+                  AND NOT EXISTS (SELECT 1 FROM objects ob WHERE ob.id = c.object_id AND ob.is_legacy IS TRUE)
+                  AND NOT EXISTS (SELECT 1 FROM user_lifecycle_events le WHERE le.user_id = c.dono_id AND le.object_id = c.object_id AND le.event_type = $1)
+                LIMIT 200`,
+              [`conversa_${tipo}_d${dia}`],
+            );
+            for (const row of r.rows as { id: string; dono_id: string; titulo: string; object_id: string }[]) {
+              try {
+                await sendPushToUser(row.dono_id, { title: titulo, body: texto(row.titulo), url: `/dashboard/mensagens/${row.id}`, tag: `conversa-${tipo}-${row.id}-${dia}` }, { event: 'qr_scan' });
+                await query(`INSERT INTO user_lifecycle_events (user_id, object_id, event_type, created_at) VALUES ($1, $2, $3, NOW())`, [row.dono_id, row.object_id, `conversa_${tipo}_d${dia}`]).catch(() => {});
+                (results as unknown as Record<string, number>).conversas_lembretes = ((results as unknown as Record<string, number>).conversas_lembretes ?? 0) + 1;
+              } catch (err) { results.errors.push(`Erro no lembrete da conversa ${row.id}: ${err}`); }
+            }
+          }
+        }
+        const arq = await query(
+          `UPDATE conversas SET estado = 'arquivada', motivo = 'inatividade', encerrada_em = NOW(), retencao_ate = ${meses(MESES_GUARDA_APOS_ENCERRAR)}
+            WHERE estado = 'aberta' AND ultima_atividade <= NOW() - INTERVAL '${DIAS_ABERTA_PARADA} days' RETURNING id`,
+        );
+        for (const row of arq.rows as { id: string }[]) {
+          await query(`INSERT INTO mensagens_conversa (conversa_id, autor_id, texto, tipo) VALUES ($1, NULL, 'Conversa arquivada por inatividade.', 'sistema')`, [row.id]).catch(() => {});
+        }
+        (results as unknown as Record<string, unknown>).conversas_arquivadas = arq.rows.length;
+      } catch (err) {
+        results.errors.push(`Erro nas rotinas das conversas: ${err}`);
+      }
     }
 
     console.log('[cron/found-pending-reminders] Resultado:', results);

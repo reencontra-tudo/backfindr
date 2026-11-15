@@ -163,3 +163,20 @@ export const notificationsApi = {
 };
 // Force rebuild 1776022871
 // Deploy trigger Sun Apr 12 16:00:33 EDT 2026
+
+// Área de mensagens entre quem achou e o dono (ligada no servidor por MENSAGENS_ATIVO=1)
+export type FiltroConversas = 'aguardando_voce' | 'aguardando_dono' | 'abertas' | 'encerradas';
+export const conversasApi = {
+  config: () => api.get('/conversas/config'),
+  resumo: () => api.get('/conversas/resumo'),
+  list: (filtro?: FiltroConversas, objeto?: string) => api.get('/conversas', { params: { ...(filtro ? { filtro } : {}), ...(objeto ? { objeto } : {}) } }),
+  get: (id: string) => api.get(`/conversas/${id}`),
+  criar: (codigo: string, mensagem: string) => api.post('/conversas', { codigo, mensagem }),
+  aceitar: (id: string) => api.post(`/conversas/${id}/aceitar`),
+  recusar: (id: string) => api.post(`/conversas/${id}/recusar`),
+  eOMeu: (id: string) => api.post(`/conversas/${id}/e-o-meu`),
+  enviar: (id: string, texto: string) => api.post(`/conversas/${id}/enviar`, { texto }),
+  encerrar: (id: string, motivo: 'devolvido' | 'desisti') => api.post(`/conversas/${id}/encerrar`, { motivo }),
+  cancelar: (id: string) => api.post(`/conversas/${id}/cancelar`),
+  lida: (id: string) => api.post(`/conversas/${id}/lida`),
+};

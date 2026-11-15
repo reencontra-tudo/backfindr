@@ -1029,12 +1029,13 @@ const CATEGORY_LABEL_EMAIL: Record<string, string> = {
 
 export async function sendObjectFoundEmail(
   user: { name: string; email: string },
-  obj: { id: string; title: string; category: string; isProtected?: boolean }
+  obj: { id: string; title: string; category: string; isProtected?: boolean; conversaId?: string }
 ) {
   const firstNameRaw = user.name.split(' ')[0];
   const firstName = esc(firstNameRaw);
   const categoryLabel = CATEGORY_LABEL_EMAIL[obj.category] ?? 'objeto';
-  const objectUrl = `${APP_URL}/dashboard/objects/${obj.id}`;
+  // Com a área de mensagens, o link leva direto à conversa do aviso; sem ela, à página do objeto (como sempre).
+  const objectUrl = obj.conversaId ? `${APP_URL}/dashboard/mensagens/${obj.conversaId}` : `${APP_URL}/dashboard/objects/${obj.id}`;
   const subject = obj.isProtected
     ? `📍 O QR Code do seu ${categoryLabel} foi escaneado`
     : `🎉 Alguém pode ter encontrado seu ${categoryLabel}`;
@@ -1089,7 +1090,7 @@ export async function sendObjectFoundEmail(
                   <td align="center">
                     <a href="${objectUrl}"
                        style="display:inline-block;background:#14b8a6;color:white;font-size:15px;font-weight:700;text-decoration:none;padding:14px 32px;border-radius:12px;box-shadow:0 4px 20px rgba(20,184,166,0.25);">
-                      Ver detalhes do objeto →
+                      ${obj.conversaId ? 'Ver o aviso →' : 'Ver detalhes do objeto →'}
                     </a>
                   </td>
                 </tr>

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, Suspense } from 'react';
+import { useState, useEffect, Suspense } from 'react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useForm } from 'react-hook-form';
@@ -11,6 +11,7 @@ import { Eye, EyeOff, ArrowRight, Loader2, Mail } from 'lucide-react';
 import { useAuthStore } from '@/hooks/useAuth';
 import Cookies from 'js-cookie';
 import { getPostLoginRedirect } from '@/lib/redirectByRole';
+import { guardarProximaPagina, consumirProximaPagina } from '@/lib/proximaPagina';
 import { analytics } from '@/providers/PostHogProvider';
 
 const schema = z.object({
@@ -23,6 +24,8 @@ function LoginForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const planSlug = searchParams.get('plan') || '';
+  // Destino pretendido (só caminhos seguros): guardado na aba para sobreviver ao desvio por Google e valer depois do login
+  useEffect(() => { guardarProximaPagina(searchParams.get('next')); }, [searchParams]);
   const { login, isLoading } = useAuthStore();
   const [showPass, setShowPass] = useState(false);
   const [checkoutLoading, setCheckoutLoading] = useState(false);
@@ -74,7 +77,7 @@ function LoginForm() {
         await redirectToCheckout(planSlug);
       } else {
         const { user } = useAuthStore.getState();
-        router.push(getPostLoginRedirect(user?.role));
+        router.push(consumirProximaPagina() ?? getPostLoginRedirect(user?.role));
       }
     } catch {
       setLoginError('E-mail ou senha incorretos. Verifique seus dados.');

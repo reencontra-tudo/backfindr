@@ -4,6 +4,7 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import Cookies from 'js-cookie';
 import { useAuthStore } from '@/hooks/useAuth';
 import { getPostLoginRedirect } from '@/lib/redirectByRole';
+import { consumirProximaPagina } from '@/lib/proximaPagina';
 
 function GoogleSuccessContent() {
   const router = useRouter();
@@ -24,7 +25,7 @@ function GoogleSuccessContent() {
       // Buscar dados do usuário e redirecionar conforme role
       fetchMe().then(() => {
         const { user } = useAuthStore.getState();
-        router.replace(getPostLoginRedirect(user?.role));
+        router.replace(consumirProximaPagina() ?? getPostLoginRedirect(user?.role));
       }).catch(() => {
         router.replace('/auth/login?error=google_session_failed');
       });
