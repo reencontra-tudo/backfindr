@@ -53,8 +53,8 @@ Nenhum texto promete contato protegido, SMS, chat protegido, resposta da fonte, 
 - **Feed:** a linha perto dos filtros diz «Esta lista é só um recorte.» com o link «Ver histórico no mapa».
 - **Descrições do legado:** o HTML e o «\n» literal NÃO são limpos (decisão do Marcos): os textos e os dados do legado não são tocados.
 
-## Mensagens entre quem achou e o dono (Fase 1: pronta, desligada até a ordem do Marcos)
-- **Só liga com a chave `MENSAGENS_ATIVO=1`.** A migration 025 já está aplicada em produção (15/11/2026) e a função segue desligada. Sem a chave, o aviso «encontrei» funciona como sempre.
+## Mensagens entre quem achou e o dono (Fase 1: mesclada em 15/11/2026, desligada em produção até nova ordem do Marcos)
+- **Só liga com a chave `MENSAGENS_ATIVO=1`.** O código está mesclado (aa514f1), a migration 025 já está aplicada em produção (15/11/2026) e a função segue **desligada em produção**: ligar exige nova ordem do Marcos. O banner do painel «Alguém pode ter encontrado um dos seus objetos» só aparece com sinalização real. Sem a chave, o aviso «encontrei» funciona como sempre.
 - **Quem achou precisa de conta** (gratuita). Sem conta, entra ou se cadastra e volta ao objeto. A primeira mensagem tem até 280 caracteres; não conte o detalhe que só o dono saberia.
 - **O aviso não muda o objeto.** Fica «aguardando o dono». O dono vê em «Mensagens» e escolhe «Aceitar conversa» ou «Não é meu». Aceitar também não muda o objeto. Só «É o meu» faz o objeto virar «achado pendente»; «Confirmar devolução» usa o mesmo caminho do banner e encerra a conversa.
 - **Dono legado:** o aviso fica guardado; nada é enviado (sem push, e-mail nem sino). Se ele atualizar a conta e voltar, vê o aviso e aceita como qualquer dono. Nada do legado é alterado.
