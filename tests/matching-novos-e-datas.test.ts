@@ -246,7 +246,7 @@ describe.skipIf(!TEST_DB)('matching: objetos novos, não legados e datas da ocor
     const perdido = await mkObj(dono, 'lost');
     await CRON(cronReq());
     expect((await pares()).map((p) => p.found_object_id)).toEqual([entra]);
-    await pool.query('TRUNCATE matches');
+    await pool.query('TRUNCATE matches, object_events'); // o run-all só pega objetos ainda não processados
     await RUNALL(asUser('POST', 'admin'));
     expect((await pares()).map((p) => p.found_object_id)).toEqual([entra]);
     expect((await pares())[0].lost_object_id).toBe(perdido);
@@ -327,6 +327,116 @@ describe.skipIf(!TEST_DB)('matching: objetos novos, não legados e datas da ocor
     void roubado;
   });
 
+  // ─── roubado conta como perdido; achado procura perdidos E roubados; papéis do par pelo status ──────
+  const destinatarios = () => sent.emails.map((e) => (e[0] as { email: string }).email);
+  const emailDe = (id: string) => `${id.slice(0, 8)}@teste.invalid`;
+
+  describe('roubado e achado: quem procura quem e quem é o perdido do par', () => {
+    for (const [rotulo, rodar] of [
+      ['cron', async (_d: string, _p: string) => { await CRON(cronReq()); }],
+      ['rota individual (o que o gancho de criação chama)', async (d: string, p: string) => { await RUN(asUser('POST', d, { objectId: p })); }],
+      ['run-all do administrador', async () => { await RUNALL(asUser('POST', 'admin')); }],
+    ] as const) {
+      it(`${rotulo}: roubado do usuário casa com achado e é gravado como o PERDIDO do par; o aviso vai ao dono do roubado, nunca ao do achado`, async () => {
+        const dono = await mkUser(); const ach = await mkUser();
+        const roubado = await mkObj(dono, 'stolen'); const achado = await mkObj(ach, 'found');
+        await rodar(dono, roubado);
+        expect(await pares()).toEqual([{ lost_object_id: roubado, found_object_id: achado, status: 'pending' }]);
+        expect(destinatarios()).toEqual([emailDe(dono)]);
+        expect(destinatarios()).not.toContain(emailDe(ach));
+        if (!rotulo.startsWith('run-all')) expect(sent.pushes.map((p) => p[0])).toEqual([dono]); // o run-all do administrador só envia e-mail (como antes)
+      });
+    }
+
+    it('achado novo casa com o roubado E com o perdido, cada um no papel de perdido; cada dono é avisado, o do achado não', async () => {
+      const donoR = await mkUser(); const donoP = await mkUser(); const ach = await mkUser();
+      const roubado = await mkObj(donoR, 'stolen', { criado: ANTES });
+      const perdido = await mkObj(donoP, 'lost', { criado: ANTES });
+      const achado = await mkObj(ach, 'found', { criado: DEPOIS });
+      await CRON(cronReq());
+      const got = (await pares()).map((p) => `${p.lost_object_id}>${p.found_object_id}`).sort();
+      expect(got).toEqual([`${roubado}>${achado}`, `${perdido}>${achado}`].sort());
+      expect(destinatarios().sort()).toEqual([emailDe(donoR), emailDe(donoP)].sort());
+      expect(destinatarios()).not.toContain(emailDe(ach));
+    });
+
+    it('achado como gatilho na rota individual (gancho) e no run-all também encontra roubado e perdido', async () => {
+      const donoR = await mkUser(); const donoP = await mkUser(); const ach = await mkUser();
+      await mkObj(donoR, 'stolen'); await mkObj(donoP, 'lost');
+      const achado = await mkObj(ach, 'found');
+      await RUN(asUser('POST', ach, { objectId: achado }));
+      expect(await count('matches')).toBe(2);
+      expect(destinatarios().sort()).toEqual([emailDe(donoR), emailDe(donoP)].sort());
+      expect(destinatarios()).not.toContain(emailDe(ach));
+    });
+
+    it('roubado NÃO casa mais com «perdido» (só com achado); perdido também não casa com perdido', async () => {
+      const a = await mkUser(); const b = await mkUser(); const c = await mkUser();
+      const roubado = await mkObj(a, 'stolen'); await mkObj(b, 'lost'); await mkObj(c, 'stolen');
+      await RUN(asUser('POST', a, { objectId: roubado }));
+      expect(await count('matches')).toBe(0);
+      const perdido = await mkObj(b, 'lost', { title: 'Mochila azul grande outra' });
+      await RUN(asUser('POST', b, { objectId: perdido }));
+      expect(await count('matches')).toBe(0);
+    });
+
+    it('o roubado deixa de ficar marcado como processado sem nunca casar: a rota individual casa com o achado e o cron não reprocessa', async () => {
+      const dono = await mkUser(); const ach = await mkUser();
+      const roubado = await mkObj(dono, 'stolen'); const achado = await mkObj(ach, 'found', { criado: ANTES });
+      await RUN(asUser('POST', dono, { objectId: roubado }));
+      await new Promise((r) => setTimeout(r, 100));
+      expect(await pares()).toEqual([{ lost_object_id: roubado, found_object_id: achado, status: 'pending' }]);
+      expect(await count('object_events', `object_id = '${roubado}' AND type = 'matching_completed'`)).toBe(1);
+      expect((await (await CRON(cronReq())).json()).objects_processed).toBe(0);
+    });
+
+    for (const [rotulo, dono] of [['conta de sistema', { system: true }], ['dono legado', { legacy: true }]] as const) {
+      it(`${rotulo} dono do roubado: ninguém é avisado (rota individual e run-all)`, async () => {
+        const d = await mkUser(dono); const ach = await mkUser();
+        const roubado = await mkObj(d, 'stolen'); await mkObj(ach, 'found');
+        await RUN(asUser('POST', d, { objectId: roubado }));
+        expect(sent.emails.length + sent.pushes.length).toBe(0);
+        await pool.query('TRUNCATE matches, object_events');
+        await RUNALL(asUser('POST', 'admin'));
+        expect(sent.emails.length + sent.pushes.length).toBe(0);
+      });
+    }
+  });
+
+  describe('run-all do administrador: só objetos novos, uma vez cada, sem depender do interruptor', () => {
+    it('não processa objeto anterior ao corte; processa o posterior; não reprocessa; ignora o interruptor', async () => {
+      delete process.env.MATCHING_ATIVO; // o botão não depende da chave
+      const dono = await mkUser(); const ach = await mkUser();
+      const velho = await mkObj(dono, 'lost', { criado: ANTES });
+      await mkObj(ach, 'found', { criado: ANTES });
+      let j = await (await RUNALL(asUser('POST', 'admin'))).json();
+      expect(j.objects_processed).toBe(0);
+      expect(await count('matches')).toBe(0);
+      expect(await count('object_events', `object_id = '${velho}'`)).toBe(0);
+      const novo = await mkObj(dono, 'stolen', { criado: DEPOIS, title: 'Mochila azul grande nova' });
+      j = await (await RUNALL(asUser('POST', 'admin'))).json();
+      expect(j.objects_processed).toBe(1);
+      expect(await count('matches')).toBe(1);
+      expect(await count('object_events', `object_id = '${novo}' AND type = 'matching_completed'`)).toBe(1);
+      j = await (await RUNALL(asUser('POST', 'admin'))).json();
+      expect(j.objects_processed).toBe(0);
+      expect(await count('matches')).toBe(1);
+    });
+    it('considera também achado e roubado como gatilho (como o cron)', async () => {
+      const donoR = await mkUser(); const ach = await mkUser();
+      await mkObj(donoR, 'stolen', { criado: ANTES }); await mkObj(ach, 'found', { criado: DEPOIS });
+      const j = await (await RUNALL(asUser('POST', 'admin'))).json();
+      expect(j.objects_processed).toBe(1); // só o achado é novo
+      expect(await count('matches')).toBe(1);
+    });
+    it('objeto já processado pelo cron não é reprocessado pelo run-all, e vice-versa', async () => {
+      const dono = await mkUser(); const ach = await mkUser();
+      await mkObj(dono, 'lost'); await mkObj(ach, 'found');
+      await CRON(cronReq());
+      expect((await (await RUNALL(asUser('POST', 'admin'))).json()).objects_processed).toBe(0);
+    });
+  });
+
   it('notificação não muda: dono comum do perdido é avisado; conta de sistema e legado não', async () => {
     const dono = await mkUser(); const ach = await mkUser();
     await mkObj(dono, 'lost'); await mkObj(ach, 'found');
@@ -346,7 +456,7 @@ describe('regressão estática', () => {
       expect(s).toMatch(/if \(!parPodeVirarMatch\(object, candidate\)\) (continue|return);/); // guarda final antes de gravar o par
       expect(s).not.toMatch(/AND is_legacy = false\s*\n\s*\$\{categoryFilter\}/);
     }
-    expect(ler('src/app/api/v1/cron/matching/route.ts')).toMatch(/buscarGatilhosDoCron/);
+    expect(ler('src/app/api/v1/cron/matching/route.ts')).toMatch(/buscarGatilhosNovos/);
   });
   it('as regras vivem num só arquivo e os estágios 2 e 3 chamam a ordem das datas', () => {
     const m = ler('src/lib/matching.ts');

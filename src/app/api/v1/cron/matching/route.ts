@@ -7,7 +7,7 @@ import { tituloPublico } from '@/lib/objectPublicView';
 import { sendPushToUser, matchPayload } from '@/lib/pushNotification';
 import { awaitSends, sendWaitBudget } from '@/lib/awaitSends';
 import { MATCHING_ATIVO, buscarDonoParaAviso, donoPodeSerAvisado } from '@/lib/matchingSeguranca';
-import { buscarGatilhosDoCron, montarBuscaDeCandidatos, parPodeVirarMatch } from '@/lib/matchingFiltro';
+import { buscarGatilhosNovos, montarBuscaDeCandidatos, parPodeVirarMatch, papeisDoPar, statusDosCandidatos } from '@/lib/matchingFiltro';
 import {
   calculateMatchScore as calculateMatchScoreBase,
   expandCategoryGroup,
@@ -58,7 +58,7 @@ export async function GET(request: NextRequest) {
     // Gatilhos (regra A): só objetos NOVOS (cadastrados depois do corte de reativação do matching), de usuário não legado, perdidos, roubados ou achados,
     // que ainda NÃO foram processados (sem evento matching_completed). Os mais antigos primeiro. Um objeto processado não volta a ser gatilho.
     // A regra «par já avaliado, em qualquer status, não volta» continua valendo abaixo.
-    const objects = await buscarGatilhosDoCron(100);
+    const objects = await buscarGatilhosNovos(100);
 
     totalObjects = objects.length;
     const pendingSends: Promise<unknown>[] = [];
@@ -69,11 +69,10 @@ export async function GET(request: NextRequest) {
 
       // Categoria é filtro obrigatório; animal/pet são o mesmo conceito (ver expandCategoryGroup).
       const categoryGroup = object.category ? expandCategoryGroup(object.category as string) : null;
-      const gatilhoEhAchado = object.status === 'found';
 
       // Candidatos: status oposto, não legados (objeto e dono), mesma categoria, até 50 km, e ordem das datas da OCORRÊNCIA (regra C) — tudo no filtro central.
       const busca = montarBuscaDeCandidatos(object, {
-        statuses: gatilhoEhAchado ? ['lost', 'stolen'] : ['found'],
+        statuses: statusDosCandidatos(object.status),
         categoryGroup,
         maxRadiusKm: MAX_RADIUS_KM,
         ordem: 'criacao',
@@ -109,9 +108,11 @@ export async function GET(request: NextRequest) {
         // Último ponto antes de gravar: par fora da ordem das datas nunca vira match, nem pendente.
         if (!parPodeVirarMatch(object, candidate)) continue;
 
-        // Quem é o perdido e quem é o achado (o gatilho pode ser qualquer um dos dois).
-        const lostObj = gatilhoEhAchado ? candidate : object;
-        const foundObj = gatilhoEhAchado ? object : candidate;
+        // Quem é o perdido (lost ou stolen) e quem é o achado (found): sempre pelo status, qualquer que seja o gatilho.
+        const papeis = papeisDoPar(object, candidate);
+        if (!papeis) continue;
+        const lostObj = papeis.perdido;
+        const foundObj = papeis.achado;
 
         const existing = await query(
           `SELECT id FROM matches

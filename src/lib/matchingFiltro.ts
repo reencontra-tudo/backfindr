@@ -70,6 +70,27 @@ export function parPodeVirarMatch(a: ComStatusEData, b: ComStatusEData): boolean
 const donoNaoLegado = (alias: string) =>
   `NOT EXISTS (SELECT 1 FROM users cu WHERE cu.id = ${alias}.user_id AND cu.is_legacy IS TRUE)`;
 
+/**
+ * Quem procura quem. Perdido e roubado (lost, stolen) procuram ACHADOS; achado (found) procura perdidos E roubados.
+ * Qualquer outro status não participa do matching (lista vazia).
+ */
+export function statusDosCandidatos(status: unknown): string[] {
+  if (status === 'found') return ['lost', 'stolen'];
+  if (status === 'lost' || status === 'stolen') return ['found'];
+  return [];
+}
+
+/**
+ * Os papéis do par, SEMPRE pelo status e nunca por quem disparou: o «perdido» é o objeto lost ou stolen; o «achado» é o found.
+ * É quem recebe o aviso (o dono do perdido) e quem vai em cada coluna do par. Se o par não é perdido×achado, devolve null.
+ */
+export function papeisDoPar<T extends { status?: unknown }>(a: T, b: T): { perdido: T; achado: T } | null {
+  const perdido = (o: T) => o.status === 'lost' || o.status === 'stolen';
+  if (perdido(a) && b.status === 'found') return { perdido: a, achado: b };
+  if (a.status === 'found' && perdido(b)) return { perdido: b, achado: a };
+  return null;
+}
+
 export interface OpcoesCandidatos {
   /** Status dos candidatos (ex.: ['found'] para um perdido). */
   statuses: string[];
@@ -91,6 +112,7 @@ export function montarBuscaDeCandidatos(object: Record<string, unknown>, o: Opco
   const lat = parseFloat(object.latitude as string);
   const lon = parseFloat(object.longitude as string);
   const temLocal = !Number.isNaN(lat) && !Number.isNaN(lon);
+  if (o.statuses.length === 0) return null; // status que não participa do matching
   if (!temLocal && !o.categoryGroup && o.semCategoriaSemCoordenada === 'pular') return null;
 
   const params: unknown[] = [o.statuses, object.id];
@@ -127,7 +149,7 @@ export function montarBuscaDeCandidatos(object: Record<string, unknown>, o: Opco
  * Gatilhos do cron (regra A): objetos NOVOS (cadastrados depois de MATCHING_DESDE), perdidos, roubados ou achados, de dono não legado (regra B: objeto de usuário legado nunca entra num par automático, nem como gatilho), que ainda NÃO foram processados.
  * «Já processado» = tem evento matching_completed (gravado ao fim de cada rodada do objeto, no cron e na rota individual). Os mais antigos primeiro, para ninguém ficar de fora.
  */
-export async function buscarGatilhosDoCron(limite: number): Promise<Record<string, unknown>[]> {
+export async function buscarGatilhosNovos(limite: number): Promise<Record<string, unknown>[]> {
   const r = await query(
     `SELECT * FROM objects o
       WHERE o.status IN ('lost', 'stolen', 'found')

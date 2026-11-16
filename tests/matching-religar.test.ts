@@ -180,11 +180,11 @@ describe.skipIf(!TEST_DB)('matching: interruptor, gancho, travas e eventos (Post
       expect(sent.emails.length).toBe(0);
       expect(sent.pushes.length).toBe(0);
     });
-    it(`(c) ${rotulo}: sem aviso no run-all do administrador`, async () => {
+    it(`(c) ${rotulo}: sem aviso no run-all do administrador${rotulo === 'dono legado' ? '; objeto de dono legado nem é gatilho' : ''}`, async () => {
       await cenario(dono);
       const res = await RUNALL(asUser('POST', 'admin'));
       expect(res.status).toBe(200);
-      expect(await count('matches')).toBe(1);
+      expect(await count('matches')).toBe('legacy' in dono ? 0 : 1);
       expect(sent.emails.length).toBe(0);
     });
   }
@@ -194,7 +194,7 @@ describe.skipIf(!TEST_DB)('matching: interruptor, gancho, travas e eventos (Post
     await RUN(asUser('POST', c.dono, { objectId: c.perdido }));
     expect(sent.emails.length).toBe(1);
     expect(sent.pushes.length).toBe(1);
-    await pool.query('TRUNCATE matches');
+    await pool.query('TRUNCATE matches, object_events'); // o run-all só pega objetos ainda não processados
     sent.emails.length = 0;
     await RUNALL(asUser('POST', 'admin'));
     expect(sent.emails.length).toBe(1);
@@ -210,7 +210,7 @@ describe.skipIf(!TEST_DB)('matching: interruptor, gancho, travas e eventos (Post
     expect(await count('matches')).toBe(1);
     expect(sent.emails.length).toBe(1);
     expect(JSON.stringify(sent.emails)).not.toContain('Maria Souza Teste');
-    await pool.query('TRUNCATE matches');
+    await pool.query('TRUNCATE matches, object_events'); // o run-all só pega objetos ainda não processados
     sent.emails.length = 0;
     await RUNALL(asUser('POST', 'admin'));
     expect(sent.emails.length).toBe(1);

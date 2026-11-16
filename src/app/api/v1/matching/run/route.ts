@@ -8,7 +8,7 @@ import { tituloPublico } from '@/lib/objectPublicView';
 import { sendPushToUser, matchPayload } from '@/lib/pushNotification';
 import { awaitSends, sendWaitBudget } from '@/lib/awaitSends';
 import { buscarDonoParaAviso } from '@/lib/matchingSeguranca';
-import { montarBuscaDeCandidatos, parPodeVirarMatch } from '@/lib/matchingFiltro';
+import { montarBuscaDeCandidatos, parPodeVirarMatch, papeisDoPar, statusDosCandidatos } from '@/lib/matchingFiltro';
 import { Events, recordEvent } from '@/lib/events';
 import {
   calculateMatchScore as calculateMatchScoreBase,
@@ -63,7 +63,6 @@ export async function POST(request: NextRequest) {
     // ── Evento: matching iniciado ─────────────────────────────────────────
     Events.matchingStarted(objectId).catch(() => {});
 
-    const oppositeStatus = object.status === 'lost' ? 'found' : 'lost';
     const lat = parseFloat(object.latitude);
     const lon = parseFloat(object.longitude);
     const hasLocation = !isNaN(lat) && !isNaN(lon);
@@ -73,16 +72,17 @@ export async function POST(request: NextRequest) {
     // animal/pet são o mesmo conceito com nome diferente por herança do legado (expandCategoryGroup).
     const categoryGroup = object.category ? expandCategoryGroup(object.category as string) : null;
     const busca = montarBuscaDeCandidatos(object, {
-      statuses: [oppositeStatus],
+      statuses: statusDosCandidatos(object.status),
       categoryGroup,
       maxRadiusKm: MAX_RADIUS_KM,
       ordem: 'distancia',
       limiteComCoordenada: 200,
       limiteSemCoordenada: 100,
       semCategoriaSemCoordenada: 'buscar',
-    }) as { sql: string; params: unknown[] };
+    });
 
-    const candidatesResult = await query(busca.sql, busca.params);
+    // Perdido e roubado procuram achados; achado procura perdidos e roubados. Status fora disso não participa: sem candidatos.
+    const candidatesResult = busca ? await query(busca.sql, busca.params) : { rows: [] as Record<string, unknown>[] };
 
     // ── Loop de matching em duas camadas ──────────────────────────────────
     const matches: Record<string, unknown>[] = [];
@@ -163,8 +163,11 @@ async function processMatch(
   );
   if (existingMatch.rows.length > 0) return;
 
-  const lostId = object.status === 'lost' ? objectId : candidate.id;
-  const foundId = object.status === 'found' ? objectId : candidate.id;
+  // O «perdido» do par é sempre o objeto lost ou stolen e o «achado» é sempre o found, qualquer que seja o objeto que disparou.
+  const papeis = papeisDoPar(object, candidate);
+  if (!papeis) return;
+  const lostId = papeis.perdido.id;
+  const foundId = papeis.achado.id;
 
   const matchResult = await query(
     `INSERT INTO matches (lost_object_id, found_object_id, score, status, created_at, updated_at)
@@ -181,8 +184,8 @@ async function processMatch(
 
   // Notificações (as promessas vão para pendingSends e são aguardadas pela rota)
   try {
-    const lostObj = object.status === 'lost' ? object : candidate;
-    const foundObj = object.status === 'found' ? object : candidate;
+    const lostObj = papeis.perdido;
+    const foundObj = papeis.achado;
 
     const ownerRow = await buscarDonoParaAviso(lostObj.id as string);
 
