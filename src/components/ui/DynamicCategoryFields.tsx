@@ -9,6 +9,8 @@ interface DynamicCategoryFieldsProps {
   values: Record<string, unknown>;
   onChange: (fieldName: string, value: unknown) => void;
   errors?: Record<string, string>;
+  /** Campos que não aparecem (continuam no estado do formulário; só não são mostrados). */
+  hideFields?: string[];
 }
 
 export function DynamicCategoryFields({
@@ -16,6 +18,7 @@ export function DynamicCategoryFields({
   values,
   onChange,
   errors = {},
+  hideFields = [],
 }: DynamicCategoryFieldsProps) {
   const config = getCategoryFieldConfig(category);
   const [showOptional, setShowOptional] = useState(false);
@@ -128,7 +131,7 @@ export function DynamicCategoryFields({
           <h3 className="font-semibold text-white text-sm">Informações Principais</h3>
         </div>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          {config.essentialFields.map((field) => renderField(field, false))}
+          {config.essentialFields.filter((field) => !hideFields.includes(field.name)).map((field) => renderField(field, false))}
         </div>
       </div>
 

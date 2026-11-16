@@ -314,6 +314,8 @@ function NewObjectForm() {
       // Documento: nome do titular (público por escolha do dono), tipo e só os 4 últimos dígitos (o número inteiro nunca é pedido).
       if (data.category === 'document') {
         if (data.document_type) payload.document_type = data.document_type;
+      }
+      if (data.category === 'document' && data.status !== 'found') {
         if (data.document_owner_name?.trim()) payload.document_owner_name = data.document_owner_name.trim();
         const final4 = (data.document_last4 ?? '').replace(/\D/g, '').slice(-4);
         if (final4) payload.document_last4 = final4;
@@ -580,6 +582,8 @@ function NewObjectForm() {
                   values={watch()}
                   onChange={(fieldName, value) => setValue(fieldName as any, value)}
                   errors={errors as any}
+                  // «Encontrei»: não se pede nem se avisa sobre o nome do titular nem os 4 dígitos (o que foi digitado fica guardado se o status voltar para «perdi»)
+                  hideFields={category === 'document' && status === 'found' ? ['document_owner_name', 'document_last4'] : []}
                 />
               </div>
             )}
