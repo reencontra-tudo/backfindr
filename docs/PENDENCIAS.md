@@ -4,6 +4,11 @@
 >
 > **Decisão de produto em aberto (16/11/2026):** o match manual do administrador (unir dois sinais públicos na ocorrência) NÃO existe no sistema. O algoritmo não une mais dois sinais públicos; hoje o administrador só lista os pares, muda o estado de um par que já existe e registra tentativas de contato.
 >
+> **Pendências do aviso de rotinas (Healthchecks, 16/11/2026):**
+> 1. Reagendar qualquer rotina hoje SEM agendador exige decisão do Marcos. Ciclo de vida, reativação e posts sociais estão PAUSADOS POR DECISÃO (e-mail e push ao legado nunca; decisão de 09/10 de não agendar rotina de e-mail ou push antes da exclusão do legado; posts sociais pausados e reajustados): não é falha, e não são vigiados justamente por isso. Para ciclo de vida e reativação, confirmar ANTES que excluem usuários legados. O snapshot de analytics está parado desde 26/08, sem decisão registrada: confirmar com o Marcos se foi proposital. Chat não lido, busca de marketing e fim de destaque também seguem sem agenda.
+> 2. O aviso por sino, push ou e-mail do próprio Backfindr pode ser ligado depois a um webhook do Healthchecks, só se o Marcos pedir.
+> 3. Se o Marcos criar uma rotina nova agendada, criar o check-in dela no Healthchecks e uma variável `HC_PING_...` própria, ligada à rota pelo mesmo helper (`src/lib/healthchecksPing.ts`).
+>
 > HISTÓRICO (19/08/2026). As pendências vigentes estão em STATUS.md e em docs/FEED-E-ACHEI-REGRAS-VIGENTES.md. A chave OpenAI já está configurada (ver BACKFINDR.md §14).
 
 > Status: 🔴 Pendente | 🟡 Em andamento | ✅ Concluído
