@@ -1,6 +1,6 @@
 export const dynamic = 'force-dynamic';
 import { NextRequest } from 'next/server';
-import { mascararDigitosLongos, camposDeDocumento } from '@/lib/documentPrivacy';
+import { mascararDigitosLongos, camposDeDocumento, statusIgnoraTitular } from '@/lib/documentPrivacy';
 import { query } from '@/lib/db';
 import { verifyToken, extractTokenFromHeader } from '@/lib/jwt';
 import { successResponse, unauthorizedResponse, internalErrorResponse } from '@/lib/response';
@@ -180,7 +180,9 @@ export async function POST(request: NextRequest) {
     const mascarar = (t: unknown) => (ehDocumento && typeof t === 'string' ? mascararDigitosLongos(t) : t);
     const title = mascarar(tituloBruto) as typeof tituloBruto;
     const description = mascarar(descricaoBruta) as typeof descricaoBruta;
-    const doc = ehDocumento ? camposDeDocumento(body) : null;
+    // «Encontrei»: titular e final do documento recebidos são ignorados (não se grava o nome inteiro de um terceiro).
+    const ignoraTitular = ehDocumento && statusIgnoraTitular(status || 'lost');
+    const doc = ehDocumento ? (ignoraTitular ? { subjectName: null, documentType: camposDeDocumento(body).documentType, last4: null } : camposDeDocumento(body)) : null;
     if (ehDocumento) {
       // Lista fechada: só coordenadas (como já era) e os 4 últimos dígitos. Nada de número inteiro, e nenhuma chave desconhecida, no banco.
       for (const k of Object.keys(categoryFields)) {
