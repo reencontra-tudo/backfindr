@@ -13,6 +13,7 @@ import {
 import { awaitSends, sendWaitBudget } from '@/lib/awaitSends';
 import { tituloPublico } from '@/lib/objectPublicView';
 import { buscarDonoParaAviso, donoPodeSerAvisado } from '@/lib/matchingSeguranca';
+import { montarBuscaDeCandidatos, parPodeVirarMatch } from '@/lib/matchingFiltro';
 
 const MAX_RADIUS_KM = 50;
 
@@ -64,63 +65,21 @@ export async function POST(req: NextRequest) {
     let totalSemanticAccepted = 0;
 
     for (const object of lostObjects.rows) {
-      const lat = parseFloat(object.latitude);
-      const lon = parseFloat(object.longitude);
-      const hasLocation = !isNaN(lat) && !isNaN(lon);
-
-      let candidateQuery: string;
-      let candidateParams: unknown[];
-
-      // Categoria virou filtro obrigatório na busca (26/08/2026) — antes só
-      // pesava no score (+30), o que deixava electronics↔other, vehicle↔other
-      // etc. virarem candidatos e baterem o threshold só com distância +
-      // sobreposição de palavras. Sem category, nenhum filtro é aplicado
-      // (mesmo comportamento de antes pra objetos sem categoria).
-      // animal/pet são o mesmo conceito com nome diferente por herança do
-      // legado (26/08/2026) — expandCategoryGroup trata como sinônimo pra
-      // não travar um cão 'animal' de casar com um cão 'pet'.
+      // Candidatos pelo filtro central (src/lib/matchingFiltro.ts): não legados (objeto e dono) e ordem das datas da OCORRÊNCIA.
+      // animal/pet são o mesmo conceito com nome diferente por herança do legado (expandCategoryGroup).
       const categoryGroup = object.category ? expandCategoryGroup(object.category as string) : null;
-      const categoryFilter = categoryGroup ? 'AND (category = ANY($5) OR type = ANY($5))' : '';
+      const busca = montarBuscaDeCandidatos(object, {
+        statuses: ['found'],
+        categoryGroup,
+        maxRadiusKm: MAX_RADIUS_KM,
+        ordem: 'criacao',
+        limiteComCoordenada: 100,
+        limiteSemCoordenada: 50,
+        semCategoriaSemCoordenada: 'pular',
+      });
+      if (!busca) continue; // sem localização e sem categoria, pula
 
-      // is_legacy = false exclui os registros migrados do Webjetos
-      // (26/08/2026) — 93% da base de objetos ativos hoje é desse legado
-      // (2014-2016), com título/descrição genéricos demais ("CACHORRO
-      // DESAPARECIDO" x2) pra matching automático fazer sentido. As 43
-      // matches do diagnóstico eram 100% webjetos×webjetos.
-      if (hasLocation) {
-        candidateQuery = `
-          SELECT * FROM objects
-          WHERE status = 'found'
-            AND id != $1
-            AND latitude IS NOT NULL AND longitude IS NOT NULL
-            AND (
-              6371 * acos(LEAST(1.0,
-                cos(radians($2)) * cos(radians(latitude::float)) *
-                cos(radians(longitude::float) - radians($3)) +
-                sin(radians($2)) * sin(radians(latitude::float))
-              ))
-            ) <= $4
-            AND is_legacy = false
-            ${categoryFilter}
-          ORDER BY created_at DESC LIMIT 100
-        `;
-        candidateParams = categoryGroup
-          ? [object.id, lat, lon, MAX_RADIUS_KM, categoryGroup]
-          : [object.id, lat, lon, MAX_RADIUS_KM];
-      } else if (categoryGroup) {
-        candidateQuery = `
-          SELECT * FROM objects
-          WHERE status = 'found' AND id != $1
-            AND is_legacy = false
-            AND (category = ANY($2) OR type = ANY($2))
-          ORDER BY created_at DESC LIMIT 50
-        `;
-        candidateParams = [object.id, categoryGroup];
-      } else {
-        continue; // sem localização e sem categoria, pula
-      }
-
-      const candidates = await query(candidateQuery, candidateParams);
+      const candidates = await query(busca.sql, busca.params);
       totalChecked += candidates.rows.length;
 
       for (const candidate of candidates.rows) {
@@ -146,6 +105,9 @@ export async function POST(req: NextRequest) {
           }
         }
         if (finalScore === null) continue; // eliminado, ou ambíguo rejeitado pela LLM
+
+        // Último ponto antes de gravar: par fora da ordem das datas da ocorrência nunca vira match, nem pendente.
+        if (!parPodeVirarMatch(object, candidate)) continue;
 
         // Verifica se já existe match entre esses dois objetos
         const existing = await query(

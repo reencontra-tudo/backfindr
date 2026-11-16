@@ -1,6 +1,6 @@
 # Regras vigentes — Feed, /achei, mensagens, nomes, documentos e matching (16/11/2026)
 
-Página única com o que vale hoje. Em linguagem simples. O histórico de decisões fica no DECISOES.md; o que foi superado saiu daqui. Em produção: Feed, /achei, máscara de nomes e documento «perdi». Desligados em produção: a área de mensagens e o matching automático.
+Página única com o que vale hoje. Em linguagem simples. O histórico de decisões fica no DECISOES.md; o que foi superado saiu daqui. Em produção: Feed, /achei, máscara de nomes, documento «perdi» e o matching (ligado, sem agendamento). Desligada em produção: a área de mensagens.
 
 ## O que o Feed é
 - Outra forma de ver as ocorrências, ao lado da Busca e do Mapa. Mesmos dados, mesmas páginas de detalhe, mesmo sistema de correspondência. Não é rede social.
@@ -79,17 +79,21 @@ Nenhum texto promete contato protegido, SMS, chat protegido, resposta da fonte, 
 - **Texto livre:** em título e descrição de documento, sequências de 6 ou mais dígitos (inclusive CPF, RG e CNPJ com pontos, hífens ou espaços, e telefones) são mascaradas ao criar e ao editar, ficando só os 4 últimos. Datas, CEP e números curtos não mudam.
 - **Não muda:** a máscara de nomes continua só para sinal público; legado e sinais públicos saem como antes; outras categorias e objetos já gravados também.
 
-## Matching automático (preparado, desligado)
+## Matching automático (ligado em 16/11/2026, sem agendamento)
 - **Estado real:** o cron do matching saiu do agendamento da Vercel em 27/06. Existe um fluxo no n8n («Backfindr Matching - Cron 15 min»), mas está desativado e ainda sem a credencial correta; ninguém chama o cron hoje. O gancho de criação de objeto foi corrigido e o matching manual sempre funcionou.
-- **Interruptor:** `MATCHING_ATIVO` (ausente = desligado). Governa só o gancho de criação e o cron; desligado, eles não fazem nada. Ligar e agendar dependem de ordem do Marcos.
+- **Interruptor:** `MATCHING_ATIVO` (ausente = desligado). Governa só o gancho de criação e o cron; desligado, eles não fazem nada. O Marcos ligou a chave em 16/11/2026 (informado); a primeira rodada do cron foi manual e agendar continua dependendo de ordem dele.
 - **Aviso ao dono:** nunca para dono ou objeto legado nem para a conta de sistema (sinais públicos); sem nome inteiro e sem promessa de aviso garantido. O match continua sendo gravado.
+- **Só objetos novos disparam o matching automático:** os cadastrados depois de 16/11/2026 (meia-noite de São Paulo). Cada objeto é processado uma única vez. Objetos antigos não são gatilho; podem aparecer como candidatos de um objeto novo, se não forem do legado.
+- **Candidatos nunca são do legado:** nem o objeto marcado como legado, nem objeto de usuário legado. Os sinais públicos (conta de sistema) não são legados e continuam entrando.
+- **A data que vale é a da ocorrência:** o matching compara pela data em que a coisa foi perdida, roubada ou achada, não pela data do cadastro. Um «perdi» ou «roubado» só casa com um «achei» do mesmo dia ou posterior. Se um dos dois não tem essa data, não há filtro de data nesse par. Hoje os formulários não pedem essa data, então a regra só passa a agir quando ela for preenchida.
 - **Pares já avaliados** (qualquer status) não voltam; os 1370 pares rejeitados não são reavaliados.
 - **Pares entre dois sinais públicos** (dono = conta de sistema) são gravados, sem aviso a ninguém.
 - **Registro de execução:** cada evento de matching pertence a um objeto; não há registro «da rodada» sem objeto, e a tabela de eventos não tem política de apagamento.
 - **Matching e provedores de IA:** o estágio semântico do matching chama a API da Anthropic (modelo Haiku) com título, descrição, cor e categoria dos dois objetos; o titular não sai. A OpenAI é usada só na extração de notícias dos sinais públicos.
 
 ## Pendências a decidir (nenhuma foi iniciada)
-- Ligar `MATCHING_ATIVO`; ativar o fluxo do n8n (com a credencial correta) ou usar o cron da Vercel; alerta de falha do cron.
+- Pedir a data da perda ou do achado nos formulários (sem ela, a regra de datas do matching não tem efeito); decidir o que fazer com os 8 pares pendentes criados na primeira rodada.
+- Ativar o fluxo do n8n (com a credencial correta) ou usar o cron da Vercel; alerta de falha do cron.
 - Estágio 3 do matching: consertar, usar regra local (4 últimos dígitos e distância), remover ou manter.
 - Titular: obrigatório ou opcional (hoje o asterisco não é imposto); casamento por nome (Fase 1); nome parcial para sinais públicos e «encontrei»; prova de titularidade; busca por nome só depois do limite de requisições nas rotas públicas.
 - Decidir se o texto enviado à Anthropic no matching deve ser mascarado.

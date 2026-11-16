@@ -8,6 +8,7 @@ import { tituloPublico } from '@/lib/objectPublicView';
 import { sendPushToUser, matchPayload } from '@/lib/pushNotification';
 import { awaitSends, sendWaitBudget } from '@/lib/awaitSends';
 import { buscarDonoParaAviso } from '@/lib/matchingSeguranca';
+import { montarBuscaDeCandidatos, parPodeVirarMatch } from '@/lib/matchingFiltro';
 import { Events, recordEvent } from '@/lib/events';
 import {
   calculateMatchScore as calculateMatchScoreBase,
@@ -67,75 +68,21 @@ export async function POST(request: NextRequest) {
     const lon = parseFloat(object.longitude);
     const hasLocation = !isNaN(lat) && !isNaN(lon);
 
-    // ── Busca candidatos ──────────────────────────────────────────────────
-    let candidateQuery: string;
-    let candidateParams: unknown[];
-
-    // Categoria virou filtro obrigatório na busca (26/08/2026) — antes só
-    // pesava no score (+30), o que deixava electronics↔other, vehicle↔other
-    // etc. virarem candidatos e baterem o threshold só com distância +
-    // sobreposição de palavras. Sem category, nenhum filtro de categoria é
-    // aplicado (mesmo comportamento de antes pra objetos sem categoria).
-    // animal/pet são o mesmo conceito com nome diferente por herança do
-    // legado (26/08/2026) — expandCategoryGroup trata como sinônimo pra não
-    // travar um cão 'animal' de casar com um cão 'pet'.
+    // Busca candidatos pelo filtro central (src/lib/matchingFiltro.ts): status oposto, mesma categoria, raio, não legados (objeto e dono)
+    // e ordem das datas da OCORRÊNCIA. Esta rota continua não dependendo do interruptor nem do corte de objetos novos.
+    // animal/pet são o mesmo conceito com nome diferente por herança do legado (expandCategoryGroup).
     const categoryGroup = object.category ? expandCategoryGroup(object.category as string) : null;
-    const categoryFilter = categoryGroup ? 'AND (category = ANY($6) OR type = ANY($6))' : '';
+    const busca = montarBuscaDeCandidatos(object, {
+      statuses: [oppositeStatus],
+      categoryGroup,
+      maxRadiusKm: MAX_RADIUS_KM,
+      ordem: 'distancia',
+      limiteComCoordenada: 200,
+      limiteSemCoordenada: 100,
+      semCategoriaSemCoordenada: 'buscar',
+    }) as { sql: string; params: unknown[] };
 
-    // is_legacy = false exclui os registros migrados do Webjetos (26/08/2026)
-    // — 93% da base de objetos ativos hoje é desse legado (2014-2016), com
-    // título/descrição genéricos demais ("CACHORRO DESAPARECIDO" x2) pra
-    // matching automático fazer sentido. As 43 matches do diagnóstico eram
-    // 100% webjetos×webjetos. Não afeta o próprio objeto sendo buscado
-    // (esse já foi lido antes, filtro só se aplica aos candidatos).
-    if (hasLocation) {
-      candidateQuery = `
-        SELECT *,
-          (6371 * acos(LEAST(1.0,
-            cos(radians($3)) * cos(radians(latitude::float)) *
-            cos(radians(longitude::float) - radians($4)) +
-            sin(radians($3)) * sin(radians(latitude::float))
-          ))) AS distance_km
-        FROM objects
-        WHERE status = $1
-          AND id != $2
-          AND latitude IS NOT NULL
-          AND longitude IS NOT NULL
-          AND (
-            6371 * acos(LEAST(1.0,
-              cos(radians($3)) * cos(radians(latitude::float)) *
-              cos(radians(longitude::float) - radians($4)) +
-              sin(radians($3)) * sin(radians(latitude::float))
-            ))
-          ) <= $5
-          AND is_legacy = false
-          ${categoryFilter}
-        ORDER BY distance_km ASC
-        LIMIT 200
-      `;
-      candidateParams = categoryGroup
-        ? [oppositeStatus, objectId, lat, lon, MAX_RADIUS_KM, categoryGroup]
-        : [oppositeStatus, objectId, lat, lon, MAX_RADIUS_KM];
-    } else if (categoryGroup) {
-      candidateQuery = `
-        SELECT * FROM objects
-        WHERE status = $1 AND id != $2
-          AND is_legacy = false
-          AND (category = ANY($3) OR type = ANY($3))
-        ORDER BY created_at DESC LIMIT 100
-      `;
-      candidateParams = [oppositeStatus, objectId, categoryGroup];
-    } else {
-      candidateQuery = `
-        SELECT * FROM objects
-        WHERE status = $1 AND id != $2
-          AND is_legacy = false
-        ORDER BY created_at DESC LIMIT 100
-      `;
-      candidateParams = [oppositeStatus, objectId];
-    }
-
-    const candidatesResult = await query(candidateQuery, candidateParams);
+    const candidatesResult = await query(busca.sql, busca.params);
 
     // ── Loop de matching em duas camadas ──────────────────────────────────
     const matches: Record<string, unknown>[] = [];
@@ -204,6 +151,9 @@ async function processMatch(
   matches: Record<string, unknown>[],
   pendingSends: Promise<unknown>[]
 ) {
+  // Último ponto antes de gravar: par fora da ordem das datas da ocorrência nunca vira match, nem pendente.
+  if (!parPodeVirarMatch(object, candidate)) return;
+
   // Evita duplicata
   const existingMatch = await query(
     `SELECT id FROM matches

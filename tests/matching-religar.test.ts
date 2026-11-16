@@ -145,7 +145,7 @@ describe.skipIf(!TEST_DB)('matching: interruptor, gancho, travas e eventos (Post
     const c = await cenario();
     const j = await (await CRON(cronReq())).json();
     expect(j.ok).toBe(true);
-    expect(j.objects_processed).toBe(1);
+    expect(j.objects_processed).toBe(2); // o perdido e o achado são objetos novos: os dois são gatilho (o par só é gravado uma vez)
     expect(j.matches_created).toBe(1);
     expect(await count('matches')).toBe(1);
     expect(sent.emails.length).toBe(1);
@@ -163,11 +163,11 @@ describe.skipIf(!TEST_DB)('matching: interruptor, gancho, travas e eventos (Post
 
   // ─── (c) conta de sistema e legado ───────────────────────────────────────────────────────────
   for (const [rotulo, dono] of [['conta de sistema', { system: true }], ['dono legado', { legacy: true }]] as const) {
-    it(`(c) ${rotulo}: o match é gravado, mas ninguém é avisado (cron)`, async () => {
+    it(`(c) ${rotulo}: ninguém é avisado (cron)${rotulo === 'dono legado' ? '; objeto de dono legado nem entra num par automático' : ': o match é gravado'}`, async () => {
       process.env.MATCHING_ATIVO = '1';
       await cenario(dono);
       await CRON(cronReq());
-      expect(await count('matches')).toBe(1);
+      expect(await count('matches')).toBe('legacy' in dono ? 0 : 1);
       expect(sent.emails.length).toBe(0);
       expect(sent.pushes.length).toBe(0);
       expect(await count('object_events', "type = 'owner_notified'")).toBe(0);
