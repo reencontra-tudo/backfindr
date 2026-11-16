@@ -1,5 +1,7 @@
 export const dynamic = 'force-dynamic';
 import { NextRequest } from 'next/server';
+import { MATCHING_ATIVO } from '@/lib/matchingSeguranca';
+import { awaitSends } from '@/lib/awaitSends';
 import { mascararDigitosLongos, camposDeDocumento, statusIgnoraTitular } from '@/lib/documentPrivacy';
 import { query } from '@/lib/db';
 import { verifyToken, extractTokenFromHeader } from '@/lib/jwt';
@@ -276,18 +278,27 @@ export async function POST(request: NextRequest) {
       reward_description: newObject.reward_description as string | null,
     }).catch(() => { /* silencioso — não bloquear o cadastro */ });
 
-    // ── Disparar matching automático (fire-and-forget) ────────────────────
-    // Executa em background sem bloquear a resposta ao usuário.
-    // Usa a URL interna do próprio Next.js para chamar o endpoint de matching.
-    const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://backfindr.com';
-    fetch(`${baseUrl}/api/v1/matching/run`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${token}`,
-      },
-      body: JSON.stringify({ object_id: newObject.id }),
-    }).catch(() => { /* silencioso — matching será executado pelo cron */ });
+    // ── Disparar matching automático ──────────────────────────────────────
+    // Só com MATCHING_ATIVO=1 (desligado por padrão: nada acontece aqui). O corpo leva `objectId`, o nome que a rota lê
+    // (antes ia `object_id` e a rota respondia 400, então o gancho nunca funcionou).
+    // Em função serverless, a chamada solta pode ser interrompida antes de sair; por isso se espera, no máximo 1 segundo, só o suficiente
+    // para ela ser despachada (o matching roda em outra chamada, que continua depois). O cadastro nunca falha nem espera mais que isso por causa do matching.
+    if (MATCHING_ATIVO() && payload.sub !== SYSTEM_ACCOUNT_ID) {
+      try {
+        const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://backfindr.com';
+        const disparo = fetch(`${baseUrl}/api/v1/matching/run`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`,
+          },
+          body: JSON.stringify({ objectId: newObject.id }),
+        }).catch((err) => { console.error('[matching] gancho de criação falhou:', err); });
+        await awaitSends([disparo], 1000);
+      } catch (err) {
+        console.error('[matching] gancho de criação falhou:', err);
+      }
+    }
 
     return successResponse(newObject, 201);
   } catch (error) {

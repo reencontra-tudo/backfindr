@@ -92,7 +92,7 @@ Projeto anterior: Webjetos (2015) — migração planejada
 - **Pacotes:** sempre `pnpm install`, nunca `npm install` — lockfile quebra deploy
 - **Arquivos:** nunca perguntar ao Marcos onde está. Dar comando `find`/`cat`/`ls` para ele colar
 - **Código está em `src/`**, não em `app/` diretamente
-- **Vercel Hobby:** cron máximo 1x/dia — matching gerenciado pelo n8n no Railway
+- **Vercel Hobby:** cron máximo 1x/dia. O cron de matching saiu do `vercel.json` em 27/06 e **nenhum agendador o chama hoje** (não existe workflow de matching no n8n; texto antigo dizia o contrário — corrigido em 16/11/2026, ver DECISOES.md)
 - **Heredoc no zsh:** não usar para arquivos TSX/código com backticks — usar Python com strings
 - **Public Signals:** publicação em `objects` é SEMPRE por aprovação manual (`/admin/public-signals`) — pipeline nunca publica sozinho. Qualquer auto-aprovação futura precisa nascer atrás de um toggle explícito, desligado por padrão, desenhado junto com a lógica de automação (não construído antes dela — ver seção 17 e histórico 18-19/08)
 - **Páginas `/objeto/[code]` de SINAL PÚBLICO (12/11/2026, PR da máscara):** nome de pessoa (ex.: «Documento encontrado em nome de …») é mascarado no servidor em título da aba, h1, meta, Open Graph, JSON-LD e JSON embutido (`src/lib/objectPublicView.ts`, usando `src/lib/privacy/maskPersonNames.ts`). Objetos de usuários e do legado não mudam (mesma referência). **Pendência:** a imagem do cartaz usada em `og:image` (`/api/v1/objects/[id]/poster`) ainda é gerada com o título original.
@@ -198,7 +198,7 @@ Todas as sprints concluídas em 26–27/06/2026:
 | 4 | GET /api/v1/objects/[id]/events + card dados reais | ✅ |
 | 5 | Countdown next_matching_at na UI | ✅ |
 
-**Cron:** removido do vercel.json (Hobby limit). Matching via n8n Railway a cada 15min.
+**Cron:** removido do vercel.json (Hobby limit) em 27/06. **Atenção (corrigido em 16/11/2026):** o matching NÃO roda no n8n a cada 15 minutos; não existe workflow de matching e o cron não é chamado por ninguém. O matching automático agora tem o interruptor `MATCHING_ATIVO` (desligado por padrão).
 **CRON_SECRET:** já existe no Vercel há 39 dias ✅ — NÃO é pendência.
 
 **Escaneamento real x abertura de página (12/11/2026, DECISOES F-03):** o `qr_scanned` SEM `metadata.via` é só «alguém abriu a página» (`GET /api/v1/objects/scan/[code]`, chamado por `/objeto`, `/scan` e pelo mapa); o `qr_scanned` COM `via` é pessoa real (`POST …/notify`, que também avisa o dono). O GET deixou de gravar para objeto/dono legado e sinal público (usuário segue gravando); `GET /api/v1/objects/[id]/events` (Central de Atividade) conta, lista e calcula a «última atividade» só com o real; rótulo «escaneamentos reais de QR». Nada em `object_events` foi apagado. Antes da mudança: 47.855 aberturas de página (93% legado) contra 6 escaneamentos reais; ~5.440 gravações por dia, das quais ~5.380 deixam de ser gravadas.
@@ -406,7 +406,7 @@ Decisão: DECISOES.md, F-08. `GET /api/v1/objects/public` ganha a opção `stric
 - Sistema Vivo completo (Sprints A, B1, 2, 3, 4, 5)
 - Momento 1 (Ansiedade): tela de sucesso ✅
 - Momento 2 (Crença): ActivityCenterCard ✅
-- Cron vercel.json: removido (Hobby limit), n8n gerencia
+- Cron vercel.json: removido (Hobby limit). Não há agendador do matching hoje (texto antigo «n8n gerencia» estava desatualizado; corrigido em 16/11/2026)
 - 434 páginas SEO publicadas
 - Cartaz 3 formatos funcionando
 - Matching automático no POST /objects ✅

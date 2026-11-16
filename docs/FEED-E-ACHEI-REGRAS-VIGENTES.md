@@ -86,6 +86,13 @@ Nenhum texto promete contato protegido, SMS, chat protegido, resposta da fonte, 
 - **Matching e provedores de IA:** o estágio semântico do matching chama a API da Anthropic (modelo Haiku) com título, descrição, cor e categoria dos dois objetos; o titular não sai. A OpenAI é usada só na extração de notícias dos sinais públicos.
 - **Próximas fases (nada iniciado):** casamento interno por nome (com os 4 últimos dígitos e a distância como sinais fortes, selo «titular conferido», sem nome em e-mail ou push, nome parcial para «encontrei»); limite de requisições nas rotas públicas antes de qualquer busca por nome; busca pública por nome só depois do limite; decidir nome parcial ou «(nome omitido)» para sinais públicos; nome do titular obrigatório ou opcional (hoje o asterisco não é imposto).
 
+## Matching automático (preparado, desligado)
+- **Estado real:** o cron do matching saiu do agendamento da Vercel em 27/06 e o n8n não tem workflow de matching, então ninguém o chama. O gancho que rodava o matching ao criar um objeto estava quebrado e foi corrigido. O matching manual (botão do painel e rota individual) sempre funcionou.
+- **Interruptor:** `MATCHING_ATIVO` (ausente = desligado). Governa só o gancho de criação e o cron; desligado, eles não fazem nada. Ligar e agendar dependem de ordem do Marcos.
+- **Aviso ao dono:** nunca para dono ou objeto legado nem para a conta de sistema (sinais públicos); sem nome inteiro e sem promessa de aviso garantido. O match continua sendo gravado.
+- **Pares já avaliados** (qualquer status) não voltam; os 1370 pares rejeitados não são reavaliados.
+- **Pendências (dependem do Marcos):** ligar a chave; onde agendar (n8n com o segredo do cron e alerta de falha, ou cron da Vercel conforme o plano e a frequência permitida); o que fazer com o estágio 3; titular no matching; limite de requisições nas rotas públicas.
+
 ## Pendências a decidir (nenhuma foi iniciada)
 - Definição oficial do produto e metadados do site e dos planos que ainda dizem «chat mediado»; frases «notificação imediata» fora do cartaz.
 - Ícone de «Compartilhar» fica sob o balão do chat em parte da rolagem (Publicações, 390 px).

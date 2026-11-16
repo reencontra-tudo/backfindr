@@ -7,6 +7,7 @@ import { sendMatchAlertEmail } from '@/lib/email';
 import { tituloPublico } from '@/lib/objectPublicView';
 import { sendPushToUser, matchPayload } from '@/lib/pushNotification';
 import { awaitSends, sendWaitBudget } from '@/lib/awaitSends';
+import { buscarDonoParaAviso } from '@/lib/matchingSeguranca';
 import { Events, recordEvent } from '@/lib/events';
 import {
   calculateMatchScore as calculateMatchScoreBase,
@@ -233,17 +234,11 @@ async function processMatch(
     const lostObj = object.status === 'lost' ? object : candidate;
     const foundObj = object.status === 'found' ? object : candidate;
 
-    const ownerResult = await query(
-      `SELECT u.id, u.name, u.email,
-              (o.is_legacy IS TRUE OR COALESCE(u.is_legacy, false) IS TRUE) AS legacy_blocked
-         FROM users u
-         JOIN objects o ON o.user_id = u.id
-        WHERE o.id = $1`,
-      [lostObj.id]
-    );
+    const ownerRow = await buscarDonoParaAviso(lostObj.id as string);
 
-    if (ownerResult.rows.length > 0) {
-      const owner = ownerResult.rows[0];
+    // Conta de sistema (sinais públicos) não é pessoa: sem e-mail, push nem evento «dono notificado». O match continua gravado.
+    if (ownerRow && !ownerRow.is_system_account) {
+      const owner = ownerRow;
 
       // Barreira de proteção: objeto ou dono legado nunca recebe e-mail nem push.
       if (!owner.legacy_blocked) {
