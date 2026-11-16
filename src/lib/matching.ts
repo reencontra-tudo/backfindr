@@ -408,6 +408,8 @@ export function hasSpeciesConflict(
   return s1 !== null && s2 !== null && s1 !== s2;
 }
 
+import { ordemDeDatasValida } from '@/lib/matchingFiltro';
+
 export type Stage2Decision = 'eliminated' | 'ambiguous' | 'direct';
 
 export interface Stage2Result {
@@ -415,6 +417,7 @@ export interface Stage2Result {
   confidence: number;
   textOverlap: boolean;
   speciesConflict?: boolean;
+  dateConflict?: boolean;
 }
 
 // Orquestrador do estagio 2 -- ponto de entrada unico pros 3 route.ts,
@@ -425,6 +428,10 @@ export function classifyStage2(
   overlapOptions: MatchScoreOptions = {},
   confidenceOptions: Stage2Options = {}
 ): Stage2Result {
+  // Regra C (filtro duro, antes de pontuar): achado de data da OCORRÊNCIA anterior à do perdido/roubado não casa. Sem data de um lado, não filtra.
+  if (!ordemDeDatasValida(obj, candidate)) {
+    return { decision: 'eliminated', confidence: 0, textOverlap: false, dateConflict: true };
+  }
   if (hasSpeciesConflict(obj, candidate)) {
     return { decision: 'eliminated', confidence: 0, textOverlap: false, speciesConflict: true };
   }
@@ -451,6 +458,8 @@ export async function semanticMatchScore(
   obj: Record<string, unknown>,
   candidate: Record<string, unknown>
 ): Promise<number> {
+  // Regra C também no estágio semântico: par fora de ordem não chega a ser avaliado (nem há chamada externa).
+  if (!ordemDeDatasValida(obj, candidate)) return 0;
   try {
     const prompt = `Você é um especialista em recuperação de objetos perdidos.
 Avalie se os dois objetos abaixo provavelmente são o mesmo objeto.

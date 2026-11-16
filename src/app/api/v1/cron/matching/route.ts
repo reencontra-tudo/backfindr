@@ -7,6 +7,7 @@ import { tituloPublico } from '@/lib/objectPublicView';
 import { sendPushToUser, matchPayload } from '@/lib/pushNotification';
 import { awaitSends, sendWaitBudget } from '@/lib/awaitSends';
 import { MATCHING_ATIVO, buscarDonoParaAviso, donoPodeSerAvisado } from '@/lib/matchingSeguranca';
+import { buscarGatilhosNovos, montarBuscaDeCandidatos, parPodeVirarMatch, papeisDoPar, statusDosCandidatos } from '@/lib/matchingFiltro';
 import {
   calculateMatchScore as calculateMatchScoreBase,
   expandCategoryGroup,
@@ -54,104 +55,49 @@ export async function GET(request: NextRequest) {
   let totalObjects = 0;
 
   try {
-    // Busca objetos lost/stolen sem match recente (última hora)
-    //
-    // is_legacy = false aqui também (29/08/2026) — mesmo fix do admin/
-    // matching/run-all/route.ts. Antes só filtrava do lado do candidato,
-    // deixando a base do loop ser os objetos legado inteiros (93% da
-    // base) — achado real: 386 candidatos ambíguos mandados pro estágio 3
-    // numa rodada só, 0 aceitos, custo de API sem ganho.
-    const objects = await query(
-      `SELECT * FROM objects
-       WHERE status IN ('lost', 'stolen')
-         AND is_legacy = false
-         AND NOT EXISTS (
-           SELECT 1 FROM matches m
-           WHERE m.lost_object_id = id
-             AND m.status IN ('pending', 'confirmed')
-         )
-       ORDER BY created_at DESC
-       LIMIT 100`,
-      []
-    );
+    // Gatilhos (regra A): só objetos NOVOS (cadastrados depois do corte de reativação do matching), de usuário não legado, perdidos, roubados ou achados,
+    // que ainda NÃO foram processados (sem evento matching_completed). Os mais antigos primeiro. Um objeto processado não volta a ser gatilho.
+    // A regra «par já avaliado, em qualquer status, não volta» continua valendo abaixo.
+    const objects = await buscarGatilhosNovos(100);
 
-    totalObjects = objects.rows.length;
+    totalObjects = objects.length;
     const pendingSends: Promise<unknown>[] = [];
 
-    for (const object of objects.rows) {
+    for (const object of objects) {
       // ── Evento: matching iniciado ───────────────────────────────────
       Events.matchingStarted(object.id as string).catch(() => {});
 
-      const lat = parseFloat(object.latitude);
-      const lon = parseFloat(object.longitude);
-      const hasLocation = !isNaN(lat) && !isNaN(lon);
-
-      let candidateQuery: string;
-      let candidateParams: unknown[];
-
-      // Categoria virou filtro obrigatório na busca (26/08/2026) — antes só
-      // pesava no score (+30), o que deixava electronics↔other, vehicle↔other
-      // etc. virarem candidatos e baterem o threshold só com distância +
-      // sobreposição de palavras. Sem category, nenhum filtro é aplicado
-      // (mesmo comportamento de antes pra objetos sem categoria).
-      // animal/pet são o mesmo conceito com nome diferente por herança do
-      // legado (26/08/2026) — expandCategoryGroup trata como sinônimo pra
-      // não travar um cão 'animal' de casar com um cão 'pet'.
+      // Categoria é filtro obrigatório; animal/pet são o mesmo conceito (ver expandCategoryGroup).
       const categoryGroup = object.category ? expandCategoryGroup(object.category as string) : null;
-      const categoryFilter = categoryGroup ? 'AND (category = ANY($5) OR type = ANY($5))' : '';
 
-      // is_legacy = false exclui os registros migrados do Webjetos
-      // (26/08/2026) — 93% da base de objetos ativos hoje é desse legado
-      // (2014-2016), com título/descrição genéricos demais ("CACHORRO
-      // DESAPARECIDO" x2) pra matching automático fazer sentido. As 43
-      // matches do diagnóstico eram 100% webjetos×webjetos.
-      if (hasLocation) {
-        candidateQuery = `
-          SELECT * FROM objects
-          WHERE status = 'found' AND id != $1
-            AND latitude IS NOT NULL AND longitude IS NOT NULL
-            AND (6371 * acos(LEAST(1.0,
-              cos(radians($2)) * cos(radians(latitude::float)) *
-              cos(radians(longitude::float) - radians($3)) +
-              sin(radians($2)) * sin(radians(latitude::float))
-            ))) <= $4
-            AND is_legacy = false
-            ${categoryFilter}
-          ORDER BY created_at DESC LIMIT 100`;
-        candidateParams = categoryGroup
-          ? [object.id, lat, lon, MAX_RADIUS_KM, categoryGroup]
-          : [object.id, lat, lon, MAX_RADIUS_KM];
-      } else if (categoryGroup) {
-        candidateQuery = `
-          SELECT * FROM objects
-          WHERE status = 'found' AND id != $1
-            AND is_legacy = false
-            AND (category = ANY($2) OR type = ANY($2))
-          ORDER BY created_at DESC LIMIT 50`;
-        candidateParams = [object.id, categoryGroup];
-      } else {
-        Events.matchingCompleted(object.id as string, 0).catch(() => {});
+      // Candidatos: status oposto, não legados (objeto e dono), mesma categoria, até 50 km, e ordem das datas da OCORRÊNCIA (regra C) — tudo no filtro central.
+      const busca = montarBuscaDeCandidatos(object, {
+        statuses: statusDosCandidatos(object.status),
+        categoryGroup,
+        maxRadiusKm: MAX_RADIUS_KM,
+        ordem: 'criacao',
+        limiteComCoordenada: 100,
+        limiteSemCoordenada: 50,
+        semCategoriaSemCoordenada: 'pular',
+      });
+      if (!busca) {
+        await Events.matchingCompleted(object.id as string, 0); // marcador de «objeto já processado»: gravado antes de seguir
         continue;
       }
 
-      const candidates = await query(candidateQuery, candidateParams);
-      let objectMatches = 0;
+      const candidates = await query(busca.sql, busca.params);
 
       for (const candidate of candidates.rows) {
         const score = calculateScore(object, candidate); // só exibição (coluna score)
 
-        // Funil em estágios (27/08/2026, ver src/lib/matching.ts) — overlap
-        // de texto real obrigatório primeiro, confiança (sem categoria)
-        // decide DIRETO vs AMBÍGUO entre quem sobreviveu.
+        // Funil em estágios (ver src/lib/matching.ts): a ordem das datas da ocorrência elimina primeiro; depois overlap de texto; depois confiança.
         const stage2 = classifyStage2(object, candidate);
 
         let finalScore: number | null = null;
         if (stage2.decision === 'direct') {
           finalScore = score;
         } else if (stage2.decision === 'ambiguous') {
-          // Estágio 3 — formalizado aqui pela primeira vez (27/08/2026),
-          // antes só existia no caminho individual. Volume estimado contra
-          // a base atual: ~9 candidatos ambíguos no total do sistema.
+          // Estágio 3 (não alterado): sem chave ele devolve 0 e o par é descartado.
           const aiScore = await semanticMatchScore(object, candidate);
           if (aiScore >= STAGE3_SEMANTIC_ACCEPT_THRESHOLD) {
             finalScore = Math.round((score + aiScore) / 2);
@@ -159,11 +105,20 @@ export async function GET(request: NextRequest) {
         }
         if (finalScore === null) continue; // eliminado, ou ambíguo rejeitado pela IA
 
+        // Último ponto antes de gravar: par fora da ordem das datas nunca vira match, nem pendente.
+        if (!parPodeVirarMatch(object, candidate)) continue;
+
+        // Quem é o perdido (lost ou stolen) e quem é o achado (found): sempre pelo status, qualquer que seja o gatilho.
+        const papeis = papeisDoPar(object, candidate);
+        if (!papeis) continue;
+        const lostObj = papeis.perdido;
+        const foundObj = papeis.achado;
+
         const existing = await query(
           `SELECT id FROM matches
            WHERE (lost_object_id = $1 AND found_object_id = $2)
               OR (lost_object_id = $2 AND found_object_id = $1)`,
-          [object.id, candidate.id]
+          [lostObj.id, foundObj.id]
         );
         if (existing.rows.length > 0) continue;
 
@@ -171,44 +126,43 @@ export async function GET(request: NextRequest) {
           `INSERT INTO matches (lost_object_id, found_object_id, score, status, created_at, updated_at)
            VALUES ($1, $2, $3, 'pending', NOW(), NOW())
            RETURNING id`,
-          [object.id, candidate.id, finalScore]
+          [lostObj.id, foundObj.id, finalScore]
         );
 
         const matchId = matchResult.rows[0]?.id as string;
-        objectMatches++;
         totalMatches++;
 
         // ── Evento: match encontrado ─────────────────────────────────
         Events.matchFound(object.id as string, matchId, finalScore).catch(() => {});
 
-        // Notificar dono. Nunca avisa objeto/dono legado nem conta de sistema (sinais públicos): o match continua gravado, sem aviso.
+        // Notificar o dono do objeto PERDIDO. Nunca avisa objeto/dono legado nem conta de sistema (sinais públicos): o match continua gravado, sem aviso.
         try {
-          const owner = await buscarDonoParaAviso(object.id as string);
+          const owner = await buscarDonoParaAviso(lostObj.id as string);
           if (owner && donoPodeSerAvisado(owner)) {
             pendingSends.push(
               sendMatchAlertEmail(
                 { name: owner.name, email: owner.email },
-                tituloPublico(object.title as string, object.source as string | null) as string,
+                tituloPublico(lostObj.title as string, lostObj.source as string | null) as string,
                 matchId,
                 finalScore,
-                tituloPublico(candidate.title as string, candidate.source as string | null) as string   // sinal público: nome mascarado no e-mail
+                tituloPublico(foundObj.title as string, foundObj.source as string | null) as string   // sinal público: nome mascarado no e-mail
               ).catch(() => {}),
               sendPushToUser(
                 owner.id as string,
-                matchPayload(matchId, object.title as string, finalScore),
+                matchPayload(matchId, lostObj.title as string, finalScore),
                 { event: 'match' }
               ).catch(() => {})
             );
-            Events.ownerNotified(object.id as string, owner.id as string).catch(() => {});
+            Events.ownerNotified(lostObj.id as string, owner.id as string).catch(() => {});
           }
         } catch { /* silencioso */ }
       }
 
-      // ── Evento: matching concluído ───────────────────────────────────
-      Events.matchingCompleted(object.id as string, candidates.rows.length).catch(() => {});
+      // ── Evento: matching concluído (também é o marcador de «objeto já processado») ───────────────
+      await Events.matchingCompleted(object.id as string, candidates.rows.length);
     }
 
-    // Espera os envios (e-mail/push) já iniciados antes de responder
+    // Espera os envios (e-mail/push) e os eventos já iniciados antes de responder
     await awaitSends(pendingSends, sendWaitBudget(startedAt.getTime(), 30_000));
 
     const durationMs = Date.now() - startedAt.getTime();

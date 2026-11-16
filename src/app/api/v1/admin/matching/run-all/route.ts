@@ -13,6 +13,8 @@ import {
 import { awaitSends, sendWaitBudget } from '@/lib/awaitSends';
 import { tituloPublico } from '@/lib/objectPublicView';
 import { buscarDonoParaAviso, donoPodeSerAvisado } from '@/lib/matchingSeguranca';
+import { buscarGatilhosNovos, montarBuscaDeCandidatos, parPodeVirarMatch, papeisDoPar, statusDosCandidatos } from '@/lib/matchingFiltro';
+import { Events } from '@/lib/events';
 
 const MAX_RADIUS_KM = 50;
 
@@ -29,29 +31,11 @@ export async function POST(req: NextRequest) {
   if (auth instanceof NextResponse) return auth;
 
   try {
-    // Busca todos os objetos perdidos sem match pendente/confirmado
-    //
-    // is_legacy = false aqui também (29/08/2026) — antes só filtrava do
-    // lado do candidato achado, na suposição documentada de que "não afeta
-    // o próprio objeto sendo buscado". Na prática isso deixava a base deste
-    // loop ser os objetos legado do Webjetos inteiros (93% da base), cada
-    // um procurando candidatos não-legado dentro do raio — real: 921 pares
-    // no estágio 1 (vs. ~708 estimado só com não-legado dos dois lados),
-    // 386 candidatos ambíguos mandados pro estágio 3 (LLM) numa única
-    // rodada, 0 aceitos. Custo real de API sem nenhum match a mais.
-    const lostObjects = await query(
-      `SELECT o.* FROM objects o
-       WHERE o.status = 'lost'
-         AND o.is_legacy = false
-         AND NOT EXISTS (
-           SELECT 1 FROM matches m
-           WHERE m.lost_object_id = o.id
-             AND m.status IN ('pending', 'confirmed')
-         )
-       ORDER BY o.created_at DESC
-       LIMIT 200`,
-      []
-    );
+    // Gatilhos: os MESMOS do cron (src/lib/matchingFiltro.ts) — objetos NOVOS (cadastrados depois do corte de reativação), de dono não legado,
+    // perdidos, roubados ou achados, que ainda NÃO foram processados (sem matching_completed). Objetos anteriores ao corte não são gatilho.
+    // (Contexto antigo: em 29/08/2026 o gatilho passou a excluir o legado, que era 93% da base e mandava ~386 candidatos ao estágio 3 numa rodada, 0 aceitos.)
+    // Este botão continua NÃO dependendo do interruptor do matching automático.
+    const lostObjects = { rows: await buscarGatilhosNovos(200) };
 
     let totalCreated = 0;
     let totalChecked = 0;
@@ -64,63 +48,22 @@ export async function POST(req: NextRequest) {
     let totalSemanticAccepted = 0;
 
     for (const object of lostObjects.rows) {
-      const lat = parseFloat(object.latitude);
-      const lon = parseFloat(object.longitude);
-      const hasLocation = !isNaN(lat) && !isNaN(lon);
-
-      let candidateQuery: string;
-      let candidateParams: unknown[];
-
-      // Categoria virou filtro obrigatório na busca (26/08/2026) — antes só
-      // pesava no score (+30), o que deixava electronics↔other, vehicle↔other
-      // etc. virarem candidatos e baterem o threshold só com distância +
-      // sobreposição de palavras. Sem category, nenhum filtro é aplicado
-      // (mesmo comportamento de antes pra objetos sem categoria).
-      // animal/pet são o mesmo conceito com nome diferente por herança do
-      // legado (26/08/2026) — expandCategoryGroup trata como sinônimo pra
-      // não travar um cão 'animal' de casar com um cão 'pet'.
+      Events.matchingStarted(object.id as string).catch(() => {});
+      // Candidatos pelo filtro central (src/lib/matchingFiltro.ts): não legados (objeto e dono) e ordem das datas da OCORRÊNCIA.
+      // animal/pet são o mesmo conceito com nome diferente por herança do legado (expandCategoryGroup).
       const categoryGroup = object.category ? expandCategoryGroup(object.category as string) : null;
-      const categoryFilter = categoryGroup ? 'AND (category = ANY($5) OR type = ANY($5))' : '';
+      const busca = montarBuscaDeCandidatos(object, {
+        statuses: statusDosCandidatos(object.status),
+        categoryGroup,
+        maxRadiusKm: MAX_RADIUS_KM,
+        ordem: 'criacao',
+        limiteComCoordenada: 100,
+        limiteSemCoordenada: 50,
+        semCategoriaSemCoordenada: 'pular',
+      });
+      if (!busca) { await Events.matchingCompleted(object.id as string, 0); continue; } // sem localização e sem categoria, pula (e fica marcado como processado)
 
-      // is_legacy = false exclui os registros migrados do Webjetos
-      // (26/08/2026) — 93% da base de objetos ativos hoje é desse legado
-      // (2014-2016), com título/descrição genéricos demais ("CACHORRO
-      // DESAPARECIDO" x2) pra matching automático fazer sentido. As 43
-      // matches do diagnóstico eram 100% webjetos×webjetos.
-      if (hasLocation) {
-        candidateQuery = `
-          SELECT * FROM objects
-          WHERE status = 'found'
-            AND id != $1
-            AND latitude IS NOT NULL AND longitude IS NOT NULL
-            AND (
-              6371 * acos(LEAST(1.0,
-                cos(radians($2)) * cos(radians(latitude::float)) *
-                cos(radians(longitude::float) - radians($3)) +
-                sin(radians($2)) * sin(radians(latitude::float))
-              ))
-            ) <= $4
-            AND is_legacy = false
-            ${categoryFilter}
-          ORDER BY created_at DESC LIMIT 100
-        `;
-        candidateParams = categoryGroup
-          ? [object.id, lat, lon, MAX_RADIUS_KM, categoryGroup]
-          : [object.id, lat, lon, MAX_RADIUS_KM];
-      } else if (categoryGroup) {
-        candidateQuery = `
-          SELECT * FROM objects
-          WHERE status = 'found' AND id != $1
-            AND is_legacy = false
-            AND (category = ANY($2) OR type = ANY($2))
-          ORDER BY created_at DESC LIMIT 50
-        `;
-        candidateParams = [object.id, categoryGroup];
-      } else {
-        continue; // sem localização e sem categoria, pula
-      }
-
-      const candidates = await query(candidateQuery, candidateParams);
+      const candidates = await query(busca.sql, busca.params);
       totalChecked += candidates.rows.length;
 
       for (const candidate of candidates.rows) {
@@ -147,6 +90,15 @@ export async function POST(req: NextRequest) {
         }
         if (finalScore === null) continue; // eliminado, ou ambíguo rejeitado pela LLM
 
+        // Último ponto antes de gravar: par fora da ordem das datas da ocorrência nunca vira match, nem pendente.
+        if (!parPodeVirarMatch(object, candidate)) continue;
+
+        // Quem é o perdido (lost ou stolen) e quem é o achado (found): sempre pelo status, qualquer que seja o gatilho.
+        const papeis = papeisDoPar(object, candidate);
+        if (!papeis) continue;
+        const lostObj = papeis.perdido;
+        const foundObj = papeis.achado;
+
         // Verifica se já existe match entre esses dois objetos
         const existing = await query(
           `SELECT id FROM matches
@@ -160,22 +112,22 @@ export async function POST(req: NextRequest) {
           `INSERT INTO matches (lost_object_id, found_object_id, score, status, created_at, updated_at)
            VALUES ($1, $2, $3, 'pending', NOW(), NOW())
            RETURNING id`,
-          [object.id, candidate.id, finalScore]
+          [lostObj.id, foundObj.id, finalScore]
         );
         totalCreated++;
 
         // ── Notificar o dono do objeto perdido por e-mail (assíncrono) ─────────────────────
         // Nunca avisa objeto/dono legado nem conta de sistema (sinais públicos); o match continua gravado. Título de sinal público sai sem nome.
         try {
-          const owner = await buscarDonoParaAviso(object.id as string);
+          const owner = await buscarDonoParaAviso(lostObj.id as string);
           if (owner && donoPodeSerAvisado(owner)) {
             pendingSends.push(
               sendMatchAlertEmail(
                 { name: owner.name, email: owner.email },
-                tituloPublico(object.title as string, object.source as string | null) as string,
+                tituloPublico(lostObj.title as string, lostObj.source as string | null) as string,
                 matchResult.rows[0]?.id ?? '',
                 finalScore,
-                tituloPublico(candidate.title as string, candidate.source as string | null) as string
+                tituloPublico(foundObj.title as string, foundObj.source as string | null) as string
               ).catch(err => console.error('[admin/matching] Falha ao enviar e-mail de match:', err))
             );
           }
@@ -183,6 +135,9 @@ export async function POST(req: NextRequest) {
           console.error('[admin/matching] Erro ao buscar dono para notificação:', emailErr);
         }
       }
+
+      // Fim da rodada deste objeto: também é o marcador de «objeto já processado».
+      await Events.matchingCompleted(object.id as string, candidates.rows.length);
     }
 
     // Espera os e-mails já iniciados antes de responder
