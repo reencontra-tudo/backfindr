@@ -424,10 +424,17 @@ describe.skipIf(!TEST_DB)('matching: objetos novos, não legados e datas da ocor
     });
     it('considera também achado e roubado como gatilho (como o cron)', async () => {
       const donoR = await mkUser(); const ach = await mkUser();
-      await mkObj(donoR, 'stolen', { criado: ANTES }); await mkObj(ach, 'found', { criado: DEPOIS });
+      const roubado = await mkObj(donoR, 'stolen', { criado: ANTES }); const achado = await mkObj(ach, 'found', { criado: DEPOIS });
       const j = await (await RUNALL(asUser('POST', 'admin'))).json();
       expect(j.objects_processed).toBe(1); // só o achado é novo
-      expect(await count('matches')).toBe(1);
+      expect(await pares()).toEqual([{ lost_object_id: roubado, found_object_id: achado, status: 'pending' }]); // o gatilho é o achado, mas o perdido do par é o roubado
+      expect(destinatarios()).toEqual([emailDe(donoR)]);                                                        // o aviso vai ao dono do roubado, não ao do achado
+    });
+    it('a rota individual NÃO tem o corte: o dono (ou o administrador) pode pedir um objeto antigo', async () => {
+      const dono = await mkUser(); const ach = await mkUser();
+      const velho = await mkObj(dono, 'stolen', { criado: ANTES }); const achado = await mkObj(ach, 'found', { criado: ANTES });
+      await RUN(asUser('POST', dono, { objectId: velho }));
+      expect(await pares()).toEqual([{ lost_object_id: velho, found_object_id: achado, status: 'pending' }]);
     });
     it('objeto já processado pelo cron não é reprocessado pelo run-all, e vice-versa', async () => {
       const dono = await mkUser(); const ach = await mkUser();
