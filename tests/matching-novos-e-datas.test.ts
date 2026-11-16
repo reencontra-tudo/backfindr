@@ -467,8 +467,7 @@ describe('regressão estática', () => {
   });
   it('as regras vivem num só arquivo e os estágios 2 e 3 chamam a ordem das datas', () => {
     const m = ler('src/lib/matching.ts');
-    expect(m).toMatch(/ordemDeDatasValida\(obj, candidate\)/g);
-    expect((m.match(/ordemDeDatasValida\(obj, candidate\)/g) ?? []).length).toBe(2);
+    expect((m.match(/parAutomaticoPermitido\(obj, candidate\)/g) ?? []).length).toBe(2); // regras C e D nos estágios 2 e 3
     expect(ler('src/lib/matchingFiltro.ts')).toMatch(/MATCHING_DESDE = '2026-11-16T03:00:00Z'/);
   });
   it('estágio 3 e limiares não mudaram', () => {
