@@ -7,6 +7,7 @@ import { tituloPublico } from '@/lib/objectPublicView';
 import { sendPushToUser, matchPayload } from '@/lib/pushNotification';
 import { awaitSends, sendWaitBudget } from '@/lib/awaitSends';
 import { MATCHING_ATIVO, buscarDonoParaAviso, donoPodeSerAvisado } from '@/lib/matchingSeguranca';
+import { comMarca } from '@/lib/rotinaMarca';
 import { buscarGatilhosNovos, montarBuscaDeCandidatos, parPodeVirarMatch, papeisDoPar, statusDosCandidatos } from '@/lib/matchingFiltro';
 import {
   calculateMatchScore as calculateMatchScoreBase,
@@ -38,6 +39,11 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
+  // Segredo conferido: daqui em diante a chamada deixa uma marca de vida (src/lib/rotinaMarca.ts). A marca nunca muda a resposta.
+  return comMarca('matching', () => executar());
+}
+
+async function executar(): Promise<NextResponse> {
   // Interruptor (MATCHING_ATIVO=1): desligado, a rota responde sem processar nada e sem nenhum efeito colateral
   // (sem consulta de objetos, sem match, sem e-mail, sem push, sem evento).
   if (!MATCHING_ATIVO()) {

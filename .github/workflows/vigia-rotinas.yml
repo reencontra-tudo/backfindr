@@ -1,0 +1,42 @@
+name: Vigia das rotinas agendadas
+
+# Confere, a cada 30 minutos e fora do n8n, se as rotinas agendadas do Backfindr estão registrando marca de vida.
+# O aviso aos administradores (sino, push e e-mail) sai do próprio Backfindr. Este job só chama a rota e FALHA se a resposta não for 200,
+# para o próprio GitHub avisar quando o vigia não puder ser chamado (site fora, segredo errado, erro do servidor).
+#
+# Precisa do segredo do repositório VIGIA_SECRET (GitHub > Settings > Secrets and variables > Actions), com o mesmo valor da variável VIGIA_SECRET na Vercel.
+# O valor nunca aparece neste arquivo nem no log.
+
+on:
+  schedule:
+    - cron: '*/30 * * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: vigia-rotinas
+  cancel-in-progress: false
+
+jobs:
+  vigiar:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Chamar o vigia
+        env:
+          VIGIA_SECRET: ${{ secrets.VIGIA_SECRET }}
+        run: |
+          if [ -z "$VIGIA_SECRET" ]; then
+            echo "Segredo VIGIA_SECRET não configurado no repositório."
+            exit 1
+          fi
+          status=$(curl --silent --show-error --max-time 60 --output /tmp/resposta.json --write-out '%{http_code}' \
+            --header "Authorization: Bearer ${VIGIA_SECRET}" \
+            https://backfindr.com/api/v1/cron/vigia-rotinas)
+          echo "Resposta do vigia: HTTP ${status}"
+          if [ "$status" != "200" ]; then
+            echo "O vigia não respondeu 200."
+            exit 1
+          fi

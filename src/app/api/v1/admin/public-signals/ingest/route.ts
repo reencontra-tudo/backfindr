@@ -4,6 +4,7 @@ export const dynamic = 'force-dynamic';
 // o MAX_ITEMS_PER_RUN abaixo, não esse número sozinho.
 export const maxDuration = 60;
 
+import { comMarca } from '@/lib/rotinaMarca';
 import { NextRequest, NextResponse } from 'next/server';
 import { query } from '@/lib/db';
 import { SOURCES } from '@/lib/publicSignals/sources';
@@ -232,6 +233,11 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ detail: 'Não autorizado' }, { status: 401 });
   }
 
+  // Segredo conferido: daqui em diante a chamada deixa uma marca de vida (src/lib/rotinaMarca.ts). A marca nunca muda a resposta.
+  return comMarca('ingestao-sinais', () => executar());
+}
+
+async function executar(): Promise<NextResponse> {
   const stats: Stats = {
     sources: 0,
     itemsSeen: 0,

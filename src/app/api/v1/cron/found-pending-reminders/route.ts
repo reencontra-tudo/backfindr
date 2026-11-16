@@ -1,4 +1,5 @@
 export const dynamic = 'force-dynamic';
+import { comMarca } from '@/lib/rotinaMarca';
 import { NextRequest } from 'next/server';
 import { query } from '@/lib/db';
 import { sendPushToUser } from '@/lib/pushNotification';
@@ -46,6 +47,11 @@ export async function GET(request: NextRequest) {
     return new Response(JSON.stringify({ error: 'Unauthorized' }), { status: 401 });
   }
 
+  // Segredo conferido: daqui em diante a chamada deixa uma marca de vida (src/lib/rotinaMarca.ts). A marca nunca muda a resposta.
+  return comMarca('found-pending-reminders', () => executar());
+}
+
+async function executar(): Promise<Response> {
   const results = {
     reminders_d1: 0,
     reminders_d3: 0,
