@@ -11,6 +11,8 @@ import {
   STAGE3_SEMANTIC_ACCEPT_THRESHOLD,
 } from '@/lib/matching';
 import { awaitSends, sendWaitBudget } from '@/lib/awaitSends';
+import { tituloPublico } from '@/lib/objectPublicView';
+import { buscarDonoParaAviso, donoPodeSerAvisado } from '@/lib/matchingSeguranca';
 
 const MAX_RADIUS_KM = 50;
 
@@ -163,22 +165,17 @@ export async function POST(req: NextRequest) {
         totalCreated++;
 
         // ── Notificar o dono do objeto perdido por e-mail (assíncrono) ─────────────────────
+        // Nunca avisa objeto/dono legado nem conta de sistema (sinais públicos); o match continua gravado. Título de sinal público sai sem nome.
         try {
-          const ownerResult = await query(
-            `SELECT u.name, u.email FROM users u
-             JOIN objects o ON o.user_id = u.id
-             WHERE o.id = $1`,
-            [object.id]
-          );
-          if (ownerResult.rows.length > 0) {
-            const owner = ownerResult.rows[0];
+          const owner = await buscarDonoParaAviso(object.id as string);
+          if (owner && donoPodeSerAvisado(owner)) {
             pendingSends.push(
               sendMatchAlertEmail(
                 { name: owner.name, email: owner.email },
-                object.title as string,
+                tituloPublico(object.title as string, object.source as string | null) as string,
                 matchResult.rows[0]?.id ?? '',
                 finalScore,
-                candidate.title as string
+                tituloPublico(candidate.title as string, candidate.source as string | null) as string
               ).catch(err => console.error('[admin/matching] Falha ao enviar e-mail de match:', err))
             );
           }

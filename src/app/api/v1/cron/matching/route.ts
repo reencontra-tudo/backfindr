@@ -6,6 +6,7 @@ import { sendMatchAlertEmail } from '@/lib/email';
 import { tituloPublico } from '@/lib/objectPublicView';
 import { sendPushToUser, matchPayload } from '@/lib/pushNotification';
 import { awaitSends, sendWaitBudget } from '@/lib/awaitSends';
+import { MATCHING_ATIVO, buscarDonoParaAviso, donoPodeSerAvisado } from '@/lib/matchingSeguranca';
 import {
   calculateMatchScore as calculateMatchScoreBase,
   expandCategoryGroup,
@@ -34,6 +35,18 @@ export async function GET(request: NextRequest) {
   // conhecida. Sem CRON_SECRET, a rota recusa qualquer chamada.
   if (!cronSecret || authHeader !== `Bearer ${cronSecret}`) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  }
+
+  // Interruptor (MATCHING_ATIVO=1): desligado, a rota responde sem processar nada e sem nenhum efeito colateral
+  // (sem consulta de objetos, sem match, sem e-mail, sem push, sem evento).
+  if (!MATCHING_ATIVO()) {
+    return NextResponse.json({
+      ok: true,
+      ativo: false,
+      message: 'Matching automático desligado (MATCHING_ATIVO). Nada foi processado.',
+      objects_processed: 0,
+      matches_created: 0,
+    });
   }
 
   const startedAt = new Date();
@@ -168,16 +181,10 @@ export async function GET(request: NextRequest) {
         // ── Evento: match encontrado ─────────────────────────────────
         Events.matchFound(object.id as string, matchId, finalScore).catch(() => {});
 
-        // Notificar dono
+        // Notificar dono. Nunca avisa objeto/dono legado nem conta de sistema (sinais públicos): o match continua gravado, sem aviso.
         try {
-          const ownerResult = await query(
-            `SELECT u.id, u.name, u.email FROM users u
-             JOIN objects o ON o.user_id = u.id
-             WHERE o.id = $1`,
-            [object.id]
-          );
-          if (ownerResult.rows.length > 0) {
-            const owner = ownerResult.rows[0];
+          const owner = await buscarDonoParaAviso(object.id as string);
+          if (owner && donoPodeSerAvisado(owner)) {
             pendingSends.push(
               sendMatchAlertEmail(
                 { name: owner.name, email: owner.email },
