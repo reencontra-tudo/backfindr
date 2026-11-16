@@ -1,4 +1,5 @@
 export const dynamic = 'force-dynamic';
+import { comPing, VARIAVEIS_DE_PING } from '@/lib/healthchecksPing';
 import { NextRequest } from 'next/server';
 import { query } from '@/lib/db';
 import { sendPushToUser } from '@/lib/pushNotification';
@@ -46,6 +47,11 @@ export async function GET(request: NextRequest) {
     return new Response(JSON.stringify({ error: 'Unauthorized' }), { status: 401 });
   }
 
+  // Segredo conferido: daqui em diante a rotina avisa o Healthchecks ao terminar (src/lib/healthchecksPing.ts). O aviso nunca muda a resposta.
+  return comPing(VARIAVEIS_DE_PING.foundPending, () => executar());
+}
+
+async function executar(): Promise<Response> {
   const results = {
     reminders_d1: 0,
     reminders_d3: 0,

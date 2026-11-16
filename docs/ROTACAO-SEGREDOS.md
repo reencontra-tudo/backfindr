@@ -22,7 +22,7 @@ Em 27/10/2026 o `CRON_SECRET` foi rotacionado na Vercel sem atualizar o header `
 ## Consumidores do `CRON_SECRET` (rotas, conferido no código em 03/11/2026)
 - `src/app/api/v1/cron/found-pending-reminders` (chamada diária pelo n8n)
 - `src/app/api/v1/cron/matching`
-- n8n «Backfindr Matching - Cron 15 min» (id `UHTA3WoSvRvi4Lsr`, desativado): precisa da credencial Bearer com o valor atual antes de ser ativado.
+- n8n «Backfindr Matching - Cron 15 min» (id `UHTA3WoSvRvi4Lsr`, ativo desde 16/11/2026): usa a credencial Bearer com o valor atual do segredo; troque-a junto com o `CRON_SECRET`.
 - `src/app/api/v1/cron/lifecycle`
 - `src/app/api/v1/cron/reactivation`
 - `src/app/api/v1/cron/social-posts`
@@ -36,5 +36,15 @@ Quem chama cada rota (n8n, Vercel Cron, outro agendador) deve ser confirmado na 
 ## Segredos separados
 `SIGNALS_CRON_SECRET` (ingestão de Public Signals) é um segredo distinto, de propósito, para poder ser revogado sem afetar o `CRON_SECRET`. Siga este mesmo checklist para ele.
 
-## Aviso de falha (proposta, ainda não implementada)
-Para uma falha dessas não passar despercebida: definir um workflow de alerta como Error Workflow dos workflows do n8n, que avise a pessoa responsável na 2ª falha seguida, e/ou um ping de saúde ao final de cada execução com sucesso que alerte por silêncio.
+## URLs de ping do Healthchecks (aviso de rotina que falha ou deixa de chegar)
+Cada rotina agendada avisa o Healthchecks.io ao terminar, e o Healthchecks avisa o Marcos (Telegram e e-mail) quando o sinal falta ou quando chega «falha». As URLs de ping ficam em variáveis da Vercel (Production), uma por rotina:
+- `HC_PING_MATCHING` (rota `cron/matching`, a cada 15 minutos);
+- `HC_PING_FOUND_PENDING` (rota `cron/found-pending-reminders`, diária);
+- `HC_PING_INGESTAO` (rota `admin/public-signals/ingest`, diária).
+
+A URL de ping é um **semi-segredo**: quem a conhece pode forjar um sinal de vida. Não a cole em chat, issue, PR, log nem mensagem. Para trocar uma URL: gere o novo ping no Healthchecks, atualize a variável na Vercel e faça o redeploy; a URL antiga deixa de valer quando o check for recriado ou o ping for revogado. Sem a variável, a rotina não avisa o Healthchecks e funciona igual.
+
+Rotina chamada com segredo errado (401) **não** envia ping: o silêncio é o que faz o Healthchecks avisar. Isso cobre o caso de segredo rotacionado sem atualizar o agendador.
+
+## Complemento possível (não implementado)
+Um Error Workflow do n8n, que avise quando um fluxo falhar dentro do próprio n8n. O Healthchecks já cobre a falha e o silêncio de fora do Backfindr.
