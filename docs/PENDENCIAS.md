@@ -2,6 +2,8 @@
 
 > **Pendência vigente (16/11/2026):** nenhum formulário (nem a extração dos sinais públicos) preenche a data da ocorrência, por isso a regra de datas do matching ainda não age sobre cadastros de usuário nem sobre sinais.
 >
+> **Decisão de produto em aberto (16/11/2026):** o match manual do administrador (unir dois sinais públicos na ocorrência) NÃO existe no sistema. O algoritmo não une mais dois sinais públicos; hoje o administrador só lista os pares, muda o estado de um par que já existe e registra tentativas de contato.
+>
 > HISTÓRICO (19/08/2026). As pendências vigentes estão em STATUS.md e em docs/FEED-E-ACHEI-REGRAS-VIGENTES.md. A chave OpenAI já está configurada (ver BACKFINDR.md §14).
 
 > Status: 🔴 Pendente | 🟡 Em andamento | ✅ Concluído
