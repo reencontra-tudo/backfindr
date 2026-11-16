@@ -88,11 +88,12 @@ Nenhum texto promete contato protegido, SMS, chat protegido, resposta da fonte, 
 - **Candidatos nunca são do legado:** nem o objeto marcado como legado, nem objeto de usuário legado. Os sinais públicos (conta de sistema) não são legados e continuam entrando.
 - **A data que vale é a da ocorrência:** o matching compara pela data em que a coisa foi perdida, roubada ou achada, não pela data do cadastro. Um «perdi» ou «roubado» só casa com um «achei» do mesmo dia ou posterior. Se um dos dois não tem essa data, não há filtro de data nesse par. Hoje os formulários não pedem essa data, então a regra só passa a agir quando ela for preenchida.
 - **Pares já avaliados** (qualquer status) não voltam; os 1370 pares rejeitados não são reavaliados.
-- **Pares entre dois sinais públicos** (dono = conta de sistema) são gravados, sem aviso a ninguém.
+- **Sinal público × sinal público não gera match automático:** sem diálogo e sem uma pessoa em nenhum dos lados, ninguém garante que é o mesmo animal ou objeto. O algoritmo nunca une dois sinais públicos (nem como par «pendente»); um sinal público só é comparado com objetos de usuário comum, e vice-versa. Esse par só pode existir por match manual do administrador, e esse caminho de criação manual ainda não existe no sistema.
 - **Registro de execução:** cada evento de matching pertence a um objeto; não há registro «da rodada» sem objeto, e a tabela de eventos não tem política de apagamento.
 - **Matching e provedores de IA:** o estágio semântico do matching chama a API da Anthropic (modelo Haiku) com título, descrição, cor e categoria dos dois objetos; o titular não sai. A OpenAI é usada só na extração de notícias dos sinais públicos.
 
 ## Pendências a decidir (nenhuma foi iniciada)
+- Match manual do administrador: criar (ou não) o caminho para o administrador unir dois sinais públicos na ocorrência. Hoje o administrador só lista os pares, muda o estado de um par que já existe e registra contatos.
 - Pedir a data da perda ou do achado nos formulários (sem ela, a regra de datas do matching não tem efeito); decidir o que fazer com os 8 pares pendentes criados na primeira rodada.
 - Ativar o fluxo do n8n (com a credencial correta) ou usar o cron da Vercel; alerta de falha do cron.
 - Estágio 3 do matching: consertar, usar regra local (4 últimos dígitos e distância), remover ou manter.

@@ -2,10 +2,14 @@
 //
 // REGRA A — só objetos NOVOS disparam o matching automático: cadastrados (created_at) depois de MATCHING_DESDE. Objetos antigos não são gatilho.
 // REGRA B — candidatos nunca são do legado: nem o objeto marcado como legado, nem objeto de DONO legado. (Conta de sistema — sinais públicos — não é legada e segue como candidata.)
+// REGRA D (F-31) — ocorrência pública × ocorrência pública NUNCA vira match AUTOMÁTICO: sem diálogo e sem humano em nenhum dos lados, ninguém garante que é o mesmo
+//          animal ou objeto. Esse par só pode existir por match MANUAL feito pelo administrador, que NÃO passa por este filtro (e hoje esse caminho manual de criação NÃO existe no código).
+//          Um sinal público só tem candidatos que não sejam sinais públicos, e vice-versa; sinal × objeto de usuário comum segue valendo.
 // REGRA C — a ordem das datas é a da OCORRÊNCIA (occurrence_date: quando a perda/roubo ou o achado ACONTECEU), nunca a do cadastro:
 //          um «perdi/roubado» só casa com um «achei» de data POSTERIOR OU IGUAL. Sem data de um dos lados, não há filtro de data nesse par
 //          (e created_at nunca substitui a data da ocorrência). Vale no SQL, no estágio heurístico, no semântico e antes de gravar o par.
 import { query } from '@/lib/db';
+import { SYSTEM_ACCOUNT_ID } from '@/lib/systemAccount';
 
 /**
  * Corte da reativação do matching: 16/11/2026 00:00 em America/Sao_Paulo = 03:00 UTC.
@@ -61,9 +65,30 @@ export function ordemDeDatasValida(a: ComStatusEData, b: ComStatusEData): boolea
   return dAchado >= dPerdido; // «AAAA-MM-DD» compara certo como texto
 }
 
-/** Ponto único antes de gravar um par: hoje só a regra C (as demais já filtram o SQL e o gatilho). */
-export function parPodeVirarMatch(a: ComStatusEData, b: ComStatusEData): boolean {
-  return ordemDeDatasValida(a, b);
+/**
+ * Sinal público = ocorrência extraída de notícia, sem dono real. Critério: `source = 'public_signal'` OU dono = conta de sistema (a conta-âncora dos sinais).
+ * Hoje os dois critérios dão exatamente os mesmos 184 objetos (verificado no banco); usar os dois é o mais seguro: nada da conta de sistema forma par automático com outro sinal.
+ */
+export function ehSinalPublico(o: { source?: unknown; user_id?: unknown }): boolean {
+  return o.source === 'public_signal' || o.user_id === SYSTEM_ACCOUNT_ID;
+}
+
+/** Regra D: dois sinais públicos nunca formam par automático. */
+export function parEhSinalComSinal(a: { source?: unknown; user_id?: unknown }, b: { source?: unknown; user_id?: unknown }): boolean {
+  return ehSinalPublico(a) && ehSinalPublico(b);
+}
+
+/**
+ * O ALGORITMO pode formar este par? (regras C e D). Usado nos estágios 2 e 3 e na guarda final antes de gravar, por todos os caminhos AUTOMÁTICOS
+ * (cron, gancho de criação, rota individual e run-all). O match manual do administrador não usa esta função.
+ */
+export function parAutomaticoPermitido(a: ComStatusEData & { source?: unknown; user_id?: unknown }, b: ComStatusEData & { source?: unknown; user_id?: unknown }): boolean {
+  return !parEhSinalComSinal(a, b) && ordemDeDatasValida(a, b);
+}
+
+/** Ponto único antes de gravar um par automático: regras C (ordem das datas) e D (sinal × sinal). As demais já filtram o SQL e o gatilho. */
+export function parPodeVirarMatch(a: ComStatusEData & { source?: unknown; user_id?: unknown }, b: ComStatusEData & { source?: unknown; user_id?: unknown }): boolean {
+  return parAutomaticoPermitido(a, b);
 }
 
 // Pedaço de SQL: o dono NÃO é usuário legado (regra B). `alias` é o nome da tabela de objetos na consulta.
@@ -131,7 +156,10 @@ export function montarBuscaDeCandidatos(object: Record<string, unknown>, o: Opco
   }
   let filtroCategoria = '';
   if (o.categoryGroup) { const c = p(o.categoryGroup); filtroCategoria = ` AND (category = ANY(${c}) OR type = ANY(${c}))`; }
-  const comum = `AND is_legacy = false AND ${donoNaoLegado('objects')}${filtroCategoria}${filtroData}`;
+  // Regra D no SQL: um sinal público só tem candidatos que NÃO sejam sinais públicos (objetos de usuário comum).
+  let filtroSinal = '';
+  if (ehSinalPublico(object)) filtroSinal = ` AND source IS DISTINCT FROM 'public_signal' AND user_id IS DISTINCT FROM ${p(SYSTEM_ACCOUNT_ID)}::uuid`;
+  const comum = `AND is_legacy = false AND ${donoNaoLegado('objects')}${filtroCategoria}${filtroData}${filtroSinal}`;
 
   if (temLocal) {
     const la = p(lat), lo = p(lon), raio = p(o.maxRadiusKm);
