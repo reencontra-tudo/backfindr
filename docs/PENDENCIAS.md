@@ -1,5 +1,7 @@
 # Pendências e Roadmap — Backfindr
 
+> HISTÓRICO (19/08/2026). As pendências vigentes estão em STATUS.md e em docs/FEED-E-ACHEI-REGRAS-VIGENTES.md. A chave OpenAI já está configurada (ver BACKFINDR.md §14).
+
 > Status: 🔴 Pendente | 🟡 Em andamento | ✅ Concluído
 
 ---

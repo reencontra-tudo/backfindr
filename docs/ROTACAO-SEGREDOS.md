@@ -22,6 +22,7 @@ Em 27/10/2026 o `CRON_SECRET` foi rotacionado na Vercel sem atualizar o header `
 ## Consumidores do `CRON_SECRET` (rotas, conferido no código em 03/11/2026)
 - `src/app/api/v1/cron/found-pending-reminders` (chamada diária pelo n8n)
 - `src/app/api/v1/cron/matching`
+- n8n «Backfindr Matching - Cron 15 min» (id `UHTA3WoSvRvi4Lsr`, desativado): precisa da credencial Bearer com o valor atual antes de ser ativado.
 - `src/app/api/v1/cron/lifecycle`
 - `src/app/api/v1/cron/reactivation`
 - `src/app/api/v1/cron/social-posts`
