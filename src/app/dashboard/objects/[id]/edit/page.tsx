@@ -95,8 +95,10 @@ export default function EditObjectPage() {
         // Documento: mesmo comportamento da criação (titular público por escolha do dono; só os 4 últimos dígitos).
         ...(category === 'document' ? {
           document_type: String(docFields.document_type ?? ''),
-          document_owner_name: String(docFields.document_owner_name ?? '').trim(),
-          document_last4: String(docFields.document_last4 ?? '').replace(/\D/g, '').slice(-4),
+          ...(status !== 'found' ? {
+            document_owner_name: String(docFields.document_owner_name ?? '').trim(),
+            document_last4: String(docFields.document_last4 ?? '').replace(/\D/g, '').slice(-4),
+          } : {}),
         } : {}),
       });
       setSuccess(true);
@@ -196,6 +198,8 @@ export default function EditObjectPage() {
               category="document"
               values={docFields}
               onChange={(name, value) => setDocFields((prev) => ({ ...prev, [name]: value }))}
+              // «Encontrei»: sem nome do titular nem 4 dígitos (os valores digitados ficam guardados se o status voltar para «perdi»)
+              hideFields={status === 'found' ? ['document_owner_name', 'document_last4'] : []}
             />
           </div>
         )}

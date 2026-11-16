@@ -4,7 +4,7 @@ import { query } from '@/lib/db';
 import { verifyToken, extractTokenFromHeader } from '@/lib/jwt';
 import { successResponse, errorResponse, unauthorizedResponse, notFoundResponse, internalErrorResponse } from '@/lib/response';
 import { Events } from '@/lib/events';
-import { mascararDigitosLongos, camposDeDocumento } from '@/lib/documentPrivacy';
+import { mascararDigitosLongos, camposDeDocumento, statusIgnoraTitular } from '@/lib/documentPrivacy';
 
 // Consolidado em 25/08/2026 — esta rota aceitava QUALQUER string em `status`,
 // sem validação nenhuma (achado no mapeamento de status pedido em 23/08).
@@ -160,7 +160,8 @@ export async function PATCH(
 
     // Documento de usuário: titular, tipo e 4 últimos dígitos (só o que veio no corpo; vazio apaga). Número inteiro nunca é guardado.
     let linhaFinal = result.rows[0] as Record<string, unknown>;
-    if (ehDocumento) {
+    // «Encontrei» (status final do objeto): titular e final recebidos são ignorados e o que já estava gravado não é apagado nem alterado.
+    if (ehDocumento && !statusIgnoraTitular(linhaFinal.status)) {
       const d = camposDeDocumento(body);
       if (d.temNome || d.temTipo || d.temFinal) {
         const up = await query(

@@ -83,3 +83,18 @@ export function camposDeDocumento(body: Record<string, unknown>): {
 
 /** Chaves que nunca vão para category_fields de documento (vão para colunas próprias ou não são guardadas). */
 export const CHAVES_DE_DOCUMENTO = ['document_owner_name', 'document_type', 'document_number', 'document_last4'] as const;
+
+/**
+ * Quando o titular e o final do documento SAEM em público: lista de PERMISSÃO (só perdido e roubado).
+ * Qualquer outro status («found», «returned», «protected», «archived» ou um valor novo) NÃO mostra. Nunca trocar por lista de bloqueio.
+ * Em «encontrei» (status «found») o nome inteiro de um terceiro não se mostra, e o servidor também não grava o que chegar.
+ */
+export const STATUS_QUE_MOSTRAM_TITULAR = ['lost', 'stolen'] as const;
+export function statusMostraTitular(status: unknown): boolean {
+  return typeof status === 'string' && (STATUS_QUE_MOSTRAM_TITULAR as readonly string[]).includes(status);
+}
+
+/** Em «encontrei» o formulário não pede titular nem final, e o servidor ignora os dois. */
+export function statusIgnoraTitular(status: unknown): boolean {
+  return status === 'found';
+}

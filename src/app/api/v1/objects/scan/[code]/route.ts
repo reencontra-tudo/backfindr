@@ -6,6 +6,7 @@ import { Events } from '@/lib/events';
 import { POST as notifyOwnerOfScan } from './notify/route';
 import { maskSignalForPublicApi } from '@/lib/objectPublicView';
 import { localizacaoPublica } from '@/lib/publicLocation';
+import { statusMostraTitular } from '@/lib/documentPrivacy';
 
 export async function GET(
   request: NextRequest,
@@ -55,8 +56,9 @@ export async function GET(
     }
 
     // Documento de USUÁRIO: o nome do titular é público por escolha do dono (ele mesmo cadastra) e o número só aparece pelos 4 últimos dígitos.
-    // Só cadastro de usuário: sinal público (que segue com a máscara de nome) e legado nunca recebem estes campos. Sem dado, as chaves nem existem.
-    const ehDocumentoDeUsuario = row.category === 'document' && row.source !== 'public_signal' && row.is_legacy !== true && row.legacy_blocked !== true;
+    // Só cadastro de usuário e só perdido/roubado: sinal público (que segue com a máscara de nome) e legado nunca recebem estes campos. Sem dado, as chaves nem existem.
+    const ehDocumentoDeUsuario = row.category === 'document' && row.source !== 'public_signal' && row.is_legacy !== true && row.legacy_blocked !== true
+      && statusMostraTitular(row.status); // lista de permissão: só «perdi» e «roubado»; «encontrei» e os demais status não mostram (acompanha o status atual)
     const dadosDoDocumento: Record<string, string> = {};
     if (ehDocumentoDeUsuario) {
       if (typeof row.subject_name === 'string' && row.subject_name.trim()) dadosDoDocumento.titular = row.subject_name.trim();
