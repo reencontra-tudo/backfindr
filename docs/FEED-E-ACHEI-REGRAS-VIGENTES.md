@@ -1,13 +1,11 @@
-# Feed e /achei — regras vigentes (14/11/2026)
+# Regras vigentes — Feed, /achei, mensagens, nomes, documentos e matching (16/11/2026)
 
-Página única com o que vale hoje no Feed (`/feed`) e no `/achei`. Em linguagem simples. O histórico de decisões fica no DECISOES.md; o que foi superado saiu daqui.
-Tudo abaixo está em produção (Feed novo: #113, `46311e6`; contexto no `/achei`: #114, `1eb5fdb`).
+Página única com o que vale hoje. Em linguagem simples. O histórico de decisões fica no DECISOES.md; o que foi superado saiu daqui. Em produção: Feed, /achei, máscara de nomes e documento «perdi». Desligados em produção: a área de mensagens e o matching automático.
 
 ## O que o Feed é
 - Outra forma de ver as ocorrências, ao lado da Busca e do Mapa. Mesmos dados, mesmas páginas de detalhe, mesmo sistema de correspondência. Não é rede social.
 - **Quem entra:** ocorrências públicas, não legadas, perdidas, achadas ou roubadas, com código QR (cadastros de usuários e sinais públicos). O legado nunca entra, nunca é escondido em outras telas e nunca é alterado.
 - **Ordem:** cadastros de usuários antes dos sinais públicos. A regra de quem entra é única: o Feed, a API do Feed e a contagem do admin usam o mesmo trecho.
-- **Nome de pessoa:** mascarado como «(nome omitido)» nos sinais públicos e nos títulos do Feed; o endereço da notícia não aparece escrito na tela.
 
 ## Página `/feed`
 - **Título e cabeçalho:** H1 «Feed de ocorrências» (também no título da aba). Abaixo do menu do site, uma faixa azul-marinho curta com a chamada «Perdeu ou encontrou algo?» e os botões «Perdi» e «Encontrei» (só na página 1). A lista fica numa folha clara por cima da faixa.
@@ -48,7 +46,7 @@ Nenhum texto promete contato protegido, SMS, chat protegido, resposta da fonte, 
 - **Resultado vazio do `/achei`:** «Crie uma conta gratuita para registrar o que você encontrou.» **«Ver detalhes»** (`/achei`) e **«É o meu?»** (`/buscar`) usam o código público e levam a `/objeto/<código>`. No `/achei`, «É este» e «Ver detalhes» ficam alinhados com folga de 12 px (se não couber, o link desce para a linha de baixo, à esquerda).
 - **Cartaz:** o mini-mapa «Local da ocorrência» (só no A4) é uma imagem estática do Mapbox; se o mapa não carregar ou não houver chave, o bloco some e fica só o texto bairro/cidade. A frase do A4 é «Escaneie o QR Code para abrir a página do objeto e avisar que você o encontrou.» O dono baixa o cartaz com coordenada e texto originais; a prévia pública usa bairro, cidade e coordenada arredondada.
 - **Mapa do cartaz público:** decisão do Marcos: fica como está (coordenada arredondada, zoom atual). Só o A4 usa o Mapbox (um pedido por cartaz); o limite gratuito e o uso devem ser conferidos na conta do Mapbox (não confirmado na página oficial).
-- **Chat:** não existe chat de conversa entre quem achou e o dono; por isso nenhum texto diz que «a conversa acontece pelo chat da plataforma» nesse contexto. O chat existe só para as correspondências confirmadas: a conversa só abre com o match confirmado, e o aviso (push) de mensagem tem texto fixo, sem reproduzir a mensagem.
+- **Chat:** o chat de match só abre com a correspondência confirmada. A área de mensagens entre quem achou e o dono existe, mas está desligada; enquanto estiver desligada, nenhum texto diz que «a conversa acontece pelo chat da plataforma» nesse contexto. Na correspondência confirmada: a conversa só abre com o match confirmado, e o aviso (push) de mensagem tem texto fixo, sem reproduzir a mensagem.
 - **Aviso ao encontrar (`/objeto` e `/scan`):** o aviso fica registrado na ocorrência; push e e-mail saem só quando o dono não é legado; não há promessa de chat nem de resposta.
 - **Feed:** a linha perto dos filtros diz «Esta lista é só um recorte.» com o link «Ver histórico no mapa».
 - **Descrições do legado:** o HTML e o «\n» literal NÃO são limpos (decisão do Marcos): os textos e os dados do legado não são tocados.
@@ -72,8 +70,6 @@ Nenhum texto promete contato protegido, SMS, chat protegido, resposta da fonte, 
 - **Toda saída que mostra título ou descrição de sinal público passa pela máscara central** (`(nome omitido)`): página do objeto, QR (`/scan`), leitura por código, lista pública, Feed, mapa, cartaz, e-mail de alerta de correspondência e lista de correspondências do dono. Usuário e legado saem como foram escritos.
 - **O título gravado continua o original** e a busca por nome do documento continua funcionando (busca, pontuação e correspondência usam o original no servidor). O texto enviado à Anthropic (modelo Haiku) na correspondência não foi alterado, e nada foi gravado mascarado (sem backfill). Objetos de usuário e do legado saem idênticos aos de antes.
 - **Ainda escapa:** nome sozinho, sem sobrenome («RG de Maria»), e nome depois de traço.
-- **Mesclado em 15/11/2026 (PR #123, commit `0232155`);** a decisão de manter o título gravado original segue em vigor (sem backfill).
-- **Pendências (dependem do Marcos):** decidir se o texto enviado à Anthropic (modelo Haiku) na correspondência deve ser mascarado; nome parcial («José P.») para sinais públicos e «encontrei», com o titular em campo próprio; formulário «perdi» de documento (campos pedidos e descartados no envio). AutoPost do n8n conferido: não lê objetos.
 
 ## Documento cadastrado por usuário («perdi»)
 - **Mesclado em 15/11/2026 (PR #125, commit `4fa5502`).**
@@ -82,19 +78,22 @@ Nenhum texto promete contato protegido, SMS, chat protegido, resposta da fonte, 
 - **Número do documento:** nunca é pedido nem guardado inteiro. O campo é «Últimos 4 dígitos (opcional)»; o servidor guarda no máximo 4 dígitos (o que passar é cortado) e mostra «final 1234».
 - **Texto livre:** em título e descrição de documento, sequências de 6 ou mais dígitos (inclusive CPF, RG e CNPJ com pontos, hífens ou espaços, e telefones) são mascaradas ao criar e ao editar, ficando só os 4 últimos. Datas, CEP e números curtos não mudam.
 - **Não muda:** a máscara de nomes continua só para sinal público; legado e sinais públicos saem como antes; outras categorias e objetos já gravados também.
-- **Pendências (dependem do Marcos):** nome do titular obrigatório ou opcional (hoje o asterisco não é imposto); incluir o titular na busca e no matching, junto com o nome parcial para sinais públicos e «encontrei»; prova de titularidade antes de revelar mais dados; texto enviado à Anthropic (modelo Haiku) no matching; conferir no navegador o aviso e o campo de 4 dígitos do formulário.
-- **Matching e provedores de IA:** o estágio semântico do matching chama a API da Anthropic (modelo Haiku) com título, descrição, cor e categoria dos dois objetos; o titular não sai. A OpenAI é usada só na extração de notícias dos sinais públicos.
-- **Próximas fases (nada iniciado):** casamento interno por nome (com os 4 últimos dígitos e a distância como sinais fortes, selo «titular conferido», sem nome em e-mail ou push, nome parcial para «encontrei»); limite de requisições nas rotas públicas antes de qualquer busca por nome; busca pública por nome só depois do limite; decidir nome parcial ou «(nome omitido)» para sinais públicos; nome do titular obrigatório ou opcional (hoje o asterisco não é imposto).
 
 ## Matching automático (preparado, desligado)
-- **Estado real:** o cron do matching saiu do agendamento da Vercel em 27/06 e o n8n não tem workflow de matching, então ninguém o chama. O gancho que rodava o matching ao criar um objeto estava quebrado e foi corrigido. O matching manual (botão do painel e rota individual) sempre funcionou.
+- **Estado real:** o cron do matching saiu do agendamento da Vercel em 27/06. Existe um fluxo no n8n («Backfindr Matching - Cron 15 min»), mas está desativado e ainda sem a credencial correta; ninguém chama o cron hoje. O gancho de criação de objeto foi corrigido e o matching manual sempre funcionou.
 - **Interruptor:** `MATCHING_ATIVO` (ausente = desligado). Governa só o gancho de criação e o cron; desligado, eles não fazem nada. Ligar e agendar dependem de ordem do Marcos.
 - **Aviso ao dono:** nunca para dono ou objeto legado nem para a conta de sistema (sinais públicos); sem nome inteiro e sem promessa de aviso garantido. O match continua sendo gravado.
 - **Pares já avaliados** (qualquer status) não voltam; os 1370 pares rejeitados não são reavaliados.
-- **Pendências (dependem do Marcos):** ligar a chave; onde agendar (n8n com o segredo do cron e alerta de falha, ou cron da Vercel conforme o plano e a frequência permitida); o que fazer com o estágio 3; titular no matching; limite de requisições nas rotas públicas.
+- **Pares entre dois sinais públicos** (dono = conta de sistema) são gravados, sem aviso a ninguém.
+- **Registro de execução:** cada evento de matching pertence a um objeto; não há registro «da rodada» sem objeto, e a tabela de eventos não tem política de apagamento.
+- **Matching e provedores de IA:** o estágio semântico do matching chama a API da Anthropic (modelo Haiku) com título, descrição, cor e categoria dos dois objetos; o titular não sai. A OpenAI é usada só na extração de notícias dos sinais públicos.
 
 ## Pendências a decidir (nenhuma foi iniciada)
-- Definição oficial do produto e metadados do site e dos planos que ainda dizem «chat mediado»; frases «notificação imediata» fora do cartaz.
-- Ícone de «Compartilhar» fica sob o balão do chat em parte da rolagem (Publicações, 390 px).
-- Balão do assistente em páginas de fundo claro fora do Feed (a classe de fundo não existe).
-- Primeiros 14 cards têm foto; depois, quase só cards sem foto.
+- Ligar `MATCHING_ATIVO`; ativar o fluxo do n8n (com a credencial correta) ou usar o cron da Vercel; alerta de falha do cron.
+- Estágio 3 do matching: consertar, usar regra local (4 últimos dígitos e distância), remover ou manter.
+- Titular: obrigatório ou opcional (hoje o asterisco não é imposto); casamento por nome (Fase 1); nome parcial para sinais públicos e «encontrei»; prova de titularidade; busca por nome só depois do limite de requisições nas rotas públicas.
+- Decidir se o texto enviado à Anthropic no matching deve ser mascarado.
+- Conferir no navegador o aviso e o campo de 4 dígitos do formulário de documento.
+- Definição oficial e metadados que ainda dizem «chat mediado»; frases «notificação imediata» fora do cartaz.
+- `SEND_THROTTLE_SECRET` no escopo Preview (não verificado); e-mail antigo de «alguém escaneou» ainda com a frase de proteção; tokens do AutoPost em texto no n8n.
+- Ícone de «Compartilhar» sob o balão do chat; balão do assistente fora do Feed; cards sem foto.

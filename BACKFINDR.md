@@ -3,7 +3,7 @@
 > Localização canônica: `~/backfindr/BACKFINDR.md` (clone de `reencontra-tudo/backfindr`, branch `main`; definido em 26/10/2026).
 > ~~Localização canônica anterior: `~/Downloads/backfindr-local/backfindr-main/BACKFINDR.md`~~ — **SUPERADO em 26/10/2026** por `~/backfindr` (a cópia antiga tem o último commit em 04/08/2026; `~/backfindr` = `origin/main` 92d4deb, 14/10/2026; fonte: `git log`/`gh api`, 26/10/2026).
 > ~~Última atualização anterior: 2026-08-22~~ (SUPERADO em 26/10/2026)
-> Última atualização: 2026-10-26 (revisão administrativa: cabeçalho, §6, §17 e §18; as demais seções são de 22/08/2026 ou anteriores e **não foram reverificadas**).
+> Última atualização: 2026-11-16 (§12, §14, a linha da credencial de exemplo e as linhas do matching revisadas; as demais seções são de 26/10/2026 ou anteriores e **não foram reverificadas**).
 > **REGRA DE MANUTENÇÃO: nunca usar `cat >>`. Sempre reescrever via Python.**
 
 ---
@@ -92,7 +92,7 @@ Projeto anterior: Webjetos (2015) — migração planejada
 - **Pacotes:** sempre `pnpm install`, nunca `npm install` — lockfile quebra deploy
 - **Arquivos:** nunca perguntar ao Marcos onde está. Dar comando `find`/`cat`/`ls` para ele colar
 - **Código está em `src/`**, não em `app/` diretamente
-- **Vercel Hobby:** cron máximo 1x/dia. O cron de matching saiu do `vercel.json` em 27/06 e **nenhum agendador o chama hoje** (não existe workflow de matching no n8n; texto antigo dizia o contrário — corrigido em 16/11/2026, ver DECISOES.md)
+- **Vercel Hobby:** cron máximo 1x/dia. O cron de matching saiu do `vercel.json` em 27/06 e **nenhum agendador ativo o chama hoje** (existe um fluxo desativado no n8n; texto antigo dizia o contrário — corrigido em 16/11/2026, ver DECISOES.md)
 - **Heredoc no zsh:** não usar para arquivos TSX/código com backticks — usar Python com strings
 - **Public Signals:** publicação em `objects` é SEMPRE por aprovação manual (`/admin/public-signals`) — pipeline nunca publica sozinho. Qualquer auto-aprovação futura precisa nascer atrás de um toggle explícito, desligado por padrão, desenhado junto com a lógica de automação (não construído antes dela — ver seção 17 e histórico 18-19/08)
 - **Páginas `/objeto/[code]` de SINAL PÚBLICO (12/11/2026, PR da máscara):** nome de pessoa (ex.: «Documento encontrado em nome de …») é mascarado no servidor em título da aba, h1, meta, Open Graph, JSON-LD e JSON embutido (`src/lib/objectPublicView.ts`, usando `src/lib/privacy/maskPersonNames.ts`). Objetos de usuários e do legado não mudam (mesma referência). **Pendência:** a imagem do cartaz usada em `og:image` (`/api/v1/objects/[id]/poster`) ainda é gerada com o título original.
@@ -105,7 +105,6 @@ Projeto anterior: Webjetos (2015) — migração planejada
 cd ~/backfindr && pnpm dev  # porta 3003  (caminho único desde 26/10/2026)
 # SUPERADO em 26/10/2026: `bash ~/Downloads/iniciar-backfindr.sh` (o script não existe em ~/Downloads, verificado em 26/10/2026)
 # SUPERADO em 26/10/2026: `cd ~/Downloads/backfindr-local/backfindr-main && pnpm dev` (clone de 04/08/2026)
-# Admin: localhost:3003/admin/dashboard — admin@backfindr.com / admin123
 ```
 
 ---
@@ -198,7 +197,7 @@ Todas as sprints concluídas em 26–27/06/2026:
 | 4 | GET /api/v1/objects/[id]/events + card dados reais | ✅ |
 | 5 | Countdown next_matching_at na UI | ✅ |
 
-**Cron:** removido do vercel.json (Hobby limit) em 27/06. **Atenção (corrigido em 16/11/2026):** o matching NÃO roda no n8n a cada 15 minutos; não existe workflow de matching e o cron não é chamado por ninguém. O matching automático agora tem o interruptor `MATCHING_ATIVO` (desligado por padrão).
+**Cron:** removido do vercel.json (Hobby limit) em 27/06. **Atenção (corrigido em 16/11/2026):** o matching NÃO roda no n8n a cada 15 minutos; existe um fluxo desativado e o cron não é chamado por ninguém. O matching automático agora tem o interruptor `MATCHING_ATIVO` (desligado por padrão).
 **CRON_SECRET:** já existe no Vercel há 39 dias ✅ — NÃO é pendência.
 
 **Escaneamento real x abertura de página (12/11/2026, DECISOES F-03):** o `qr_scanned` SEM `metadata.via` é só «alguém abriu a página» (`GET /api/v1/objects/scan/[code]`, chamado por `/objeto`, `/scan` e pelo mapa); o `qr_scanned` COM `via` é pessoa real (`POST …/notify`, que também avisa o dono). O GET deixou de gravar para objeto/dono legado e sinal público (usuário segue gravando); `GET /api/v1/objects/[id]/events` (Central de Atividade) conta, lista e calcula a «última atividade» só com o real; rótulo «escaneamentos reais de QR». Nada em `object_events` foi apagado. Antes da mudança: 47.855 aberturas de página (93% legado) contra 6 escaneamentos reais; ~5.440 gravações por dia, das quais ~5.380 deixam de ser gravadas.
@@ -222,6 +221,7 @@ Todas as sprints concluídas em 26–27/06/2026:
 - SEO Content Engine: cron 9h diário, tabela seo_content_seeds (46 seeds, esgotam ~11/08/2026)
 - Instagram @backfindroficial: 5 nichos (protect excluído pelo nó If) ✅
 - Workflow **"Backfindr Public Signals — Ingestão Diária"** (ativado 19/08/2026): Schedule Trigger 1x/dia à meia-noite → `POST /api/v1/admin/public-signals/ingest` (header `x-signals-cron-secret`, secret dedicado, não reaproveita `CRON_SECRET` do matching). Descobre ocorrências públicas (imprensa + institucional), nunca publica sozinho — alimenta fila de revisão manual em `/admin/public-signals`. Detalhes completos: seção 17 e histórico de sessão 18-19/08.
+- Workflow «Backfindr Matching - Cron 15 min» (id `UHTA3WoSvRvi4Lsr`): criado em 15/11/2026, DESATIVADO, sem credencial correta; chama `GET /api/v1/cron/matching` com Bearer `CRON_SECRET`. Só ativar com ordem do Marcos e com `MATCHING_ATIVO` ligado.
 - **⚠️ 5 tokens Meta em texto puro nos nodes HTTP do workflow (não no cofre de credenciais do n8n) — tratar como comprometidos.** Confirmados válidos e funcionando em 28/08/2026 (execução real retornou `post_id`); a doc antiga dizia que expiravam ~30/07/2026, isso estava errado. Pendência completa e ação necessária: ver seção 17, 🔴 Alto.
 
 **Facebook pages:** pet `1058341297366140` | celular `472039546624261` | bicicleta `301459970061606` | veículo `607774492681517` | geral+protect `229182413876628`
@@ -252,6 +252,7 @@ STRIPE_SECRET_KEY, STRIPE_WEBHOOK_SECRET, NEXT_PUBLIC_STRIPE_PRO_PRICE_ID,
 NEXT_PUBLIC_MAPBOX_TOKEN, RESEND_API_KEY, NEXT_PUBLIC_VAPID_PUBLIC_KEY,
 VAPID_PRIVATE_KEY, ADMIN_IDS, NEXT_PUBLIC_API_URL, NEXT_PUBLIC_APP_URL,
 SERPAPI_KEY, OPENAI_API_KEY, MP_ACCESS_TOKEN, CRON_SECRET ✅
+MATCHING_ATIVO (desligado por padrão), MENSAGENS_ATIVO (desligado), SEND_THROTTLE_SECRET.
 
 ---
 
@@ -406,7 +407,7 @@ Decisão: DECISOES.md, F-08. `GET /api/v1/objects/public` ganha a opção `stric
 - Sistema Vivo completo (Sprints A, B1, 2, 3, 4, 5)
 - Momento 1 (Ansiedade): tela de sucesso ✅
 - Momento 2 (Crença): ActivityCenterCard ✅
-- Cron vercel.json: removido (Hobby limit). Não há agendador do matching hoje (texto antigo «n8n gerencia» estava desatualizado; corrigido em 16/11/2026)
+- Cron vercel.json: removido (Hobby limit). Não há agendador ativo do matching hoje (existe um fluxo desativado no n8n; texto antigo «n8n gerencia» estava desatualizado; corrigido em 16/11/2026)
 - 434 páginas SEO publicadas
 - Cartaz 3 formatos funcionando
 - Matching automático no POST /objects ✅
