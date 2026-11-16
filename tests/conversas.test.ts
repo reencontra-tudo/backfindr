@@ -363,7 +363,10 @@ describe.skipIf(!TEST_DB)('área de mensagens (banco real)', () => {
       expect((await sino('achador', 'conversa_e_o_meu'))[0]).toMatchObject({ title: 'O dono respondeu ao seu aviso', message: 'O dono confirmou que o objeto é dele.', url: `/dashboard/mensagens/${id}` });
       await agir('encerrar', 'dono', id, { motivo: 'devolvido' });
       expect((await sino('achador', 'conversa_encerrada'))[0].message).toBe('O dono confirmou a devolução. Conversa encerrada.');
-      const todas = JSON.stringify([...(await sino('dono')), ...(await sino('achador'))]); expect(todas).not.toMatch(/secreta|privado|123|456/);
+      // Procura o CONTEÚDO das mensagens (as frases inteiras e as palavras que as marcam), não dígitos soltos: as linhas do sino levam o id da conversa na `url`,
+    // e um UUID aleatório pode conter «123» ou «456» (cerca de 1,3% das rodadas), o que fazia este teste falhar sem haver vazamento.
+    const todas = JSON.stringify([...(await sino('dono')), ...(await sino('achador'))]);
+    expect(todas).not.toMatch(/secreta|privado/); expect(todas).not.toContain('Mensagem secreta do achador 123'); expect(todas).not.toContain('Texto privado do dono 456');
     });
     it('«Não é meu» e cancelamento: a linha certa; o dono é avisado do cancelamento e o aviso antigo dele sai do contador', async () => {
       const a = (await aviso('achador')).json.conversa_id; await agir('recusar', 'dono', a);
