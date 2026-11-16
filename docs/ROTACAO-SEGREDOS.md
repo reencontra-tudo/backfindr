@@ -33,6 +33,13 @@ Em 27/10/2026 o `CRON_SECRET` foi rotacionado na Vercel sem atualizar o header `
 
 Quem chama cada rota (n8n, Vercel Cron, outro agendador) deve ser confirmado na hora da rotação; esta lista cobre só quem **lê** o segredo.
 
+## `VIGIA_SECRET` (vigia das rotinas agendadas)
+Segredo próprio da rota `/api/v1/cron/vigia-rotinas`, separado do `CRON_SECRET` e do `SIGNALS_CRON_SECRET`. Existe em DOIS lugares, que precisam ter o mesmo valor:
+- a variável `VIGIA_SECRET` na Vercel (Production);
+- o segredo do repositório `VIGIA_SECRET` no GitHub (Settings > Secrets and variables > Actions), lido pelo workflow `.github/workflows/vigia-rotinas.yml`.
+
+Ao rotacionar: troque nos dois, faça o redeploy da Vercel e dispare o workflow à mão (Actions > Vigia das rotinas agendadas > Run workflow) para confirmar a resposta 200. Se os valores ficarem diferentes, o job do GitHub falha com HTTP 401 e o próprio GitHub avisa. Sem a variável na Vercel, a rota responde 401 (fail-closed).
+
 ## Segredos separados
 `SIGNALS_CRON_SECRET` (ingestão de Public Signals) é um segredo distinto, de propósito, para poder ser revogado sem afetar o `CRON_SECRET`. Siga este mesmo checklist para ele.
 

@@ -4,6 +4,12 @@
 >
 > **Decisão de produto em aberto (16/11/2026):** o match manual do administrador (unir dois sinais públicos na ocorrência) NÃO existe no sistema. O algoritmo não une mais dois sinais públicos; hoje o administrador só lista os pares, muda o estado de um par que já existe e registra tentativas de contato.
 >
+> **Pendências do vigia das rotinas (16/11/2026):**
+> 1. Reagendar as rotinas hoje SEM agendador (lifecycle, reactivation, social-posts, chat-unread-email, snapshot de analytics, busca de marketing, fim de destaque) exige decisão do Marcos. Para lifecycle e reactivation, confirmar ANTES que excluem usuários legados (regra de nunca enviar e-mail ao legado). Ao reagendar uma, acrescentar o item em `src/lib/rotinasEsperadas.ts` e gravar a marca na rota.
+> 2. Error Workflow do n8n (aviso quando um fluxo falhar dentro do próprio n8n) como complemento ao vigia.
+> 3. Vigiar o aviso de chat não lido quando ele tiver agenda.
+> 4. Retenção das marcas: guardar 13 meses; depois, resumir ou apagar só com ordem do Marcos.
+>
 > HISTÓRICO (19/08/2026). As pendências vigentes estão em STATUS.md e em docs/FEED-E-ACHEI-REGRAS-VIGENTES.md. A chave OpenAI já está configurada (ver BACKFINDR.md §14).
 
 > Status: 🔴 Pendente | 🟡 Em andamento | ✅ Concluído
