@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect } from 'react';
+import { quandoTrackerPronto } from '@/lib/trackerReady';
 
 declare global {
   interface Window {
@@ -9,9 +10,12 @@ declare global {
 }
 
 export default function TrackViewContent() {
+  // Na entrada direta o Pixel ainda não carregou quando este efeito roda: espera o `fbq` existir (uma vez só).
   useEffect(() => {
-    window.fbq?.('track', 'ViewContent', {
-      content_name: 'comecar_landing',
+    return quandoTrackerPronto('fbq', () => {
+      window.fbq?.('track', 'ViewContent', {
+        content_name: 'comecar_landing',
+      });
     });
   }, []);
 
