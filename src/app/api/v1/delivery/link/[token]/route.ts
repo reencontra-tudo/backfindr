@@ -1,6 +1,13 @@
 export const dynamic = 'force-dynamic';
 import { NextRequest, NextResponse } from 'next/server';
 import { query } from '@/lib/db';
+import {
+  RESPOSTA_LINK_EXPIRADO,
+  SQL_ENTREGA_CONCLUIDA_EM,
+  STATUS_HTTP_LINK_EXPIRADO,
+  estadoDoLink,
+  registrarLinkExpirado,
+} from '@/lib/linkPublico';
 
 // GET /api/v1/delivery/link/[token]
 // Público — cliente acompanha a entrega pelo link recebido no WhatsApp
@@ -14,7 +21,8 @@ export async function GET(
               e.cliente_nome AS destinatario_nome, e.cliente_endereco AS endereco_destino,
               e.created_at, e.entregue_em,
               est.nome AS estabelecimento_nome,
-              entr_u.name AS entregador_nome
+              entr_u.name AS entregador_nome,
+              ${SQL_ENTREGA_CONCLUIDA_EM} AS concluida_em, NOW() AS agora
        FROM entregas e
        LEFT JOIN estabelecimentos est ON est.id = e.estabelecimento_id
        LEFT JOIN entregadores entr    ON entr.id = e.entregador_id
@@ -27,7 +35,13 @@ export async function GET(
       return NextResponse.json({ detail: 'Link inválido ou expirado' }, { status: 404 });
     }
 
-    const entrega = res.rows[0];
+    const { concluida_em, agora, ...entrega } = res.rows[0];
+
+    // Validade (src/lib/linkPublico.ts): depois do prazo só o estado «concluída», sem nenhum dado da entrega.
+    if (estadoDoLink('entrega', { status: entrega.status, concluidaEm: concluida_em, agora }) === 'expirado') {
+      await registrarLinkExpirado(query, 'entrega', entrega.id, concluida_em);
+      return NextResponse.json(RESPOSTA_LINK_EXPIRADO, { status: STATUS_HTTP_LINK_EXPIRADO });
+    }
 
     return NextResponse.json({ ...entrega, eventos: [] });
   } catch (e: unknown) {
