@@ -13,6 +13,8 @@ export function ImageLightbox({ images, initialIndex = 0, onClose }: ImageLightb
   const [loaded, setLoaded] = useState(false);
   const touchStartX = useRef<number | null>(null);
   const touchStartY = useRef<number | null>(null);
+  const onCloseRef = useRef(onClose);
+  onCloseRef.current = onClose;
 
   const prev = useCallback(() => {
     setLoaded(false);
@@ -34,6 +36,20 @@ export function ImageLightbox({ images, initialIndex = 0, onClose }: ImageLightb
     window.addEventListener('keydown', handler);
     return () => window.removeEventListener('keydown', handler);
   }, [onClose, prev, next, images.length]);
+
+  // Gesto/botão de voltar do aparelho fecha a imagem (sem sair da página). Entra uma entrada no histórico ao abrir; ao fechar por X, toque fora
+  // ou ESC ela é desfeita. Se pushState não estiver disponível, o X e o toque fora continuam funcionando.
+  useEffect(() => {
+    let empilhou = false;
+    let fechouPeloVoltar = false;
+    const aoVoltar = () => { fechouPeloVoltar = true; onCloseRef.current(); };
+    try { window.history.pushState({ ...(window.history.state ?? {}), bfLightbox: true }, ''); empilhou = true; } catch { /* sem histórico */ }
+    window.addEventListener('popstate', aoVoltar);
+    return () => {
+      window.removeEventListener('popstate', aoVoltar);
+      if (empilhou && !fechouPeloVoltar) { try { if (window.history.state?.bfLightbox) window.history.back(); } catch { /* sem problema */ } }
+    };
+  }, []);
 
   // Bloquear scroll do body
   useEffect(() => {
@@ -71,9 +87,10 @@ export function ImageLightbox({ images, initialIndex = 0, onClose }: ImageLightb
       {/* Botão fechar */}
       <button
         onClick={onClose}
-        className="absolute top-4 right-4 z-10 w-10 h-10 rounded-full flex items-center justify-center text-white"
-        style={{ background: 'rgba(255,255,255,0.15)' }}
+        className="bf-lightbox-fechar absolute right-4 z-10 w-11 h-11 rounded-full flex items-center justify-center text-white"
+        style={{ background: 'rgba(255,255,255,0.25)' }}
         aria-label="Fechar"
+        data-lightbox-fechar
       >
         <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
           <path d="M15 5L5 15M5 5l10 10" stroke="white" strokeWidth="2" strokeLinecap="round"/>
@@ -83,7 +100,7 @@ export function ImageLightbox({ images, initialIndex = 0, onClose }: ImageLightb
       {/* Contador */}
       {images.length > 1 && (
         <div
-          className="absolute top-4 left-1/2 -translate-x-1/2 z-10 px-3 py-1 rounded-full text-sm text-white font-medium"
+          className="bf-lightbox-fechar absolute left-1/2 -translate-x-1/2 z-10 px-3 py-1 rounded-full text-sm text-white font-medium"
           style={{ background: 'rgba(255,255,255,0.15)' }}
         >
           {current + 1} / {images.length}

@@ -41,3 +41,10 @@ body { background: #080b0f; }
   .animate-delay-200 { animation-delay: 200ms; }
   .animate-delay-300 { animation-delay: 300ms; }
 }
+
+/* Topo que respeita o entalhe/barra de status do iPhone. No app instalado (standalone, barra translúcida) o conteúdo vai por baixo da barra:
+   reserva ao menos 47px (altura do entalhe) quando o navegador não informa a área segura. */
+.bf-topo-seguro { padding-top: env(safe-area-inset-top, 0px); }
+@media (display-mode: standalone) { .bf-topo-seguro { padding-top: max(env(safe-area-inset-top, 0px), 47px); } }
+.bf-lightbox-fechar { top: max(1rem, calc(env(safe-area-inset-top, 0px) + 0.5rem)); }
+@media (display-mode: standalone) { .bf-lightbox-fechar { top: max(1rem, calc(env(safe-area-inset-top, 0px) + 0.5rem), 55px); } }

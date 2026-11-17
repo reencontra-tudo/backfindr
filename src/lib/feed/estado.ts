@@ -3,6 +3,7 @@
 // com chave versionada, validade curta e no máximo 36 cards. Qualquer erro (modo privado, JSON quebrado, versão antiga) = ignora e descarta.
 import { FEED_CATEGORY_LABELS, type FeedCategoryKey } from '@/lib/feed/category';
 import type { FeedItem, FeedStatus } from '@/lib/feed/query';
+import { marcarOrigemFeed } from '@/lib/voltarFeed';
 
 export const ESTADO_CHAVE = 'feed-state-v1';
 export const ESTADO_VERSAO = 1;
@@ -175,7 +176,12 @@ export function instalarRastreadorVoltar(): void {
   if (instalado || typeof window === 'undefined') return;
   instalado = true;
   window.addEventListener('popstate', () => { ultimoPopstate = Date.now(); });
-  document.addEventListener('click', (e) => { if ((e.target as Element | null)?.closest?.('a[href]')) ultimoPopstate = 0; }, true);
+  document.addEventListener('click', (e) => {
+    const a = (e.target as Element | null)?.closest?.('a[href]') as HTMLAnchorElement | null | undefined;
+    if (!a) return;
+    ultimoPopstate = 0;
+    try { marcarOrigemFeed(window.sessionStorage, window.location.pathname, a.getAttribute('href')); } catch { /* sem problema */ }
+  }, true);
 }
 
 /** Usa e apaga a marca de «voltar». */
