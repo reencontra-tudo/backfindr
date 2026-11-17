@@ -79,7 +79,7 @@ describe('card com foto (estilo publicação)', () => {
   });
   it('foto em largura total com proporção fixa (sem pulo de layout) e sem bloco «Sem foto»', () => {
     expect(a).toMatch(/aspect-\[4\/3\][^"]*w-full|w-full[^"]*aspect-\[4\/3\]/);
-    expect(a).toContain('object-cover');
+    expect(a).toContain('object-contain');   // a foto aparece inteira (moldura); o fundo desfocado usa object-cover só como textura (tests/feed-foto-moldura.test.ts)
     expect(a).toContain('data-photo="sim"');
     expect(a).not.toMatch(/Sem foto/i);
   });
