@@ -2,6 +2,7 @@ export const dynamic = 'force-dynamic';
 import { NextRequest, NextResponse } from 'next/server';
 import Stripe from 'stripe';
 import { cookies } from 'next/headers';
+import { respostaErroInterno } from '@/lib/erroInterno';
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY ?? '', {
   apiVersion: '2024-06-20',
@@ -48,7 +49,6 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({ url: session.url });
   } catch (e: unknown) {
-    const message = e instanceof Error ? e.message : 'Erro ao criar sessão';
-    return NextResponse.json({ error: message }, { status: 500 });
+    return respostaErroInterno('stripe/checkout', e, { campo: 'error', mensagem: 'Não foi possível iniciar o pagamento agora. Tente novamente em instantes.' });
   }
 }

@@ -4,6 +4,7 @@ import { query } from '@/lib/db';
 import { requireAuth } from '@/lib/adminGuard';
 import { notificarEncomendaChegou, enviarWhatsApp } from '@/lib/notifyModulos';
 import { z } from 'zod';
+import { respostaErroInterno } from '@/lib/erroInterno';
 
 const EncomendaSchema = z.object({
   morador_id:      z.string().uuid().optional(),
@@ -66,7 +67,7 @@ export async function GET(
       size,
     });
   } catch (e: unknown) {
-    return NextResponse.json({ detail: String(e) }, { status: 500 });
+    return respostaErroInterno('portaria/condominioId/encomendas', e);
   }
 }
 
@@ -169,6 +170,6 @@ export async function POST(
     }, { status: 201 });
 
   } catch (e: unknown) {
-    return NextResponse.json({ detail: String(e) }, { status: 500 });
+    return respostaErroInterno('portaria/condominioId/encomendas', e);
   }
 }

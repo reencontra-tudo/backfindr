@@ -5,6 +5,7 @@ import {
   notificarEntregaConfirmada,
   notificarEntregadorComprovanteGerado,
 } from '@/lib/notifyModulos';
+import { respostaErroInterno } from '@/lib/erroInterno';
 
 // POST /api/v1/delivery/confirmar/[token]
 // Cliente confirma o recebimento via link único — sem autenticação necessária
@@ -88,6 +89,6 @@ export async function POST(
       descricao:   desc,
     });
   } catch (e: unknown) {
-    return NextResponse.json({ detail: String(e) }, { status: 500 });
+    return respostaErroInterno('delivery/confirmar/token', e);
   }
 }

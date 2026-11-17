@@ -4,6 +4,7 @@ import { query } from '@/lib/db';
 import { requireAuth } from '@/lib/adminGuard';
 import { gerarQrCode, gerarToken, notificarEntregaSaiu, enviarWhatsApp } from '@/lib/notifyModulos';
 import { z } from 'zod';
+import { respostaErroInterno } from '@/lib/erroInterno';
 
 const EntregaSchema = z.object({
   estabelecimento_id: z.string().uuid(),
@@ -71,7 +72,7 @@ export async function GET(req: NextRequest) {
       size,
     });
   } catch (e: unknown) {
-    return NextResponse.json({ detail: String(e) }, { status: 500 });
+    return respostaErroInterno('delivery/entregas', e);
   }
 }
 
@@ -148,6 +149,6 @@ export async function POST(req: NextRequest) {
       link_url: linkUrl,
     }, { status: 201 });
   } catch (e: unknown) {
-    return NextResponse.json({ detail: String(e) }, { status: 500 });
+    return respostaErroInterno('delivery/entregas', e);
   }
 }

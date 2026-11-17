@@ -8,6 +8,7 @@ import {
   estadoDoLink,
   registrarLinkExpirado,
 } from '@/lib/linkPublico';
+import { respostaErroInterno } from '@/lib/erroInterno';
 
 // GET /api/v1/delivery/link/[token]
 // Público — cliente acompanha a entrega pelo link recebido no WhatsApp
@@ -45,6 +46,6 @@ export async function GET(
 
     return NextResponse.json({ ...entrega, eventos: [] });
   } catch (e: unknown) {
-    return NextResponse.json({ detail: String(e) }, { status: 500 });
+    return respostaErroInterno('delivery/link/token', e);
   }
 }

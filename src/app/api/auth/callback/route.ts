@@ -44,9 +44,8 @@ export async function GET(request: NextRequest) {
       console.error('redirect_uri used:', redirectUri);
       console.error('appUrl:', appUrl);
       console.error('code length:', code?.length);
-      const errorDetail = encodeURIComponent(JSON.stringify(tokenData));
-      const usedRedirectUri = encodeURIComponent(redirectUri);
-      return NextResponse.redirect(`${appUrl}/auth/login?error=google_token_failed&detail=${errorDetail}&used_uri=${usedRedirectUri}`);
+      // O corpo de erro do Google e o endereço de retorno do servidor ficam só no log acima; a URL leva só o código.
+      return NextResponse.redirect(`${appUrl}/auth/login?error=google_token_failed`);
     }
 
     // Buscar dados do usuário

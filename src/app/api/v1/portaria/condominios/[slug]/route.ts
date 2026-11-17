@@ -1,6 +1,7 @@
 export const dynamic = 'force-dynamic';
 import { NextRequest, NextResponse } from 'next/server';
 import { query } from '@/lib/db';
+import { respostaErroInterno } from '@/lib/erroInterno';
 
 // GET /api/v1/portaria/condominios/[slug]
 // Público — morador acessa pelo link personalizado para se cadastrar
@@ -33,6 +34,6 @@ export async function GET(
       moradores_cadastrados: parseInt(moradores.rows[0].count, 10),
     });
   } catch (e: unknown) {
-    return NextResponse.json({ detail: String(e) }, { status: 500 });
+    return respostaErroInterno('portaria/condominios/slug', e);
   }
 }

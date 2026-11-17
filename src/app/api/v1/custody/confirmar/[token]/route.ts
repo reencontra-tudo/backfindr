@@ -2,6 +2,7 @@ export const dynamic = 'force-dynamic';
 import { NextRequest, NextResponse } from 'next/server';
 import { query } from '@/lib/db';
 import { notificarCustodiaEntregue } from '@/lib/notifyModulos';
+import { respostaErroInterno } from '@/lib/erroInterno';
 
 // POST /api/v1/custody/confirmar/[token]
 // Destinatário confirma a retirada via link único
@@ -82,6 +83,6 @@ export async function POST(
       destinatario_nome: cust.destinatario_nome,
     });
   } catch (e: unknown) {
-    return NextResponse.json({ detail: String(e) }, { status: 500 });
+    return respostaErroInterno('custody/confirmar/token', e);
   }
 }

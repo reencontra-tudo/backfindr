@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { query } from '@/lib/db';
 import { requireAuth } from '@/lib/adminGuard';
 import { z } from 'zod';
+import { respostaErroInterno } from '@/lib/erroInterno';
 
 const HEX_COLOR = /^#[0-9A-Fa-f]{6}$/;
 
@@ -41,7 +42,7 @@ export async function GET(req: NextRequest) {
 
     return NextResponse.json(res.rows[0]);
   } catch (e: unknown) {
-    return NextResponse.json({ detail: String(e) }, { status: 500 });
+    return respostaErroInterno('portaria/condominios/branding', e);
   }
 }
 
@@ -97,7 +98,7 @@ export async function PATCH(req: NextRequest) {
 
     return NextResponse.json(res.rows[0]);
   } catch (e: unknown) {
-    return NextResponse.json({ detail: String(e) }, { status: 500 });
+    return respostaErroInterno('portaria/condominios/branding', e);
   }
 }
 

@@ -5,6 +5,7 @@ import { buildPosterData } from '@/lib/posterFormatter';
 import { maskSharedTexts } from '@/lib/objectPublicView';
 import { enderecoPublico, ehCadastroDeUsuario, arredondaCoordenada } from '@/lib/publicLocation';
 import sharp from 'sharp';
+import { registrarErroInterno } from '@/lib/erroInterno';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -674,7 +675,7 @@ export async function GET(
     });
 
   } catch (err) {
-    console.error('[poster]', err);
-    return new Response(`Erro: ${err instanceof Error ? err.message : String(err)}`, { status: 500 });
+    registrarErroInterno('objects/poster', err);
+    return new Response('Não foi possível gerar o cartaz agora. Tente novamente em instantes.', { status: 500 });
   }
 }

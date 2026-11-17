@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { query } from '@/lib/db';
 import { requireAuth } from '@/lib/adminGuard';
 import { notificarCustodiaRecebida } from '@/lib/notifyModulos';
+import { respostaErroInterno } from '@/lib/erroInterno';
 
 // POST /api/v1/portaria/[condominioId]/custodias
 // Porteiro escaneia QR de objeto deixado por morador — registra custódia
@@ -84,7 +85,7 @@ export async function POST(
       destinatario_nome:  cust.destinatario_nome,
     });
   } catch (e: unknown) {
-    return NextResponse.json({ detail: String(e) }, { status: 500 });
+    return respostaErroInterno('portaria/condominioId/custodias', e);
   }
 }
 
@@ -113,6 +114,6 @@ export async function GET(
 
     return NextResponse.json({ items: res.rows, total: res.rows.length });
   } catch (e: unknown) {
-    return NextResponse.json({ detail: String(e) }, { status: 500 });
+    return respostaErroInterno('portaria/condominioId/custodias', e);
   }
 }

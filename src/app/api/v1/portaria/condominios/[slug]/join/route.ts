@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { query } from '@/lib/db';
 import { requireAuth } from '@/lib/adminGuard';
 import { z } from 'zod';
+import { respostaErroInterno } from '@/lib/erroInterno';
 
 const JoinSchema = z.object({
   numero: z.string().min(1).max(20),  // número da unidade
@@ -88,6 +89,6 @@ export async function POST(
       unidade: { id: unidadeId, numero, bloco: bloco ?? null },
     }, { status: 201 });
   } catch (e: unknown) {
-    return NextResponse.json({ detail: String(e) }, { status: 500 });
+    return respostaErroInterno('portaria/condominios/slug/join', e);
   }
 }
