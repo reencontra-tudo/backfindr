@@ -10,15 +10,16 @@ export async function GET(
 ) {
   try {
     const res = await query(
-      `SELECT e.id, e.status, e.token,
-              e.destinatario_nome, e.endereco_destino,
-              e.lat, e.lng, e.created_at, e.entregue_em,
+      `SELECT e.id, e.status, e.link_token AS token,
+              e.cliente_nome AS destinatario_nome, e.cliente_endereco AS endereco_destino,
+              e.created_at, e.entregue_em,
               est.nome AS estabelecimento_nome,
-              entr.nome AS entregador_nome
+              entr_u.name AS entregador_nome
        FROM entregas e
        LEFT JOIN estabelecimentos est ON est.id = e.estabelecimento_id
        LEFT JOIN entregadores entr    ON entr.id = e.entregador_id
-       WHERE e.token = $1`,
+       LEFT JOIN users entr_u         ON entr_u.id = entr.user_id
+       WHERE e.link_token = $1`,
       [params.token]
     );
 
