@@ -4,6 +4,7 @@ import posthog from 'posthog-js';
 import { PostHogProvider as PHProvider } from 'posthog-js/react';
 import { useEffect, Suspense } from 'react';
 import { usePathname, useSearchParams } from 'next/navigation';
+import { sanitizePostHogProps, sanitizeTrackedUrl } from '@/lib/trackingGuard';
 
 // ─── Init ─────────────────────────────────────────────────────────────────────
 if (typeof window !== 'undefined' && process.env.NEXT_PUBLIC_POSTHOG_KEY) {
@@ -20,6 +21,16 @@ if (typeof window !== 'undefined' && process.env.NEXT_PUBLIC_POSTHOG_KEY) {
     mask_all_element_attributes:    true,
     mask_personal_data_properties:  true,
     session_recording: { maskAllInputs: true, maskTextSelector: '*' },
+    // Credenciais na URL (F-35): toda URL enviada passa por trackingGuard antes de sair —
+    // $pageview, autocapture, saída de página e gravação de sessão (inclusive $set/$set_once
+    // e os eventos de navegação do snapshot). Só URL/caminho mudam; nomes e demais propriedades não.
+    before_send: (event) => {
+      if (!event) return event;
+      event.properties = sanitizePostHogProps(event.properties);
+      if (event.$set) event.$set = sanitizePostHogProps(event.$set);
+      if (event.$set_once) event.$set_once = sanitizePostHogProps(event.$set_once);
+      return event;
+    },
   });
 }
 
@@ -31,7 +42,7 @@ function PageViewTrackerInner() {
   useEffect(() => {
     if (!pathname) return;
     const url = searchParams.toString() ? `${pathname}?${searchParams}` : pathname;
-    posthog.capture('$pageview', { $current_url: window.location.origin + url });
+    posthog.capture('$pageview', { $current_url: sanitizeTrackedUrl(window.location.origin + url) });
   }, [pathname, searchParams]);
 
   return null;

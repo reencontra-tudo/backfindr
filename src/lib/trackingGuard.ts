@@ -63,3 +63,101 @@ export function isTrackingBlocked(
   if (TRACKING_BLOCKED_PATHS.some((re) => re.test(p))) return true;
   return hasSensitiveParam(search) || hasSensitiveParam(hash);
 }
+
+// ─── Limpeza de URL para o PostHog ───────────────────────────────────────────
+// O PostHog não deixa de carregar (decisão à parte, F-35): em vez disso, toda URL que ele envia passa
+// por aqui. Mesma lista (SENSITIVE_QUERY_PARAMS / TRACKING_BLOCKED_PATHS) do Pixel e do GA4.
+
+export const REDACTED = '[redacted]';
+
+/** Propriedades de evento do PostHog que carregam URL ou caminho. */
+export const POSTHOG_URL_PROPS: readonly string[] = [
+  '$current_url',
+  '$referrer',
+  '$pathname',
+  '$initial_current_url',
+  '$initial_referrer',
+  '$initial_pathname',
+  '$session_entry_url',
+  '$session_entry_referrer',
+  '$session_entry_pathname',
+  'href',
+];
+
+function stripSensitive(params: string, prefix: '?' | '#'): string {
+  const kept: string[] = [];
+  for (const part of params.split('&')) {
+    if (!part) continue;
+    let key = part.split('=')[0];
+    try {
+      key = decodeURIComponent(key.replace(/\+/g, ' '));
+    } catch {
+      /* chave malformada: usa o texto como veio */
+    }
+    if (!SENSITIVE_QUERY_PARAMS.includes(key.trim().toLowerCase())) kept.push(part);
+  }
+  return kept.length ? prefix + kept.join('&') : '';
+}
+
+/**
+ * Devolve a URL (absoluta ou só caminho) sem credenciais:
+ *  - rota bloqueada (link mágico, redefinição, /custody/<token>, /delivery/<token>): sem query e sem
+ *    fragmento, e o segmento do token no caminho vira `[redacted]`;
+ *  - qualquer outra rota: só os parâmetros sensíveis saem da query e do fragmento; o resto fica igual.
+ * Valor que não é texto, ou que não dá para interpretar como URL, volta como veio quando não há
+ * nada sensível; se houver, a query e o fragmento são descartados por inteiro.
+ */
+export function sanitizeTrackedUrl<T>(value: T): T {
+  if (typeof value !== 'string' || !value) return value;
+  const m = /^((?:[a-z][a-z0-9+.-]*:)?\/\/[^/?#]*)?([^?#]*)(\?[^#]*)?(#.*)?$/i.exec(value);
+  if (!m) return value;
+  const [, origin = '', path = '', query = '', hash = ''] = m;
+  if (path && TRACKING_BLOCKED_PATHS.some((re) => re.test(normalizePath(path)))) {
+    const segs = path.split('/');
+    // /custody/<token> e /delivery/<token>: o token é o 3º elemento ('', 'custody', '<token>').
+    const tokenInPath = /^\/(custody|delivery)\//i.test(path);
+    if (tokenInPath && segs.length > 2) segs[2] = REDACTED;
+    return (origin + segs.join('/')) as unknown as T;
+  }
+  const q = query ? stripSensitive(query.slice(1), '?') : '';
+  const h = hash ? stripSensitive(hash.slice(1), '#') : '';
+  return (origin + path + q + h) as unknown as T;
+}
+
+function sanitizeReplayEvent(ev: unknown): unknown {
+  if (typeof ev === 'string') {
+    try {
+      const parsed = JSON.parse(ev);
+      const clean = sanitizeReplayEvent(parsed);
+      return clean === parsed ? ev : JSON.stringify(clean);
+    } catch {
+      return ev;
+    }
+  }
+  if (!ev || typeof ev !== 'object') return ev;
+  const e = ev as { data?: { href?: unknown; payload?: { href?: unknown } } };
+  const d = e.data;
+  if (!d || typeof d !== 'object') return ev;
+  const href = typeof d.href === 'string' ? sanitizeTrackedUrl(d.href) : d.href;
+  const p = d.payload;
+  const phref = p && typeof p === 'object' && typeof p.href === 'string' ? sanitizeTrackedUrl(p.href) : p?.href;
+  if (href === d.href && phref === p?.href) return ev;
+  return { ...e, data: { ...d, ...(href !== d.href ? { href } : {}), ...(p && phref !== p.href ? { payload: { ...p, href: phref } } : {}) } };
+}
+
+/** Eventos da gravação de sessão (rrweb): a URL da página vai em `data.href` (Meta) e `data.payload.href` (custom). */
+export function sanitizeSnapshotData(data: unknown): unknown {
+  if (Array.isArray(data)) return data.map(sanitizeReplayEvent);
+  return sanitizeReplayEvent(data);
+}
+
+/** Limpa as propriedades de URL de um objeto de propriedades do PostHog (sem alterar as demais). */
+export function sanitizePostHogProps<P extends Record<string, unknown> | undefined | null>(props: P): P {
+  if (!props || typeof props !== 'object') return props;
+  const out: Record<string, unknown> = { ...props };
+  for (const k of POSTHOG_URL_PROPS) {
+    if (k in out) out[k] = sanitizeTrackedUrl(out[k]);
+  }
+  if ('$snapshot_data' in out) out.$snapshot_data = sanitizeSnapshotData(out.$snapshot_data);
+  return out as P;
+}
