@@ -4,6 +4,7 @@
  * Segue o mesmo padrão de pushNotification.ts existente.
  */
 
+import { randomBytes } from 'crypto';
 import { query } from './db';
 import { sendPushToUser } from './pushNotification';
 
@@ -209,11 +210,19 @@ export async function enviarWhatsApp(
 }
 
 // ─── Gerar token único para links ─────────────────────────────────────────────
+export const ALFABETO_TOKEN = 'ABCDEFGHJKMNPQRSTUVWXYZabcdefghjkmnpqrstuvwxyz23456789';
+
 export function gerarToken(prefixo: string = ''): string {
-  const chars = 'ABCDEFGHJKMNPQRSTUVWXYZabcdefghjkmnpqrstuvwxyz23456789';
+  const chars = ALFABETO_TOKEN;
+  // Rejeição de bytes >= limite para não viciar a distribuição (256 não é múltiplo de chars.length).
+  const limite = 256 - (256 % chars.length);
   let token = prefixo;
-  for (let i = 0; i < 32; i++) {
-    token += chars[Math.floor(Math.random() * chars.length)];
+  while (token.length < prefixo.length + 32) {
+    for (const b of randomBytes(48)) {
+      if (b >= limite) continue;
+      token += chars[b % chars.length];
+      if (token.length === prefixo.length + 32) break;
+    }
   }
   return token;
 }
