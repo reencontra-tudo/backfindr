@@ -29,6 +29,7 @@ import {
   lerEstado, obterStorage, registrarMontagem, salvarEstado, tipoNavegacao, type Filtros, type Marco,
 } from '@/lib/feed/estado';
 import { ConviteFim } from './FeedCta';
+import { FeedFoto } from './FeedFoto';
 import { SITUACAO, T } from './tema';
 import {
   ALTURA_SEM_FOTO_GRADE, PROPORCAO_FOTO_GRADE, classesLargura, classesLista, ehVisualizacao, lerVisualizacao, obterLocalStorage, salvarVisualizacao, type Visualizacao,
@@ -149,9 +150,8 @@ function FeedCard({ item, index, vis }: { item: FeedItem; index: number; vis: Vi
         data-code={item.code} data-origin={item.origin} data-photo={withPhoto ? 'sim' : 'nao'} data-vis="grade">
         <div className={`relative w-full overflow-hidden ${withPhoto ? `${PROPORCAO_FOTO_GRADE} bg-[color:var(--f-hover)]` : `${ALTURA_SEM_FOTO_GRADE} ${sit.suave}`}`}>
           {withPhoto ? (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img ref={imgRef} src={item.photo_url as string} alt={`Foto: ${item.title}`} loading={index < 4 ? 'eager' : 'lazy'} decoding="async"
-              onError={() => setPhotoFailed(true)} className="h-full w-full object-cover" />
+            // Moldura: foto inteira (sem corte) sobre um fundo feito dela mesma; o quadro 4:3 e as regras de carregamento são as de sempre (src/app/feed/FeedFoto.tsx)
+            <FeedFoto src={item.photo_url as string} alt={`Foto: ${item.title}`} eager={index < 4} imgRef={imgRef} onError={() => setPhotoFailed(true)} />
           ) : (
             <span className={`flex h-full w-full items-center justify-end pr-4 ${sit.texto}`} aria-hidden>
               <Icon className="h-8 w-8 opacity-70" />
@@ -241,10 +241,9 @@ function FeedCard({ item, index, vis }: { item: FeedItem; index: number; vis: Vi
       {withPhoto ? (
         <>
           {/* Foto em destaque, largura total, proporção fixa (sem pulo de layout) */}
-          <div className="mb-0.5 aspect-[4/3] w-full overflow-hidden rounded-xl bg-[color:var(--f-hover)] sm:aspect-[16/10]">
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img ref={imgRef} src={item.photo_url as string} alt={`Foto: ${item.title}`} loading={index < 2 ? 'eager' : 'lazy'} decoding="async"
-              onError={() => setPhotoFailed(true)} className="h-full w-full object-cover" />
+          <div className="relative mb-0.5 aspect-[4/3] w-full overflow-hidden rounded-xl bg-[color:var(--f-hover)] sm:aspect-[16/10]">
+            {/* Moldura: foto inteira (sem corte) sobre um fundo feito dela mesma (src/app/feed/FeedFoto.tsx) */}
+            <FeedFoto src={item.photo_url as string} alt={`Foto: ${item.title}`} eager={index < 2} imgRef={imgRef} onError={() => setPhotoFailed(true)} />
           </div>
           {body}
         </>
