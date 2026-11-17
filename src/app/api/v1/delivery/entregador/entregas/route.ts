@@ -22,8 +22,9 @@ export async function GET(req: NextRequest) {
     const entregadorId = entregador.rows[0].id;
 
     const res = await query(
-      `SELECT id, token, destinatario_nome, destinatario_phone,
-              endereco_destino, status, created_at, entregue_em
+      `SELECT id, link_token AS token, cliente_nome AS destinatario_nome,
+              cliente_telefone AS destinatario_phone, cliente_endereco AS endereco_destino,
+              status, created_at, entregue_em
        FROM entregas
        WHERE entregador_id = $1
        ORDER BY created_at DESC

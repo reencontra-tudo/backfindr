@@ -1,15 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { query } from '@/lib/db';
 import { requireAuth } from '@/lib/adminGuard';
+import { gerarQrCode, gerarToken } from '@/lib/notifyModulos';
 
-function generateToken(length = 12) {
-  const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
-  let result = '';
-  for (let i = 0; i < length; i++) {
-    result += chars[Math.floor(Math.random() * chars.length)];
-  }
-  return result;
-}
+// Colunas reais de `entregas` (conferidas no esquema): link_token, cliente_nome, cliente_telefone,
+// cliente_endereco. A resposta mantém os nomes que as telas já usam (token, destinatario_*, endereco_destino).
+const CAMPOS_ENTREGA = `id, link_token AS token, cliente_nome AS destinatario_nome,
+              cliente_telefone AS destinatario_phone, cliente_endereco AS endereco_destino,
+              status, created_at, entregue_em`;
 
 // GET /api/v1/delivery/minhas-entregas
 export async function GET(req: NextRequest) {
@@ -18,8 +16,7 @@ export async function GET(req: NextRequest) {
 
   try {
     const res = await query(
-      `SELECT id, token, destinatario_nome, destinatario_phone,
-              endereco_destino, status, created_at, entregue_em
+      `SELECT ${CAMPOS_ENTREGA}
        FROM entregas
        WHERE user_id = $1
        ORDER BY created_at DESC
@@ -51,8 +48,12 @@ export async function POST(req: NextRequest) {
     // Buscar entregador pelo telefone (opcional)
     let entregadorId = null;
     if (entregador_phone) {
+      // O telefone do entregador está em users.phone (entregadores não tem coluna de telefone); compara só os dígitos.
       const entregador = await query(
-        'SELECT id FROM entregadores WHERE phone = $1 AND active = true LIMIT 1',
+        `SELECT en.id FROM entregadores en
+         JOIN users u ON u.id = en.user_id
+         WHERE regexp_replace(COALESCE(u.phone, ''), '\\D', '', 'g') = $1 AND en.active = true
+         LIMIT 1`,
         [entregador_phone.replace(/\D/g, '')]
       );
       if (entregador.rows.length > 0) {
@@ -60,16 +61,16 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    const token = generateToken();
+    const token = gerarToken('dlv_');
 
     const res = await query(
       `INSERT INTO entregas
-         (user_id, destinatario_nome, destinatario_phone, endereco_destino, 
-          entregador_id, status, token)
-       VALUES ($1, $2, $3, $4, $5, 'aguardando', $6)
+         (user_id, cliente_nome, cliente_telefone, cliente_endereco,
+          entregador_id, status, qr_code, link_token)
+       VALUES ($1, $2, $3, $4, $5, 'aguardando', $6, $7)
        RETURNING *`,
-      [auth.user.id, destinatario_nome, destinatario_phone, 
-       endereco_destino, entregadorId, token]
+      [auth.user.id, destinatario_nome, destinatario_phone,
+       endereco_destino, entregadorId, gerarQrCode(), token]
     );
 
     const entrega = res.rows[0];
@@ -77,6 +78,10 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json({
       ...entrega,
+      token,
+      destinatario_nome: entrega.cliente_nome,
+      destinatario_phone: entrega.cliente_telefone,
+      endereco_destino: entrega.cliente_endereco,
       entregador_vinculado: entregadorId !== null,
       link_url: `${appUrl}/delivery/${token}`,
     }, { status: 201 });

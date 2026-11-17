@@ -4,6 +4,7 @@
  * Segue o mesmo padrão de pushNotification.ts existente.
  */
 
+import { randomInt } from 'crypto';
 import { query } from './db';
 import { sendPushToUser } from './pushNotification';
 
@@ -209,17 +210,27 @@ export async function enviarWhatsApp(
 }
 
 // ─── Gerar token único para links ─────────────────────────────────────────────
+// Aleatoriedade criptográfica (crypto.randomInt, sem viés de módulo). Formato idêntico ao anterior
+// (prefixo + 32 caracteres de um alfabeto de 54 símbolos, cerca de 184 bits), para caber nas colunas
+// link_token (varchar 100) e não quebrar nada que já exista: tokens antigos seguem valendo.
+const ALFABETO_TOKEN = 'ABCDEFGHJKMNPQRSTUVWXYZabcdefghjkmnpqrstuvwxyz23456789';
+const ALFABETO_QR = '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+
 export function gerarToken(prefixo: string = ''): string {
-  const chars = 'ABCDEFGHJKMNPQRSTUVWXYZabcdefghjkmnpqrstuvwxyz23456789';
   let token = prefixo;
   for (let i = 0; i < 32; i++) {
-    token += chars[Math.floor(Math.random() * chars.length)];
+    token += ALFABETO_TOKEN[randomInt(ALFABETO_TOKEN.length)];
   }
   return token;
 }
 
+// Código curto do QR de custódia/entrega (coluna qr_code, varchar 20, única): 8 caracteres 0-9 e A-Z, como antes.
 export function gerarQrCode(): string {
-  return Math.random().toString(36).substring(2, 10).toUpperCase();
+  let codigo = '';
+  for (let i = 0; i < 8; i++) {
+    codigo += ALFABETO_QR[randomInt(ALFABETO_QR.length)];
+  }
+  return codigo;
 }
 
 // ─── Calcular distância entre dois pontos (Haversine) ────────────────────────

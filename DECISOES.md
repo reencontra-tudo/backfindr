@@ -152,6 +152,7 @@ Nenhuma destas deve ser tratada como implementada enquanto não sair da lista.
 | Revisão jurídica (guarda das conversas, reciclagem, Fase 4) | Jurídico | Q-23, Q-29 |
 | Política de privacidade, tela de consentimento e canal LGPD | Marcos, jurídico e Code | Q-19, Q-21 |
 | Consentimento de rastreamento (GA4, Meta Pixel, Clarity, PostHog) e política de privacidade que hoje diz «sem cookies de rastreamento» — decidir | Marcos, jurídico e Code | Q-19, Q-21 |
+| Validade dos links de custódia e de entrega (por tempo, uso único ou renovada a cada acesso) — decidir; a expiração vale só por marcação e registro, nunca por exclusão | Marcos | PR #140 |
 | Aplicar a Q-16 nos textos do código | Ordem escrita do Marcos | Q-16 |
 | Plano de aplicação da migration 025 (não mesclar #51 antes) | Ordem escrita do Marcos | PR #51 |
 | Ligar silêncio noturno, guarda de conversas e sinais públicos | Ordem do Marcos ao Code | Q-28, Q-29, Q-30 |
