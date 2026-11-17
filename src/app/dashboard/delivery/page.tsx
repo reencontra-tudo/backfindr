@@ -99,7 +99,7 @@ export default function DeliveryDashboard() {
             {ativas.map(e => {
               const cfg = STATUS_CONFIG[e.status] ?? STATUS_CONFIG.aguardando;
               return (
-                <Link key={e.id} href={`/delivery/${e.token}`}
+                <a key={e.id} href={`/delivery/${e.token}`}
                   className="flex items-center gap-3 p-4 bg-white/[0.03] border border-white/[0.07] hover:border-white/[0.15] rounded-xl transition-all group">
                   <div className="w-9 h-9 rounded-lg bg-teal-500/10 flex items-center justify-center flex-shrink-0">
                     <Package className="w-4 h-4 text-teal-400" />
@@ -118,7 +118,7 @@ export default function DeliveryDashboard() {
                     </div>
                     <ChevronRight className="w-3.5 h-3.5 text-white/20 group-hover:text-white/40 transition-colors" />
                   </div>
-                </Link>
+                </a>
               );
             })}
           </div>
@@ -135,7 +135,7 @@ export default function DeliveryDashboard() {
             {historico.slice(0, 5).map(e => {
               const cfg = STATUS_CONFIG[e.status] ?? STATUS_CONFIG.entregue;
               return (
-                <Link key={e.id} href={`/delivery/${e.token}`}
+                <a key={e.id} href={`/delivery/${e.token}`}
                   className="flex items-center gap-3 p-3.5 bg-white/[0.02] border border-white/[0.05] rounded-xl hover:border-white/[0.10] transition-all">
                   <div className="w-8 h-8 rounded-lg bg-white/[0.04] flex items-center justify-center flex-shrink-0">
                     <CheckCircle2 className="w-4 h-4 text-white/20" />
@@ -148,7 +148,7 @@ export default function DeliveryDashboard() {
                     </p>
                   </div>
                   <span className={`text-[10px] font-semibold ${cfg.color}`}>{cfg.label}</span>
-                </Link>
+                </a>
               );
             })}
           </div>

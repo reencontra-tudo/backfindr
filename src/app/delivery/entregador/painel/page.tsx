@@ -183,10 +183,10 @@ export default function EntregadorPainelPage() {
 
                     {/* Ações */}
                     <div className="flex gap-2">
-                      <Link href={`/delivery/${e.token}`}
+                      <a href={`/delivery/${e.token}`}
                         className="flex-1 py-2 border border-white/[0.08] rounded-xl text-white/40 text-xs font-medium text-center hover:border-white/20 transition-colors">
                         Ver rastreio
-                      </Link>
+                      </a>
                       {cfg.next && (
                         <button
                           onClick={() => atualizarStatus(e.id, cfg.next)}
@@ -214,7 +214,7 @@ export default function EntregadorPainelPage() {
             </p>
             <div className="space-y-2">
               {concluidas.slice(0, 5).map(e => (
-                <Link key={e.id} href={`/delivery/${e.token}`}
+                <a key={e.id} href={`/delivery/${e.token}`}
                   className="flex items-center gap-3 p-3 bg-white/[0.02] border border-white/[0.05] rounded-xl hover:border-white/[0.10] transition-all">
                   <CheckCircle2 className="w-4 h-4 text-green-400 flex-shrink-0" />
                   <div className="flex-1 min-w-0">
@@ -222,7 +222,7 @@ export default function EntregadorPainelPage() {
                     <p className="text-white/20 text-xs truncate">{e.endereco_destino}</p>
                   </div>
                   <ChevronRight className="w-3.5 h-3.5 text-white/20 flex-shrink-0" />
-                </Link>
+                </a>
               ))}
             </div>
           </div>

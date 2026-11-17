@@ -4,6 +4,7 @@ import { Toaster } from 'sonner';
 import Script from 'next/script';
 import AssistantWidget from '@/components/AssistantWidget';
 import ClarityLoader from '@/components/ClarityLoader';
+import TrackingScripts from '@/components/TrackingScripts';
 import { PostHogProvider } from '@/providers/PostHogProvider';
 import './globals.css';
 
@@ -153,49 +154,16 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         {/* Assistente Findr — disponível em toda a plataforma */}
         <AssistantWidget />
 
-        {/* Google Analytics 4 */}
-        {process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID && (
-          <>
-            <Script
-              src={`https://www.googletagmanager.com/gtag/js?id=${process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID}`}
-              strategy="lazyOnload"
-            />
-            <Script id="google-analytics" strategy="lazyOnload">
-              {`
-                window.dataLayer = window.dataLayer || [];
-                function gtag(){dataLayer.push(arguments);}
-                gtag('js', new Date());
-                gtag('config', '${process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID}', {
-                  page_path: window.location.pathname,
-                  send_page_view: true,
-                });
-              `}
-            </Script>
-          </>
-        )}
+        {/* Google Analytics 4 e Meta Pixel — não carregam em páginas com token na URL (src/lib/trackingGuard.ts) */}
+        <TrackingScripts
+          gaId={process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID}
+          pixelId={process.env.NEXT_PUBLIC_META_PIXEL_ID}
+        />
 
         {/* Microsoft Clarity — gravação de sessão + mapa de calor.
             Só carrega com a variável definida, em produção, em backfindr.com e fora das áreas
             logadas/administrativas (regras em src/lib/clarity.ts). Sem a variável, nada carrega. */}
         <ClarityLoader projectId={process.env.NEXT_PUBLIC_CLARITY_PROJECT_ID} />
-
-        {/* Meta Pixel — PageView automático em todo o site */}
-        {process.env.NEXT_PUBLIC_META_PIXEL_ID && (
-          <Script id="meta-pixel" strategy="afterInteractive">
-            {`
-              !function(f,b,e,v,n,t,s)
-              {if(f.fbq)return;n=f.fbq=function(){n.callMethod?
-              n.callMethod.apply(n,arguments):n.queue.push(arguments)};
-              if(!f._fbq)f._fbq=n;n.push=n;n.loaded=!0;n.version='2.0';
-              n.queue=[];t=b.createElement(e);t.async=!0;
-              t.src=v;s=b.getElementsByTagName(e)[0];
-              s.parentNode.insertBefore(t,s)}(window, document,'script',
-              'https://connect.facebook.net/en_US/fbevents.js');
-              fbq('init', '${process.env.NEXT_PUBLIC_META_PIXEL_ID}');
-              fbq('track', 'PageView');
-            `}
-          </Script>
-        )}
 
         {/* Register Service Worker */}
         <Script id="register-sw" strategy="afterInteractive">
