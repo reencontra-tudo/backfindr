@@ -69,6 +69,7 @@ Pendências (em ordem de prioridade):
 Bloqueios / dependências externas:
 - Decisões do Marcos; nenhum merge ou publicação sem ordem escrita
 Decisões recentes (com data):
+- 17/11/2026: o `ViewContent` do Pixel passa a disparar também na entrada direta em `/comecar` (PR #141, rascunho, sem merge; F-36); Lead, Purchase e `ocorrencia_publicada` não mudam; a contagem de `ViewContent` sobe em relação aos dias anteriores, porque a entrada direta passa a ser contada. Para reverter: reverter o commit do PR #141
 - 17/11/2026: endereços com token não são enviados ao Pixel nem ao GA4; a navegação interna para o link de entrega passa a recarregar a página (F-34)
 - 17/11/2026: o Clarity (gravação de sessão) passa a carregar só em produção real, fora das áreas logadas e com máscara nas páginas públicas com dado de ocorrência ou formulário (F-33); consentimento e política de privacidade seguem pendentes (Q-19)
 - 04 e 05/11/2026: o push da mensagem da plataforma fica a critério do administrador, por mensagem, e as urgentes saem por push (Q-24); as melhorias do aviso entram agora na versão web e o aplicativo nativo, com som próprio com o app fechado, fica para a próxima fase, sem que nenhum texto prometa esse som (Q-25) (`DECISOES.md`)
