@@ -2,6 +2,7 @@ export const dynamic = 'force-dynamic';
 import { NextRequest, NextResponse } from 'next/server';
 import { query } from '@/lib/db';
 import { requireAuth } from '@/lib/adminGuard';
+import { respostaErroInterno } from '@/lib/erroInterno';
 
 // GET /api/v1/custody/items/[id]
 export async function GET(
@@ -48,6 +49,6 @@ export async function GET(
       eventos:  eventos.rows,
     });
   } catch (e: unknown) {
-    return NextResponse.json({ detail: String(e) }, { status: 500 });
+    return respostaErroInterno('custody/items/id', e);
   }
 }

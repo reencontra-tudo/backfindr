@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { query } from '@/lib/db';
 import { requireAuth } from '@/lib/adminGuard';
+import { respostaErroInterno } from '@/lib/erroInterno';
 
 export async function POST(req: NextRequest) {
   const auth = await requireAuth(req);
@@ -41,6 +42,6 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json(res.rows[0], { status: 201 });
   } catch (e) {
-    return NextResponse.json({ detail: String(e) }, { status: 500 });
+    return respostaErroInterno('delivery/entregador/cadastro', e);
   }
 }

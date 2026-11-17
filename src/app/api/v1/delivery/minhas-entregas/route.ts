@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { query } from '@/lib/db';
 import { requireAuth } from '@/lib/adminGuard';
 import { gerarQrCode, gerarToken } from '@/lib/notifyModulos';
+import { respostaErroInterno } from '@/lib/erroInterno';
 
 // Colunas reais de `entregas` (conferidas no esquema): link_token, cliente_nome, cliente_telefone,
 // cliente_endereco. A resposta mantém os nomes que as telas já usam (token, destinatario_*, endereco_destino).
@@ -25,7 +26,7 @@ export async function GET(req: NextRequest) {
     );
     return NextResponse.json({ items: res.rows });
   } catch (e) {
-    return NextResponse.json({ detail: String(e) }, { status: 500 });
+    return respostaErroInterno('delivery/minhas-entregas', e);
   }
 }
 
@@ -86,6 +87,6 @@ export async function POST(req: NextRequest) {
       link_url: `${appUrl}/delivery/${token}`,
     }, { status: 201 });
   } catch (e) {
-    return NextResponse.json({ detail: String(e) }, { status: 500 });
+    return respostaErroInterno('delivery/minhas-entregas', e);
   }
 }

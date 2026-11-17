@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { query } from '@/lib/db';
 import { requireAuth } from '@/lib/adminGuard';
+import { respostaErroInterno } from '@/lib/erroInterno';
 
 // GET /api/v1/delivery/entregador/entregas
 // Lista entregas ativas e recentes do entregador autenticado
@@ -34,6 +35,6 @@ export async function GET(req: NextRequest) {
 
     return NextResponse.json({ items: res.rows });
   } catch (e) {
-    return NextResponse.json({ detail: String(e) }, { status: 500 });
+    return respostaErroInterno('delivery/entregador/entregas', e);
   }
 }

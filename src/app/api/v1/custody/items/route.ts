@@ -4,6 +4,7 @@ import { query } from '@/lib/db';
 import { requireAuth } from '@/lib/adminGuard';
 import { gerarQrCode, gerarToken, notificarCustodiaCriada, enviarWhatsApp } from '@/lib/notifyModulos';
 import { z } from 'zod';
+import { respostaErroInterno } from '@/lib/erroInterno';
 
 const CustodiaSchema = z.object({
   destinatario_nome:    z.string().min(2).max(200),
@@ -61,7 +62,7 @@ export async function GET(req: NextRequest) {
       size,
     });
   } catch (e: unknown) {
-    return NextResponse.json({ detail: String(e) }, { status: 500 });
+    return respostaErroInterno('custody/items', e);
   }
 }
 
@@ -130,6 +131,6 @@ export async function POST(req: NextRequest) {
       link_url: linkUrl,
     }, { status: 201 });
   } catch (e: unknown) {
-    return NextResponse.json({ detail: String(e) }, { status: 500 });
+    return respostaErroInterno('custody/items', e);
   }
 }

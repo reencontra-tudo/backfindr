@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { respostaErroInterno } from '@/lib/erroInterno';
 
 export function successResponse(data: any, status = 200) {
   return NextResponse.json(data, { status });
@@ -20,10 +21,8 @@ export function conflictResponse(detail: string) {
   return NextResponse.json({ detail }, { status: 409 });
 }
 
-export function internalErrorResponse(error: any) {
-  console.error('Internal error:', error);
-  return NextResponse.json(
-    { detail: error?.message || 'Internal server error' },
-    { status: 500 }
-  );
+// Erro inesperado: o detalhe vai só para o log do servidor; o cliente recebe mensagem simples e código estável
+// (src/lib/erroInterno.ts). Mesmo status (500) e mesmo campo («detail») de antes.
+export function internalErrorResponse(error: any, rota = 'api') {
+  return respostaErroInterno(rota, error);
 }

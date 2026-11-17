@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { query } from '@/lib/db';
 import { requireAuth } from '@/lib/adminGuard';
 import { notificarEncomendaEntregue } from '@/lib/notifyModulos';
+import { respostaErroInterno } from '@/lib/erroInterno';
 
 // PATCH /api/v1/portaria/[condominioId]/encomendas/[id]/confirmar
 // Porteiro confirma que o morador retirou a encomenda
@@ -55,6 +56,6 @@ export async function PATCH(
 
     return NextResponse.json(updated.rows[0]);
   } catch (e: unknown) {
-    return NextResponse.json({ detail: String(e) }, { status: 500 });
+    return respostaErroInterno('portaria/condominioId/encomendas/id/confirmar', e);
   }
 }

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { query } from '@/lib/db';
 import { requireAuth } from '@/lib/adminGuard';
+import { respostaErroInterno } from '@/lib/erroInterno';
 
 // GET /api/v1/subscriptions?product=p1
 // Retorna a subscription ativa do usuário autenticado para um produto
@@ -57,7 +58,7 @@ export async function GET(req: NextRequest) {
 
     return NextResponse.json(res.rows[0]);
   } catch (e) {
-    return NextResponse.json({ detail: String(e) }, { status: 500 });
+    return respostaErroInterno('subscriptions', e);
   }
 }
 
@@ -93,6 +94,6 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json(res.rows[0], { status: 201 });
   } catch (e) {
-    return NextResponse.json({ detail: String(e) }, { status: 500 });
+    return respostaErroInterno('subscriptions', e);
   }
 }

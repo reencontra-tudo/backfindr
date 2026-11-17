@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { query } from '@/lib/db';
 import { requireAuth } from '@/lib/adminGuard';
 import { notificarCustodiaRecebida } from '@/lib/notifyModulos';
+import { respostaErroInterno } from '@/lib/erroInterno';
 
 // POST /api/v1/custody/scan/[qrCode]
 // Porteiro ou entregador escaneia QR — registra custódia
@@ -97,7 +98,7 @@ export async function POST(
       message:           'Custódia registrada com sucesso',
     });
   } catch (e: unknown) {
-    return NextResponse.json({ detail: String(e) }, { status: 500 });
+    return respostaErroInterno('custody/scan/qrCode', e);
   }
 }
 
@@ -121,6 +122,6 @@ export async function GET(
 
     return NextResponse.json(res.rows[0]);
   } catch (e: unknown) {
-    return NextResponse.json({ detail: String(e) }, { status: 500 });
+    return respostaErroInterno('custody/scan/qrCode', e);
   }
 }

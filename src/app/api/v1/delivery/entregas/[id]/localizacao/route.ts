@@ -9,6 +9,7 @@ import {
   enviarWhatsApp,
 } from '@/lib/notifyModulos';
 import { z } from 'zod';
+import { respostaErroInterno } from '@/lib/erroInterno';
 
 const LocalizacaoSchema = z.object({
   lat: z.number(),
@@ -151,6 +152,6 @@ export async function POST(
       alerta_disparado: alertaDisparado,
     });
   } catch (e: unknown) {
-    return NextResponse.json({ detail: String(e) }, { status: 500 });
+    return respostaErroInterno('delivery/entregas/id/localizacao', e);
   }
 }

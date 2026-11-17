@@ -8,6 +8,7 @@ import {
   estadoDoLink,
   registrarLinkExpirado,
 } from '@/lib/linkPublico';
+import { respostaErroInterno } from '@/lib/erroInterno';
 
 // GET /api/v1/custody/link/[token]
 // Público — destinatário acessa o link recebido no WhatsApp
@@ -53,6 +54,6 @@ export async function GET(
 
     return NextResponse.json(cust);
   } catch (e: unknown) {
-    return NextResponse.json({ detail: String(e) }, { status: 500 });
+    return respostaErroInterno('custody/link/token', e);
   }
 }

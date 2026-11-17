@@ -10,6 +10,7 @@ import {
   enviarWhatsApp,
 } from '@/lib/notifyModulos';
 import { z } from 'zod';
+import { respostaErroInterno } from '@/lib/erroInterno';
 
 const StatusSchema = z.object({
   status: z.enum(['preparando', 'saiu', 'proximo', 'na_portaria', 'cancelado']),
@@ -127,6 +128,6 @@ export async function PATCH(
 
     return NextResponse.json({ message: 'Status atualizado', status });
   } catch (e: unknown) {
-    return NextResponse.json({ detail: String(e) }, { status: 500 });
+    return respostaErroInterno('delivery/entregas/id/status', e);
   }
 }

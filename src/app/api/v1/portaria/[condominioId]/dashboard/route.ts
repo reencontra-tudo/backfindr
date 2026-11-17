@@ -2,6 +2,7 @@ export const dynamic = 'force-dynamic';
 import { NextRequest, NextResponse } from 'next/server';
 import { query } from '@/lib/db';
 import { requireAuth } from '@/lib/adminGuard';
+import { respostaErroInterno } from '@/lib/erroInterno';
 
 // GET /api/v1/portaria/[condominioId]/dashboard
 // Porteiro autenticado visualiza o painel operacional
@@ -89,7 +90,7 @@ export async function GET(
       custodias_ativas: custodiasAtivas.rows,
     });
   } catch (e: unknown) {
-    return NextResponse.json({ detail: String(e) }, { status: 500 });
+    return respostaErroInterno('portaria/condominioId/dashboard', e);
   }
 }
 
