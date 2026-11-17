@@ -4,6 +4,7 @@ import posthog from 'posthog-js';
 import { PostHogProvider as PHProvider } from 'posthog-js/react';
 import { useEffect, Suspense } from 'react';
 import { usePathname, useSearchParams } from 'next/navigation';
+import { posthogBeforeSend } from '@/lib/posthogSanitize';
 
 // ─── Init ─────────────────────────────────────────────────────────────────────
 if (typeof window !== 'undefined' && process.env.NEXT_PUBLIC_POSTHOG_KEY) {
@@ -20,6 +21,9 @@ if (typeof window !== 'undefined' && process.env.NEXT_PUBLIC_POSTHOG_KEY) {
     mask_all_element_attributes:    true,
     mask_personal_data_properties:  true,
     session_recording: { maskAllInputs: true, maskTextSelector: '*' },
+    // Credenciais na URL (17/11/2026): em páginas com token nada é enviado e, nas demais, nenhum campo
+    // de URL ou caminho leva credencial. Vale para todo evento (src/lib/posthogSanitize.ts).
+    before_send: posthogBeforeSend,
   });
 }
 
