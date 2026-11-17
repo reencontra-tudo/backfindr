@@ -176,10 +176,10 @@ export default function NovaEntregaPage() {
               className="flex-1 py-3 border border-white/[0.10] rounded-xl text-white/60 text-sm font-semibold hover:border-white/20 transition-colors text-center">
               Ver entregas
             </Link>
-            <Link href={`/delivery/${resultado.token}`}
+            <a href={`/delivery/${resultado.token}`}
               className="flex-1 py-3 bg-teal-500 hover:bg-teal-400 rounded-xl text-white text-sm font-bold transition-colors text-center">
               Acompanhar
-            </Link>
+            </a>
           </div>
         </div>
       </div>
