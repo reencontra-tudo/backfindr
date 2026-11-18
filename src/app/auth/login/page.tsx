@@ -9,6 +9,7 @@ import { z } from 'zod';
 import { toast } from 'sonner';
 import { Eye, EyeOff, ArrowRight, Loader2, Mail } from 'lucide-react';
 import { useAuthStore } from '@/hooks/useAuth';
+import { PortaDeEntrada } from '@/components/auth/PortaDeEntrada';
 import Cookies from 'js-cookie';
 import { getPostLoginRedirect } from '@/lib/redirectByRole';
 import { guardarProximaPagina, consumirProximaPagina } from '@/lib/proximaPagina';
@@ -263,7 +264,9 @@ function LoginForm() {
 export default function LoginPage() {
   return (
     <Suspense fallback={<div className="min-h-screen bg-[#080b0f]" />}>
-      <LoginForm />
+      <PortaDeEntrada>
+        <LoginForm />
+      </PortaDeEntrada>
     </Suspense>
   );
 }

@@ -3,9 +3,14 @@
 import Link from 'next/link';
 import Image from 'next/image';
 import { useEffect, useState } from 'react';
+import { useSessaoExistente } from '@/hooks/useSessaoExistente';
+import { getPostLoginRedirect } from '@/lib/redirectByRole';
 
 export default function Navbar() {
   const [scrolled, setScrolled] = useState(false);
+  // Só no cliente, depois de montar: visitante vê exatamente o que via antes (HTML do servidor idêntico).
+  const { estado, role } = useSessaoExistente();
+  const logado = estado === 'logado';
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 12);
@@ -40,9 +45,15 @@ export default function Navbar() {
         </div>
 
         <div className="flex items-center gap-3">
-          <Link href="/auth/login" className="text-sm text-white/50 transition-colors hover:text-white">
-            Entrar
-          </Link>
+          {logado ? (
+            <Link href={getPostLoginRedirect(role)} data-nav-meu-painel className="text-sm text-white/50 transition-colors hover:text-white">
+              Meu painel
+            </Link>
+          ) : (
+            <Link href="/auth/login" className="text-sm text-white/50 transition-colors hover:text-white">
+              Entrar
+            </Link>
+          )}
           <Link
             href="/auth/register"
             className="rounded-xl bg-teal-500 px-4 py-2 text-sm font-semibold text-white transition-all hover:bg-teal-400"
