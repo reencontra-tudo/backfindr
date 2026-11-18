@@ -1,4 +1,4 @@
-// Busca por texto dentro do Feed: perdidos, achados e roubados, sem cadastro; sem legado; sinônimos; busca ampla orienta; /buscar redireciona.
+// Busca por texto dentro do Feed: perdidos, achados e roubados, sem cadastro; sem legado; sinônimos; busca ampla é só aviso (a lista vem); /buscar redireciona.
 //   TEST_DATABASE_URL=postgres://postgres:pw@127.0.0.1:5432/backfindr_test npx vitest@2 run --config tests/vitest.config.ts tests/feed-busca.test.ts
 // ATENÇÃO: a parte de banco recria as tabelas do banco de teste (tests/fixtures/feed-schema.sql). Use banco descartável.
 import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
@@ -107,11 +107,37 @@ describe.skipIf(!TEST_DB)('busca do Feed com banco real', () => {
     const pe = await codes('oculos grau', { uf: 'PE' });
     expect(pe).toEqual(['OCU00003']);
   });
-  it('busca ampla (poucas palavras que identifiquem): não lista nada, só a orientação', async () => {
-    for (const t of ['oculos', 'azul', 'de', 'x']) {
-      const r = await busca.buscarNoFeed(t, {}); expect(r.ampla, t).toBe(true); expect(r.items, t).toEqual([]);
-    }
-    expect((await busca.buscarNoFeed('oculos grau', {})).ampla).toBe(false);
+  it('busca de UMA palavra («oculos») lista o óculos de grau perdido, por sinônimo e sem acento; `ampla` é só o aviso, não bloqueia', async () => {
+    const r = await busca.buscarNoFeed('oculos', {});
+    expect(r.ampla).toBe(true);                       // menos de 2 palavras que identifiquem: pede o aviso na tela
+    const c = r.items.map((i) => i.code);
+    expect(c).toContain('OCU00001');                  // «Óculos de grau preto» (perdido), digitado sem acento
+    expect(c).toContain('OCU00002');                  // «Lentes de grau com estojo» (achado), por sinônimo
+    expect(c).toContain('OCU00003');                  // «Óculos de sol roubados» (roubado)
+    for (const proibido of ['OCU00004', 'OCU00005', 'OCU00006']) expect(c).not.toContain(proibido); // legado, não público, devolvido: nunca
+  });
+  it('outras buscas amplas (só cor, só palavra vazia) também seguem listando o que casar; `ampla` só avisa', async () => {
+    for (const t of ['azul', 'oculos preto']) { const r = await busca.buscarNoFeed(t, {}); expect(r.ampla, t).toBe(true); expect(Array.isArray(r.items), t).toBe(true); }
+    expect((await busca.buscarNoFeed('azul', {})).items.map((i) => i.code)).toContain('OCU00002'); // «Estojo azul…»
+    expect((await busca.buscarNoFeed('oculos grau', {})).ampla).toBe(false);                      // 2 palavras: sem aviso
+  });
+  it('busca ampla com lista vazia (filtros sem correspondência): items vazio e ampla=true (a tela mostra o convite «Perdi»/«Encontrei»)', async () => {
+    const r = await busca.buscarNoFeed('oculos', { category: 'phone' }); expect(r.items).toEqual([]); expect(r.ampla).toBe(true);
+  });
+  it('texto abaixo do mínimo NÃO consulta nada (nem a lista do Feed nem o banco)', async () => {
+    for (const t of ['', ' ', 'x', null, undefined]) { const r = await busca.buscarNoFeed(t, {}); expect(r, String(t)).toEqual({ items: [], ampla: false, truncated: false }); }
+    const src = read('src/lib/feed/busca.ts');
+    expect(src.indexOf('BUSCA_MIN_CARACTERES) return')).toBeGreaterThan(0);
+    expect(src.indexOf('BUSCA_MIN_CARACTERES) return')).toBeLessThan(src.indexOf('getRankedFeed(filtros)'));
+    expect(src).not.toMatch(/isBuscaAmpla\(q\)\) return/);  // a busca ampla nunca zera a lista
+    expect(src).toContain('ampla');
+  });
+  it('mesmo com `ampla`, a resposta da rota continua só com os campos do card (sem legado, sem dado novo, sem eco do texto)', async () => {
+    const { body } = await api('?q=oculos');
+    expect(body.ampla).toBe(true); expect(body.items.length).toBeGreaterThan(0);
+    const permitidos = ['can_report_found', 'category', 'category_label', 'code', 'created_at', 'has_photo', 'location_label', 'origin', 'photo_url', 'source_name', 'source_url', 'status', 'status_label', 'title'];
+    for (const it of body.items) expect(Object.keys(it).sort()).toEqual(permitidos);
+    const txt = JSON.stringify(body); for (const proibido of ['owner_id', 'user_id', 'latitude', 'longitude', 'description', '_score', 'is_legacy', 'OCU00004']) expect(txt).not.toContain(proibido);
   });
   it('sem resultado: lista vazia e ampla=false (a tela mostra o convite «Perdi»/«Encontrei»)', async () => {
     const r = await busca.buscarNoFeed('foguete espacial', {}); expect(r.items).toEqual([]); expect(r.ampla).toBe(false);
@@ -201,7 +227,12 @@ describe('/buscar redireciona para o Feed e o HTML do Feed não muda', () => {
     const c = read('src/app/feed/FeedClient.tsx');
     expect(c).toContain('achados.items.map((it, i) => <FeedCard key={it.code} item={it} index={i} vis={vis} />)');
     expect(c).toMatch(/data-feed-busca-vazio>[\s\S]*<ConviteFim pagina=\{page\} \/>/);
-    expect(c).toContain('Sua busca precisa de mais detalhes para uma resposta melhor.');
+    // busca ampla: aviso curto ACIMA da lista (não bloqueia, não esconde); lista e aviso aparecem juntos
+    expect(c).toContain('Para resultados mais precisos, acrescente cor, marca ou local.');
+    expect(c).not.toContain('Sua busca precisa de mais detalhes');
+    expect(c.indexOf('data-feed-busca-ampla')).toBeLessThan(c.indexOf('achados.items.map((it, i) => <FeedCard'));
+    expect(c).toMatch(/\{achados\.ampla && \(\s*<p data-feed-busca-ampla/);
+    expect(c).not.toMatch(/achados\.ampla \? \(/);
     expect(read('src/lib/voltarFeed.ts')).toContain("/^\\/feed(\\/|$)/");
   });
   it('lista sem texto intacta: carregamento híbrido, ordem por faixas, FeedFoto e Voltar não foram tocados', () => {

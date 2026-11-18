@@ -614,11 +614,6 @@ export default function FeedClient({ initialItems, initialNextCursor, initialHas
         <section aria-label="Resultados da busca" data-feed-resultados className="mt-3">
           {achados === null ? (
             <p role="status" className={`text-sm ${T.t2}`}>{buscaFalhou ? 'Não foi possível buscar agora. Tente de novo em instantes.' : 'Buscando…'}</p>
-          ) : achados.ampla ? (
-            <div role="status" data-feed-busca-ampla className={`rounded-xl p-4 ${T.aviso}`}>
-              <h2 className={`text-base font-semibold ${T.t1}`}>Sua busca precisa de mais detalhes para uma resposta melhor.</h2>
-              <p className={`mt-1 text-sm leading-relaxed ${T.t2}`}>Descreva o objeto com mais palavras: o tipo e a marca, o modelo ou o lugar. Por exemplo: «óculos de grau» ou «chave com chaveiro».</p>
-            </div>
           ) : achados.items.length === 0 ? (
             <div data-feed-busca-vazio>
               <p role="status" className={`text-sm font-medium ${T.t1}`}>Nenhuma ocorrência encontrada para esta busca, nos filtros escolhidos.</p>
@@ -626,6 +621,9 @@ export default function FeedClient({ initialItems, initialNextCursor, initialHas
             </div>
           ) : (
             <>
+              {achados.ampla && (
+                <p data-feed-busca-ampla className={`mb-2 rounded-lg px-3 py-2 text-sm ${T.aviso} ${T.t2}`}>Para resultados mais precisos, acrescente cor, marca ou local.</p>
+              )}
               <p role="status" className={`mb-2 text-sm ${T.t2}`}>{achados.items.length === 1 ? '1 ocorrência' : `${achados.items.length} ocorrências`}, das mais para as menos parecidas com a sua busca.</p>
               <div className={classesLista(vis, buscando)} aria-busy={buscando}>
                 {achados.items.map((it, i) => <FeedCard key={it.code} item={it} index={i} vis={vis} />)}
