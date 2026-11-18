@@ -73,9 +73,12 @@ describe('imagem ampliada (lightbox)', () => {
     expect(read('src/app/globals.css')).toMatch(/\.bf-lightbox-fechar \{ top: max\(1rem, calc\(env\(safe-area-inset-top/);
   });
   it('gesto/botão de voltar do aparelho fecha a imagem: entra uma entrada no histórico e a desfaz ao fechar', () => {
-    expect(src).toMatch(/pushState\(\{ \.\.\.\(window\.history\.state \?\? \{\}\), bfLightbox: true \}/);
-    expect(src).toContain("addEventListener('popstate', aoVoltar)");
-    expect(src).toMatch(/if \(empilhou && !fechouPeloVoltar\)[\s\S]*history\.back\(\)/);
+    // a lógica do histórico passou para src/lib/lightboxHistorico.ts (testada de verdade em tests/lightbox-historico.test.ts)
+    const lib = read('src/lib/lightboxHistorico.ts');
+    expect(src).toContain('abrirEntradaLightbox(');
+    expect(lib).toMatch(/pushState\(\{ \.\.\.\(estadoDe\(w\) \?\? \{\}\), \[LIGHTBOX_CHAVE\]: id \}, ''\)/);
+    expect(lib).toContain("addEventListener('popstate', aoPopstate)");
+    expect(lib).toMatch(/if \(empilhou && !encerrado\)[\s\S]*history\.back\(\)/);
   });
   it('ESC e setas continuam; o contador também respeita a barra de status', () => {
     expect(src).toContain("e.key === 'Escape'"); expect(src).toContain("'ArrowLeft'"); expect(src).toMatch(/bf-lightbox-fechar absolute left-1\/2/);

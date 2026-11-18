@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useCallback, useRef, useState } from 'react';
+import { abrirEntradaLightbox, decidirDeslize } from '@/lib/lightboxHistorico';
 
 interface ImageLightboxProps {
   images: string[];
@@ -37,19 +38,8 @@ export function ImageLightbox({ images, initialIndex = 0, onClose }: ImageLightb
     return () => window.removeEventListener('keydown', handler);
   }, [onClose, prev, next, images.length]);
 
-  // Gesto/botão de voltar do aparelho fecha a imagem (sem sair da página). Entra uma entrada no histórico ao abrir; ao fechar por X, toque fora
-  // ou ESC ela é desfeita. Se pushState não estiver disponível, o X e o toque fora continuam funcionando.
-  useEffect(() => {
-    let empilhou = false;
-    let fechouPeloVoltar = false;
-    const aoVoltar = () => { fechouPeloVoltar = true; onCloseRef.current(); };
-    try { window.history.pushState({ ...(window.history.state ?? {}), bfLightbox: true }, ''); empilhou = true; } catch { /* sem histórico */ }
-    window.addEventListener('popstate', aoVoltar);
-    return () => {
-      window.removeEventListener('popstate', aoVoltar);
-      if (empilhou && !fechouPeloVoltar) { try { if (window.history.state?.bfLightbox) window.history.back(); } catch { /* sem problema */ } }
-    };
-  }, []);
+  // Gesto/botão de voltar do aparelho fecha só a foto (ver src/lib/lightboxHistorico.ts).
+  useEffect(() => abrirEntradaLightbox(() => onCloseRef.current()), []);
 
   // Bloquear scroll do body
   useEffect(() => {
@@ -57,7 +47,7 @@ export function ImageLightbox({ images, initialIndex = 0, onClose }: ImageLightb
     return () => { document.body.style.overflow = ''; };
   }, []);
 
-  // Swipe touch para mobile
+  // Deslizar para passar de foto (celular). Só com 2+ fotos e fora da borda esquerda (gesto de voltar do iOS); o sistema pode cancelar o toque.
   const handleTouchStart = (e: React.TouchEvent) => {
     touchStartX.current = e.touches[0].clientX;
     touchStartY.current = e.touches[0].clientY;
@@ -65,16 +55,17 @@ export function ImageLightbox({ images, initialIndex = 0, onClose }: ImageLightb
 
   const handleTouchEnd = (e: React.TouchEvent) => {
     if (touchStartX.current === null || touchStartY.current === null) return;
-    const dx = e.changedTouches[0].clientX - touchStartX.current;
-    const dy = e.changedTouches[0].clientY - touchStartY.current;
-    // Só navega se o swipe for predominantemente horizontal
-    if (Math.abs(dx) > Math.abs(dy) && Math.abs(dx) > 40) {
-      if (dx < 0) next();
-      else prev();
-    }
+    const acao = decidirDeslize(
+      { x: touchStartX.current, y: touchStartY.current },
+      { x: e.changedTouches[0].clientX, y: e.changedTouches[0].clientY },
+      images.length,
+    );
+    if (acao === 'proxima') next(); else if (acao === 'anterior') prev();
     touchStartX.current = null;
     touchStartY.current = null;
   };
+
+  const handleTouchCancel = () => { touchStartX.current = null; touchStartY.current = null; };
 
   return (
     <div
@@ -83,6 +74,7 @@ export function ImageLightbox({ images, initialIndex = 0, onClose }: ImageLightb
       onClick={onClose}
       onTouchStart={handleTouchStart}
       onTouchEnd={handleTouchEnd}
+      onTouchCancel={handleTouchCancel}
     >
       {/* Botão fechar */}
       <button
