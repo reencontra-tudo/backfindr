@@ -12,6 +12,7 @@ import { notFound } from 'next/navigation';
 import { MapPin } from 'lucide-react';
 import FeedClient from '../FeedClient';
 import { RegisterMenu, TopoBotoes } from '../FeedCta';
+import { PerfilIcone } from '../PerfilIcone';
 import { APP_URL } from '@/lib/constants';
 import { getRankedFeed, pageByNumber } from '@/lib/feed/query';
 import { temaStyle } from '../tema';
@@ -57,7 +58,7 @@ export default async function FeedPage({ params }: { params: { slug?: string[] }
     <main className="min-h-screen bg-[color:var(--f-folha)] text-[color:var(--f-t1)]" style={temaStyle()}>
       {/* Faixa escura do topo (cabeçalho + título + apresentação + atalhos) e, por cima dela, a «folha» clara com a lista */}
       <div className="bg-[color:var(--f-faixa)] pb-9 text-[color:var(--f-faixa-t)]">
-      <header className="border-b border-white/10">
+      <header className="bf-topo-seguro border-b border-white/10">
         <div className="mx-auto flex max-w-2xl items-center justify-between px-4 py-3">
           <Link href="/" className="flex min-h-[44px] items-center gap-2 font-semibold">
             <span className="flex h-6 w-6 items-center justify-center rounded-md bg-teal-500"><MapPin className="h-3.5 w-3.5 text-white" aria-hidden /></span>
@@ -67,6 +68,7 @@ export default async function FeedPage({ params }: { params: { slug?: string[] }
             <Link href="/map" className="inline-flex min-h-[44px] items-center px-3 text-white/85 hover:text-white">Mapa</Link>
             <Link href="/buscar" className="inline-flex min-h-[44px] items-center px-3 text-white/85 hover:text-white">Buscar</Link>
             <RegisterMenu variant="header" pagina={page} />
+            <PerfilIcone />
           </nav>
         </div>
       </header>

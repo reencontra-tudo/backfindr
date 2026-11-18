@@ -70,10 +70,11 @@ describe('login e cadastro: sessão válida redireciona sem mostrar o formulári
     expect(porta).toContain('return <>{children}</>;');
   });
   it('fluxos em andamento (erro, plano, contexto «achei») seguem como sempre', () => {
-    expect(PARAMS_QUE_DESLIGAM).toEqual(['error', 'plan', 'de', 'ref']);
+    expect(PARAMS_QUE_DESLIGAM).toEqual(['error', 'plan', 'de']);
     const q = (s: string) => new URLSearchParams(s);
     expect(deveRedirecionar(q(''))).toBe(true); expect(deveRedirecionar(q('next=%2Fdashboard%2Fmensagens'))).toBe(true);
-    for (const s of ['error=oauth_denied', 'plan=pro', 'de=ABC12345', 'ref=feed']) expect(deveRedirecionar(q(s)), s).toBe(false);
+    for (const s of ['error=oauth_denied', 'plan=pro', 'de=ABC12345']) expect(deveRedirecionar(q(s)), s).toBe(false);
+    expect(deveRedirecionar(q('ref=feed'))).toBe(true); // origem do ícone de perfil do Feed: com sessão, redireciona
   });
   it('as duas portas usam o componente; o formulário não mudou', () => {
     for (const f of ['src/app/auth/login/page.tsx', 'src/app/auth/register/page.tsx']) {

@@ -6,8 +6,9 @@ import { useSessaoExistente } from '@/hooks/useSessaoExistente';
 import { getPostLoginRedirect } from '@/lib/redirectByRole';
 import { consumirProximaPagina } from '@/lib/proximaPagina';
 
-/** Parâmetros que indicam um fluxo em andamento (erro de login, plano, contexto de «achei»): nesses casos a tela segue como sempre. */
-export const PARAMS_QUE_DESLIGAM = ['error', 'plan', 'de', 'ref'] as const;
+/** Parâmetros que indicam um fluxo em andamento (erro de login, plano, contexto de «achei»): nesses casos a tela segue como sempre.
+ *  `ref` NÃO entra: é só a origem do clique (ex.: ?ref=feed do ícone de perfil); nenhuma tela de entrada muda por causa dele. */
+export const PARAMS_QUE_DESLIGAM = ['error', 'plan', 'de'] as const;
 
 export function deveRedirecionar(params: { has: (nome: string) => boolean }): boolean {
   return !PARAMS_QUE_DESLIGAM.some((p) => params.has(p));
