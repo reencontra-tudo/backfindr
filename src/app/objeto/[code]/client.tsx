@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import Cookies from 'js-cookie';
 import { ImageLightbox, useLightbox } from '@/components/ImageLightbox';
+import { VoltarAoFeed } from '@/components/VoltarAoFeed';
 import Link from 'next/link';
 import { MapPin, MessageCircle, CheckCircle2, ChevronRight, Shield, Share2, Download } from 'lucide-react';
 import { toast } from 'sonner';
@@ -220,7 +221,8 @@ export default function PublicObjectClient({ obj, signalSource = null }: { obj: 
       {lightbox && <ImageLightbox images={lightbox.images} initialIndex={lightbox.index} onClose={closeLightbox} />}
       <div className="min-h-screen bg-[#080b0f] text-white">
       {/* Navbar */}
-      <nav className="border-b border-white/[0.06] px-5 h-14 flex items-center justify-between">
+      <nav className="bf-topo-seguro sticky top-0 z-30 border-b border-white/[0.06] bg-[#080b0f] px-5 min-h-[3.5rem] flex items-center justify-between" data-objeto-topo>
+        <VoltarAoFeed />
         <Link href="/" className="flex items-center gap-2">
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img src="/icons/logo-backfindr-small.png" alt="Backfindr" width={28} height={28} style={{ borderRadius: 8 }} />
