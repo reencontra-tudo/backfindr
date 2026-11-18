@@ -141,7 +141,7 @@ describe('pagamento', () => {
 
 describe('canonical e og:url das páginas públicas', () => {
   const root = path.resolve(__dirname, '..', 'src');
-  const paginas = ['achei', 'buscar', 'encontrei', 'faq', 'map', 'perdi', 'pet', 'pricing', 'proteger', 'roubado', 'terms'];
+  const paginas = ['achei', 'encontrei', 'faq', 'map', 'perdi', 'pet', 'pricing', 'proteger', 'roubado', 'terms'];
   const arquivos = [
     ...paginas.map(p => [p, `app/${p}/page.tsx`] as const),
     ['auth/login', 'app/auth/login/layout.tsx'] as const,

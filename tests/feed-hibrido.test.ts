@@ -44,7 +44,7 @@ describe('carregamento híbrido: 3 lotes automáticos e depois o botão', () => 
     expect(client).toContain("void loadMore('auto')");
     expect(client).toContain("void loadMore('manual')");
     expect(client).toContain('setAutoLoads(0)');
-    expect(client).toMatch(/if \(!el \|\| !hasMore \|\| autoParou \|\| restaurando \|\| typeof IntersectionObserver === 'undefined'\) return;/); // `restaurando`: só pausa enquanto a lista volta (voltar do navegador)
+    expect(client).toMatch(/if \(!el \|\| !hasMore \|\| autoParou \|\| restaurando \|\| modoBusca \|\| typeof IntersectionObserver === 'undefined'\) return;/); // `restaurando`: só pausa enquanto a lista volta (voltar do navegador)
   });
   it('em telas abaixo de 360 px a linha do «Ver mais» fica à esquerda (para não chegar à área do chat)', () => {
     expect(client).toContain('justify-center gap-3 max-[359px]:justify-start');

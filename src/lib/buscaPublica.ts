@@ -1,0 +1,133 @@
+// Busca pública por texto: dicionário de sinônimos, expansão de termos, condições SQL e score de relevância.
+// MOVIDO sem alteração de /api/v1/objects/public (que continua usando estas funções) para que o Feed use a MESMA lógica (sem motor novo).
+
+// ─── Dicionário de sinônimos (PT-BR, normalizado sem acento) ───────────────
+export const SINONIMOS: Record<string, string[]> = {
+  bolsa: ['mochila', 'sacola', 'bag', 'pochete', 'carteira', 'maleta', 'pasta'],
+  mochila: ['bolsa', 'sacola', 'bag', 'morral', 'saco'],
+  sacola: ['bolsa', 'mochila', 'bag', 'saco'],
+  celular: ['telefone', 'smartphone', 'iphone', 'android', 'aparelho', 'samsung', 'motorola'],
+  telefone: ['celular', 'smartphone', 'aparelho'],
+  carteira: ['wallet', 'bolsa', 'porta-documentos'],
+  chave: ['chaves', 'chaveiro', 'key'],
+  oculos: ['lentes', 'armacao', 'grau', 'sol'],
+  notebook: ['computador', 'laptop', 'note', 'mac', 'macbook'],
+  computador: ['notebook', 'laptop', 'pc', 'desktop'],
+  caderno: ['cadernos', 'agenda', 'livro', 'bloco', 'diario'],
+  agenda: ['caderno', 'livro', 'bloco', 'diario'],
+  cachorro: ['cao', 'dog', 'pet', 'animal', 'canino'],
+  cao: ['cachorro', 'dog', 'pet', 'animal'],
+  gato: ['cat', 'felino', 'pet', 'animal', 'gatinho'],
+  relogio: ['watch', 'smartwatch', 'cronometro'],
+  documento: ['documentos', 'rg', 'cpf', 'identidade', 'passaporte', 'habilitacao', 'cnh'],
+  identidade: ['rg', 'documento', 'cpf', 'passaporte'],
+  tablet: ['ipad', 'kindle', 'leitor'],
+  fone: ['fones', 'headphone', 'earphone', 'airpod', 'auricular', 'headset'],
+  headphone: ['fone', 'fones', 'earphone', 'airpod', 'auricular'],
+  onibus: ['bus', 'coletivo', 'transporte'],
+  trem: ['metro', 'subway'],
+};
+
+export function removerAcentos(str: string): string {
+  return str.normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+}
+
+export function normalizarPalavra(word: string): string {
+  word = removerAcentos(word).toLowerCase().trim();
+  if (word.length > 4 && word.endsWith('s')) word = word.slice(0, -1);
+  return word;
+}
+
+export function tokenizar(text: string): string[] {
+  return removerAcentos(text).toLowerCase().split(/\s+/).filter(w => w.length > 2);
+}
+
+/** Opções DESLIGADAS por padrão (os consumidores antigos — home, mapa, /achei, fluxos — continuam exatamente como eram). Só a busca do Feed liga.
+ *  radical: o dicionário tem chaves como «oculos» e «onibus», mas `normalizarPalavra` tira o «s» final («oculo»/«onibu»), então a chave NUNCA casava.
+ *           Com a opção, a busca no dicionário também usa o radical de cada chave.
+ *  semAcento: casa título/descrição sem diferenciar acento («oculos» acha «Óculos»). */
+export interface OpcoesBusca { radical?: boolean; semAcento?: boolean }
+
+const POR_RADICAL: Record<string, string[]> = (() => {
+  const m: Record<string, string[]> = {};
+  for (const [k, v] of Object.entries(SINONIMOS)) m[normalizarPalavra(k)] = [...(m[normalizarPalavra(k)] ?? []), ...v];
+  return m;
+})();
+const sinonimosDe = (norm: string, o?: OpcoesBusca): string[] => (o?.radical ? (SINONIMOS[norm] ?? POR_RADICAL[norm]) : SINONIMOS[norm]) || [];
+
+export function expandirTokens(tokens: string[], o?: OpcoesBusca): Set<string> {
+  const expanded = new Set<string>();
+  for (const token of tokens) {
+    const norm = normalizarPalavra(token);
+    expanded.add(norm);
+    for (const s of sinonimosDe(norm, o)) expanded.add(normalizarPalavra(s));
+  }
+  return expanded;
+}
+
+export function expandirKeyword(keyword: string, o?: OpcoesBusca): string[] {
+  const termos = new Set<string>();
+  termos.add(keyword.toLowerCase().trim());
+  const palavras = removerAcentos(keyword).toLowerCase().split(/\s+/).filter(w => w.length > 2);
+  for (const palavra of palavras) {
+    const norm = normalizarPalavra(palavra);
+    termos.add(norm);
+    for (const s of sinonimosDe(norm, o)) termos.add(s);
+  }
+  return [...termos];
+}
+
+export function buildKeywordConditions(termosExpandidos: string[], params: unknown[], o?: OpcoesBusca): string {
+  const conds: string[] = [];
+  for (const termo of termosExpandidos) {
+    params.push(`%${termo}%`);
+    const p = params.length;
+    const col = (c: string) => (o?.semAcento ? `translate(LOWER(${c}), 'áàâãäéèêëíìîïóòôõöúùûüç', 'aaaaaeeeeiiiiooooouuuuc')` : `LOWER(${c})`);
+    conds.push(
+      `(${col('title')} LIKE $${p} OR ${col('description')} LIKE $${p}` +
+      ` OR ${col('color')} LIKE $${p} OR ${col('brand')} LIKE $${p} OR ${col('breed')} LIKE $${p})`
+    );
+  }
+  return `(${conds.join(' OR ')})`;
+}
+
+// ─── Score de relevância pós-query (mesma lógica do matching) ─────────────
+// Threshold mínimo para aparecer na busca pública
+export const SCORE_MIN_BUSCA = 20;
+
+export function calcularScoreBusca(keyword: string, item: Record<string, unknown>, o?: OpcoesBusca): number {
+  let score = 0;
+
+  const kwTokens = tokenizar(keyword);
+  const kwExpanded = expandirTokens(kwTokens, o);
+
+  // Título com sinônimos (+10 por palavra, até 40 pts)
+  if (item.title) {
+    const titleTokens = expandirTokens(tokenizar(item.title as string), o);
+    const common = [...kwExpanded].filter(w => titleTokens.has(w)).length;
+    if (common > 0) score += Math.min(40, common * 10);
+  }
+
+  // Descrição com sinônimos (até 20 pts)
+  if (item.description) {
+    const descTokens = expandirTokens(tokenizar(item.description as string), o);
+    const common = [...kwExpanded].filter(w => descTokens.has(w)).length;
+    score += Math.min(20, (common / Math.max(kwTokens.length, 1)) * 20);
+  }
+
+  // Cor coincide (+15)
+  if (item.color) {
+    const kwColors = kwTokens.map(normalizarPalavra);
+    const itemColor = normalizarPalavra(item.color as string);
+    if (kwColors.includes(itemColor)) score += 15;
+  }
+
+  // Categoria / tipo coincide com keyword (+10)
+  if (item.category || item.type) {
+    const cat = normalizarPalavra((item.category || item.type) as string);
+    if ([...kwExpanded].includes(cat)) score += 10;
+  }
+
+  return Math.min(100, Math.round(score));
+}
+

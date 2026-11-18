@@ -20,5 +20,10 @@ const nextConfig = {
   eslint: {
     ignoreDuringBuilds: true,
   },
+  // /feed?q=… (busca do Feed, vinda do antigo /buscar ou de um link) NÃO é indexável: o canonical da página já aponta para /feed e este cabeçalho
+  // acrescenta noindex. Vai no cabeçalho (não na página) para a /feed continuar estática e guardada (revalidate de 5 min).
+  async headers() {
+    return [{ source: '/feed', has: [{ type: 'query', key: 'q' }], headers: [{ key: 'X-Robots-Tag', value: 'noindex, follow' }] }];
+  },
 };
 module.exports = nextConfig;

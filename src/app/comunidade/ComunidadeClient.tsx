@@ -213,7 +213,7 @@ export default function ComunidadeClient({
             <span className="font-bold text-white">Backfindr</span>
           </Link>
           <nav className="hidden md:flex items-center gap-6 text-sm text-gray-400">
-            <Link href="/buscar" className="hover:text-white transition-colors">Buscar</Link>
+            <Link href="/feed" className="hover:text-white transition-colors">Buscar</Link>
             <Link href="/perdi"  className="hover:text-white transition-colors">Perdi algo</Link>
             <Link href="/achei"  className="hover:text-white transition-colors">Achei algo</Link>
             <Link href="/comunidade" className="text-teal-400 font-semibold">Comunidade</Link>

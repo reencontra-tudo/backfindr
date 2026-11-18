@@ -158,7 +158,8 @@ describe('regras no código (FeedClient)', () => {
     expect(bloco).not.toMatch(/fetch|reload\(|detectGeo|chooseRegion|loadMore/);
   });
   it('o carregamento automático espera a restauração e o limite de 36 continua (autoLotes volta junto)', () => {
-    expect(client).toMatch(/if \(!el \|\| !hasMore \|\| autoParou \|\| restaurando \|\| typeof IntersectionObserver === 'undefined'\) return;/);
+    // `modoBusca` (busca por texto na tela) também pausa o carregamento automático da lista escondida
+    expect(client).toMatch(/if \(!el \|\| !hasMore \|\| autoParou \|\| restaurando \|\| modoBusca \|\| typeof IntersectionObserver === 'undefined'\) return;/);
     expect(client).toContain('setAutoLoads(est.autoLotes)');
     expect(client).toContain('export const podeCarregarAutomatico');
   });
@@ -175,7 +176,7 @@ describe('regras no código (FeedClient)', () => {
     expect(client).toContain('const SALVAR_A_CADA_MS = 400;');
     for (const ev of ["'scroll'", "'pagehide'", "'visibilitychange'", "'click'"]) expect(client).toContain(ev);
     expect(client).toContain('congelado.current = true');
-    expect(client).toContain('if (restaurandoRef.current || congelado.current) return;');
+    expect(client).toContain('if (restaurandoRef.current || congelado.current || buscaAtiva.current) return;'); // com busca na tela não grava a posição da lista
   });
   it('grava os filtros que GERARAM a lista (não os que a pessoa acabou de escolher e ainda carregam)', () => {
     expect(client).toContain('filtrosDaLista.current = { status: s, category: c, region: r, geo: g };');
