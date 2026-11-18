@@ -7,7 +7,7 @@ import { proximaPaginaSegura } from '@/lib/proximaPagina';
 import {
   LayoutDashboard, Package, Map,
   QrCode, Bell, Settings, LogOut, Plus, Menu, X, CreditCard, Building2, Truck,
-  Lock, MessageSquare,
+  Lock, MessageSquare, Newspaper,
 } from 'lucide-react';
 import Cookies from 'js-cookie';
 import { toast } from 'sonner';
@@ -37,6 +37,7 @@ const NAV = [
   { href: '/dashboard',               icon: LayoutDashboard, label: 'Visão Geral',   superOnly: false, requiresObjects: false },
   { href: '/dashboard/objects',       icon: Package,         label: 'Meus Objetos',  superOnly: false, requiresObjects: true  },
   { href: '/dashboard/mapa',          icon: Map,             label: 'Mapa',          superOnly: false, requiresObjects: false },
+  { href: '/feed',                    icon: Newspaper,       label: 'Feed',          superOnly: false, requiresObjects: false }, // página pública de ocorrências; abre na MESMA aba (o app instalado não abre aba nova)
   { href: '/dashboard/matches',       icon: QrCode,          label: 'Matches',       superOnly: false, requiresObjects: true  },
   { href: '/dashboard/mensagens',     icon: MessageSquare,   label: 'Mensagens',     superOnly: false, requiresObjects: false, soComMensagens: true }, // só com MENSAGENS_ATIVO=1
   { href: '/dashboard/notifications', icon: Bell,            label: 'Notificações',  superOnly: false, requiresObjects: false },
