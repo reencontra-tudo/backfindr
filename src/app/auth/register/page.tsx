@@ -10,6 +10,7 @@ import { z } from 'zod';
 import { toast } from 'sonner';
 import { Eye, EyeOff, ArrowRight, Loader2, Check, Zap, Building2 } from 'lucide-react';
 import { useAuthStore } from '@/hooks/useAuth';
+import { PortaDeEntrada } from '@/components/auth/PortaDeEntrada';
 import Cookies from 'js-cookie';
 import { analytics } from '@/providers/PostHogProvider';
 import { buscarContexto, lerDe, type ContextoAchei } from '@/lib/feed/contexto';
@@ -318,7 +319,9 @@ function RegisterForm() {
 export default function RegisterPage() {
   return (
     <Suspense fallback={<div className="min-h-screen bg-[#080b0f]" />}>
-      <RegisterForm />
+      <PortaDeEntrada>
+        <RegisterForm />
+      </PortaDeEntrada>
     </Suspense>
   );
 }

@@ -3,6 +3,7 @@ import { persist } from 'zustand/middleware';
 import { User } from '@/types';
 import { authApi, setTokens, clearTokens, parseApiError, isInvalidSessionError } from '@/lib/api';
 import Cookies from 'js-cookie';
+import { pedirArmazenamentoPersistente } from '@/lib/armazenamento';
 
 interface AuthState {
   user: User | null;
@@ -57,7 +58,7 @@ export const useAuthStore = create<AuthState>()(
       },
 
       fetchMe: async () => {
-        try { const { data } = await authApi.me(); set({ user: data, isAuthenticated: true }); }
+        try { const { data } = await authApi.me(); set({ user: data, isAuthenticated: true }); void pedirArmazenamentoPersistente(); }
         catch (e) {
           // Só encerra a sessão quando o servidor recusa as credenciais (401). Falha de rede,
           // timeout ou erro 5xx mantém a sessão e os tokens; a próxima chamada tenta de novo.
