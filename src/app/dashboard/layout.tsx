@@ -63,6 +63,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const [objectCount, setObjectCount] = useState<number | null>(null); // null = ainda carregando
   const [hydrated, setHydrated] = useState(false);
   const initDone = useRef(false);
+  const verificando = useRef(false); // true enquanto a sessão dos cookies está sendo confirmada no servidor
   // IDs de notificação já vistos nesta sessão do dashboard — usado só pra
   // saber quais são "novas" (chegaram depois que a aba abriu) e merecem
   // som + toast. null = ainda não estabelecemos a base (evita disparar som
@@ -83,7 +84,13 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     if (!isAuthenticated) {
       const token = Cookies.get('access_token') || Cookies.get('refresh_token');
       if (token) {
-        fetchMe().catch(() => irParaLogin());
+        // Há cookie de login mas o estado salvo no aparelho está vazio (ex.: app instalado reaberto): confirma a sessão com o servidor ANTES de
+        // mandar para o login. Sem isto, o efeito abaixo redirecionava no mesmo instante, antes de a resposta chegar.
+        verificando.current = true;
+        fetchMe().finally(() => {
+          verificando.current = false;
+          if (!useAuthStore.getState().isAuthenticated) irParaLogin();
+        });
       } else {
         irParaLogin();
       }
@@ -92,7 +99,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
   // Redireciona se perder autenticação após já estar hidratado
   useEffect(() => {
-    if (hydrated && !isAuthenticated && initDone.current) irParaLogin();
+    if (hydrated && !isAuthenticated && initDone.current && !verificando.current) irParaLogin();
   }, [hydrated, isAuthenticated, router]);
 
   // Buscar contagem de objetos do usuário
