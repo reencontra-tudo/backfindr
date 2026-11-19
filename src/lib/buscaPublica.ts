@@ -1,4 +1,5 @@
-import { categoriasDaBusca, construirDicionario, termosConhecidos } from './buscaDicionario';
+import { categoriasDaBusca, construirDicionario, construirNovos, termosConhecidos } from './buscaDicionario';
+import { palavrasDeIdentificacao } from '@/lib/flowMatch/relevance';
 
 // Busca pública por texto: dicionário de sinônimos, expansão de termos, condições SQL e score de relevância.
 // MOVIDO sem alteração de /api/v1/objects/public (que continua usando estas funções) para que o Feed use a MESMA lógica (sem motor novo).
@@ -43,6 +44,8 @@ export function normalizarPalavra(word: string): string {
 /** Dicionário AMPLIADO (src/lib/buscaDicionario.ts): só as consumidoras de busca que pedirem (`dicionario: 'ampliado'`). O `SINONIMOS` acima fica CONGELADO. */
 export const DICIONARIO_AMPLIADO = construirDicionario(SINONIMOS, normalizarPalavra);
 const CONHECIDOS = termosConhecidos(DICIONARIO_AMPLIADO, normalizarPalavra);
+/** Só os pares NOVOS (grupos e relações): reconhecem, no TEXTO da ocorrência, uma palavra que a busca pediu (ex.: «carro» → «chevrolet»). */
+const NOVOS_AMPLIADO = construirNovos(normalizarPalavra);
 
 /** `o?.dicionario === 'ampliado'`: separa por qualquer pontuação («carro,» vira «carro») e não descarta palavras curtas conhecidas («rg»). Sem opção: igual a sempre. */
 export function tokenizar(text: string, o?: OpcoesBusca): string[] {
@@ -118,6 +121,10 @@ export function buildKeywordConditions(termosExpandidos: string[], params: unkno
 // Threshold mínimo para aparecer na busca pública
 export const SCORE_MIN_BUSCA = 20;
 
+/** Palavras do título/descrição. No dicionário ampliado o ITEM NÃO é expandido (só a busca): senão «chevrolet» listaria todo texto com «carro», porque «carro» expande para «chevrolet». */
+const itemTokens = (texto: string, o?: OpcoesBusca): Set<string> =>
+  o?.dicionario === 'ampliado' ? new Set(tokenizar(texto, o).map(normalizarPalavra)) : expandirTokens(tokenizar(texto, o), o);
+
 export function calcularScoreBusca(keyword: string, item: Record<string, unknown>, o?: OpcoesBusca): number {
   let score = 0;
 
@@ -126,14 +133,14 @@ export function calcularScoreBusca(keyword: string, item: Record<string, unknown
 
   // Título com sinônimos (+10 por palavra, até 40 pts)
   if (item.title) {
-    const titleTokens = expandirTokens(tokenizar(item.title as string, o), o);
+    const titleTokens = itemTokens(item.title as string, o);
     const common = [...kwExpanded].filter(w => titleTokens.has(w)).length;
     if (common > 0) score += Math.min(40, common * 10);
   }
 
   // Descrição com sinônimos (até 20 pts)
   if (item.description) {
-    const descTokens = expandirTokens(tokenizar(item.description as string, o), o);
+    const descTokens = itemTokens(item.description as string, o);
     const common = [...kwExpanded].filter(w => descTokens.has(w)).length;
     score += Math.min(20, (common / Math.max(kwTokens.length, 1)) * 20);
   }
@@ -161,3 +168,32 @@ export function calcularScoreBusca(keyword: string, item: Record<string, unknown
   return Math.min(100, Math.round(score));
 }
 
+
+// ─── Nível de entrada (só com o dicionário ampliado; Feed e /achei `amplo=1`) ──────────────────────────────
+//   0 = palavra EXATA: uma palavra que identifica o objeto (sem cor, palavra vazia nem descrição genérica) aparece INTEIRA no título/descrição;
+//   1 = termo NOVO do dicionário (grupo/relação) que a busca pediu aparece inteiro no título/descrição (ex.: «carro» → «Chevrolet Spin»), ou a categoria
+//       pedida (hoje só «veiculo» pede vehicle; nunca legado);
+//   2 = nota >= SCORE_MIN_BUSCA (sinônimos antigos, com o radical corrigido).
+// A nota só ordena dentro do nível. Sem este nível, «carro» (10 pontos por palavra) não achava «Spin» sozinho no título.
+export type NivelBusca = 0 | 1 | 2;
+const palavrasDoTexto = (t: unknown): Set<string> => new Set(removerAcentos(String(t ?? '')).toLowerCase().split(/[^a-z0-9]+/).filter(Boolean).map(normalizarPalavra));
+
+export function nivelBuscaAmpliada(keyword: string, item: Record<string, unknown>, nota: number, o?: OpcoesBusca): NivelBusca | null {
+  const palavras = palavrasDoTexto(`${item.title ?? ''} ${item.description ?? ''} ${item.brand ?? ''}`); // `model` não entra: em produção nenhuma ocorrência elegível o tem preenchido (e a busca SQL também não olha)
+  if (palavrasDeIdentificacao(keyword).some((w) => palavras.has(w))) return 0;
+  const pedidas = tokenizar(keyword, { dicionario: 'ampliado' }).map(normalizarPalavra);
+  const novas = new Set<string>();
+  for (const t of pedidas) for (const s of NOVOS_AMPLIADO[t] ?? []) novas.add(normalizarPalavra(s));
+  for (const t of pedidas) novas.delete(t);
+  if ([...novas].some((w) => palavras.has(w))) return 1;
+  const cats = o?.categoriasDaBusca ?? categoriasDaBuscaTexto(keyword, { dicionario: 'ampliado' });
+  const cat = String(item.category ?? item.type ?? '').toLowerCase();
+  if (!item.is_legacy && cat && cats.includes(cat)) return 1;
+  return nota >= SCORE_MIN_BUSCA ? 2 : null;
+}
+
+/** Quantas palavras exatas da busca o texto tem (desempate dentro do nível 0). */
+export function palavrasExatasBusca(keyword: string, item: Record<string, unknown>): number {
+  const palavras = palavrasDoTexto(`${item.title ?? ''} ${item.description ?? ''}`);
+  return palavrasDeIdentificacao(keyword).filter((w) => palavras.has(w)).length;
+}

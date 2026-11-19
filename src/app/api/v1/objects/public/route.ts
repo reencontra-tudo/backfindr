@@ -7,7 +7,7 @@ import { buscarRegistrosRecentesParecidos } from '@/lib/flowMatch/recentSimilar'
 import { maskSignalForPublicApi } from '@/lib/objectPublicView';
 import { localizacaoPublica } from '@/lib/publicLocation';
 
-import { SCORE_MIN_BUSCA, buildKeywordConditions, calcularScoreBusca, categoriasDaBuscaTexto, expandirKeyword, expandirTokens, tokenizar, type OpcoesBusca } from '@/lib/buscaPublica';
+import { SCORE_MIN_BUSCA, buildKeywordConditions, calcularScoreBusca, categoriasDaBuscaTexto, expandirKeyword, expandirTokens, nivelBuscaAmpliada, palavrasExatasBusca, tokenizar, type OpcoesBusca } from '@/lib/buscaPublica';
 
 // Verifica se FTS existe no banco
 let hasFTS: boolean | null = null;
@@ -159,6 +159,9 @@ export async function GET(request: NextRequest) {
         created_at: row.created_at,
         updated_at: row.updated_at,
         _score: keyword.length > 0 ? calcularScoreBusca(keyword, row, opcoes) : 100,
+        // só com `amplo=1`: nível 0 palavra exata, 1 termo novo/categoria, 2 nota (ver buscaPublica.ts); sobre a linha ORIGINAL do banco
+        _nivel: amplo && keyword.length > 0 ? nivelBuscaAmpliada(keyword, row, calcularScoreBusca(keyword, row, opcoes), opcoes) : null,
+        _exatas: amplo && keyword.length > 0 ? palavrasExatasBusca(keyword, row) : 0,
       };
       return item;
     });
@@ -176,16 +179,22 @@ export async function GET(request: NextRequest) {
 
     // Filtra por score mínimo e ordena por relevância (quando há keyword)
     const selecionados = keyword.length > 0
-      ? allItems
-          .filter(item => item._score >= SCORE_MIN_BUSCA)
-          .filter(passaStrict)
-          .sort((a, b) => b._score - a._score)
-          .slice(0, requestedSize)
+      ? (amplo
+          ? allItems
+              .filter(item => item._nivel !== null)
+              .sort((a, b) => (a._nivel as number) - (b._nivel as number) || b._score - a._score || b._exatas - a._exatas)
+          : allItems
+              .filter(item => item._score >= SCORE_MIN_BUSCA)
+              .filter(passaStrict)
+              .sort((a, b) => b._score - a._score)
+        ).slice(0, requestedSize)
       : allItems.slice(0, requestedSize);
 
     // Só SINAL PÚBLICO: nome de pessoa mascarado e sem o endereço da fonte, na RESPOSTA. O casamento da busca, a pontuação, o filtro do passo 2,
     // a ordem e o corte acima usaram o texto original; usuário e legado passam sem alteração.
-    const items = selecionados.map(maskSignalForPublicApi);
+    // `_nivel` e `_exatas` são internos (só ordenam): a resposta tem os mesmos campos de sempre
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    const items = selecionados.map(({ _nivel, _exatas, ...item }) => maskSignalForPublicApi(item));
 
     const nextCursor = items.length === requestedSize
       ? String(items[items.length - 1].updated_at)

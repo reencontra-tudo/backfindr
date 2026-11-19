@@ -9,9 +9,8 @@
 //  • O texto é casado no banco com o título/descrição ORIGINAIS (F-18), mas o que SAI é só a lista fixa de campos do card (FeedItem): nunca dono,
 //    contato, coordenadas, descrição bruta, score nem o texto digitado.
 import { query } from '@/lib/db';
-import { SCORE_MIN_BUSCA, buildKeywordConditions, calcularScoreBusca, categoriasDaBuscaTexto, expandirKeyword, removerAcentos, type OpcoesBusca } from '@/lib/buscaPublica';
-import { isBuscaAmpla, palavrasDeIdentificacao } from '@/lib/flowMatch/relevance';
-import { normalizarPalavra as radical } from '@/lib/publicSignals/textNormalization';
+import { SCORE_MIN_BUSCA, buildKeywordConditions, calcularScoreBusca, categoriasDaBuscaTexto, expandirKeyword, nivelBuscaAmpliada, palavrasExatasBusca, removerAcentos, type OpcoesBusca } from '@/lib/buscaPublica';
+import { isBuscaAmpla } from '@/lib/flowMatch/relevance';
 import { FEED_ELIGIBILITY_WHERE, getRankedFeed, toPublicItem, type FeedItem, type FeedParams } from './query';
 import { BUSCA_MIN_CARACTERES, normalizarConsulta } from './consulta';
 
@@ -19,10 +18,6 @@ export const BUSCA_MAX_RESULTADOS = 60;
 const BUSCA_MAX_CANDIDATOS = 1000;
 /** Só o Feed liga estas opções (os demais consumidores da busca pública seguem como eram): sinônimos por radical e casamento sem acento. */
 const OPCOES: OpcoesBusca = { radical: true, semAcento: true, dicionario: 'ampliado' };
-
-/** Palavras inteiras de um texto, sem acento, no singular simples (a mesma normalização da busca): «carro,» e «Carros» viram «carro». */
-const palavrasDoTexto = (t: unknown): Set<string> =>
-  new Set(removerAcentos(String(t ?? '')).toLowerCase().split(/[^a-z0-9]+/).filter(Boolean).map(radical));
 
 export interface ResultadoBusca {
   items: FeedItem[];
@@ -44,27 +39,26 @@ export async function buscarNoFeed(textoBruto: unknown, filtros: FeedParams = {}
   const params: unknown[] = [];
   const kw = buildKeywordConditions(expandirKeyword(removerAcentos(q), opcoes), params, opcoes);
   const rows = await query(
-    `SELECT o.qr_code AS code, o.title, o.description, o.color, o.category, o.type
+    `SELECT o.qr_code AS code, o.title, o.description, o.color, o.brand, o.category, o.type
        FROM objects o
       WHERE ${FEED_ELIGIBILITY_WHERE} AND ${kw}
       LIMIT ${BUSCA_MAX_CANDIDATOS}`,
     params,
   );
-  const ids = palavrasDeIdentificacao(q);
-  const pontos = new Map<string, number>();
-  const literais = new Map<string, number>(); // quantas palavras da busca aparecem inteiras no título/descrição (desempate)
+  // Nível 0 = palavra exata; 1 = termo novo do dicionário (ou categoria pedida); 2 = nota. A nota só desempata dentro do nível (src/lib/buscaPublica.ts).
+  const nivel = new Map<string, number>(); const pontos = new Map<string, number>(); const exatas = new Map<string, number>();
   for (const r of rows.rows as Array<Record<string, unknown>>) {
     const code = String(r.code);
-    const score = calcularScoreBusca(q, r, opcoes);
-    const doTexto = new Set([...palavrasDoTexto(r.title), ...palavrasDoTexto(r.description)]);
-    const literal = ids.filter((w) => doTexto.has(w)).length;
-    if (score >= SCORE_MIN_BUSCA || literal > 0) { pontos.set(code, score); literais.set(code, literal); }
+    const nota = calcularScoreBusca(q, r, opcoes);
+    const n = nivelBuscaAmpliada(q, r, nota, opcoes);
+    if (n === null) continue;
+    nivel.set(code, n); pontos.set(code, nota); exatas.set(code, palavrasExatasBusca(q, r));
   }
 
-  // Mais relevante primeiro; empate: a ordem que o Feed já usa (sort estável). Só o que passa pelos filtros do Feed.
+  // Do nível mais forte para o mais fraco; dentro dele, nota e depois palavras exatas; empate: a ordem que o Feed já usa (sort estável). Só o que passa pelos filtros do Feed.
   const items = ranked.items
-    .filter((r) => pontos.has(r.code))
-    .sort((a, b) => (pontos.get(b.code) ?? 0) - (pontos.get(a.code) ?? 0) || (literais.get(b.code) ?? 0) - (literais.get(a.code) ?? 0))
+    .filter((r) => nivel.has(r.code))
+    .sort((a, b) => (nivel.get(a.code) ?? 9) - (nivel.get(b.code) ?? 9) || (pontos.get(b.code) ?? 0) - (pontos.get(a.code) ?? 0) || (exatas.get(b.code) ?? 0) - (exatas.get(a.code) ?? 0))
     .slice(0, BUSCA_MAX_RESULTADOS)
     .map(toPublicItem);
   return { items, ampla, truncated: ranked.truncated };

@@ -10,8 +10,8 @@ const TEST_DB = process.env.TEST_DATABASE_URL;
 if (TEST_DB) process.env.DATABASE_URL = TEST_DB;
 
 import { calculateMatchScore, hasTextOverlap } from '@/lib/matching';
-import { DICIONARIO_AMPLIADO, SINONIMOS, calcularScoreBusca, categoriasDaBuscaTexto, expandirKeyword, expandirTokens, normalizarPalavra, tokenizar } from '@/lib/buscaPublica';
-import { CATEGORIAS, GRUPOS, RELACOES } from '@/lib/buscaDicionario';
+import { DICIONARIO_AMPLIADO, SINONIMOS, calcularScoreBusca, categoriasDaBuscaTexto, expandirKeyword, expandirTokens, nivelBuscaAmpliada, normalizarPalavra, tokenizar } from '@/lib/buscaPublica';
+import { CATEGORIAS, FORA_DO_DICIONARIO, GRUPOS, RELACOES, TERMOS_DE_CARRO, TERMOS_DE_MOTO } from '@/lib/buscaDicionario';
 
 const read = (rel: string) => readFileSync(path.join(__dirname, '..', rel), 'utf8');
 const AMP = { dicionario: 'ampliado' as const, radical: true, semAcento: true };
@@ -71,16 +71,34 @@ describe('dicionário ampliado: pares, radical, categoria', () => {
     expect(read('src/lib/buscaPublica.ts')).toContain("from './buscaDicionario'");
     expect(Object.keys(DICIONARIO_AMPLIADO).length).toBeGreaterThan(Object.keys(SINONIMOS).length);
   });
-  it('veículos: carro ⇄ automóvel ⇄ auto; moto ⇄ motocicleta; bicicleta ⇄ bike; «veiculo» acha os específicos', () => {
-    expect(exp('carro')).toEqual(expect.arrayContaining(['automovel', 'auto'])); expect(exp('automovel')).toEqual(expect.arrayContaining(['carro', 'auto']));
+  it('veículos: carro ⇄ automóvel; moto ⇄ motocicleta; caminhonete ⇄ picape ⇄ pickup; bicicleta ⇄ bike; «auto» NÃO é sinônimo', () => {
+    expect(exp('carro')).toContain('automovel'); expect(exp('automovel')).toContain('carro');
     expect(exp('moto')).toContain('motocicleta'); expect(exp('motocicleta')).toContain('moto');
+    expect(exp('caminhonete')).toEqual(expect.arrayContaining(['picape', 'pickup'])); expect(exp('picape')).toContain('caminhonete');
     expect(exp('bicicleta')).toContain('bike'); expect(exp('bike')).toContain('bicicleta');
-    expect(exp('veiculo')).toEqual(expect.arrayContaining(['carro', 'automovel', 'moto', 'motocicleta']));
+    expect(exp('carro')).not.toContain('auto'); expect(exp('automovel')).not.toContain('auto'); expect(exp('auto')).toEqual(['auto']);
+    expect(JSON.stringify([GRUPOS, RELACOES, CATEGORIAS])).not.toMatch(/"auto"/);
   });
-  it('conservador: «carro» NÃO vira «chave»; «carro» não vira «veiculo» nem «moto» (guarda-chuva de um sentido só)', () => {
-    expect(exp('carro')).not.toContain('chave'); expect(exp('chave')).not.toContain('carro');
-    expect(exp('carro')).not.toContain('veiculo'); expect(exp('carro')).not.toContain('moto'); expect(exp('moto')).not.toContain('carro');
-    expect(exp('anel')).not.toContain('colar'); expect(exp('joia')).toEqual(expect.arrayContaining(['anel', 'colar']));
+  it('carro acha tipos, marcas SÓ de carro e modelos de carro; moto acha só os de moto; um não acha o outro', () => {
+    for (const t of ['automovel', 'caminhonete', 'picape', 'pickup', 'van', 'utilitario', 'suv', 'sedan', 'hatch', 'chevrolet', 'fiat', 'volkswagen', 'ford', 'toyota', 'hyundai', 'renault', 'nissan', 'jeep', 'peugeot', 'citroen', 'spin', 'prisma', 'celta', 'palio', 'siena', 'strada', 'civic', 'corolla', 'hb20', 'hilux', 'saveiro']) expect(exp('carro'), t).toContain(t);
+    for (const t of ['motocicleta', 'scooter', 'yamaha', 'biz', 'fazer']) expect(exp('moto'), t).toContain(t);
+    for (const t of ['yamaha', 'biz', 'fazer', 'scooter', 'motocicleta']) expect(exp('carro'), t).not.toContain(t);
+    for (const t of ['chevrolet', 'spin', 'hilux', 'caminhonete', 'ford']) expect(exp('moto'), t).not.toContain(t);
+  });
+  it('Honda e caminhão: só «veiculo» e a própria palavra os acham; «carro» e «moto» NÃO', () => {
+    for (const q of ['carro', 'moto', 'automovel', 'motocicleta']) { expect(exp(q), q).not.toContain('honda'); expect(exp(q), q).not.toContain('caminhao'); }
+    expect(exp('veiculo')).toEqual(expect.arrayContaining(['honda', 'caminhao', 'carro', 'moto', 'chevrolet', 'spin', 'yamaha', 'biz', 'hilux']));
+    expect(exp('honda')).toEqual(['honda']);                                   // marca/modelo pela própria palavra: só quem tem a palavra (não vira «carro» nem categoria)
+    expect(exp('chevrolet')).toEqual(['chevrolet']); expect(exp('spin')).toEqual(['spin']);
+    expect(exp('caminhao')).toEqual(['caminhao']);
+  });
+  it('conservador: carro≠chave; «veiculo» não lista bicicleta; sem «onix», «polo», «gol»… em nenhum termo', () => {
+    expect(exp('carro')).not.toContain('chave'); expect(exp('chave')).not.toContain('carro'); expect(exp('veiculo')).not.toContain('bicicleta');
+    const todos = JSON.stringify([GRUPOS, RELACOES]);
+    for (const t of ['gol', 'up', 'fit', 'uno', 'ka', 'onix', 'polo', 'sol']) expect(todos, t).not.toContain(`"${t}"`);
+    expect(TERMOS_DE_CARRO.length).toBeLessThanOrEqual(40); expect(TERMOS_DE_MOTO.length).toBeLessThanOrEqual(10);   // enxuto
+    for (const t of ['gol', 'up', 'fit', 'uno', 'ka', 'onix', 'polo', 'sol', 'auto', 'cg', 'cg 150', 'pop', 'fan', 'tracker', 'creta']) expect(FORA_DO_DICIONARIO.map((x) => x.termo), t).toContain(t);
+    for (const x of FORA_DO_DICIONARIO) expect(x.motivo.length, x.termo).toBeGreaterThan(10);
   });
   it('documentos, pets, cartão, mala, celular', () => {
     expect(exp('rg')).toContain('identidade'); expect(exp('identidade')).toEqual(expect.arrayContaining(['rg']));
@@ -97,18 +115,37 @@ describe('dicionário ampliado: pares, radical, categoria', () => {
   it('palavras curtas conhecidas («rg») e pontuação («carro,») só valem no ampliado', () => {
     expect(tokenizar('RG do carro, azul', AMP)).toEqual(['rg', 'carro', 'azul']); expect(tokenizar('RG do carro, azul')).toEqual(['carro,', 'azul']);
   });
-  it('categoria: carro/moto/automóvel/veículo → Veículo; bicicleta → bike; pet/animal → pet+animal; documento; chave → keys; «carro» NÃO pede keys; «rg» não pede categoria', () => {
-    for (const t of ['carro', 'moto', 'automovel', 'veiculo', 'Motocicleta']) expect(categoriasDaBuscaTexto(t, AMP), t).toEqual(['vehicle']);
+  it('categoria: SÓ «veiculo» pede vehicle; carro/moto/automóvel/motocicleta NÃO; bicicleta → bike; pet/animal → pet+animal; documento; chave → keys; «rg» nada', () => {
+    expect(categoriasDaBuscaTexto('veiculo', AMP)).toEqual(['vehicle']); expect(categoriasDaBuscaTexto('Veículos', AMP)).toEqual(['vehicle']);
+    for (const t of ['carro', 'moto', 'automovel', 'motocicleta', 'caminhonete', 'chevrolet', 'honda', 'auto']) expect(categoriasDaBuscaTexto(t, AMP), t).toEqual([]);
     expect(categoriasDaBuscaTexto('bicicleta', AMP)).toEqual(['bike']); expect(categoriasDaBuscaTexto('pet', AMP).sort()).toEqual(['animal', 'pet']);
     expect(categoriasDaBuscaTexto('documento', AMP)).toEqual(['document']); expect(categoriasDaBuscaTexto('chave', AMP)).toEqual(['keys']);
     expect(categoriasDaBuscaTexto('carro', AMP)).not.toContain('keys'); expect(categoriasDaBuscaTexto('rg', AMP)).toEqual([]); expect(categoriasDaBuscaTexto('foguete', AMP)).toEqual([]);
-    expect(categoriasDaBuscaTexto('carro')).toEqual([]);   // sem a opção: nada muda
+    expect(categoriasDaBuscaTexto('veiculo')).toEqual([]);   // sem a opção: nada muda
   });
-  it('nota: categoria soma 20 (alcança o mínimo) só no ampliado, e nunca para legado', () => {
-    const moto = { title: 'Honda CG roubada', description: 'Placa final 4', color: null, category: 'vehicle', is_legacy: false };
-    expect(calcularScoreBusca('carro', moto, AMP)).toBeGreaterThanOrEqual(20);
-    expect(calcularScoreBusca('carro', moto)).toBe(0);                                // antigo: nada
-    expect(calcularScoreBusca('carro', { ...moto, is_legacy: true }, AMP)).toBe(0);   // legado: sem bônus de categoria (o título dele não tem a palavra)
+  it('nota/nível: a categoria pedida soma 20 só no ampliado e nunca para legado; item NÃO é expandido (só a busca)', () => {
+    const v = { title: 'Honda CG roubada', description: 'Placa final 4', color: null, category: 'vehicle', is_legacy: false };
+    expect(calcularScoreBusca('veiculo', v, AMP)).toBeGreaterThanOrEqual(20);
+    expect(calcularScoreBusca('veiculo', v)).toBe(0);                                  // antigo: nada
+    expect(calcularScoreBusca('veiculo', { ...v, is_legacy: true }, AMP)).toBeLessThan(20);   // legado: sem bônus de categoria
+    expect(calcularScoreBusca('carro', v, AMP)).toBe(0);                               // «carro» não pede a categoria nem liga a Honda
+    expect(calcularScoreBusca('chevrolet', { title: 'Roubaram carro', description: 'meu carro', category: 'vehicle' }, AMP)).toBe(0);   // «chevrolet» NÃO lista texto só com «carro»
+  });
+  it('nível: 0 palavra exata; 1 termo novo (carro→Spin) ou categoria (veiculo); sem marca→categoria; legado fora', () => {
+    const niv = (q: string, i: Record<string, unknown>) => nivelBuscaAmpliada(q, i, calcularScoreBusca(q, i, AMP), AMP);
+    expect(niv('carro', { title: 'Chevrolet Spin cinza 2020', description: '', category: 'other' })).toBe(1);   // mesmo com category other
+    expect(niv('carro', { title: 'Roubaram Spin', description: '', category: 'other' })).toBe(1);               // só «Spin» no título
+    expect(niv('moto', { title: 'Yamaha Fazer 250', description: '', category: 'vehicle' })).toBe(1);
+    expect(niv('carro', { title: 'Yamaha Fazer 250', description: '', category: 'vehicle' })).toBeNull();
+    expect(niv('moto', { title: 'Chevrolet Spin', description: '', category: 'vehicle' })).toBeNull();
+    expect(niv('carro', { title: 'Honda CG roubada', description: '', category: 'vehicle' })).toBeNull();
+    expect(niv('honda', { title: 'Honda CG roubada', description: '', category: 'vehicle' })).toBe(0);
+    expect(niv('chevrolet', { title: 'Roubaram carro', description: 'meu carro cinza', category: 'vehicle' })).toBeNull();
+    expect(niv('veiculo', { title: 'Perdi minha CG', description: '', category: 'vehicle' })).toBe(1);          // só a categoria
+    expect(niv('veiculo', { title: 'Perdi minha CG', description: '', category: 'vehicle', is_legacy: true })).toBeNull();
+    expect(niv('veiculo', { title: 'Caminhão baú', description: '', category: 'other' })).toBe(1);             // caminhão só por «veiculo»
+    expect(niv('carro', { title: 'Caminhão baú', description: '', category: 'other' })).toBeNull();
+    expect(niv('carro', { title: 'Auto escola Silva', description: '', category: 'other' })).toBeNull();        // «auto» não é sinônimo
   });
 });
 
@@ -119,6 +156,14 @@ describe.skipIf(!TEST_DB)('busca com banco real (Feed e /achei)', () => {
     await pool.query(`INSERT INTO objects (title,description,status,category,qr_code,is_public,is_legacy,source,location,images,created_at,updated_at,user_id) VALUES
       ('Roubaram carro do meu pai do dia das mães as 21:30 da noite','Chevrolet spin cor cinza 2020','stolen','vehicle','V0000001',true,false,NULL,'Centro, Cascavel, PR','[]','2026-11-12 10:00','2026-11-12 10:00',gen_random_uuid()),
       ('Honda CG roubada no bairro Alto','Placa final 4','stolen','vehicle','V0000002',true,false,NULL,'Centro, Cascavel, PR','[]','2026-11-12 10:01','2026-11-12 10:01',gen_random_uuid()),
+      ('Chevrolet Spin cinza','Perdido no mercado','lost','other','V0000010',true,false,NULL,'Centro, Cascavel, PR','[]','2026-11-12 10:10','2026-11-12 10:10',gen_random_uuid()),
+      ('Yamaha Fazer 250 roubada','Moto preta','stolen','vehicle','V0000011',true,false,NULL,'Centro, Cascavel, PR','[]','2026-11-12 10:11','2026-11-12 10:11',gen_random_uuid()),
+      ('Honda Civic prata','Achado na rua','found','vehicle','V0000012',true,false,NULL,'Centro, Cascavel, PR','[]','2026-11-12 10:12','2026-11-12 10:12',gen_random_uuid()),
+      ('Caminhão baú furtado','Branco','stolen','other','V0000013',true,false,NULL,'Centro, Cascavel, PR','[]','2026-11-12 10:13','2026-11-12 10:13',gen_random_uuid()),
+      ('Perdi o documento da minha CG','Sem marca no texto','lost','vehicle','V0000014',true,false,NULL,'Centro, Cascavel, PR','[]','2026-11-12 10:14','2026-11-12 10:14',gen_random_uuid()),
+      ('Hilux branca furtada','Picape','stolen','other','V0000015',true,false,NULL,'Centro, Cascavel, PR','[]','2026-11-12 10:15','2026-11-12 10:15',gen_random_uuid()),
+      ('Auto escola Silva, achado crachá','Crachá','found','other','V0000016',true,false,NULL,'Centro, Cascavel, PR','[]','2026-11-12 10:16','2026-11-12 10:16',gen_random_uuid()),
+      ('Gol no fim da final','Jogo de ontem','lost','other','V0000017',true,false,NULL,'Centro, Cascavel, PR','[]','2026-11-12 10:17','2026-11-12 10:17',gen_random_uuid()),
       ('Bicicleta azul roubada','Bike aro 26','stolen','bike','B0000001',true,false,NULL,'Centro, Cascavel, PR','[]','2026-11-12 10:02','2026-11-12 10:02',gen_random_uuid()),
       ('Cachorra desapareceu no bairro Alto','Filhote caramelo','lost','pet','P0000001',true,false,NULL,'Centro, Cascavel, PR','[]','2026-11-12 10:07','2026-11-12 10:07',gen_random_uuid()),
       ('Perdeu a CNH no centro','Carteira de motorista','lost','document','D0000001',true,false,NULL,'Centro, Cascavel, PR','[]','2026-11-12 10:09','2026-11-12 10:09',gen_random_uuid()),
@@ -132,9 +177,31 @@ describe.skipIf(!TEST_DB)('busca com banco real (Feed e /achei)', () => {
   beforeEach(reset);
   afterAll(async () => { await pool?.end(); });
 
-  it('Feed: «veiculo» e «automovel» acham carro e moto; «carro» acha também o veículo de título diferente (por categoria); legado NUNCA', async () => {
-    for (const t of ['veiculo', 'automovel', 'carro']) { const c = await codes(t); expect(c, t).toContain('V0000001'); expect(c, t).toContain('V0000002'); expect(c, t).not.toContain('V0000009'); }
-    expect((await codes('carro'))[0]).toBe('V0000001');      // a palavra no título + categoria vem na frente
+  it('Feed: «carro» acha «Chevrolet Spin» (mesmo com category other) e NÃO acha moto nem Honda sem a palavra; legado NUNCA', async () => {
+    const c = await codes('carro');
+    expect(c).toContain('V0000001'); expect(c).toContain('V0000010');                      // palavra exata e Spin sem a palavra «carro»
+    for (const x of ['V0000011', 'V0000002', 'V0000014', 'V0000009', 'V0000013', 'V0000016']) expect(c, x).not.toContain(x);
+    expect(c).toContain('V0000015');                                                       // Hilux (picape) é carro
+    expect(c).toContain('V0000012');                                                       // «Honda Civic»: o modelo Civic é de carro
+  });
+  it('Feed: «moto» acha «Yamaha Fazer» e NÃO acha carro; «veiculo» acha carro, moto, caminhão e a ocorrência só com category vehicle', async () => {
+    const m = await codes('moto'); expect(m).toContain('V0000011');
+    for (const x of ['V0000001', 'V0000010', 'V0000012', 'V0000015', 'V0000013']) expect(m, x).not.toContain(x);
+    const v = await codes('veiculo');
+    for (const x of ['V0000001', 'V0000010', 'V0000011', 'V0000013', 'V0000014', 'V0000002', 'V0000012']) expect(v, x).toContain(x);   // carro, moto, caminhão, só-categoria, Honda
+    expect(v).not.toContain('V0000009'); expect(v).not.toContain('V0000016'); expect(v).not.toContain('V0000017');
+  });
+  it('Feed: «honda» acha Honda de carro e de moto; «carro» sozinho não acha Honda sem a palavra; «chevrolet» não lista veículos sem a palavra', async () => {
+    const h = await codes('honda'); expect(h).toContain('V0000002'); expect(h).toContain('V0000012'); expect(h).not.toContain('V0000009');
+    expect(await codes('carro')).not.toContain('V0000002');
+    const ch = await codes('chevrolet'); expect(ch).toContain('V0000001'); expect(ch).toContain('V0000010'); expect(ch).not.toContain('V0000011'); expect(ch).not.toContain('V0000012');
+    expect(ch).not.toContain('V0000015');
+  });
+  it('Feed: caminhonete ⇄ picape se acham; ambíguas fora («gol» não traz carro; «auto» não é sinônimo de carro)', async () => {
+    expect(await codes('caminhonete')).toContain('V0000015'); expect(await codes('picape')).toContain('V0000015');
+    const g = await codes('gol'); expect(g).toContain('V0000017'); expect(g).not.toContain('V0000001');
+    expect(await codes('carro')).not.toContain('V0000016');
+    expect(await codes('auto')).toContain('V0000016'); expect(await codes('auto')).not.toContain('V0000001');   // «auto» só acha a palavra exata
   });
   it('Feed: sinônimos novos (bike→bicicleta, cachorro→cachorra, rg/cnh) e «pet» acha por categoria', async () => {
     expect(await codes('bike')).toContain('B0000001'); expect(await codes('cachorro')).toContain('P0000001');
