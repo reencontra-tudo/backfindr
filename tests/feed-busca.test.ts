@@ -172,13 +172,13 @@ describe.skipIf(!TEST_DB)('busca do Feed com banco real', () => {
     expect(await codes('foguete espacial')).toEqual([]);               // sem relação com nada: sem resultado
     expect(await codes('submarino')).toEqual([]);
   });
-  it('o resto não mudou: «oculos» ainda acha o óculos de grau e cada ocorrência aparece uma vez; ordem por nota, depois por palavras literais', async () => {
+  it('o resto não mudou: «oculos» ainda acha o óculos de grau e cada ocorrência aparece uma vez; ordem por nível, depois nota e palavras exatas', async () => {
     const c = await codes('oculos'); expect(c).toContain('OCU00001'); expect(new Set(c).size).toBe(c.length);
-    expect(read('src/lib/feed/busca.ts')).toMatch(/\(literais\.get\(b\.code\) \?\? 0\) - \(literais\.get\(a\.code\) \?\? 0\)/);
+    expect(read('src/lib/feed/busca.ts')).toMatch(/\(nivel\.get\(a\.code\) \?\? 9\)/);   // nível (exata, termo novo/categoria, nota), depois nota e palavras exatas
   });
   it('a regra é SÓ do Feed: a busca pública, SCORE_MIN_BUSCA e o dicionário ficam como estavam', () => {
-    const pub = read('src/app/api/v1/objects/public/route.ts'); expect(pub).toContain('.filter(item => item._score >= SCORE_MIN_BUSCA)'); expect(pub).not.toContain('palavrasDeIdentificacao');
-    const lib = read('src/lib/buscaPublica.ts'); expect(lib).toContain('export const SCORE_MIN_BUSCA = 20;'); expect(lib).not.toMatch(/palavrasDoTexto|literal/);
+    const pub = read('src/app/api/v1/objects/public/route.ts'); expect(pub).toContain('.filter(item => item._score >= SCORE_MIN_BUSCA)'); expect(pub).toContain('const amplo = searchParams.get(\'amplo\') === \'1\' && !strict;');
+    const lib = read('src/lib/buscaPublica.ts'); expect(lib).toContain('export const SCORE_MIN_BUSCA = 20;'); expect(lib).toMatch(/Dicionário AMPLIADO[\s\S]*CONGELADO/);   // o SINONIMOS antigo segue congelado (o ampliado é à parte)
     expect(lib).not.toMatch(/^\s+(carro|veiculo|moto|bicicleta|pet): \[/m); // dicionário global NÃO alterado
   });
   it('sem resultado: lista vazia e ampla=false (a tela mostra o convite «Perdi»/«Encontrei»)', async () => {
