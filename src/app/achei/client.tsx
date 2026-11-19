@@ -73,6 +73,7 @@ function AcheiInner() {
     try {
       const params = new URLSearchParams();
       params.set('status', 'lost');
+      params.set('amplo', '1'); // vocabulário por família (etapa 1); os fluxos /flow/* não enviam
       if (kw.trim()) params.set('keyword', kw.trim());
       params.set('size', '20');
       const res = await fetch(`/api/v1/objects/public?${params.toString()}`);

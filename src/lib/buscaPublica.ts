@@ -46,7 +46,7 @@ export function tokenizar(text: string): string[] {
  *  radical: o dicionário tem chaves como «oculos» e «onibus», mas `normalizarPalavra` tira o «s» final («oculo»/«onibu»), então a chave NUNCA casava.
  *           Com a opção, a busca no dicionário também usa o radical de cada chave.
  *  semAcento: casa título/descrição sem diferenciar acento («oculos» acha «Óculos»). */
-export interface OpcoesBusca { radical?: boolean; semAcento?: boolean }
+export interface OpcoesBusca { radical?: boolean; semAcento?: boolean; categoriasDaBusca?: string[] }
 
 const POR_RADICAL: Record<string, string[]> = (() => {
   const m: Record<string, string[]> = {};
@@ -87,6 +87,11 @@ export function buildKeywordConditions(termosExpandidos: string[], params: unkno
       `(${col('title')} LIKE $${p} OR ${col('description')} LIKE $${p}` +
       ` OR ${col('color')} LIKE $${p} OR ${col('brand')} LIKE $${p} OR ${col('breed')} LIKE $${p})`
     );
+  }
+  // Reconhecimento por categoria (só quem passar `categoriasDaBusca`, hoje Feed e /achei com `amplo=1`): ocorrências da categoria entram como candidatas
+  if (o?.categoriasDaBusca?.length) {
+    params.push(o.categoriasDaBusca);
+    conds.push(`LOWER(category) = ANY($${params.length}::text[])`);
   }
   return `(${conds.join(' OR ')})`;
 }

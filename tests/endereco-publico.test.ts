@@ -79,7 +79,7 @@ describe('/api/v1/objects/public', () => {
     expect(JSON.stringify(j.items.filter((i: { id: string }) => i.id === 'u1'))).not.toMatch(/Palmeiras|1224|07040/);
   });
   it('casamento e pontuação pelo texto ORIGINAL: mesmos ids, mesma ordem e mesma pontuação que antes da redução', async () => {
-    expect(read('src/app/api/v1/objects/public/route.ts')).toContain('calcularScoreBusca(keyword, row)');   // a pontuação lê a linha do banco, não o item reduzido
+    expect(read('src/app/api/v1/objects/public/route.ts')).toContain('calcularScoreBusca(keyword, row, opcoes)');   // a pontuação lê a linha do banco, não o item reduzido (agora com as opções da busca; sem `amplo` elas são undefined = comportamento antigo)
     const reduzida = await call('keyword=carteira%20marrom&size=50&status=all');
     vi.resetModules(); vi.doMock('@/lib/publicLocation', () => ({ enderecoPublico: (a: unknown) => a, localizacaoPublica: (l: unknown) => l, ehCadastroDeUsuario: () => false }));
     const { GET: antes } = await import('@/app/api/v1/objects/public/route');

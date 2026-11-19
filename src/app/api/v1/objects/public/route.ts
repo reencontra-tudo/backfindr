@@ -7,7 +7,8 @@ import { buscarRegistrosRecentesParecidos } from '@/lib/flowMatch/recentSimilar'
 import { maskSignalForPublicApi } from '@/lib/objectPublicView';
 import { localizacaoPublica } from '@/lib/publicLocation';
 
-import { SCORE_MIN_BUSCA, buildKeywordConditions, calcularScoreBusca, expandirKeyword, expandirTokens, tokenizar } from '@/lib/buscaPublica';
+import { SCORE_MIN_BUSCA, buildKeywordConditions, calcularScoreBusca, expandirKeyword, expandirTokens, tokenizar, type OpcoesBusca } from '@/lib/buscaPublica';
+import { compilarFamilias, nivelDoItem, palavrasExatas } from '@/lib/buscaFamilias';
 
 // Verifica se FTS existe no banco
 let hasFTS: boolean | null = null;
@@ -39,6 +40,9 @@ export async function GET(request: NextRequest) {
     // Opção NOVA, desligada por padrão: só o passo 2 de /flow/found e /flow/lost envia `strict=1`.
     // Sem ela, nada abaixo muda (home, /buscar, /achei, painel e sitemap seguem idênticos).
     const strict = searchParams.get('strict') === '1';
+    // Opção NOVA, desligada por padrão (etapa 1 do vocabulário por família): `amplo=1` liga radical corrigido, casamento sem acento, família e categoria.
+    // Só a busca do /achei envia. Fluxos /flow/* (com ou sem strict) e qualquer outro consumidor NÃO enviam: seguem exatamente como eram. Com strict=1, `amplo` é ignorado.
+    const amplo = searchParams.get('amplo') === '1' && !strict;
     if (strict && isBuscaAmpla(keyword)) {
       // Busca ampla demais: não lista itens fracos; o fluxo mostra o aviso «precisa de mais detalhes».
       // `items` fica vazio; só registros RECENTES de usuário/sinal (nunca legado) vão em `recent_similar` (até 3).
@@ -69,9 +73,11 @@ export async function GET(request: NextRequest) {
       conditions.push(`category = $${params.length}`);
     }
 
-    const termosExpandidos = keyword.length > 0 ? expandirKeyword(keyword) : [];
+    const fam = amplo && keyword.length > 0 ? compilarFamilias(keyword) : null;
+    const opcoes: OpcoesBusca | undefined = fam ? { radical: true, semAcento: true, categoriasDaBusca: fam.categorias } : undefined;
+    const termosExpandidos = keyword.length > 0 ? [...expandirKeyword(keyword, opcoes), ...(fam?.termos ?? [])] : [];
     if (termosExpandidos.length > 0) {
-      conditions.push(buildKeywordConditions(termosExpandidos, params));
+      conditions.push(buildKeywordConditions(termosExpandidos, params, opcoes));
     }
 
     if (cursor) {
@@ -154,7 +160,10 @@ export async function GET(request: NextRequest) {
         reward_description: row.reward_description || null,
         created_at: row.created_at,
         updated_at: row.updated_at,
-        _score: keyword.length > 0 ? calcularScoreBusca(keyword, row) : 100,
+        _score: keyword.length > 0 ? calcularScoreBusca(keyword, row, opcoes) : 100,
+        // só com `amplo=1`: nível 0 palavra exata, 1 família/categoria, 2 nota (ver src/lib/buscaFamilias.ts); sempre sobre a linha ORIGINAL do banco
+        _nivel: fam ? nivelDoItem(keyword, fam, row, keyword.length > 0 ? calcularScoreBusca(keyword, row, opcoes) : 100, SCORE_MIN_BUSCA) : null,
+        _exatas: fam ? palavrasExatas(keyword, row) : 0,
       };
       return item;
     });
@@ -172,16 +181,22 @@ export async function GET(request: NextRequest) {
 
     // Filtra por score mínimo e ordena por relevância (quando há keyword)
     const selecionados = keyword.length > 0
-      ? allItems
-          .filter(item => item._score >= SCORE_MIN_BUSCA)
-          .filter(passaStrict)
-          .sort((a, b) => b._score - a._score)
-          .slice(0, requestedSize)
+      ? (fam
+          ? allItems
+              .filter(item => item._nivel !== null)
+              .sort((a, b) => (a._nivel as number) - (b._nivel as number) || b._score - a._score || b._exatas - a._exatas)
+          : allItems
+              .filter(item => item._score >= SCORE_MIN_BUSCA)
+              .filter(passaStrict)
+              .sort((a, b) => b._score - a._score)
+        ).slice(0, requestedSize)
       : allItems.slice(0, requestedSize);
 
     // Só SINAL PÚBLICO: nome de pessoa mascarado e sem o endereço da fonte, na RESPOSTA. O casamento da busca, a pontuação, o filtro do passo 2,
     // a ordem e o corte acima usaram o texto original; usuário e legado passam sem alteração.
-    const items = selecionados.map(maskSignalForPublicApi);
+    // `_nivel` e `_exatas` são internos (só ordenam): a resposta tem os mesmos campos de sempre
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    const items = selecionados.map(({ _nivel, _exatas, ...item }) => maskSignalForPublicApi(item));
 
     const nextCursor = items.length === requestedSize
       ? String(items[items.length - 1].updated_at)
