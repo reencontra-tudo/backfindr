@@ -56,7 +56,9 @@ describe.skipIf(!TEST_DB)('busca do Feed com banco real', () => {
        ('Óculos de sol roubados','Roubaram na praia','stolen','other','OCU00003',true,false,NULL,'Boa Viagem, Recife, PE','[]','2026-11-12 12:00','2026-11-12 12:00',gen_random_uuid()),
        ('Óculos de grau do legado','Registro antigo de óculos de grau','lost','other','OCU00004',true,true,NULL,'Rua Antiga 1, São Paulo, SP','[]','2024-01-01','2024-01-01',NULL),
        ('Óculos de grau privado','Não público','lost','other','OCU00005',false,false,NULL,'Centro, Cascavel, PR','[]','2026-11-12 09:00','2026-11-12 09:00',gen_random_uuid()),
-       ('Óculos de grau devolvido','Já devolvido','returned','other','OCU00006',true,false,NULL,'Centro, Cascavel, PR','[]','2026-11-12 08:00','2026-11-12 08:00',gen_random_uuid())`);
+       ('Óculos de grau devolvido','Já devolvido','returned','other','OCU00006',true,false,NULL,'Centro, Cascavel, PR','[]','2026-11-12 08:00','2026-11-12 08:00',gen_random_uuid()),
+       ('Roubaram carro do meu pai do dia das mães as 21:30 da noite','Chevrolet spin cor cinza 2020','stolen','vehicle','VEI00001',true,false,NULL,'Centro, Cascavel, PR','[]','2026-11-12 13:00','2026-11-12 13:00',gen_random_uuid()),
+       ('Carro antigo do legado','Registro antigo de carro','stolen','vehicle','VEI00002',true,true,NULL,'Rua Antiga 1, São Paulo, SP','[]','2024-01-01','2024-01-01',NULL)`);
     q.resetFeedCache();
   };
   const codes = async (texto: string, filtros = {}) => (await busca.buscarNoFeed(texto, filtros)).items.map((i) => i.code);
@@ -138,6 +140,46 @@ describe.skipIf(!TEST_DB)('busca do Feed com banco real', () => {
     const permitidos = ['can_report_found', 'category', 'category_label', 'code', 'created_at', 'has_photo', 'location_label', 'origin', 'photo_url', 'source_name', 'source_url', 'status', 'status_label', 'title'];
     for (const it of body.items) expect(Object.keys(it).sort()).toEqual(permitidos);
     const txt = JSON.stringify(body); for (const proibido of ['owner_id', 'user_id', 'latitude', 'longitude', 'description', '_score', 'is_legacy', 'OCU00004']) expect(txt).not.toContain(proibido);
+  });
+  it('CAUSA CONFIRMADA: «carro» dava só 10 pontos à ocorrência (1 palavra no título, sem sinônimo, sem cor, categoria «vehicle»), abaixo dos 20 mínimos', async () => {
+    const { calcularScoreBusca } = await import('@/lib/buscaPublica');
+    const linha = { title: 'Roubaram carro do meu pai do dia das mães as 21:30 da noite', description: 'Chevrolet spin cor cinza 2020', color: null, category: 'vehicle', type: null };
+    const O = { radical: true, semAcento: true };
+    expect(calcularScoreBusca('carro', linha, O)).toBe(10);
+    expect(calcularScoreBusca('veiculo', linha, O)).toBe(0);           // sem sinônimo «carro↔veiculo» no dicionário
+    expect(calcularScoreBusca('chevrolet', linha, O)).toBe(20);        // a descrição soma 20 sozinha
+    expect(calcularScoreBusca('spin', linha, O)).toBe(20);
+    expect(calcularScoreBusca('carro roubado', linha, O)).toBe(10);
+    expect(SCORE_MIN_BUSCA).toBe(20);                                  // a nota mínima da busca pública NÃO mudou
+  });
+  it('«carro» acha o veículo roubado (palavra inteira no título); legado e devolvido nunca; só os campos do card', async () => {
+    const r = await busca.buscarNoFeed('carro', {});
+    const c = r.items.map((i) => i.code);
+    expect(c).toContain('VEI00001'); expect(c).toContain('USR00005');   // «Chaves de carro» (seed) também tem a palavra inteira
+    expect(c).not.toContain('VEI00002');                                // legado
+    const it = r.items.find((i) => i.code === 'VEI00001')!;
+    expect(it.status).toBe('stolen'); expect(it.category).toBe('vehicle');
+    expect(Object.keys(it).sort()).toEqual(['can_report_found', 'category', 'category_label', 'code', 'created_at', 'has_photo', 'location_label', 'origin', 'photo_url', 'source_name', 'source_url', 'status', 'status_label', 'title']);
+    expect((await api('?q=carro')).body.items.map((i: { code: string }) => i.code)).toContain('VEI00001');
+  });
+  it('«carro roubado», «chevrolet» e «spin» também acham (por palavra inteira ou descrição)', async () => {
+    for (const t of ['carro roubado', 'chevrolet', 'spin', 'Carros']) expect(await codes(t), t).toContain('VEI00001');
+  });
+  it('palavra literal só vale como palavra INTEIRA (não pedaço de outra) e só se identifica o objeto (cor, palavra vazia e descrição genérica não)', async () => {
+    expect(await codes('carr')).not.toContain('VEI00001');             // pedaço de palavra
+    expect(await codes('grande')).toEqual([]);                         // descrição genérica sozinha não vira «palavra que identifica»
+    expect(await codes('de da do')).toEqual([]);                       // só palavras vazias: nada
+    expect(await codes('foguete espacial')).toEqual([]);               // sem relação com nada: sem resultado
+    expect(await codes('submarino')).toEqual([]);
+  });
+  it('o resto não mudou: «oculos» ainda acha o óculos de grau e cada ocorrência aparece uma vez; ordem por nota, depois por palavras literais', async () => {
+    const c = await codes('oculos'); expect(c).toContain('OCU00001'); expect(new Set(c).size).toBe(c.length);
+    expect(read('src/lib/feed/busca.ts')).toMatch(/\(literais\.get\(b\.code\) \?\? 0\) - \(literais\.get\(a\.code\) \?\? 0\)/);
+  });
+  it('a regra é SÓ do Feed: a busca pública, SCORE_MIN_BUSCA e o dicionário ficam como estavam', () => {
+    const pub = read('src/app/api/v1/objects/public/route.ts'); expect(pub).toContain('.filter(item => item._score >= SCORE_MIN_BUSCA)'); expect(pub).not.toContain('palavrasDeIdentificacao');
+    const lib = read('src/lib/buscaPublica.ts'); expect(lib).toContain('export const SCORE_MIN_BUSCA = 20;'); expect(lib).not.toMatch(/palavrasDoTexto|literal/);
+    expect(lib).not.toMatch(/^\s+(carro|veiculo|moto|bicicleta|pet): \[/m); // dicionário global NÃO alterado
   });
   it('sem resultado: lista vazia e ampla=false (a tela mostra o convite «Perdi»/«Encontrei»)', async () => {
     const r = await busca.buscarNoFeed('foguete espacial', {}); expect(r.items).toEqual([]); expect(r.ampla).toBe(false);
