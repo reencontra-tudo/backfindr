@@ -126,7 +126,7 @@ describe('o que NÃO mudou (decisão da lista pública: busca e casamento usam o
   it('matching e busca não importam a máscara: o casamento, a pontuação e o texto enviado ao modelo semântico seguem no original', () => {
     for (const f of ['src/lib/matching.ts', 'src/app/api/v1/objects/public/route.ts']) expect(read(f), f).not.toMatch(/tituloPublico|maskPersonNames/);
     expect(read('src/lib/matching.ts')).toContain('Título: ${obj.title}');
-    expect(read('src/app/api/v1/objects/public/route.ts')).toContain('calcularScoreBusca(keyword, row)');
+    expect(read('src/app/api/v1/objects/public/route.ts')).toContain('calcularScoreBusca(keyword, row, opcoes)');
   });
   it('rotas de administrador ficam como estão', () => {
     for (const f of ['src/app/api/v1/admin/matches/route.ts', 'src/app/api/v1/admin/objects/route.ts', 'src/app/api/v1/admin/reports/export/route.ts']) expect(read(f), f).not.toMatch(/tituloPublico|maskSignalForPublicApi/);

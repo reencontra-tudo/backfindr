@@ -123,9 +123,9 @@ describe('no código', () => {
     const r = read('src/app/api/v1/objects/public/route.ts');
     const corte = r.indexOf('.slice(0, requestedSize)'); const mascara = r.indexOf('selecionados.map(maskSignalForPublicApi)');
     expect(corte).toBeGreaterThan(0); expect(mascara).toBeGreaterThan(corte);
-    expect(r).toContain('_score: keyword.length > 0 ? calcularScoreBusca(keyword, row) : 100,');                     // pontuação sobre a linha ORIGINAL
+    expect(r).toContain('_score: keyword.length > 0 ? calcularScoreBusca(keyword, row, opcoes) : 100,');                     // pontuação sobre a linha ORIGINAL
     const lib = read('src/lib/buscaPublica.ts');                                                                       // a lógica de busca foi MOVIDA para o módulo compartilhado (sem mudar o padrão)
-    expect(lib).toContain('`LOWER(${c})`'); expect(lib).toContain('LIKE $${p}'); expect(r).toContain('buildKeywordConditions(termosExpandidos, params)'); // casamento no SQL sobre o texto original, sem opções (só o Feed liga as opções)
+    expect(lib).toContain('`LOWER(${c})`'); expect(lib).toContain('LIKE $${p}'); expect(r).toContain('buildKeywordConditions(termosExpandidos, params, opcoes)'); // casamento no SQL sobre o texto original; sem `amplo` as opções são undefined (comportamento antigo)
     expect(r).toContain('const nextCursor = items.length === requestedSize');
   });
   it('API do Feed e sitemap seguem sem a máscara de endereço; o mapa e a API do objeto (leitura por código) passaram a mascarar o nome do sinal (decisão posterior, testada em sinais-saidas-mascara.test.ts)', () => {

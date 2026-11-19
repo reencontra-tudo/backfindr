@@ -7,7 +7,7 @@ import { buscarRegistrosRecentesParecidos } from '@/lib/flowMatch/recentSimilar'
 import { maskSignalForPublicApi } from '@/lib/objectPublicView';
 import { localizacaoPublica } from '@/lib/publicLocation';
 
-import { SCORE_MIN_BUSCA, buildKeywordConditions, calcularScoreBusca, expandirKeyword, expandirTokens, tokenizar } from '@/lib/buscaPublica';
+import { SCORE_MIN_BUSCA, buildKeywordConditions, calcularScoreBusca, categoriasDaBuscaTexto, expandirKeyword, expandirTokens, tokenizar, type OpcoesBusca } from '@/lib/buscaPublica';
 
 // Verifica se FTS existe no banco
 let hasFTS: boolean | null = null;
@@ -39,6 +39,9 @@ export async function GET(request: NextRequest) {
     // Opção NOVA, desligada por padrão: só o passo 2 de /flow/found e /flow/lost envia `strict=1`.
     // Sem ela, nada abaixo muda (home, /buscar, /achei, painel e sitemap seguem idênticos).
     const strict = searchParams.get('strict') === '1';
+    // Opção NOVA, desligada por padrão (etapa 1 dos sinônimos): `amplo=1` liga o dicionário AMPLIADO + casamento sem acento + categoria. Só a busca do /achei envia.
+    // Fluxos /flow/* (com ou sem strict) e qualquer outro consumidor NÃO enviam: seguem com o dicionário antigo, congelado. Com strict=1, `amplo` é ignorado.
+    const amplo = searchParams.get('amplo') === '1' && !strict;
     if (strict && isBuscaAmpla(keyword)) {
       // Busca ampla demais: não lista itens fracos; o fluxo mostra o aviso «precisa de mais detalhes».
       // `items` fica vazio; só registros RECENTES de usuário/sinal (nunca legado) vão em `recent_similar` (até 3).
@@ -69,9 +72,10 @@ export async function GET(request: NextRequest) {
       conditions.push(`category = $${params.length}`);
     }
 
-    const termosExpandidos = keyword.length > 0 ? expandirKeyword(keyword) : [];
+    const opcoes: OpcoesBusca | undefined = amplo ? { radical: true, semAcento: true, dicionario: 'ampliado', categoriasDaBusca: categoriasDaBuscaTexto(keyword, { dicionario: 'ampliado' }) } : undefined;
+    const termosExpandidos = keyword.length > 0 ? expandirKeyword(keyword, opcoes) : [];
     if (termosExpandidos.length > 0) {
-      conditions.push(buildKeywordConditions(termosExpandidos, params));
+      conditions.push(buildKeywordConditions(termosExpandidos, params, opcoes));
     }
 
     if (cursor) {
@@ -154,7 +158,7 @@ export async function GET(request: NextRequest) {
         reward_description: row.reward_description || null,
         created_at: row.created_at,
         updated_at: row.updated_at,
-        _score: keyword.length > 0 ? calcularScoreBusca(keyword, row) : 100,
+        _score: keyword.length > 0 ? calcularScoreBusca(keyword, row, opcoes) : 100,
       };
       return item;
     });

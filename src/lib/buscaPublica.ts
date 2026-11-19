@@ -1,3 +1,5 @@
+import { categoriasDaBusca, construirDicionario, termosConhecidos } from './buscaDicionario';
+
 // Busca pública por texto: dicionário de sinônimos, expansão de termos, condições SQL e score de relevância.
 // MOVIDO sem alteração de /api/v1/objects/public (que continua usando estas funções) para que o Feed use a MESMA lógica (sem motor novo).
 
@@ -38,22 +40,38 @@ export function normalizarPalavra(word: string): string {
   return word;
 }
 
-export function tokenizar(text: string): string[] {
+/** Dicionário AMPLIADO (src/lib/buscaDicionario.ts): só as consumidoras de busca que pedirem (`dicionario: 'ampliado'`). O `SINONIMOS` acima fica CONGELADO. */
+export const DICIONARIO_AMPLIADO = construirDicionario(SINONIMOS, normalizarPalavra);
+const CONHECIDOS = termosConhecidos(DICIONARIO_AMPLIADO, normalizarPalavra);
+
+/** `o?.dicionario === 'ampliado'`: separa por qualquer pontuação («carro,» vira «carro») e não descarta palavras curtas conhecidas («rg»). Sem opção: igual a sempre. */
+export function tokenizar(text: string, o?: OpcoesBusca): string[] {
+  if (o?.dicionario === 'ampliado') {
+    return removerAcentos(text).toLowerCase().split(/[^a-z0-9]+/).filter((w) => w.length > 2 || CONHECIDOS.has(normalizarPalavra(w)));
+  }
   return removerAcentos(text).toLowerCase().split(/\s+/).filter(w => w.length > 2);
 }
 
 /** Opções DESLIGADAS por padrão (os consumidores antigos — home, mapa, /achei, fluxos — continuam exatamente como eram). Só a busca do Feed liga.
  *  radical: o dicionário tem chaves como «oculos» e «onibus», mas `normalizarPalavra` tira o «s» final («oculo»/«onibu»), então a chave NUNCA casava.
  *           Com a opção, a busca no dicionário também usa o radical de cada chave.
- *  semAcento: casa título/descrição sem diferenciar acento («oculos» acha «Óculos»). */
-export interface OpcoesBusca { radical?: boolean; semAcento?: boolean }
+ *  semAcento: casa título/descrição sem diferenciar acento («oculos» acha «Óculos»).
+ *  dicionario: 'ampliado' usa DICIONARIO_AMPLIADO (chaves já normalizadas, então não precisa de `radical`) e reconhece CATEGORIA:
+ *           uma palavra como «carro» acha toda ocorrência de categoria Veículo (nota +20, candidata no SQL). */
+export interface OpcoesBusca { radical?: boolean; semAcento?: boolean; dicionario?: 'ampliado'; categoriasDaBusca?: string[] }
+
+/** Categorias do banco pedidas pelas palavras da busca (só com o dicionário ampliado). */
+export function categoriasDaBuscaTexto(keyword: string, o?: OpcoesBusca): string[] {
+  if (o?.dicionario !== 'ampliado') return [];
+  return categoriasDaBusca(tokenizar(keyword, o).map(normalizarPalavra), normalizarPalavra);
+}
 
 const POR_RADICAL: Record<string, string[]> = (() => {
   const m: Record<string, string[]> = {};
   for (const [k, v] of Object.entries(SINONIMOS)) m[normalizarPalavra(k)] = [...(m[normalizarPalavra(k)] ?? []), ...v];
   return m;
 })();
-const sinonimosDe = (norm: string, o?: OpcoesBusca): string[] => (o?.radical ? (SINONIMOS[norm] ?? POR_RADICAL[norm]) : SINONIMOS[norm]) || [];
+const sinonimosDe = (norm: string, o?: OpcoesBusca): string[] => o?.dicionario === 'ampliado' ? (DICIONARIO_AMPLIADO[norm] ?? []) : (o?.radical ? (SINONIMOS[norm] ?? POR_RADICAL[norm]) : SINONIMOS[norm]) || [];
 
 export function expandirTokens(tokens: string[], o?: OpcoesBusca): Set<string> {
   const expanded = new Set<string>();
@@ -68,7 +86,7 @@ export function expandirTokens(tokens: string[], o?: OpcoesBusca): Set<string> {
 export function expandirKeyword(keyword: string, o?: OpcoesBusca): string[] {
   const termos = new Set<string>();
   termos.add(keyword.toLowerCase().trim());
-  const palavras = removerAcentos(keyword).toLowerCase().split(/\s+/).filter(w => w.length > 2);
+  const palavras = o?.dicionario === 'ampliado' ? tokenizar(keyword, o) : removerAcentos(keyword).toLowerCase().split(/\s+/).filter(w => w.length > 2);
   for (const palavra of palavras) {
     const norm = normalizarPalavra(palavra);
     termos.add(norm);
@@ -88,6 +106,11 @@ export function buildKeywordConditions(termosExpandidos: string[], params: unkno
       ` OR ${col('color')} LIKE $${p} OR ${col('brand')} LIKE $${p} OR ${col('breed')} LIKE $${p})`
     );
   }
+  // Reconhecimento por categoria (só com o dicionário ampliado): «carro» entra como candidata toda ocorrência de categoria Veículo
+  if (o?.dicionario === 'ampliado' && o.categoriasDaBusca?.length) {
+    params.push(o.categoriasDaBusca);
+    conds.push(`LOWER(category) = ANY($${params.length}::text[])`);
+  }
   return `(${conds.join(' OR ')})`;
 }
 
@@ -98,19 +121,19 @@ export const SCORE_MIN_BUSCA = 20;
 export function calcularScoreBusca(keyword: string, item: Record<string, unknown>, o?: OpcoesBusca): number {
   let score = 0;
 
-  const kwTokens = tokenizar(keyword);
+  const kwTokens = tokenizar(keyword, o);
   const kwExpanded = expandirTokens(kwTokens, o);
 
   // Título com sinônimos (+10 por palavra, até 40 pts)
   if (item.title) {
-    const titleTokens = expandirTokens(tokenizar(item.title as string), o);
+    const titleTokens = expandirTokens(tokenizar(item.title as string, o), o);
     const common = [...kwExpanded].filter(w => titleTokens.has(w)).length;
     if (common > 0) score += Math.min(40, common * 10);
   }
 
   // Descrição com sinônimos (até 20 pts)
   if (item.description) {
-    const descTokens = expandirTokens(tokenizar(item.description as string), o);
+    const descTokens = expandirTokens(tokenizar(item.description as string, o), o);
     const common = [...kwExpanded].filter(w => descTokens.has(w)).length;
     score += Math.min(20, (common / Math.max(kwTokens.length, 1)) * 20);
   }
@@ -126,6 +149,13 @@ export function calcularScoreBusca(keyword: string, item: Record<string, unknown
   if (item.category || item.type) {
     const cat = normalizarPalavra((item.category || item.type) as string);
     if ([...kwExpanded].includes(cat)) score += 10;
+  }
+
+  // Reconhecimento por categoria (só com o dicionário ampliado): «carro»/«moto»/«veiculo» → categoria Veículo (+20, já alcança a nota mínima)
+  if (o?.dicionario === 'ampliado') {
+    const cats = o.categoriasDaBusca ?? categoriasDaBuscaTexto(keyword, o);
+    const cat = String(item.category ?? item.type ?? '').toLowerCase();
+    if (cat && cats.includes(cat) && !item.is_legacy) score += 20; // legado fica de fora: milhares de registros antigos inundariam a lista só pela categoria
   }
 
   return Math.min(100, Math.round(score));

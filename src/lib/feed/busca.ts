@@ -9,7 +9,7 @@
 //  • O texto é casado no banco com o título/descrição ORIGINAIS (F-18), mas o que SAI é só a lista fixa de campos do card (FeedItem): nunca dono,
 //    contato, coordenadas, descrição bruta, score nem o texto digitado.
 import { query } from '@/lib/db';
-import { SCORE_MIN_BUSCA, buildKeywordConditions, calcularScoreBusca, expandirKeyword, removerAcentos, type OpcoesBusca } from '@/lib/buscaPublica';
+import { SCORE_MIN_BUSCA, buildKeywordConditions, calcularScoreBusca, categoriasDaBuscaTexto, expandirKeyword, removerAcentos, type OpcoesBusca } from '@/lib/buscaPublica';
 import { isBuscaAmpla, palavrasDeIdentificacao } from '@/lib/flowMatch/relevance';
 import { normalizarPalavra as radical } from '@/lib/publicSignals/textNormalization';
 import { FEED_ELIGIBILITY_WHERE, getRankedFeed, toPublicItem, type FeedItem, type FeedParams } from './query';
@@ -18,7 +18,7 @@ import { BUSCA_MIN_CARACTERES, normalizarConsulta } from './consulta';
 export const BUSCA_MAX_RESULTADOS = 60;
 const BUSCA_MAX_CANDIDATOS = 1000;
 /** Só o Feed liga estas opções (os demais consumidores da busca pública seguem como eram): sinônimos por radical e casamento sem acento. */
-const OPCOES: OpcoesBusca = { radical: true, semAcento: true };
+const OPCOES: OpcoesBusca = { radical: true, semAcento: true, dicionario: 'ampliado' };
 
 /** Palavras inteiras de um texto, sem acento, no singular simples (a mesma normalização da busca): «carro,» e «Carros» viram «carro». */
 const palavrasDoTexto = (t: unknown): Set<string> =>
@@ -40,8 +40,9 @@ export async function buscarNoFeed(textoBruto: unknown, filtros: FeedParams = {}
   const ranked = await getRankedFeed(filtros);
   if (ranked.items.length === 0) return { items: [], ampla, truncated: ranked.truncated };
 
+  const opcoes: OpcoesBusca = { ...OPCOES, categoriasDaBusca: categoriasDaBuscaTexto(q, OPCOES) };
   const params: unknown[] = [];
-  const kw = buildKeywordConditions(expandirKeyword(removerAcentos(q), OPCOES), params, OPCOES);
+  const kw = buildKeywordConditions(expandirKeyword(removerAcentos(q), opcoes), params, opcoes);
   const rows = await query(
     `SELECT o.qr_code AS code, o.title, o.description, o.color, o.category, o.type
        FROM objects o
@@ -54,7 +55,7 @@ export async function buscarNoFeed(textoBruto: unknown, filtros: FeedParams = {}
   const literais = new Map<string, number>(); // quantas palavras da busca aparecem inteiras no título/descrição (desempate)
   for (const r of rows.rows as Array<Record<string, unknown>>) {
     const code = String(r.code);
-    const score = calcularScoreBusca(q, r, OPCOES);
+    const score = calcularScoreBusca(q, r, opcoes);
     const doTexto = new Set([...palavrasDoTexto(r.title), ...palavrasDoTexto(r.description)]);
     const literal = ids.filter((w) => doTexto.has(w)).length;
     if (score >= SCORE_MIN_BUSCA || literal > 0) { pontos.set(code, score); literais.set(code, literal); }
