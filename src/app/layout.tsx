@@ -107,7 +107,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
                   inLanguage: 'pt-BR',
                   potentialAction: {
                     '@type': 'SearchAction',
-                    target: { '@type': 'EntryPoint', urlTemplate: 'https://backfindr.com/buscar?q={search_term_string}' },
+                    target: { '@type': 'EntryPoint', urlTemplate: 'https://backfindr.com/feed?q={search_term_string}' },
                     'query-input': 'required name=search_term_string',
                   },
                 },

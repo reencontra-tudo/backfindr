@@ -29,6 +29,8 @@ import {
   lerEstado, obterStorage, registrarMontagem, salvarEstado, tipoNavegacao, type Filtros, type Marco,
 } from '@/lib/feed/estado';
 import { ConviteFim } from './FeedCta';
+import { FeedBuscaCampo } from './FeedBusca';
+import { BUSCA_EVENTO, BUSCA_MIN_CARACTERES, abrirBuscaDoFeed, consultaDaUrl, normalizarConsulta } from '@/lib/feed/consulta';
 import { FeedFoto } from './FeedFoto';
 import { SITUACAO, T } from './tema';
 import {
@@ -276,7 +278,7 @@ function FeedAbout({ vis }: { vis: Visualizacao }) {
         </p>
         <p className={`mt-1 text-xs leading-relaxed ${T.t3}`}>A lista é um recorte das ocorrências de objetos, documentos e pets perdidos, achados ou roubados; o histórico está no mapa.</p>
         <div className="-ml-3 mt-1 flex flex-wrap items-center">
-          <Link href="/buscar" prefetch={false} className={linkCls}>Buscar ocorrências</Link>
+          <a href="/feed#busca" onClick={(e) => { e.preventDefault(); abrirBuscaDoFeed(); }} className={linkCls}>Buscar ocorrências</a>
           <Link href="/map" prefetch={false} className={linkCls}>Ver no mapa</Link>
         </div>
       </div>
@@ -291,7 +293,7 @@ function EmptyState() {
       <p className={`mt-2 text-sm ${T.t2}`}>Não há registros recentes para essa região e esses filtros. Você pode procurar de outras formas:</p>
       <div className="mt-4 flex flex-col gap-2 sm:flex-row sm:justify-center">
         <Link href="/map" className={actionCls}><MapIcon className="h-4 w-4" aria-hidden />Ver o mapa</Link>
-        <Link href="/buscar" className={actionCls}><Search className="h-4 w-4" aria-hidden />Buscar objeto</Link>
+        <a href="/feed#busca" onClick={(e) => { e.preventDefault(); abrirBuscaDoFeed(); }} className={actionCls}><Search className="h-4 w-4" aria-hidden />Buscar objeto</a>
         <Link href="/auth/register?ref=feed" className={`${actionCls} ${T.acao}`}><PlusCircle className="h-4 w-4" aria-hidden />Cadastrar uma ocorrência</Link>
       </div>
     </section>
@@ -310,6 +312,15 @@ export default function FeedClient({ initialItems, initialNextCursor, initialHas
   const [locating, setLocating] = useState(false);       // procurando a região (só depois de a pessoa escolher)
   const [loading, setLoading] = useState(false);
   const [failed, setFailed] = useState(false);
+  // Busca por texto (só no navegador, depois do carregamento; o HTML do servidor não muda): o texto fica só aqui, nunca na URL nem em analítica.
+  const [busca, setBusca] = useState({ aberta: false, q: '' });
+  const [achados, setAchados] = useState<{ items: FeedItem[]; ampla: boolean } | null>(null);
+  const [buscando, setBuscando] = useState(false);
+  const [buscaFalhou, setBuscaFalhou] = useState(false);
+  const inputBusca = useRef<HTMLInputElement | null>(null);
+  const consulta = normalizarConsulta(busca.q);
+  const modoBusca = busca.aberta && consulta.length >= BUSCA_MIN_CARACTERES;
+  const buscaAtiva = useRef(false); buscaAtiva.current = modoBusca;  // com busca na tela, a posição da lista NÃO é guardada (o «Voltar» volta à lista de sempre)
   // Visualização: o servidor sempre desenha «Publicações»; a preferência (Grade) é aplicada no navegador, antes do primeiro desenho pós-hidratação.
   const [vis, setVis] = useState<Visualizacao>(visInicial ?? 'publicacoes');
   const ancora = useRef<{ code: string; top: number } | null>(null);
@@ -401,7 +412,7 @@ export default function FeedClient({ initialItems, initialNextCursor, initialHas
 
   // ---- Guardar a posição: durante a rolagem (a cada 400 ms), ao carregar mais, ao esconder/sair da página e no clique que sai do Feed ----
   const salvar = useCallback(() => {
-    if (restaurandoRef.current || congelado.current) return;
+    if (restaurandoRef.current || congelado.current || buscaAtiva.current) return;
     const f = foto.current;
     const corte = escolherCorte(f.items, marcos.current, { cursor: f.nextCursor, temMais: f.hasMore }, ESTADO_MAX_CARDS);
     if (!corte) return;
@@ -514,14 +525,43 @@ export default function FeedClient({ initialItems, initialNextCursor, initialHas
   const autoParou = !podeCarregarAutomatico(autoLoads);
   useEffect(() => {
     const el = sentinel.current;
-    if (!el || !hasMore || autoParou || restaurando || typeof IntersectionObserver === 'undefined') return;
+    if (!el || !hasMore || autoParou || restaurando || modoBusca || typeof IntersectionObserver === 'undefined') return;
     const io = new IntersectionObserver((e) => { if (e[0].isIntersecting) void loadMore('auto'); }, { rootMargin: '400px' });
     io.observe(el);
     return () => io.disconnect();
-  }, [hasMore, autoParou, restaurando, loadMore]);
+  }, [hasMore, autoParou, restaurando, loadMore, modoBusca]);
+
+  // ---- Busca: abrir (botão «Buscar» do topo, links do Feed ou ?q= vindo do /buscar antigo), pesquisar com pequena espera, fechar ----
+  useEffect(() => {
+    const abrir = () => { setBusca((b) => ({ ...b, aberta: true })); setTimeout(() => inputBusca.current?.focus(), 0); };
+    window.addEventListener(BUSCA_EVENTO, abrir);
+    const inicial = consultaDaUrl(window.location.search);
+    if (inicial) setBusca({ aberta: true, q: inicial });
+    return () => window.removeEventListener(BUSCA_EVENTO, abrir);
+  }, []);
+  useEffect(() => {
+    if (!modoBusca) { setAchados(null); setBuscando(false); setBuscaFalhou(false); return; }
+    const ctl = new AbortController();
+    setBuscando(true);
+    const t = setTimeout(async () => {
+      try {
+        const qs = new URLSearchParams(buildQuery(status, category, region, geo));
+        qs.set('q', consulta);
+        const res = await fetch(`/api/v1/feed/busca?${qs.toString()}`, { signal: ctl.signal, headers: { Accept: 'application/json' } });
+        if (!res.ok) throw new Error('busca');
+        const d = await res.json();
+        setAchados({ items: Array.isArray(d.items) ? d.items : [], ampla: d.ampla === true });
+        setBuscaFalhou(false);
+      } catch (e) { if (!ctl.signal.aborted) setBuscaFalhou(true); }
+      finally { if (!ctl.signal.aborted) setBuscando(false); }
+    }, 350);
+    return () => { clearTimeout(t); ctl.abort(); };
+  }, [modoBusca, consulta, status, category, region, geo]);
+  const fecharBusca = () => setBusca({ aberta: false, q: '' });
 
   return (
     <div className={classesLargura(vis)} data-vis={vis}>
+      {busca.aberta && <FeedBuscaCampo valor={busca.q} onChange={(q) => setBusca((b) => ({ ...b, q }))} onFechar={fecharBusca} inputRef={inputBusca} />}
       <div className="grid grid-cols-1 gap-2" role="group" aria-label="Filtros do Feed">
         <div className={faixaCls} role="group" aria-label="Situação">
           {STATUS_OPTIONS.map((o) => (
@@ -570,6 +610,30 @@ export default function FeedClient({ initialItems, initialNextCursor, initialHas
         </p>
       )}
 
+      {modoBusca ? (
+        <section aria-label="Resultados da busca" data-feed-resultados className="mt-3">
+          {achados === null ? (
+            <p role="status" className={`text-sm ${T.t2}`}>{buscaFalhou ? 'Não foi possível buscar agora. Tente de novo em instantes.' : 'Buscando…'}</p>
+          ) : achados.items.length === 0 ? (
+            <div data-feed-busca-vazio>
+              <p role="status" className={`text-sm font-medium ${T.t1}`}>Nenhuma ocorrência encontrada para esta busca, nos filtros escolhidos.</p>
+              <ConviteFim pagina={page} />
+            </div>
+          ) : (
+            <>
+              {achados.ampla && (
+                <p data-feed-busca-ampla className={`mb-2 rounded-lg px-3 py-2 text-sm ${T.aviso} ${T.t2}`}>Para resultados mais precisos, acrescente cor, marca ou local.</p>
+              )}
+              <p role="status" className={`mb-2 text-sm ${T.t2}`}>{achados.items.length === 1 ? '1 ocorrência' : `${achados.items.length} ocorrências`}, das mais para as menos parecidas com a sua busca.</p>
+              <div className={classesLista(vis, buscando)} aria-busy={buscando}>
+                {achados.items.map((it, i) => <FeedCard key={it.code} item={it} index={i} vis={vis} />)}
+              </div>
+              {buscaFalhou && <p role="status" className={`mt-4 text-sm font-medium ${T.t1}`}>Não foi possível atualizar a busca agora.</p>}
+            </>
+          )}
+        </section>
+      ) : (
+        <>
       <div className={classesLista(vis, loading || locating)} aria-busy={loading || locating}>
         {items.length === 0 && !loading && !locating ? <EmptyState /> : items.flatMap((it, i) => {
           const card = <FeedCard key={it.code} item={it} index={i} vis={vis} />;
@@ -589,6 +653,8 @@ export default function FeedClient({ initialItems, initialNextCursor, initialHas
       </nav>
       {items.length > 0 && (autoParou || !hasMore) && <ConviteFim pagina={page} />}
       <div ref={sentinel} aria-hidden className="h-1" />
+        </>
+      )}
     </div>
   );
 }

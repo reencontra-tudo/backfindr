@@ -101,8 +101,8 @@ describe('componente e pontos de uso', () => {
     expect(src).toMatch(/onClick=\{onClose\}\s*\n\s*onTouchStart/); expect(src).toContain("e.key === 'Escape'");
     expect(read('src/app/globals.css')).toContain('.bf-lightbox-fechar');
   });
-  it('os 6 pontos de uso continuam abrindo e fechando com o mesmo par open/close', () => {
-    for (const f of ['src/app/admin/objects/[id]/page.tsx', 'src/app/objeto/[code]/client.tsx', 'src/app/scan/[code]/client.tsx', 'src/app/dashboard/objects/[id]/page.tsx', 'src/app/achei/client.tsx', 'src/app/buscar/client.tsx'])
+  it('os 5 pontos de uso (o antigo /buscar foi desligado) continuam abrindo e fechando com o mesmo par open/close', () => {
+    for (const f of ['src/app/admin/objects/[id]/page.tsx', 'src/app/objeto/[code]/client.tsx', 'src/app/scan/[code]/client.tsx', 'src/app/dashboard/objects/[id]/page.tsx', 'src/app/achei/client.tsx'])
       expect(read(f), f).toContain('<ImageLightbox images={lightbox.images} initialIndex={lightbox.index} onClose={closeLightbox} />');
   });
   it('«Voltar» da ocorrência e a marca de origem do Feed não foram alterados', () => {

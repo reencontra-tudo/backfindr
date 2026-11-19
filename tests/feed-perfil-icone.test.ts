@@ -54,8 +54,8 @@ describe('topo do Feed', () => {
   const page = read('src/app/feed/[[...slug]]/page.tsx');
   it('o ícone é o ÚLTIMO item dos atalhos; nada foi removido nem movido (Mapa, Buscar, cadastro, Perdi/Encontrei)', () => {
     const nav = page.slice(page.indexOf('<nav aria-label="Atalhos"'), page.indexOf('</nav>'));
-    expect(nav.indexOf('href="/map"')).toBeLessThan(nav.indexOf('href="/buscar"'));
-    expect(nav.indexOf('href="/buscar"')).toBeLessThan(nav.indexOf('<RegisterMenu variant="header"'));
+    expect(nav.indexOf('href="/map"')).toBeLessThan(nav.indexOf('<BuscarLinkTopo />'));   // «Buscar» (agora abre a busca do Feed) continua logo depois de «Mapa»
+    expect(nav.indexOf('<BuscarLinkTopo />')).toBeLessThan(nav.indexOf('<RegisterMenu variant="header"'));
     expect(nav.indexOf('<RegisterMenu variant="header"')).toBeLessThan(nav.indexOf('<PerfilIcone />'));
     for (const t of ['<TopoBotoes pagina={page} />', '<RegisterMenu variant="fixed" pagina={page} />', 'Perdeu ou encontrou algo?']) expect(page).toContain(t);
   });

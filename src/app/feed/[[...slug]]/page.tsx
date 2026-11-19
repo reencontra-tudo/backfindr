@@ -13,6 +13,7 @@ import { MapPin } from 'lucide-react';
 import FeedClient from '../FeedClient';
 import { RegisterMenu, TopoBotoes } from '../FeedCta';
 import { PerfilIcone } from '../PerfilIcone';
+import { BuscarLinkTopo } from '../FeedBusca';
 import { APP_URL } from '@/lib/constants';
 import { getRankedFeed, pageByNumber } from '@/lib/feed/query';
 import { temaStyle } from '../tema';
@@ -66,7 +67,7 @@ export default async function FeedPage({ params }: { params: { slug?: string[] }
           </Link>
           <nav aria-label="Atalhos" className="flex items-center gap-1 text-sm">
             <Link href="/map" className="inline-flex min-h-[44px] items-center px-3 text-white/85 hover:text-white">Mapa</Link>
-            <Link href="/buscar" className="inline-flex min-h-[44px] items-center px-3 text-white/85 hover:text-white">Buscar</Link>
+            <BuscarLinkTopo />
             <RegisterMenu variant="header" pagina={page} />
             <PerfilIcone />
           </nav>

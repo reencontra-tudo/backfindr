@@ -1,18 +1,11 @@
-import type { Metadata } from 'next';
-import BuscarClient from './client';
-import { APP_URL } from '@/lib/constants';
+// O antigo /buscar foi desligado (decisão do Marcos): a busca por texto agora fica no Feed, sem cadastro, em perdidos, achados e roubados.
+// Redirecionamento PERMANENTE (308) para /feed, preservando o texto: /buscar?q=oculos → /feed?q=oculos (o Feed abre a busca já preenchida).
+// Também aceita ?keyword= (links de e-mails antigos). O resto (status, categoria…) não é repassado.
+import { permanentRedirect } from 'next/navigation';
+import { normalizarConsulta } from '@/lib/feed/consulta';
 
-export const metadata: Metadata = {
-  title: 'Buscar objetos perdidos',
-  description: 'Pesquise na rede do Backfindr se alguém já encontrou o que você perdeu. Carteiras, celulares, pets, documentos e muito mais.',
-  alternates: { canonical: `${APP_URL}/buscar` },
-  openGraph: {
-    title: 'Buscar objetos perdidos | Backfindr',
-    description: 'Pesquise na rede se alguém já encontrou o que você perdeu.',
-    url: `${APP_URL}/buscar`,
-  },
-};
-
-export default function BuscarPage() {
-  return <BuscarClient />;
+export default function BuscarPage({ searchParams }: { searchParams: Record<string, string | string[] | undefined> }) {
+  const bruto = searchParams.q ?? searchParams.keyword;
+  const q = normalizarConsulta(Array.isArray(bruto) ? bruto[0] : bruto);
+  permanentRedirect(q ? `/feed?q=${encodeURIComponent(q)}` : '/feed');
 }

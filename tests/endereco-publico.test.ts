@@ -2,7 +2,7 @@
 // Casamento, pontuação, ordem e ids continuam pelo texto ORIGINAL; o dono segue vendo o endereço completo. Nomes e endereços inventados. Banco simulado.
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { NextRequest } from 'next/server';
-import { readFileSync } from 'fs';
+import { existsSync, readFileSync } from 'fs';
 import path from 'path';
 
 const st = vi.hoisted(() => { process.env.SECRET_KEY = process.env.SECRET_KEY || 'chave-de-teste-nao-real-0123456789'; return { rows: [] as Record<string, unknown>[], recentes: [] as Record<string, unknown>[], dono: [] as Record<string, unknown>[], scan: [] as Record<string, unknown>[] }; });
@@ -249,8 +249,9 @@ describe('post social: o texto que será publicado leva só «bairro, cidade - U
 });
 
 describe('«Ver detalhes» em /buscar, aviso do Feed, layout do /achei e texto do /objeto', () => {
-  it('/buscar: «É o meu?» usa unique_code (a rota pública devolve unique_code, não code)', () => {
-    const c = read('src/app/buscar/client.tsx'); expect(c).toContain('item.unique_code ?? item.code'); expect(c).not.toContain('href={item.code ?');
+  it('/buscar foi desligado (redireciona ao Feed); a busca do Feed abre /objeto/CÓDIGO com o código do card (FeedItem.code), nunca o título', () => {
+    const c = read('src/app/feed/FeedClient.tsx'); expect(c).toContain("`/objeto/${encodeURIComponent(item.code)}`");
+    expect(existsSync(path.join(__dirname, '..', 'src/app/buscar/client.tsx'))).toBe(false);
   });
   it('Feed: aviso sem «recente» e com o link do histórico no mapa', () => {
     const c = read('src/app/feed/FeedClient.tsx'); expect(c).toContain('Esta lista é só um recorte.'); expect(c).not.toContain('recorte recente'); expect(c).toContain('Ver histórico no mapa');

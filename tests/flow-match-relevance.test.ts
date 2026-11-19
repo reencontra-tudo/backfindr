@@ -163,8 +163,8 @@ describe('os dois fluxos usam a opção nova; os outros 6 e o endpoint padrão n
     expect(r).toContain('SCORE_MIN_BUSCA'); expect(r).toContain('.slice(0, requestedSize)');
     expect(r).toContain('Math.min(requestedSize * 10, 500)'); // corte de candidatos igual
   });
-  it('o resto do projeto (home, /buscar, /achei, painel, sitemap) não envia strict', () => {
-    const dirs = ['src/app/page.tsx', 'src/components/HomeLiveMap.tsx', 'src/app/buscar/client.tsx', 'src/app/achei/client.tsx', 'src/app/dashboard/search/page.tsx', 'src/app/sitemap.ts', 'src/lib/api.ts'];
+  it('o resto do projeto (home, Feed [que absorveu a busca do antigo /buscar], /achei, painel, sitemap) não envia strict', () => {
+    const dirs = ['src/app/page.tsx', 'src/components/HomeLiveMap.tsx', 'src/app/feed/FeedClient.tsx', 'src/app/achei/client.tsx', 'src/app/dashboard/search/page.tsx', 'src/app/sitemap.ts', 'src/lib/api.ts'];
     for (const f of dirs) expect(read(f), f).not.toMatch(/strict['"=]/);
   });
   it('nenhum fluxo novo, nenhuma rota nova', () => {

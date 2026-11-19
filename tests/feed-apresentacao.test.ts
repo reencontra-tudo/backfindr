@@ -117,7 +117,7 @@ describe('bloco explicativo entre os cards', () => {
     expect(t).toMatch(/localização e características/);
     expect(t).not.toMatch(PROIBIDO);
     const h = client(lista(4));
-    expect(h).toContain('href="/buscar"'); expect(h).toContain('href="/map"');
+    expect(h).toContain('href="/feed#busca"'); expect(h).toContain('Buscar ocorrências'); expect(h).not.toContain('href="/buscar"'); // a busca agora fica no Feed (o antigo /buscar redireciona) expect(h).toContain('href="/map"');
   });
   it('«Ver mais» real continua funcionando', () => {
     const h = html(React.createElement(FeedClient, { initialItems: lista(4), initialNextCursor: 'x', initialHasMore: true, page: 1, regions: [] }));
