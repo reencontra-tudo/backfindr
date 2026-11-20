@@ -17,6 +17,7 @@ import { compressImages } from '@/lib/compressImage';
 import { ObjectCategory, ObjectStatus } from '@/types';
 import { LocationPicker } from '@/components/ui/LocationPicker';
 import { DynamicCategoryFields } from '@/components/ui/DynamicCategoryFields';
+import { descricaoDoTitulo, passoAnterior, passoInicial, proximoPasso, resumirErros, statusDefinidoPeloIntent } from '@/lib/formularioOcorrencia';
 
 // ─── Schema ──────────────────────────────────────────────────────────────────
 const schema = z.object({
@@ -166,7 +167,14 @@ function NewObjectForm() {
   const initialMode = intentPreset.mode ?? 'choose';
   const [mode, setMode] = useState<'choose' | 'protect' | 'report'>(initialMode as 'choose' | 'protect' | 'report');
 
-  const [step, setStep] = useState(intentPreset.startStep ?? 0);
+  // Intent found/lost/stolen/pet já define o status: o passo Status não é perguntado de novo (como no modo protect). Abre na Categoria ou, se o fluxo já
+  // mandou a categoria (keys, wallet, vehicle, phone, bike, pet), direto em Detalhes. Sem intent (o «+»), nada muda.
+  const statusDoIntent = statusDefinidoPeloIntent(intentPreset);
+  const categoriaDoFluxo = CATEGORIES.some((c) => c.value === prefillCategory);
+  const [step, setStep] = useState(passoInicial(intentPreset, categoriaDoFluxo));
+  // Envio inválido nunca é silencioso: lista do que falta (e o passo/campo para onde levar a pessoa)
+  const [faltando, setFaltando] = useState<string[] | null>(null);
+  const [focoPendente, setFocoPendente] = useState<'title' | 'description' | null>(null);
   const [submitting, setSubmitting] = useState(false);
   // Guarda síncrona contra duplo clique: o `disabled={submitting}` só vale depois do próximo render.
   const submittingRef = useRef(false);
@@ -193,6 +201,8 @@ function NewObjectForm() {
     if (intentPreset.status)   setValue('status',   intentPreset.status as ObjectStatus);
     // Prefill vindo dos fluxos (/flow/*)
     if (prefillTitle)    setValue('title',    prefillTitle);
+    // Título vindo de um fluxo: a descrição começa igual (se tiver 10+ caracteres, o mínimo do formulário) para a pessoa poder editar
+    if (intent && prefillTitle && descricaoDoTitulo(prefillTitle)) setValue('description', descricaoDoTitulo(prefillTitle));
     if (prefillCategory) setValue('category', prefillCategory as ObjectCategory);
     if (prefillLocation) {
       setValue('address', prefillLocation);
@@ -235,6 +245,7 @@ function NewObjectForm() {
     handleSubmit,
     watch,
     setValue,
+    setFocus,
     formState: { errors },
   } = useForm<FormData>({ resolver: zodResolver(schema) });
 
@@ -253,17 +264,9 @@ function NewObjectForm() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isPet]);
 
-  // No modo protect, o step 1 (Status) é pulado — o status já é 'protected'
-  const nextStep = () => setStep((s) => {
-    const next = s + 1;
-    if (mode === 'protect' && next === 1) return 2; // pula step de Status
-    return Math.min(next, STEPS.length - 1);
-  });
-  const prevStep = () => setStep((s) => {
-    const prev = s - 1;
-    if (mode === 'protect' && prev === 1) return 0; // pula step de Status ao voltar
-    return Math.max(prev, 0);
-  });
+  // Os passos pulam o Status quando o modo é protect ou quando o intent já define o status
+  const nextStep = () => setStep((s) => proximoPasso(s, mode, statusDoIntent));
+  const prevStep = () => setStep((s) => passoAnterior(s, mode, statusDoIntent));
 
   const removePhoto = (index: number) => {
     setPhotos(prev => prev.filter((_, i) => i !== index));
@@ -381,7 +384,28 @@ function NewObjectForm() {
   };
 
   // handleSubmit passa (data, event): não repassar o 2º argumento para confirmDuplicate.
-  const onSubmit = (data: FormData) => submitObject(data, false);
+  const onSubmit = (data: FormData) => { setFaltando(null); return submitObject(data, false); };
+  // Validação falhou: leva ao primeiro passo com erro, diz o que falta e foca o campo (os campos de outros passos não estão na tela, então o botão parecia morto)
+  const onInvalid = (erros: Record<string, { message?: string } | undefined>) => {
+    const r = resumirErros(erros, mode, statusDoIntent);
+    setStep(r.passo); setFaltando(r.mensagens); setFocoPendente(r.campoParaFocar);
+  };
+  useEffect(() => {
+    if (!faltando) return;
+    const t = setTimeout(() => {
+      if (focoPendente) { try { setFocus(focoPendente); } catch { /* campo ainda não montado */ } setFocoPendente(null); }
+      document.querySelector('[data-form-aviso]')?.scrollIntoView({ block: 'center', behavior: 'smooth' });
+    }, 60);
+    return () => clearTimeout(t);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [faltando, step]);
+  // O aviso sai quando os erros foram corrigidos (só depois de o formulário ter mostrado os erros: o estado de erros chega um instante depois de onInvalid).
+  // Calculado a cada renderização (o RHF muda `errors` no mesmo objeto, então um efeito com [errors] não rodaria).
+  const viuErros = useRef(false);
+  const totalErros = Object.keys(errors).length;
+  if (!faltando) viuErros.current = false; else if (totalErros > 0) viuErros.current = true;
+  const mostrarAviso = Boolean(faltando && faltando.length > 0 && (totalErros > 0 || !viuErros.current));
+  useEffect(() => { if (faltando && !mostrarAviso) setFaltando(null); }, [faltando, mostrarAviso]);
 
   const confirmDuplicateSubmit = () => {
     if (pendingDataRef.current) submitObject(pendingDataRef.current, true);
@@ -455,7 +479,7 @@ function NewObjectForm() {
       </div>
 
       <form
-        onSubmit={handleSubmit(onSubmit)}
+        onSubmit={handleSubmit(onSubmit, onInvalid)}
         onKeyDown={(e) => { if (e.key === 'Enter' && step < STEPS.length - 1) e.preventDefault(); }}
       >
         {/* Step 0 — Category */}
@@ -787,6 +811,13 @@ function NewObjectForm() {
                 setValue('lng', val.lng);
               }}
             />
+          </div>
+        )}
+
+        {mostrarAviso && faltando && (
+          <div role="alert" data-form-aviso className="mt-6 rounded-xl border border-red-500/30 bg-red-500/10 p-3 text-sm text-red-200">
+            <p className="font-medium">Ainda não foi possível registrar:</p>
+            <ul className="mt-1 list-disc pl-5">{faltando.map((m) => <li key={m}>{m}</li>)}</ul>
           </div>
         )}
 
