@@ -5,6 +5,7 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { useSessaoExistente } from '@/hooks/useSessaoExistente';
 import { getPostLoginRedirect } from '@/lib/redirectByRole';
 import { consumirProximaPagina } from '@/lib/proximaPagina';
+import { destinoLogadoComIntent } from '@/lib/intencaoCadastro';
 
 /** Parâmetros que indicam um fluxo em andamento (erro de login, plano, contexto de «achei»): nesses casos a tela segue como sempre.
  *  `ref` NÃO entra: é só a origem do clique (ex.: ?ref=feed do ícone de perfil); nenhuma tela de entrada muda por causa dele. */
@@ -26,8 +27,10 @@ export function PortaDeEntrada({ children }: { children: React.ReactNode }) {
   const { estado, role } = useSessaoExistente(ativo);
 
   useEffect(() => {
-    if (ativo && estado === 'logado') router.replace(consumirProximaPagina() ?? getPostLoginRedirect(role));
-  }, [ativo, estado, role, router]);
+    // Quem já está logado e veio de um fluxo (`intent`) vai ao formulário de ocorrência com o pré-preenchimento; sem `intent`, ao destino por perfil.
+    // Precedência: o destino guardado de aviso/QR (proximaPagina) continua valendo primeiro; plan/error/de desligam a porta (ativo = false).
+    if (ativo && estado === 'logado') router.replace(consumirProximaPagina() ?? destinoLogadoComIntent(params) ?? getPostLoginRedirect(role));
+  }, [ativo, estado, role, router, params]);
 
   if (ativo && (estado === 'verificando' || estado === 'logado')) {
     return (

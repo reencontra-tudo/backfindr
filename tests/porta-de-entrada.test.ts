@@ -62,7 +62,7 @@ describe('hook useSessaoExistente', () => {
 describe('login e cadastro: sessão válida redireciona sem mostrar o formulário', () => {
   const porta = read('src/components/auth/PortaDeEntrada.tsx');
   it('vai ao destino pretendido (next) ou ao destino por perfil, com replace', () => {
-    expect(porta).toContain('router.replace(consumirProximaPagina() ?? getPostLoginRedirect(role))');
+    expect(porta).toContain('router.replace(consumirProximaPagina() ?? destinoLogadoComIntent(params) ?? getPostLoginRedirect(role))');   // com `intent` (fluxos) vai ao formulário; sem `intent`, como sempre (tests/porta-intent-logado.test.ts)
     expect(porta).toContain("if (ativo && estado === 'logado')");
   });
   it('enquanto confirma (ou já logado) mostra só um indicador; sem sessão, o formulário de sempre', () => {
