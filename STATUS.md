@@ -68,8 +68,9 @@ Pendências (em ordem de prioridade):
 - **Consentimento de rastreamento (GA4, Meta Pixel, Clarity, PostHog) e política de privacidade que hoje diz «sem cookies de rastreamento» — decidir (17/11/2026; ligada ao Q-19 e ao Q-21).** Nada foi alterado nesta frente: sem banner de consentimento e sem mudança no texto da política até a decisão do Marcos e do jurídico. Ver `DECISOES.md`
 - Pendências de segurança, privacidade e configuração (inclui o endurecimento adicional dos cookies de sessão e a revisão dos painéis de analítica): o detalhe fica no quadro privado e na versão local deste arquivo, não neste repositório público
 Bloqueios / dependências externas:
-- Decisões do Marcos; nenhum merge ou publicação sem ordem escrita
+- Decisões do Marcos; nenhum merge ou publicação sem ordem escrita, exceto PRs só de documentação, que passam a ser mesclados automaticamente quando o PR da mesclagem automática estiver na `main` (decisão de 21/11/2026, F-39; regras em `docs/MESCLAGEM-AUTOMATICA.md`)
 Decisões recentes (com data):
+- 21/11/2026: PRs só de documentação podem ser mesclados automaticamente; o resto continua com merge à mão por ordem escrita do Marcos (F-39). Este STATUS ainda não foi conferido até o #158: a atualização completa é o passo seguinte
 - 17/11/2026: links públicos de custódia e de entrega valem enquanto ativos e por 7 dias depois de concluídos; depois mostram só «Concluída» (F-37, PR #142)
 - 17/11/2026: o `ViewContent` do Pixel passa a disparar também na entrada direta em `/comecar` (PR #141, rascunho, sem merge; F-36); Lead, Purchase e `ocorrencia_publicada` não mudam; a contagem de `ViewContent` sobe em relação aos dias anteriores, porque a entrada direta passa a ser contada. Para reverter: reverter o commit do PR #141
 - 17/11/2026: endereços com token não são enviados ao Pixel nem ao GA4; a navegação interna para o link de entrega passa a recarregar a página (F-34)
