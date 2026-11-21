@@ -11,7 +11,7 @@ name: Mesclagem automática de documentação
 on:
   pull_request_target:
     types: [opened, synchronize, reopened, ready_for_review, labeled, unlabeled]
-    branches: [main]
+    branches: [teste/mesclagem-automatica-base]  # SOMENTE NO TESTE
 
 permissions: {}
 
@@ -44,5 +44,5 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           PR_NUMERO: ${{ github.event.pull_request.number }}
-          BASE_PERMITIDA: main
+          BASE_PERMITIDA: teste/mesclagem-automatica-base  # SOMENTE NO TESTE
         run: python3 -I .github/automacao/mesclagem_docs.py
