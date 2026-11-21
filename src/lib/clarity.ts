@@ -116,3 +116,5 @@ export function shouldLoadClarity(opts: {
     !isClarityExcludedPath(opts.pathname)
   );
 }
+
+// Teste B da mesclagem automática (21/11/2026): linha descartável, este PR nunca deve ser mesclado.
