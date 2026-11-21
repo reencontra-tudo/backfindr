@@ -11,23 +11,22 @@
 name: Mesclagem automática de documentação
 
 on:
-  workflow_run:
-    workflows: ["Mesclagem de documentação - gatilho"]
-    types: [completed]
+  # SOMENTE NO TESTE: o executor é disparado direto pelo PR para a branch de teste, porque o GitHub
+  # só roda workflow_run a partir da branch padrão. O script e as regras são os mesmos do PR real.
+  pull_request:
+    types: [opened, synchronize, reopened, ready_for_review, labeled, unlabeled]
+    branches: [teste/mesclagem-automatica-base]
 
 permissions: {}
 
 concurrency:
-  group: mesclagem-docs-${{ github.event.workflow_run.head_branch }}
+  group: mesclagem-docs-${{ github.event.pull_request.number }}
   cancel-in-progress: true
 
 jobs:
   verificar-e-mesclar:
     # Filtro rápido (o script repete todas as verificações): só PR de branch deste repositório
-    if: >-
-      github.event.workflow_run.event == 'pull_request' &&
-      github.event.workflow_run.conclusion == 'success' &&
-      github.event.workflow_run.head_repository.full_name == github.repository
+    if: github.event.pull_request.head.repo.full_name == github.repository  # SOMENTE NO TESTE
     runs-on: ubuntu-latest
     timeout-minutes: 5
     permissions:
@@ -37,6 +36,7 @@ jobs:
       - name: Baixar só o script da main (nunca o código do PR)
         uses: actions/checkout@v4
         with:
+          ref: teste/mesclagem-automatica-base  # SOMENTE NO TESTE: script da base, nunca do PR
           sparse-checkout: .github/automacao
           sparse-checkout-cone-mode: false
           persist-credentials: false
@@ -44,7 +44,7 @@ jobs:
       - name: Verificar e mesclar
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          PRS: ${{ toJSON(github.event.workflow_run.pull_requests.*.number) }}
-          HEAD_SHA: ${{ github.event.workflow_run.head_sha }}
-          BASE_PERMITIDA: main
+          PRS: '[${{ github.event.pull_request.number }}]'  # SOMENTE NO TESTE
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}  # SOMENTE NO TESTE
+          BASE_PERMITIDA: teste/mesclagem-automatica-base  # SOMENTE NO TESTE
         run: python3 -I .github/automacao/mesclagem_docs.py
