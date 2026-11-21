@@ -1,0 +1,20 @@
+# Gatilho da mesclagem automática de documentação (ver docs/MESCLAGEM-AUTOMATICA.md).
+# NÃO tem nenhuma permissão e não lê nem executa nada: só existe para que o workflow
+# "Mesclagem automática de documentação" (evento workflow_run, que roda a versão da main)
+# seja avisado de que um PR para a main foi aberto ou mudou.
+name: Mesclagem de documentação - gatilho
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened, ready_for_review, labeled, unlabeled]
+    branches: [main]
+
+permissions: {}
+
+jobs:
+  avisar:
+    runs-on: ubuntu-latest
+    timeout-minutes: 2
+    steps:
+      - name: Registrar o PR
+        run: echo "PR ${{ github.event.pull_request.number }} (commit ${{ github.event.pull_request.head.sha }})"

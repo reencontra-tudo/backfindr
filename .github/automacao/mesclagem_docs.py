@@ -1,8 +1,9 @@
 #!/usr/bin/env python3
 """Mesclagem automática de PRs que alteram SOMENTE documentação.
 
-Roda no GitHub Actions (evento pull_request_target), sempre com o código da branch
-de destino: o código do PR nunca é baixado nem executado. Só usa a API do GitHub.
+Roda no GitHub Actions pelo evento workflow_run, que usa sempre a versão deste script
+que está na main: o código do PR nunca é baixado nem executado. Só usa a API do GitHub.
+Entrada: PRS (lista JSON de números de PR) e HEAD_SHA (commit que disparou a verificação).
 
 Mescla (squash) apenas quando TODAS as condições forem verdadeiras:
   1. o PR vem de branch do próprio repositório (nunca de fork), o autor está na
@@ -148,9 +149,21 @@ def resumo(texto):
 
 def main():
     repo = os.environ["GITHUB_REPOSITORY"]
-    numero = int(os.environ["PR_NUMERO"])
     base_permitida = os.environ.get("BASE_PERMITIDA", "main")
+    head_esperado = os.environ.get("HEAD_SHA", "")
+    numeros = [int(n) for n in json.loads(os.environ.get("PRS") or "[]")]
+    if not numeros:
+        resumo("Nenhum PR deste repositório ligado a este commit; nada a fazer.")
+    for numero in numeros:
+        verificar(repo, numero, base_permitida, head_esperado)
+
+
+def verificar(repo, numero, base_permitida, head_esperado):
     pr = api("GET", f"/repos/{repo}/pulls/{numero}")
+    if not head_esperado or pr.get("head", {}).get("sha") != head_esperado:
+        resumo(f"## PR #{numero}: o commit verificado não é mais o último do PR; nada mesclado "
+               "(a verificação do commit novo decide).")
+        return
     arquivos, pagina = [], 1
     while True:
         lote = api("GET", f"/repos/{repo}/pulls/{numero}/files?per_page=100&page={pagina}")
