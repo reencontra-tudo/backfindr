@@ -2,40 +2,41 @@
 # Decisão do Marcos de 21/11/2026. Regras, testes e como desfazer: docs/MESCLAGEM-AUTOMATICA.md
 #
 # Segurança:
-# - pull_request_target roda SEMPRE a versão deste arquivo e do script que está na branch de destino
-#   (main). Um PR que altere este workflow não muda o comportamento dele mesmo.
+# - Disparado por workflow_run, que roda SEMPRE a versão deste arquivo e do script que está na
+#   branch padrão (main). Um PR que altere este workflow, o gatilho ou o script não muda as regras
+#   para ele mesmo (e ainda é recusado por mexer em .github/**).
 # - O código do PR nunca é baixado nem executado: o script lê só a API (lista de arquivos e diff).
 # - Permissões mínimas: nada no nível do workflow; o job pede só o necessário para mesclar e comentar.
+# - Não usa pull_request_target (o GitHub anunciou o bloqueio desse evento em repositórios públicos).
 name: Mesclagem automática de documentação
 
 on:
-  pull_request_target:
-    types: [opened, synchronize, reopened, ready_for_review, labeled, unlabeled]
-    branches: [main]
+  workflow_run:
+    workflows: ["Mesclagem de documentação - gatilho"]
+    types: [completed]
 
 permissions: {}
 
 concurrency:
-  group: mesclagem-docs-${{ github.event.pull_request.number }}
+  group: mesclagem-docs-${{ github.event.workflow_run.head_branch }}
   cancel-in-progress: true
 
 jobs:
   verificar-e-mesclar:
-    # Filtro rápido (o script repete todas as verificações)
+    # Filtro rápido (o script repete todas as verificações): só PR de branch deste repositório
     if: >-
-      github.event.pull_request.head.repo.full_name == github.repository &&
-      github.event.pull_request.user.login == 'reencontra-tudo' &&
-      github.event.pull_request.draft == false
+      github.event.workflow_run.event == 'pull_request' &&
+      github.event.workflow_run.conclusion == 'success' &&
+      github.event.workflow_run.head_repository.full_name == github.repository
     runs-on: ubuntu-latest
     timeout-minutes: 5
     permissions:
       contents: write        # mesclar o PR
       pull-requests: write   # ler os arquivos do PR e comentar
     steps:
-      - name: Baixar só o script da branch de destino (nunca o código do PR)
+      - name: Baixar só o script da main (nunca o código do PR)
         uses: actions/checkout@v4
         with:
-          ref: ${{ github.event.pull_request.base.ref }}
           sparse-checkout: .github/automacao
           sparse-checkout-cone-mode: false
           persist-credentials: false
@@ -43,6 +44,7 @@ jobs:
       - name: Verificar e mesclar
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          PR_NUMERO: ${{ github.event.pull_request.number }}
+          PRS: ${{ toJSON(github.event.workflow_run.pull_requests.*.number) }}
+          HEAD_SHA: ${{ github.event.workflow_run.head_sha }}
           BASE_PERMITIDA: main
         run: python3 -I .github/automacao/mesclagem_docs.py

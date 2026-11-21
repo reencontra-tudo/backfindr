@@ -2,7 +2,10 @@
 
 Decisão do Marcos de 21/11/2026: PRs que alteram **somente documentação** podem ser mesclados automaticamente. Todo o resto (código, CI, `CLAUDE.md`, `.claude/**`, `.github/**`, migrações) continua sem merge sem ordem escrita dele.
 
-Arquivos: `.github/workflows/mesclagem-automatica-docs.yml` e `.github/automacao/mesclagem_docs.py`.
+Arquivos:
+- `.github/workflows/mesclagem-docs-gatilho.yml`: gatilho sem nenhuma permissão, disparado quando um PR para a `main` é aberto ou muda;
+- `.github/workflows/mesclagem-automatica-docs.yml`: executor, disparado quando o gatilho termina, que verifica e mescla;
+- `.github/automacao/mesclagem_docs.py`: as regras.
 
 ## Quando o PR é mesclado sozinho
 
@@ -38,12 +41,17 @@ Abra como rascunho ou ponha o rótulo `nao-mesclar`.
 
 ## Segurança
 
-- O workflow usa `pull_request_target`, então roda sempre a versão que está na `main`. Um PR que altere o workflow ou o script não muda as regras para ele mesmo, e ainda é recusado por mexer em `.github/**`.
+- O executor é disparado pelo evento `workflow_run`, que roda sempre a versão que está na `main`. Um PR que altere o gatilho, o executor ou o script não muda as regras para ele mesmo, e ainda é recusado por mexer em `.github/**`.
+- O gatilho roda a versão do próprio PR, mas não tem nenhuma permissão e não faz nada além de registrar o número do PR.
+- Não usa `pull_request_target`: o GitHub anunciou, em 02/11/2026, o bloqueio desse evento por padrão em repositórios públicos a partir de 02/12/2026 (a página do aviso está marcada como "Retired"; a vigência não foi confirmada).
+- Só é mesclado o commit que disparou a verificação. Se o PR recebeu um commit novo no meio do caminho, nada é mesclado e a verificação do commit novo decide.
 - O código do PR nunca é baixado nem executado. O script lê só a lista de arquivos e o diff pela API do GitHub.
 - Permissões mínimas: nenhuma no nível do workflow; o job pede só `contents: write` (mesclar) e `pull-requests: write` (ler os arquivos e comentar).
-- A mesclagem usa o commit que foi verificado. Se alguém enviar um commit novo durante a verificação, o GitHub recusa a mesclagem e a verificação recomeça com o commit novo.
 
 ## Limites
+
+- O mecanismo só passa a funcionar depois que estes arquivos estiverem na `main`: o GitHub só roda workflows `workflow_run` a partir da branch padrão. O teste de 21/11/2026 usou uma branch de teste em que o executor era disparado direto pelo PR (detalhes no PR que criou o mecanismo).
+- Se o rótulo `nao-mesclar` for posto nos segundos em que a verificação já está rodando, ela pode terminar antes de ver o rótulo. Para garantia total, abra o PR como rascunho.
 
 - Um PR mesclado pelo robô não dispara outros workflows do GitHub. O deploy da Vercel não depende deles: ele vem do aplicativo da Vercel e acontece normalmente (só documentação, sem mudança de código).
 - A varredura de segredos é heurística: reduz o risco, mas não substitui o cuidado de nunca escrever valores de segredos em documentos.
