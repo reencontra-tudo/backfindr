@@ -3,7 +3,7 @@
 > Localização canônica: `~/backfindr/BACKFINDR.md` (clone de `reencontra-tudo/backfindr`, branch `main`; definido em 26/10/2026).
 > ~~Localização canônica anterior: `~/Downloads/backfindr-local/backfindr-main/BACKFINDR.md`~~ — **SUPERADO em 26/10/2026** por `~/backfindr` (a cópia antiga tem o último commit em 04/08/2026; `~/backfindr` = `origin/main` 92d4deb, 14/10/2026; fonte: `git log`/`gh api`, 26/10/2026).
 > ~~Última atualização anterior: 2026-08-22~~ (SUPERADO em 26/10/2026)
-> Última atualização: 2026-11-16 (§12, §14, a linha da credencial de exemplo e as linhas do matching revisadas; as demais seções são de 26/10/2026 ou anteriores e **não foram reverificadas**).
+> Última atualização: 2026-11-23 (acrescentado só o registro do Programa de Colaboradores em §2/P1; o restante segue como em 2026-11-16: §12, §14, a linha da credencial de exemplo e as linhas do matching revisadas; as demais seções são de 26/10/2026 ou anteriores e **não foram reverificadas**).
 > **REGRA DE MANUTENÇÃO: nunca usar `cat >>`. Sempre reescrever via Python.**
 
 ---
@@ -27,6 +27,7 @@ Projeto anterior: Webjetos (2015) — migração planejada
 - Boost conectado ao checkout MercadoPago
 - Tela de sucesso com loop WhatsApp
 - **Incompleto:** Social Posts automático, Moderação, BarcodeDetector portaria
+- **Em desenho (23/11/2026, nada construído):** Programa de Colaboradores (páginas `/@nome`, código do colaborador gravado na ocorrência, comissão sobre «ampliar alcance»). Ver `docs/programa-colaboradores/DESENHO.md` e `DECISOES.md` (PC-01, PC-02). Diagnóstico verificado em 23/11/2026: o webhook de pagamento não é idempotente, não valida assinatura e ignora estorno; a tabela `social_posts` não existe no banco de produção.
 
 ### P2 — Backfindr B2B
 - Portal `/parceiro/*` funcional, role `b2b_admin`
