@@ -291,7 +291,7 @@ Limite honesto: o retroativo só é confiável para boosts que existirem nas tab
 
 | Etapa | Estado | PR | Verificação |
 |---|---|---|---|
-| E0 — prova da rota `/@nome` | EM ANDAMENTO (código e testes feitos; prova local feita; prova na Vercel em prévia pendente) | ver STATUS.md | ver abaixo |
+| E0 — prova da rota `/@nome` | CÓDIGO PRONTO, PR #163 em rascunho; prova local feita; **prova na Vercel PENDENTE do Marcos** (prévia protegida por login) | #163 (empilhado sobre o #162) | suíte 73/1.669, tsc 8 (igual), build limpo, prova local nos dois estados do interruptor |
 | E1 — atribuição | NÃO INICIADA (só depois da E0 verificada) | — | — |
 | E2 — página `/@nome` + feed + SEO | NÃO INICIADA | — | — |
 | E3 — cartaz com a marca | NÃO INICIADA | — | — |
@@ -316,4 +316,5 @@ Limite honesto: o retroativo só é confiável para boosts que existirem nas tab
 Achados da prova:
 1. **Cache de 404.** A página é estática com revalidação de 300 s (como o Feed). Uma resposta 404 gerada com o interruptor desligado (ou antes de o colaborador existir) fica guardada e pode ser servida por até 5 minutos depois de a página passar a existir. Mitigação prevista: na E2, criar/ativar o colaborador chama `revalidatePath` da própria página. Ao ligar o interruptor em produção, esperar até 5 minutos para que 404s antigos expirem.
 2. `/@nome/` (com barra) redireciona 308 para `/@nome`; é a normalização do próprio Next e já é assim com o interruptor desligado.
-3. Os itens de «medir o tempo do `ALTER`» e «formato de estorno do Mercado Pago» da E0 original **saem da E0**: o primeiro vira medida da E1 (cópia local); o segundo pertence à E4 (suspensa).
+3. **Prova na Vercel: BLOQUEADA para a sessão (23/11/2026).** A prévia do PR #163 existe, mas responde com redirecionamento para o login da Vercel (proteção de implantação); a sessão não passa por ele. A verificação na borda da Vercel precisa ser feita pelo Marcos (logado na Vercel) e depende de uma variável só no escopo Preview: ver o roteiro em STATUS.md. Enquanto isso a E0 conta como **verificada localmente e NÃO verificada na Vercel**; a E1 não começa antes.
+4. Os itens de «medir o tempo do `ALTER`» e «formato de estorno do Mercado Pago» da E0 original **saem da E0**: o primeiro vira medida da E1 (cópia local); o segundo pertence à E4 (suspensa).
