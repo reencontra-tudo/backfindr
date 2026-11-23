@@ -5,6 +5,8 @@ import { buildPosterData } from '@/lib/posterFormatter';
 import { maskSharedTexts } from '@/lib/objectPublicView';
 import { enderecoPublico, ehCadastroDeUsuario, arredondaCoordenada } from '@/lib/publicLocation';
 import sharp from 'sharp';
+import { obterMarcaDoCartaz } from '@/lib/colaboradores/marca';
+import { MarcaDoCartaz } from '@/components/colaboradores/MarcaDoCartaz';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -174,6 +176,10 @@ export async function GET(
       photo_url:   normalizeImages(obj.images)[0] ?? null,
     }, appUrl);
 
+    // Programa de Colaboradores (E3): marca do colaborador (só com o programa ligado, só ocorrência cadastrada com o código, só colaborador ativo).
+    // Sem marca (o caso de sempre) é null, sem nenhuma consulta nova, e o cartaz sai IDÊNTICO ao de antes.
+    const marca = await obterMarcaDoCartaz(query, obj.id);
+
     const coordsExatas = extractLatLng(obj.location, obj.latitude, obj.longitude);
     const coords = publico && coordsExatas ? { lat: arredondaCoordenada(coordsExatas.lat) as number, lng: arredondaCoordenada(coordsExatas.lng) as number } : coordsExatas;
 
@@ -328,6 +334,7 @@ export async function GET(
                   <span style={{ color: 'rgba(255,255,255,0.6)', fontSize: '20px', display: 'flex' }}>
                     Avise o dono — backfindr.com
                   </span>
+                  {marca && <MarcaDoCartaz marca={marca} fonte={20} cor="rgba(255,255,255,0.85)" logo={26} margemTopo={2} />}
                 </div>
               </div>
             </div>
@@ -485,6 +492,7 @@ export async function GET(
                 <span style={{ color: teal, fontSize: '22px', display: 'flex' }}>
                   {appUrl.replace('https://', '')}
                 </span>
+                {marca && <MarcaDoCartaz marca={marca} fonte={26} cor="rgba(255,255,255,0.85)" logo={34} margemTopo={4} />}
               </div>
             </div>
           </div>
@@ -663,6 +671,7 @@ export async function GET(
             </span>
             <span style={{ color: tealA4, fontSize: '44px', fontWeight: 800, display: 'flex' }}>Backfindr.com</span>
           </div>
+          {marca && <MarcaDoCartaz marca={marca} fonte={44} cor="#374151" logo={56} margemTopo={20} justificar="flex-end" />}
 
         </div>
       ),
