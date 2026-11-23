@@ -18,6 +18,8 @@ import { ObjectCategory, ObjectStatus } from '@/types';
 import { LocationPicker } from '@/components/ui/LocationPicker';
 import { DynamicCategoryFields } from '@/components/ui/DynamicCategoryFields';
 import { descricaoDoTitulo, passoAnterior, passoInicial, proximoPasso, resumirErros, statusDefinidoPeloIntent } from '@/lib/formularioOcorrencia';
+import CampoCodigoColaborador from '@/components/colaboradores/CampoCodigoColaborador';
+import { codigoInicial, colaboradoresAtivoNoCliente, limparCodigoGuardado } from '@/lib/colaboradores/cliente';
 
 // ─── Schema ──────────────────────────────────────────────────────────────────
 const schema = z.object({
@@ -37,6 +39,7 @@ const schema = z.object({
   document_last4: z.string().max(4).optional(),
   reward_amount: z.number().min(0).optional().nullable(),
   reward_description: z.string().max(500).optional().nullable(),
+  colaborador_codigo: z.string().max(40).optional(),
 });
 
 type FormData = z.infer<typeof schema>;
@@ -176,6 +179,8 @@ function NewObjectForm() {
   const [faltando, setFaltando] = useState<string[] | null>(null);
   const [focoPendente, setFocoPendente] = useState<'title' | 'description' | null>(null);
   const [submitting, setSubmitting] = useState(false);
+  const colabAtivo = colaboradoresAtivoNoCliente();
+  const [codigoColabRecusado, setCodigoColabRecusado] = useState(false);
   // Guarda síncrona contra duplo clique: o `disabled={submitting}` só vale depois do próximo render.
   const submittingRef = useRef(false);
   // Aviso de objeto parecido (409 SIMILAR_OBJECT_FOUND). O formulário continua montado por baixo do modal.
@@ -227,6 +232,9 @@ function NewObjectForm() {
     }
     if (prefillBreed)    setValue('pet_breed', prefillBreed);
     if (prefillColor)    setValue('pet_color', prefillColor);
+    // Programa de Colaboradores: código vindo da URL (?colab=) ou guardado nesta aba. Desligado, codigoInicial devolve sempre null.
+    const colab = codigoInicial(searchParams);
+    if (colab) setValue('colaborador_codigo', colab);
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -306,6 +314,8 @@ function NewObjectForm() {
         location: data.address || null,
       };
       if (confirmDuplicate) payload.confirm_duplicate = true;
+      // Programa de Colaboradores: só vai no corpo se o programa estiver ligado e houver texto no campo (o servidor valida; nunca confiar neste valor).
+      if (colabAtivo && data.colaborador_codigo?.trim()) payload.colaborador_codigo = data.colaborador_codigo.trim();
 
       if (isPet) {
         if (data.pet_species) payload.pet_species = data.pet_species;
@@ -355,6 +365,7 @@ function NewObjectForm() {
         toast.success('Objeto registrado com sucesso! 🎉');
       }
 
+      limparCodigoGuardado(); // cada ocorrência depende do link ou código usado no cadastro dela
       router.push(`/dashboard/objects/${objectId}/sucesso`);
     } catch (err) {
       // Objeto parecido já existente: pede confirmação em vez de criar
@@ -364,6 +375,13 @@ function NewObjectForm() {
         return;
       }
       setSimilarObjects(null);
+      // Código do colaborador recusado pelo servidor: nada foi criado; mostra o aviso no campo (último passo) e deixa apagar ou corrigir.
+      if (axios.isAxiosError(err) && err.response?.data?.error === 'CODIGO_COLABORADOR_INVALIDO') {
+        setCodigoColabRecusado(true);
+        setStep(3);
+        toast.error(err.response.data.detail ?? 'Código do colaborador inválido ou inativo.');
+        return;
+      }
       // Tratar erro de limite de plano com redirecionamento para upgrade
       if (axios.isAxiosError(err) && err.response?.data?.error === 'limit_reached') {
         const msg = err.response.data.message ?? 'Limite de objetos atingido.';
@@ -811,6 +829,13 @@ function NewObjectForm() {
                 setValue('lng', val.lng);
               }}
             />
+            {colabAtivo && (
+              <CampoCodigoColaborador
+                valor={watch('colaborador_codigo') ?? ''}
+                onChange={(v) => { setCodigoColabRecusado(false); setValue('colaborador_codigo', v); }}
+                erroServidor={codigoColabRecusado}
+              />
+            )}
           </div>
         )}
 
