@@ -304,6 +304,8 @@ Limite honesto: o retroativo só é confiável para boosts que existirem nas tab
 - `src/app/colaborador/layout.tsx` e `src/lib/clarity.ts`: a guarda do Clarity (`tests/clarity.test.ts`) exige decisão para toda pasta nova; `/colaborador` entrou como **pública e mascarada** (mesmo tratamento do Feed), sem gravação de texto na sessão.
 - `tests/colaboradores-rota.test.ts` (10 testes): formato, caminhos que não casam, interruptor, middleware ligado/desligado, caminhos não relacionados idênticos nos dois estados, cookie de origem e redirecionamento de token preservados.
 
+**Verificação de não regressão da E0:** `docs/programa-colaboradores/e0/NAO-REGRESSAO.md` (linha de base, comparação main × desligada × ligada, prints 375 px e desktop). Resultado: nenhuma diferença não planejada.
+
 ### E0 — o que ficou provado (build local `next build` + `next start`)
 | Caso | Desligado | Ligado |
 |---|---|---|
