@@ -4,15 +4,18 @@
 
 create schema backfindr_teste;
 
--- pg_trgm: o Backfindr usa. Rode a linha abaixo SÓ se o catálogo (consulta 4) mostrou que a extensão NÃO existe; anote que foi o teste que a criou.
--- create extension if not exists pg_trgm with schema extensions;
+-- pg_trgm: o Backfindr usa. O catálogo de 23/11/2026 (consulta 4) mostrou que ela NÃO existe no «Resolve Tudo»: o teste a CRIA e a limpeza a REMOVE.
+create extension pg_trgm with schema extensions;
 
 create role backfindr_teste_app login password 'TROQUE-ESTE-TEXTO-POR-UMA-SENHA-FORTE-GERADA-POR-VOCE' nocreatedb nocreaterole nobypassrls;
 alter role backfindr_teste_app set search_path = backfindr_teste, extensions;   -- o app, sem alteração de código, só enxerga o schema do teste
 grant usage, create on schema backfindr_teste to backfindr_teste_app;
 grant usage on schema extensions to backfindr_teste_app;                        -- para o operador gin_trgm_ops (só se o schema «extensions» existir)
-grant backfindr_teste_app to postgres;                                          -- permite «set role» ao aplicar o esquema, para o papel ser o dono dos objetos
+grant backfindr_teste_app to postgres with set true;                            -- permite «set role» ao aplicar o esquema, para o papel ser o dono dos objetos (as tabelas com RLS só funcionam para o dono)
 -- (nenhum GRANT em public, storage, auth ou realtime: o papel não tem acesso a eles)
+
+-- Teste do «set role» (o app só funciona se o papel for o dono dos objetos; se esta linha falhar, PARE e avise):
+--   set role backfindr_teste_app; select current_user; reset role;
 
 -- Verificação (somente leitura): o papel só enxerga o schema do teste
 --   select nspname, has_schema_privilege('backfindr_teste_app', nspname, 'USAGE') as usa from pg_namespace where nspname in ('backfindr_teste','public','storage','auth') order by 1;

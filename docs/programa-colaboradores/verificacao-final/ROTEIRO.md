@@ -1,5 +1,7 @@
 # Verificação final do piloto na Vercel — roteiro (23/11/2026)
 
+> **A versão final, em linguagem simples e passo a passo, é `ROTEIRO-SIMPLES.md`.** Este arquivo guarda o levantamento e as justificativas (isolamento de arquivos e mensagens, variáveis, riscos). A linha de base do «Resolve Tudo» está em `LINHA-DE-BASE-ANTES.md` (leitura feita pelo fundador em 23/11/2026; o conector não conseguiu autenticar).
+
 **Estado: ROTEIRO PRONTO; NADA FOI EXECUTADO.** Executa-se **uma vez**, depois da E3 aprovada e com as etapas E0 a E3 juntas, numa prévia da branch do piloto apontada para um **banco isolado**. Marcação: **[F]** = ação do fundador (só ele tem o acesso ou a decisão); **[C]** = eu executo; **[F+C]** = o fundador no navegador logado, com o meu apoio (como na verificação da E0).
 
 ## 0. Regras que valem o tempo todo
@@ -9,9 +11,8 @@
 4. **Parar e avisar** se: aparecer qualquer tabela ou dado inesperado no «Resolve Tudo»; a prova de isolamento falhar; qualquer sinal de que algo chegou à produção (ocorrência, imagem, e-mail, evento); a prévia mostrar dados reais.
 
 ## 1. O que foi apurado nesta sessão
-### 1.1 Banco do «Resolve Tudo» (somente leitura)
-**NÃO consegui ler.** Quatro tentativas (consultas ao catálogo e ferramentas de listagem) falharam com «password authentication failed» para os usuários `postgres` e `supabase_read_only_user`; outra ferramenta respondeu que o projeto estava **hibernado** («will wake on next supported request»). Portanto **não confirmei nada** sobre o que existe no banco (tabelas, schemas, colisões). Nenhuma escrita foi tentada.
-**O que o fundador precisa fazer (sem compartilhar senha):** abrir o projeto «Resolve Tudo» no painel (isso o acorda) e rodar, **no SQL Editor do próprio painel**, o arquivo `catalogo-resolve-tudo.sql` (só catálogo: nomes e contagens; não lê linhas de tabela nem o Storage), colando aqui o resultado das consultas 1 a 6. Quem conferir: eu. **Se a consulta 2 ou 3 listar qualquer coisa, parar.** (Alternativa, se o fundador preferir que eu execute direto: restaurar o acesso do conector ao projeto, por exemplo redefinindo a senha do banco no painel, mas isso pode afetar qualquer cliente que use essa senha; por isso a opção recomendada é o fundador rodar o arquivo no painel.)
+### 1.1 Banco do «Resolve Tudo» (somente leitura) — **FEITO pelo fundador em 23/11/2026**
+O conector não conseguiu autenticar no banco do «Resolve Tudo» (quatro tentativas), então o fundador rodou o `catalogo-resolve-tudo.sql` no SQL Editor do painel. **Resultado: nenhum objeto em `public`, nenhuma tabela fora dos schemas internos do Supabase, nenhuma função, política ou gatilho fora deles, nenhum papel não padrão, sem colisão (`backfindr_teste` e `backfindr_teste_app` não existem), e `pg_trgm` NÃO existe (o teste a cria e a limpeza a remove).** A assinatura do catálogo ficou registrada como linha de base em `LINHA-DE-BASE-ANTES.md`. O Storage nunca foi consultado.
 
 ### 1.2 Isolamento de arquivos, mensagens, pagamentos e análise (levantamento no código, 23/11/2026)
 | Canal | O que o código faz | Como o teste fica isolado |

@@ -36,7 +36,7 @@ select 'schema backfindr_teste existe?' as pergunta, exists (select 1 from pg_na
 union all select 'papel backfindr_teste_app existe?', exists (select 1 from pg_roles where rolname = 'backfindr_teste_app');
 
 -- 6) ASSINATURA DO CATÁLOGO (antes e depois): deve ser IGUAL antes de começar e depois da limpeza. Ignora o schema do teste.
-select 'objetos por schema' as item, n.nspname as chave, count(*)::text as total, md5(string_agg(c.relname || ':' || c.relkind, ',' order by c.relname, c.relkind)) as assinatura
+select 'objetos por schema' as item, n.nspname as chave, count(*)::text as total, md5(string_agg(c.relname || ':' || c.relkind::text, ',' order by c.relname, c.relkind::text)) as assinatura
   from pg_class c join pg_namespace n on n.oid = c.relnamespace
  where n.nspname <> 'backfindr_teste' and n.nspname !~ '^pg_' and n.nspname <> 'information_schema' group by n.nspname
 union all select 'funcoes por schema', n.nspname, count(*)::text, md5(string_agg(p.proname, ',' order by p.proname, p.oid)) from pg_proc p join pg_namespace n on n.oid = p.pronamespace
