@@ -291,8 +291,8 @@ Limite honesto: o retroativo só é confiável para boosts que existirem nas tab
 
 | Etapa | Estado | PR | Verificação |
 |---|---|---|---|
-| E0 — prova da rota `/@nome` | CÓDIGO PRONTO, PR #163 em rascunho; prova local feita; **prova na Vercel PENDENTE do Marcos** (prévia protegida por login) | #163 (empilhado sobre o #162) | suíte 73/1.669, tsc 8 (igual), build limpo, prova local nos dois estados do interruptor |
-| E1 — atribuição | NÃO INICIADA (só depois da E0 verificada) | — | — |
+| E0 — prova da rota `/@nome` | **VERIFICADA E APROVADA pelo fundador (23/11/2026).** NÃO mesclada: as etapas do piloto serão mescladas juntas, depois de aprovadas | #163 (empilhado sobre o #162) | local + prévia da Vercel (abaixo) |
+| E1 — atribuição | EM ANDAMENTO (iniciada em 23/11/2026, depois da aprovação da E0) | ver STATUS.md | — |
 | E2 — página `/@nome` + feed + SEO | NÃO INICIADA | — | — |
 | E3 — cartaz com a marca | NÃO INICIADA | — | — |
 | E4 a E8 | SUSPENSAS (decisão do fundador, 23/11/2026) | — | — |
@@ -318,5 +318,5 @@ Limite honesto: o retroativo só é confiável para boosts que existirem nas tab
 Achados da prova:
 1. **Cache de 404.** A página é estática com revalidação de 300 s (como o Feed). Uma resposta 404 gerada com o interruptor desligado (ou antes de o colaborador existir) fica guardada e pode ser servida por até 5 minutos depois de a página passar a existir. Mitigação prevista: na E2, criar/ativar o colaborador chama `revalidatePath` da própria página. Ao ligar o interruptor em produção, esperar até 5 minutos para que 404s antigos expirem.
 2. `/@nome/` (com barra) redireciona 308 para `/@nome`; é a normalização do próprio Next e já é assim com o interruptor desligado.
-3. **Prova na Vercel: BLOQUEADA para a sessão (23/11/2026).** A prévia do PR #163 existe, mas responde com redirecionamento para o login da Vercel (proteção de implantação); a sessão não passa por ele. A verificação na borda da Vercel precisa ser feita pelo Marcos (logado na Vercel) e depende de uma variável só no escopo Preview: ver o roteiro em STATUS.md. Enquanto isso a E0 conta como **verificada localmente e NÃO verificada na Vercel**; a E1 não começa antes.
+3. **Prova na Vercel: FEITA pelo fundador em 23/11/2026** (a sessão não consegue abrir a prévia, protegida por login da Vercel). Prévia da branch `claude/backfindr-colaboradores-e0`, com `COLABORADORES_ATIVO=1` restrita só a essa branch (Production nunca recebeu a variável; a variável foi apagada depois e nenhum deploy novo foi feito). Resultados informados pelo fundador: `/@backfindr` 200, página de prova, `robots` «noindex, nofollow»; `/@BackFindr` redireciona para `/@backfindr`, noindex; `/@ab` 404; `/feed`, `/` e `/achei` 200 com «index, follow» e títulos normais; `/perdi` respondeu 307. **Esse 307 já existe hoje e não foi introduzido pela E0** (conferido em 23/11/2026): `https://backfindr.com/perdi` em produção responde `HTTP/2 307` com `x-vercel-cache: HIT` e `age` ≈ 263.000 s (cerca de 3 dias, anterior à E0); `src/app/perdi/page.tsx` chama `redirect('/flow/lost')` e não foi alterado (último commit do arquivo: #89; a E0 não toca em `src/app/perdi`); o build local da `main` também deu 307 → `/flow/lost`, igual à E0 desligada e ligada.
 4. Os itens de «medir o tempo do `ALTER`» e «formato de estorno do Mercado Pago» da E0 original **saem da E0**: o primeiro vira medida da E1 (cópia local); o segundo pertence à E4 (suspensa).
