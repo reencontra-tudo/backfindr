@@ -7,7 +7,7 @@ import ClarityLoader from '@/components/ClarityLoader';
 import TrackingScripts from '@/components/TrackingScripts';
 import { PostHogProvider } from '@/providers/PostHogProvider';
 import CapturaCodigoColaborador from '@/components/colaboradores/CapturaCodigoColaborador';
-import { colaboradoresAtivo } from '@/lib/colaboradores/rota';
+import { colaboradoresAtivoNoCliente } from '@/lib/colaboradores/cliente';
 import './globals.css';
 
 const syne = Syne({
@@ -167,8 +167,8 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
             logadas/administrativas (regras em src/lib/clarity.ts). Sem a variável, nada carrega. */}
         <ClarityLoader projectId={process.env.NEXT_PUBLIC_CLARITY_PROJECT_ID} />
 
-        {/* Programa de Colaboradores (E1): guarda, só nesta aba, o ?colab= da URL. Só existe com COLABORADORES_ATIVO=1; desligado, nada é renderizado aqui. */}
-        {colaboradoresAtivo() && <CapturaCodigoColaborador />}
+        {/* Programa de Colaboradores (E1): guarda, só nesta aba, o ?colab= da URL. Só existe com NEXT_PUBLIC_COLABORADORES_ATIVO=1 (fixado no build, como todo o lado do navegador); desligado, nada é renderizado aqui. */}
+        {colaboradoresAtivoNoCliente() && <CapturaCodigoColaborador />}
 
         {/* Register Service Worker */}
         <Script id="register-sw" strategy="afterInteractive">
