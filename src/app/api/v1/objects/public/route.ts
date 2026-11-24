@@ -2,6 +2,7 @@ export const dynamic = 'force-dynamic';
 import { NextRequest } from 'next/server';
 import { query } from '@/lib/db';
 import { successResponse, internalErrorResponse } from '@/lib/response';
+import { categoriasDaLista } from '@/lib/categorias';
 import { isBuscaAmpla, temPalavraEmComum, tituloRecuperado } from '@/lib/flowMatch/relevance';
 import { buscarRegistrosRecentesParecidos } from '@/lib/flowMatch/recentSimilar';
 import { maskSignalForPublicApi } from '@/lib/objectPublicView';
@@ -68,8 +69,8 @@ export async function GET(request: NextRequest) {
     }
 
     if (category) {
-      params.push(category);
-      conditions.push(`category = $${params.length}`);
+      params.push(categoriasDaLista(category));
+      conditions.push(`category = ANY($${params.length}::text[])`);
     }
 
     const opcoes: OpcoesBusca | undefined = amplo ? { radical: true, semAcento: true, dicionario: 'ampliado', categoriasDaBusca: categoriasDaBuscaTexto(keyword, { dicionario: 'ampliado' }) } : undefined;

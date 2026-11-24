@@ -2,6 +2,7 @@ export const dynamic = 'force-dynamic';
 import { NextRequest, NextResponse } from 'next/server';
 import { requireAdmin } from '@/lib/adminGuard';
 import { query } from '@/lib/db';
+import { categoriasDaLista } from '@/lib/categorias';
 
 // ── CSV helpers ───────────────────────────────────────────────────────────────
 function escapeCsv(val: unknown): string {
@@ -93,7 +94,7 @@ function toHtmlReport(
 
 // ── Labels ────────────────────────────────────────────────────────────────────
 const CATEGORY_LABELS: Record<string, string> = {
-  phone: 'Celular', wallet: 'Carteira', keys: 'Chaves', pet: 'Pet',
+  phone: 'Celular', wallet: 'Carteira', keys: 'Chaves', animal: 'Animal', pet: 'Pet',
   electronics: 'Eletrônicos', document: 'Documento', bike: 'Bicicleta',
   vehicle: 'Veículo', other: 'Outros',
 };
@@ -130,7 +131,7 @@ export async function GET(req: NextRequest) {
       const params: unknown[]    = [];
       let idx = 1;
 
-      if (category) { conditions.push(`o.category = $${idx}`); params.push(category); idx++; }
+      if (category) { conditions.push(`o.category = ANY($${idx}::text[])`); params.push(categoriasDaLista(category)); idx++; }
       if (status)   { conditions.push(`o.status = $${idx}`);   params.push(status);   idx++; }
       if (dateFrom) { conditions.push(`o.created_at >= $${idx}`); params.push(dateFrom); idx++; }
       if (dateTo)   { conditions.push(`o.created_at <= $${idx}`); params.push(dateTo + 'T23:59:59'); idx++; }
