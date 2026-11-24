@@ -52,3 +52,60 @@ Estimativas são minhas, em dias de trabalho de uma sessão de desenvolvimento; 
 
 ## 4. O que NÃO foi feito
 Nada do item acima foi implementado, aplicado em produção ou alterado em variáveis. Este documento e os registros em `DECISOES.md` (PC-14), `STATUS.md` e `BACKFINDR.md` são a única mudança.
+
+---
+
+# Versão 2 (24/11/2026, depois da ordem do fundador): ritmo real, ordem nova e recomendações
+
+## A. Ritmo real e nova estimativa
+O piloto E0 a E3 estava estimado em 8,5 a 12 dias e foi feito em ≈ 1,5 dia (≈ 6 a 8 vezes mais rápido). Reestimo aplicando esse ritmo ao trabalho de código e **somando à parte as esperas que não dependem de mim** (decisões, ações do fundador/NAV, jurídico, backup antes de migration). Em etapas com dinheiro mantenho margem maior: aqui o risco não é digitar, é errar um valor.
+
+| Etapa | Estimativa do desenho | **Estimativa nova (trabalho de código)** | Esperas fora do código |
+|---|---|---|---|
+| (a) Endurecer o webhook do Mercado Pago | 2–3 (minha) | **0,5–1 dia** | segredo da assinatura (NAV/fundador); uma compra de teste |
+| E5 Autoatendimento | 4–5 | **0,75–1 dia** | textos da política/termos (jurídico) |
+| E4 Comissão em modo sombra | 5–7 | **1–1,5 dia** | backup conferido + ordem para a migration; dias de observação em sombra |
+| E6 Painel do colaborador | 3 | **0,5 dia** | chave de cifragem do PIX (fundador/NAV) |
+| E7 Admin | 5–6 | **1 dia** | — |
+| E8 Antifraude, auditoria, acabamento | 3–4 | **0,5–1 dia** | — |
+| **Total** | 20–25 (+2–3) | **≈ 4,5 a 6,5 dias de código** | decisões e ações do fundador (abaixo) |
+Estimativa minha, não medida; cada etapa em PR próprio, rascunho, QA-01 (suíte COMPLETA com banco), mescla só com ordem.
+
+## B. Ordem de execução (decisão do fundador)
+1. **Em paralelo, já:** (a) endurecimento do webhook do Mercado Pago e (b) E5 autoatendimento. Enquanto a E4 não existir, o colaborador vê «comissão em apuração», **sem valores**.
+2. **Depois:** E4 (modo sombra), E6 (painel), E7 (admin). 3. **Por último:** E8.
+**Ponto de atenção da ordem:** a E5 já deixa pessoas se inscreverem e divulgarem; isso é seguro porque a E5 **não toca em dinheiro**. A E4 só passa a gravar comissões depois do endurecimento (a). Por isso (a) é pré-requisito da E4, não da E5.
+
+## C. Fatos novos achados agora (leitura)
+- O **checkout aceita usuário anônimo** (`user?.sub || "anonymous"` em `src/app/api/v1/checkout/mercadopago/route.ts`): é preciso exigir login e checar o dono do objeto (item do endurecimento).
+- A chave `mp_webhook_secret` existe só como **linha de configuração no banco (sem uso)**; o código do Mercado Pago lê variáveis de ambiente (`MP_ACCESS_TOKEN`). Recomendo uma **variável nova `MP_WEBHOOK_SECRET` na Vercel** (padrão igual ao do Resend, que já faz validação de assinatura e responde 401 sem segredo).
+
+## D. Decisões do fundador (§7 + novas) com a minha recomendação
+| # | Pergunta (simples) | Recomendação | Quando precisa |
+|---|---|---|---|
+| N1 | A comissão vale só para compras de «ampliar alcance» (Boost) ou também para assinaturas de plano? | **Só Boost agora.** É o que o desenho previu; assinatura é recorrente e mais complexa; reavaliar com dados e depois de definir o que o Pro vende. | antes da E4 |
+| N2 | O que o Pro vende? (no código, nada além do limite) | **Decidir à parte** (#193). Não bloqueia nada se N1 = só Boost. | não bloqueia |
+| 4 | Se o comprador pedir o dinheiro de volta, o Boost é desligado? | **Não mudar agora:** o Boost continua como hoje; o programa só **desconta a comissão**. Revisar se houver abuso (só 2 compras na história). | antes da E4 |
+| 6 | Comissão sobre o valor bruto ou depois da taxa do Mercado Pago? Como arredondar? | **Bruto** (fácil de explicar: «25 % do que o cliente pagou») e **arredondar para baixo** o centavo. A taxa do MP fica por conta do Backfindr. | antes da E4 |
+| 10 | Quantos dias a comissão fica «pendente»? | **14 dias** (passa a janela de arrependimento de 7 dias com folga); configurável. Estornos tardios viram desconto no próximo saque. (HIPÓTESE: a janela de contestação do MP não foi verificada.) | antes da E4 |
+| 7 | Por quanto tempo guardar o livro financeiro e o que fazer com o saldo se o colaborador for excluído? | **Perguntar ao jurídico.** Proposta de partida: guardar 5 anos (prazo fiscal comum, a confirmar) e cancelar saldo só na exclusão por transgressão. | antes da E4 (sem bloquear o modo sombra) |
+| 14 | Que dados do recebedor coletar? | **Só o necessário para pagar PIX:** chave PIX, nome do titular e CPF/CNPJ; **contador decide** se é obrigatório. Chave PIX cifrada. | antes da E6 |
+| 5 | Saque mínimo | **Manter R$ 50** (menos pagamentos manuais para você); configurável depois com dados. | antes da E6 |
+| 11 | «Até 10 dias úteis» do saque | **Contar só dias de semana**, sem feriados. | antes da E6 |
+| 9 | Dono de conta do legado pode ser colaborador? | **Sim, só depois de atualizar a conta** (regra do legado Q-26). | antes da E5 |
+| «Atividade» | O que conta como atividade nos 12 meses do @nome? | **A última ocorrência registrada com o código do colaborador** (dado que já existe; sem rastrear ninguém). | antes da E5 |
+| Verificação | Como provar que o colaborador é dono do canal? | **Manual no início:** o colaborador coloca um código `BF-XXXX-XXXX` na descrição do grupo/perfil, e o fundador aprova na fila (E7). | antes da E5 |
+| 13 | Visitas por mês | **Contador próprio mínimo** (por dia e colaborador, sem IP, cookie ou identificador; conta robôs de forma aproximada) — fica na E8. | E8 |
+| 12 e 8 | Código na URL e «só indexa verificada» | **Aceitar os dois** (já valem em produção). | já em uso |
+| Política | Texto da política/termos do programa | **Eu redijo um texto provisório** para o fundador/jurídico revisarem; a inscrição fica só por link, `noindex`, sem menu, até a revisão. | antes de abrir a inscrição |
+
+## E. O que o FUNDADOR (ou o NAV) faz em cada etapa
+| Etapa | Ação |
+|---|---|
+| (a) Webhook | **Painel do Mercado Pago:** gerar/copiar a «assinatura secreta» do webhook. **Vercel (NAV):** criar `MP_WEBHOOK_SECRET` (Production). Autorizar uma compra de teste (sandbox ou de baixo valor) para provar a assinatura e a idempotência. Ordem para mesclar. |
+| E5 | Aprovar os textos provisórios; responder N-«atividade», #9 e a regra de verificação; ordem para mesclar. **Migration 027 (se a E5 precisar de coluna/tabela nova): backup do dia conferido + ordem.** |
+| E4 | Responder N1, #4, #6, #10, #7. **Migration (tabelas financeiras): backup do dia conferido + ordem.** Ligar o interruptor de comissão (modo sombra) só com ordem. Conferir comigo os lançamentos de teste antes de seguir. |
+| E6 | **Criar a chave de cifragem do PIX** (variável de ambiente nova na Vercel, feita pelo NAV) e **guardá-la com segurança fora do sistema** (sem ela não dá para ler as chaves PIX). Responder #14, #5, #11. |
+| E7 | Usar a fila de verificação (aprovar canais) e a fila de saques (pagar o PIX manualmente e marcar como pago). |
+| E8 | Revisar textos finais; decidir o que fazer com os sinais de fraude. |
+**Em todas:** ordem escrita para mesclar cada PR; nada em produção sem ordem.
