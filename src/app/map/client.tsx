@@ -5,6 +5,7 @@ import { MapPin, Search, X, ChevronRight, SlidersHorizontal, LocateFixed, Gift, 
 import { toast } from 'sonner';
 import { useAuthStore } from '@/hooks/useAuth';
 import ObjectThumb from '@/components/ObjectThumb';
+import { OPCOES_FILTRO_CATEGORIA, pertenceAoFiltro, rotuloDaCategoria } from '@/lib/categorias';
 
 // Abaixo desse número de casos reais, o botão "Recuperado" fica oculto pra
 // usuário comum — com volume muito baixo (hoje é 1), o filtro só passa
@@ -16,11 +17,6 @@ const EMOJI: Record<string, string> = {
   phone: '📱', wallet: '👛', keys: '🔑', bag: '🎒', pet: '🐾',
   bike: '🚲', vehicle: '🚗', document: '📄', jewelry: '💍', electronics: '💻',
   clothing: '👕', other: '📦',
-};
-const CATEGORY_LABEL: Record<string, string> = {
-  phone: 'Celular', wallet: 'Carteira', keys: 'Chaves', bag: 'Bolsa/Mochila',
-  pet: 'Pet', bike: 'Bicicleta', vehicle: 'Veículo', document: 'Documento', jewelry: 'Joia',
-  electronics: 'Eletrônico', clothing: 'Roupa', other: 'Outro',
 };
 const STATUS_LABEL: Record<string, string> = {
   lost: 'Perdido', found: 'Achado', returned: 'Recuperado', stolen: 'Roubado',
@@ -314,7 +310,7 @@ export default function MapPage() {
     return pins.filter(o => {
       if (searchLower && !o.title.toLowerCase().includes(searchLower)) return false;
       if (filters.status && o.status !== filters.status) return false;
-      if (filters.category && o.category !== filters.category) return false;
+      if (!pertenceAoFiltro(o.category, filters.category)) return false; // hierarquia: Animal ⊃ Pet, Eletrônico ⊃ Celular (src/lib/categorias.ts)
       if (filters.radiusKm > 0 && userLocation && o.location?.lat && o.location?.lng) {
         const dist = haversine(userLocation.lat, userLocation.lng, o.location.lat, o.location.lng);
         if (dist > filters.radiusKm) return false;
@@ -589,8 +585,8 @@ export default function MapPage() {
                 className="bg-white/[0.04] border border-white/[0.08] rounded-lg px-3 py-1.5 text-white text-xs outline-none focus:border-teal-500/50 transition-colors"
               >
                 <option value="">Todas</option>
-                {Object.entries(CATEGORY_LABEL).map(([val, label]) => (
-                  <option key={val} value={val}>{EMOJI[val]} {label}</option>
+                {OPCOES_FILTRO_CATEGORIA.map(op => (
+                  <option key={op.valor} value={op.valor}>{op.emoji} {op.rotulo}</option>
                 ))}
               </select>
             </div>
@@ -786,7 +782,7 @@ export default function MapPage() {
                           {STATUS_LABEL[obj.status]}
                         </span>
                         <span className="text-white/20 text-[10px]">·</span>
-                        <span className="text-white/30 text-[10px]">{CATEGORY_LABEL[obj.category] ?? 'Outro'}</span>
+                        <span className="text-white/30 text-[10px]">{rotuloDaCategoria(obj.category)}</span>
                       </div>
                     </div>
                     <div className="flex-shrink-0 text-right">
@@ -859,7 +855,7 @@ export default function MapPage() {
                         <div className="flex items-center gap-1.5">
                           <p className={`text-xs ${STATUS_COLOR[obj.status].split(' ')[0]}`}>{STATUS_LABEL[obj.status]}</p>
                           <span className="text-white/20 text-xs">·</span>
-                          <p className="text-white/30 text-xs truncate">{CATEGORY_LABEL[obj.category] ?? 'Outro'}</p>
+                          <p className="text-white/30 text-xs truncate">{rotuloDaCategoria(obj.category)}</p>
                         </div>
                       </div>
                       <ChevronRight className="w-3.5 h-3.5 text-white/20 flex-shrink-0" />
@@ -920,7 +916,7 @@ export default function MapPage() {
                           <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full border ${STATUS_COLOR[detail.status]}`}>
                             {STATUS_LABEL[detail.status]}
                           </span>
-                          <span className="text-white/30 text-[10px]">{CATEGORY_LABEL[detail.category] ?? 'Outro'}</span>
+                          <span className="text-white/30 text-[10px]">{rotuloDaCategoria(detail.category)}</span>
                         </div>
                       </div>
                       <button
