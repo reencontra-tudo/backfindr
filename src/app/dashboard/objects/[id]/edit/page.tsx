@@ -15,6 +15,7 @@ const CATEGORY_OPTIONS: { value: ObjectCategory; label: string; emoji: string }[
   { value: 'keys',        label: 'Chaves',         emoji: '🔑' },
   { value: 'bag',         label: 'Bolsa / Mochila',emoji: '🎒' },
   { value: 'pet',         label: 'Pet',            emoji: '🐾' },
+  { value: 'animal',      label: 'Animal',         emoji: '🐴' },
   { value: 'bike',        label: 'Bicicleta',      emoji: '🚲' },
   { value: 'vehicle',     label: 'Veículo',        emoji: '🚗' },
   { value: 'document',    label: 'Documento',      emoji: '📄' },

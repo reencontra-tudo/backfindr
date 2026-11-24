@@ -67,3 +67,15 @@ export function resumirErros(erros: Record<string, { message?: string } | undefi
   const campoParaFocar = passo === PASSO_DETALHES && (primeiro === 'title' || primeiro === 'description') ? primeiro : null;
   return { passo, mensagens: [...new Set(mensagens)], campoParaFocar };
 }
+
+// ─── Categoria «Animal» (criação/trabalho): espécie e cor/pelagem são essenciais ─────────────────────────────────
+/** Só para a categoria `animal`. Devolve os campos que faltam (no formato de erros do formulário) ou null. Qualquer outra categoria: sempre null (nada muda para elas). */
+export function faltasDoAnimal(categoria: string | undefined, valores: Record<string, unknown>): Record<string, { message: string }> | null {
+  if (categoria !== 'animal') return null;
+  const vazio = (v: unknown) => typeof v !== 'string' || v.trim() === '';
+  const faltas: Record<string, { message: string }> = {};
+  if (vazio(valores.animal_species)) faltas.animal_species = { message: 'Falta a espécie do animal' };
+  if (vazio(valores.animal_color)) faltas.animal_color = { message: 'Falta a cor ou pelagem do animal' };
+  return Object.keys(faltas).length ? faltas : null;
+}
+

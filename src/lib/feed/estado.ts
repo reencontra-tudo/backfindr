@@ -20,6 +20,8 @@ export interface ItemSalvo {
   code: string; title: string; status: FeedStatus; status_label: string; category: FeedCategoryKey;
   origin: 'usuario' | 'sinal_publico'; location_label: string; photo_url: string | null; created_at: string;
   source_url: string | null; source_name: string | null; can_report_found: boolean;
+  /** Só quando o rótulo difere do da chave (ex.: «Animal», cuja chave é «pet»); nos demais itens o formato salvo é o de sempre. */
+  category_label?: string;
 }
 
 export interface EstadoSalvo {
@@ -56,11 +58,12 @@ export function compactar(i: FeedItem): ItemSalvo {
     code: i.code, title: i.title, status: i.status, status_label: i.status_label, category: i.category, origin: i.origin,
     location_label: i.location_label, photo_url: i.photo_url, created_at: i.created_at, source_url: i.source_url,
     source_name: i.source_name, can_report_found: i.can_report_found,
+    ...(i.category_label && i.category_label !== FEED_CATEGORY_LABELS[i.category] ? { category_label: i.category_label } : {}),
   };
 }
 
 export function expandir(i: ItemSalvo): FeedItem {
-  return { ...i, category_label: FEED_CATEGORY_LABELS[i.category], has_photo: Boolean(i.photo_url) };
+  return { ...i, category_label: i.category_label ?? FEED_CATEGORY_LABELS[i.category], has_photo: Boolean(i.photo_url) };
 }
 
 /**
@@ -92,7 +95,7 @@ function itemValido(x: unknown): x is ItemSalvo {
   return isStr(i.code, 120) && i.code.length > 0 && isStr(i.title) && STATUS.includes(i.status as FeedStatus) && isStr(i.status_label, 40)
     && isCategoria(i.category) && (i.origin === 'usuario' || i.origin === 'sinal_publico') && isStr(i.location_label) && isStr(i.created_at, 40)
     && (i.photo_url === null || isHttp(i.photo_url)) && (i.source_url === null || isHttp(i.source_url)) && isStrOuNulo(i.source_name, 120)
-    && typeof i.can_report_found === 'boolean';
+    && typeof i.can_report_found === 'boolean' && (i.category_label === undefined || isStr(i.category_label, 40));
 }
 
 function filtrosValidos(f: unknown, regioes: string[]): f is Filtros {

@@ -9,7 +9,7 @@ export interface AuthTokens { access_token:string; refresh_token:string; token_t
 // quando um objeto é denunciado/oculto — não é um status que o dono escolhe
 // (ver OWNER_SETTABLE_STATUSES em api/v1/objects/[id]/route.ts).
 export type ObjectStatus = 'lost'|'found'|'returned'|'stolen'|'protected'|'archived';
-export type ObjectCategory = 'phone'|'wallet'|'keys'|'bag'|'pet'|'bike'|'vehicle'|'document'|'jewelry'|'electronics'|'clothing'|'other';
+export type ObjectCategory = 'phone'|'wallet'|'keys'|'bag'|'pet'|'animal'|'bike'|'vehicle'|'document'|'jewelry'|'electronics'|'clothing'|'other';
 export interface ObjectLocation { lat:number; lng:number; address?:string; }
 // found_pending_confirmation/found_pending_since (25/08/2026, item 3b do
 // ciclo found→returned): sinalização de /notify anônimo, isolada de
