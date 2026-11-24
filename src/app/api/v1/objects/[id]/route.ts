@@ -4,6 +4,7 @@ import { query } from '@/lib/db';
 import { verifyToken, extractTokenFromHeader } from '@/lib/jwt';
 import { successResponse, errorResponse, unauthorizedResponse, notFoundResponse, internalErrorResponse } from '@/lib/response';
 import { Events } from '@/lib/events';
+import { valoresBrutosDoTitular, validarEdicaoDeCampos } from '@/lib/camposEspecificos';
 import { mascararDigitosLongos, camposDeDocumento, statusIgnoraTitular } from '@/lib/documentPrivacy';
 
 // Consolidado em 25/08/2026 — esta rota aceitava QUALQUER string em `status`,
@@ -56,6 +57,9 @@ function normalizeObject(row: Record<string, unknown>) {
     // Documento de usuário: titular, tipo e final (4 dígitos). Só aparecem quando existem; os demais objetos saem idênticos.
     ...(row.subject_name ? { document_owner_name: row.subject_name } : {}),
     ...(row.document_type ? { document_type: row.document_type } : {}),
+    // Campos específicos da categoria (visão do TITULAR: todos, inclusive os sensíveis; só chaves da configuração). Sem dado, a chave não existe.
+    ...(Object.keys(valoresBrutosDoTitular((row.category || row.type) as string | null, row.category_fields as Record<string, unknown> | null)).length
+      ? { campos_especificos: valoresBrutosDoTitular((row.category || row.type) as string | null, row.category_fields as Record<string, unknown> | null) } : {}),
     ...(typeof (row.category_fields as Record<string, unknown> | null)?.document_last4 === 'string'
       ? { document_last4: (row.category_fields as Record<string, string>).document_last4 } : {}),
   };
@@ -176,6 +180,22 @@ export async function PATCH(
           [d.temNome, d.subjectName, d.temTipo, d.documentType, d.temFinal, d.last4, params.id, payload.sub]
         );
         if (up.rows[0]) linhaFinal = { ...linhaFinal, ...(up.rows[0] as Record<string, unknown>) };
+      }
+    }
+
+    // Campos específicos da categoria editados pelo titular (PR B, 24/11/2026). Só roda quando o corpo traz `campos_especificos` (sem ele, o pedido é IDÊNTICO ao de antes).
+    // Só nomes da configuração da categoria final; texto aparado e limitado; vazio remove; documento tem regra própria (acima); legado e sinal público nunca mudam.
+    if (body.campos_especificos !== undefined && atual && atual.source !== 'public_signal' && atual.is_legacy !== true) {
+      const ed = validarEdicaoDeCampos(categoriaFinal, body.campos_especificos);
+      if (Object.keys(ed.gravar).length > 0 || ed.remover.length > 0) {
+        const up = await query(
+          `UPDATE objects
+              SET category_fields = (COALESCE(category_fields, '{}'::jsonb) - $1::text[]) || $2::jsonb
+            WHERE id = $3 AND user_id = $4 AND is_legacy IS NOT TRUE AND source IS DISTINCT FROM 'public_signal'
+        RETURNING category_fields`,
+          [[...ed.remover, ...Object.keys(ed.gravar)], JSON.stringify(ed.gravar), params.id, payload.sub]
+        );
+        if (up.rows[0]) linhaFinal = { ...linhaFinal, category_fields: (up.rows[0] as Record<string, unknown>).category_fields };
       }
     }
 

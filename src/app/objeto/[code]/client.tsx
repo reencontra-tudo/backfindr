@@ -385,6 +385,21 @@ export default function PublicObjectClient({ obj, signalSource = null }: { obj: 
                   </div>
                 )}
 
+                {/* Detalhes específicos da categoria (marca, modelo, cor, raça, porte, placa de veículo roubado…): só os campos PÚBLICOS, em português. Sensíveis nunca chegam aqui. */}
+                {obj.campos_publicos && obj.campos_publicos.length > 0 && (
+                  <div className="bg-white/[0.03] border border-white/[0.06] rounded-xl p-4 mb-5" data-campos-publicos>
+                    <p className="text-white/40 text-xs mb-3">Detalhes</p>
+                    <div className="grid grid-cols-2 gap-3">
+                      {obj.campos_publicos.map((c) => (
+                        <div key={c.chave}>
+                          <p className="text-white/30 text-xs">{c.rotulo}</p>
+                          <p className="text-white text-sm break-words">{c.valor}</p>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
                 {/* Detalhes do pet */}
                 {(obj.category === 'pet' || obj.category === 'animal') && (obj.pet_breed || obj.pet_color || obj.pet_species) && (
                   <div className="bg-white/[0.03] border border-white/[0.06] rounded-xl p-4 mb-5">

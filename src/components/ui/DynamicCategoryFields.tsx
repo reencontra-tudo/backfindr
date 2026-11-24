@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { ChevronDown, Plus, X } from 'lucide-react';
 import { getCategoryFieldConfig, FieldDefinition } from '@/config/categoryFields';
+import { AVISO_TEXTO_PUBLICO, CAMPOS_TEXTO_LIVRE_PUBLICO } from '@/lib/camposEspecificos';
 
 interface DynamicCategoryFieldsProps {
   category: string;
@@ -109,6 +110,10 @@ export function DynamicCategoryFields({
               }`}
             />
           </div>
+        )}
+
+        {CAMPOS_TEXTO_LIVRE_PUBLICO.has(field.name) && (
+          <p className="text-xs text-amber-300/80" data-aviso-texto-publico>{AVISO_TEXTO_PUBLICO}</p>
         )}
 
         {field.hint && !error && (

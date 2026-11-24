@@ -1,0 +1,354 @@
+{
+ "base/375/PH1": {
+  "edicaoControles": 5,
+  "patchSemMexer": {
+   "title": "Celular roubado de teste",
+   "description": "descricao de teste longa",
+   "category": "phone",
+   "status": "stolen",
+   "reward_amount": null,
+   "reward_description": null
+  }
+ },
+ "base/375/VE1": {
+  "edicaoControles": 5,
+  "patchSemMexer": {
+   "title": "Carro roubado de teste",
+   "description": "descricao de teste longa",
+   "category": "vehicle",
+   "status": "stolen",
+   "reward_amount": null,
+   "reward_description": null
+  }
+ },
+ "base/375/VE2": {
+  "edicaoControles": 5,
+  "patchSemMexer": {
+   "title": "Carro perdido de teste",
+   "description": "descricao de teste longa",
+   "category": "vehicle",
+   "status": "lost",
+   "reward_amount": null,
+   "reward_description": null
+  }
+ },
+ "base/375/PE1": {
+  "edicaoControles": 5,
+  "patchSemMexer": {
+   "title": "Cachorro perdido de teste",
+   "description": "descricao de teste longa",
+   "category": "pet",
+   "status": "lost",
+   "reward_amount": null,
+   "reward_description": null
+  }
+ },
+ "base/375/AN1": {
+  "edicaoControles": 5,
+  "patchSemMexer": {
+   "title": "Cavalo roubado de teste",
+   "description": "descricao de teste longa",
+   "category": "animal",
+   "status": "stolen",
+   "reward_amount": null,
+   "reward_description": null
+  }
+ },
+ "base/375/WA1": {
+  "edicaoControles": 5,
+  "patchSemMexer": {
+   "title": "Carteira perdida de teste",
+   "description": "descricao de teste longa",
+   "category": "wallet",
+   "status": "lost",
+   "reward_amount": null,
+   "reward_description": null
+  }
+ },
+ "base/375/NF1": {
+  "edicaoControles": 5,
+  "patchSemMexer": {
+   "title": "Celular sem campos",
+   "description": "descricao de teste longa",
+   "category": "phone",
+   "status": "lost",
+   "reward_amount": null,
+   "reward_description": null
+  }
+ },
+ "base/375/BG1": {
+  "edicaoControles": 5,
+  "patchSemMexer": {
+   "title": "Mochila perdida de teste",
+   "description": "descricao de teste longa",
+   "category": "bag",
+   "status": "lost",
+   "reward_amount": null,
+   "reward_description": null
+  }
+ },
+ "base/1280/PH1": {
+  "edicaoControles": 5,
+  "patchSemMexer": {
+   "title": "Celular roubado de teste",
+   "description": "descricao de teste longa",
+   "category": "phone",
+   "status": "stolen",
+   "reward_amount": null,
+   "reward_description": null
+  }
+ },
+ "base/1280/VE1": {
+  "edicaoControles": 5,
+  "patchSemMexer": {
+   "title": "Carro roubado de teste",
+   "description": "descricao de teste longa",
+   "category": "vehicle",
+   "status": "stolen",
+   "reward_amount": null,
+   "reward_description": null
+  }
+ },
+ "base/1280/VE2": {
+  "edicaoControles": 5,
+  "patchSemMexer": {
+   "title": "Carro perdido de teste",
+   "description": "descricao de teste longa",
+   "category": "vehicle",
+   "status": "lost",
+   "reward_amount": null,
+   "reward_description": null
+  }
+ },
+ "base/1280/PE1": {
+  "edicaoControles": 5,
+  "patchSemMexer": {
+   "title": "Cachorro perdido de teste",
+   "description": "descricao de teste longa",
+   "category": "pet",
+   "status": "lost",
+   "reward_amount": null,
+   "reward_description": null
+  }
+ },
+ "base/1280/AN1": {
+  "edicaoControles": 5,
+  "patchSemMexer": {
+   "title": "Cavalo roubado de teste",
+   "description": "descricao de teste longa",
+   "category": "animal",
+   "status": "stolen",
+   "reward_amount": null,
+   "reward_description": null
+  }
+ },
+ "base/1280/WA1": {
+  "edicaoControles": 5,
+  "patchSemMexer": {
+   "title": "Carteira perdida de teste",
+   "description": "descricao de teste longa",
+   "category": "wallet",
+   "status": "lost",
+   "reward_amount": null,
+   "reward_description": null
+  }
+ },
+ "base/1280/NF1": {
+  "edicaoControles": 5,
+  "patchSemMexer": {
+   "title": "Celular sem campos",
+   "description": "descricao de teste longa",
+   "category": "phone",
+   "status": "lost",
+   "reward_amount": null,
+   "reward_description": null
+  }
+ },
+ "base/1280/BG1": {
+  "edicaoControles": 5,
+  "patchSemMexer": {
+   "title": "Mochila perdida de teste",
+   "description": "descricao de teste longa",
+   "category": "bag",
+   "status": "lost",
+   "reward_amount": null,
+   "reward_description": null
+  }
+ },
+ "novo/375/PH1": {
+  "edicaoControles": 8,
+  "patchSemMexer": {
+   "title": "Celular roubado de teste",
+   "description": "descricao de teste longa",
+   "category": "phone",
+   "status": "stolen",
+   "reward_amount": null,
+   "reward_description": null
+  }
+ },
+ "novo/375/VE1": {
+  "edicaoControles": 11,
+  "patchSemMexer": {
+   "title": "Carro roubado de teste",
+   "description": "descricao de teste longa",
+   "category": "vehicle",
+   "status": "stolen",
+   "reward_amount": null,
+   "reward_description": null
+  }
+ },
+ "novo/375/VE2": {
+  "edicaoControles": 11,
+  "patchSemMexer": {
+   "title": "Carro perdido de teste",
+   "description": "descricao de teste longa",
+   "category": "vehicle",
+   "status": "lost",
+   "reward_amount": null,
+   "reward_description": null
+  }
+ },
+ "novo/375/PE1": {
+  "edicaoControles": 9,
+  "patchSemMexer": {
+   "title": "Cachorro perdido de teste",
+   "description": "descricao de teste longa",
+   "category": "pet",
+   "status": "lost",
+   "reward_amount": null,
+   "reward_description": null
+  }
+ },
+ "novo/375/AN1": {
+  "edicaoControles": 7,
+  "patchSemMexer": {
+   "title": "Cavalo roubado de teste",
+   "description": "descricao de teste longa",
+   "category": "animal",
+   "status": "stolen",
+   "reward_amount": null,
+   "reward_description": null
+  }
+ },
+ "novo/375/WA1": {
+  "edicaoControles": 9,
+  "patchSemMexer": {
+   "title": "Carteira perdida de teste",
+   "description": "descricao de teste longa",
+   "category": "wallet",
+   "status": "lost",
+   "reward_amount": null,
+   "reward_description": null
+  }
+ },
+ "novo/375/NF1": {
+  "edicaoControles": 8,
+  "patchSemMexer": {
+   "title": "Celular sem campos",
+   "description": "descricao de teste longa",
+   "category": "phone",
+   "status": "lost",
+   "reward_amount": null,
+   "reward_description": null
+  }
+ },
+ "novo/375/BG1": {
+  "edicaoControles": 5,
+  "patchSemMexer": {
+   "title": "Mochila perdida de teste",
+   "description": "descricao de teste longa",
+   "category": "bag",
+   "status": "lost",
+   "reward_amount": null,
+   "reward_description": null
+  }
+ },
+ "novo/1280/PH1": {
+  "edicaoControles": 8,
+  "patchSemMexer": {
+   "title": "Celular roubado de teste",
+   "description": "descricao de teste longa",
+   "category": "phone",
+   "status": "stolen",
+   "reward_amount": null,
+   "reward_description": null
+  }
+ },
+ "novo/1280/VE1": {
+  "edicaoControles": 11,
+  "patchSemMexer": {
+   "title": "Carro roubado de teste",
+   "description": "descricao de teste longa",
+   "category": "vehicle",
+   "status": "stolen",
+   "reward_amount": null,
+   "reward_description": null
+  }
+ },
+ "novo/1280/VE2": {
+  "edicaoControles": 11,
+  "patchSemMexer": {
+   "title": "Carro perdido de teste",
+   "description": "descricao de teste longa",
+   "category": "vehicle",
+   "status": "lost",
+   "reward_amount": null,
+   "reward_description": null
+  }
+ },
+ "novo/1280/PE1": {
+  "edicaoControles": 9,
+  "patchSemMexer": {
+   "title": "Cachorro perdido de teste",
+   "description": "descricao de teste longa",
+   "category": "pet",
+   "status": "lost",
+   "reward_amount": null,
+   "reward_description": null
+  }
+ },
+ "novo/1280/AN1": {
+  "edicaoControles": 7,
+  "patchSemMexer": {
+   "title": "Cavalo roubado de teste",
+   "description": "descricao de teste longa",
+   "category": "animal",
+   "status": "stolen",
+   "reward_amount": null,
+   "reward_description": null
+  }
+ },
+ "novo/1280/WA1": {
+  "edicaoControles": 9,
+  "patchSemMexer": {
+   "title": "Carteira perdida de teste",
+   "description": "descricao de teste longa",
+   "category": "wallet",
+   "status": "lost",
+   "reward_amount": null,
+   "reward_description": null
+  }
+ },
+ "novo/1280/NF1": {
+  "edicaoControles": 8,
+  "patchSemMexer": {
+   "title": "Celular sem campos",
+   "description": "descricao de teste longa",
+   "category": "phone",
+   "status": "lost",
+   "reward_amount": null,
+   "reward_description": null
+  }
+ },
+ "novo/1280/BG1": {
+  "edicaoControles": 5,
+  "patchSemMexer": {
+   "title": "Mochila perdida de teste",
+   "description": "descricao de teste longa",
+   "category": "bag",
+   "status": "lost",
+   "reward_amount": null,
+   "reward_description": null
+  }
+ }
+}

@@ -86,3 +86,6 @@ Hoje `refresh-stats` agrupa `pet` e `animal` no slug de SEO «pet» (7 slugs: ce
 - **B. Criar o slug «animal»** com a mesma hierarquia do mapa (a página Animal conta `animal` + `pet`; a página Pet conta só `pet`): é coerente com a decisão, mas **os 276 animais do legado saem da contagem de «pet»** em cada cidade (os números das páginas publicadas caem), exige conteúdo novo, páginas novas e regenerar as estatísticas.
 - **C. Criar o slug «animal» só para o que não é pet** (sem mexer na página «pet»): mantém os números atuais do pet, mas deixa o legado `animal` aparecer só na página nova.
 **Recomendação:** A agora; B quando houver volume real de animais novos e conteúdo para a página. Nenhuma mudança sem ordem.
+
+---
+**CORREÇÃO (24/11/2026, PR B):** no achado 4 e na coluna «Dono vê (painel)» eu escrevi que o titular via os dados no painel, de forma genérica. **Estava errado:** o painel busca o objeto por `GET /api/v1/objects/[id]`, que **não devolve** `category_fields` (só o final do documento); o bloco genérico do painel nunca aparecia. **Na prática, nem o titular via os campos salvos.** O PR B corrige isso (o titular passa a ver todos, com rótulos em português).

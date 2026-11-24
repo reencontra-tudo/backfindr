@@ -6,6 +6,8 @@ import { ChevronLeft, Save, Loader2, MapPin, Tag, FileText, AlertCircle } from '
 import Link from 'next/link';
 import { objectsApi } from '@/lib/api';
 import { DynamicCategoryFields } from '@/components/ui/DynamicCategoryFields';
+import { getCategoryFieldConfig } from '@/config/categoryFields';
+import { camposAlterados } from '@/lib/camposEspecificos';
 import { LocationPicker } from '@/components/ui/LocationPicker';
 import type { RegisteredObject, ObjectCategory, ObjectStatus } from '@/types';
 
@@ -51,6 +53,9 @@ export default function EditObjectPage() {
   const [rewardAmount, setRewardAmount] = useState('');
   const [rewardDesc, setRewardDesc]     = useState('');
   const [docFields, setDocFields]       = useState<Record<string, unknown>>({});
+  // Campos específicos da categoria (marca, modelo, IMEI, placa, espécie…): valores atuais e os originais (para só enviar o que o titular MUDOU).
+  const [espec, setEspec]               = useState<Record<string, unknown>>({});
+  const [especOriginal, setEspecOriginal] = useState<Record<string, unknown>>({});
   const [locationVal, setLocationVal]   = useState<{ address: string; lat?: number; lng?: number }>({ address: '' });
 
   // ── Carregar objeto ──────────────────────────────────────────────────────────
@@ -67,6 +72,8 @@ export default function EditObjectPage() {
         setRewardAmount(o.reward_amount != null ? String(o.reward_amount) : '');
         setRewardDesc(o.reward_description ?? '');
         setDocFields({ document_type: o.document_type ?? '', document_owner_name: o.document_owner_name ?? '', document_last4: o.document_last4 ?? '' });
+        setEspec({ ...(o.campos_especificos ?? {}) });
+        setEspecOriginal({ ...(o.campos_especificos ?? {}) });
         setLocationVal({
           address: o.location?.address ?? '',
           lat: o.location?.lat,
@@ -93,6 +100,8 @@ export default function EditObjectPage() {
         longitude:          locationVal.lng ?? undefined,
         reward_amount:      rewardAmount ? parseFloat(rewardAmount) : null,
         reward_description: rewardDesc.trim() || null,
+        // Campos específicos: só vai o que o titular MUDOU (sem mudança, o corpo é idêntico ao de antes); vazio remove o campo.
+        ...(camposAlterados(category, espec, especOriginal) ? { campos_especificos: camposAlterados(category, espec, especOriginal) } : {}),
         // Documento: mesmo comportamento da criação (titular público por escolha do dono; só os 4 últimos dígitos).
         ...(category === 'document' ? {
           document_type: String(docFields.document_type ?? ''),
@@ -191,6 +200,17 @@ export default function EditObjectPage() {
             />
           </div>
         </div>
+
+        {/* Campos específicos da categoria (todas, menos documento e as sem campos): o titular pode completar ou corrigir marca, modelo, IMEI, placa, espécie… */}
+        {category !== 'document' && getCategoryFieldConfig(category) && (
+          <div className="glass rounded-2xl p-5" data-campos-especificos>
+            <DynamicCategoryFields
+              category={category}
+              values={espec}
+              onChange={(name, value) => setEspec((prev) => ({ ...prev, [name]: value }))}
+            />
+          </div>
+        )}
 
         {/* Documento: titular (público por escolha do dono) e final do número */}
         {category === 'document' && (

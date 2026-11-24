@@ -7,6 +7,7 @@ import { POST as notifyOwnerOfScan } from './notify/route';
 import { maskSignalForPublicApi } from '@/lib/objectPublicView';
 import { localizacaoPublica } from '@/lib/publicLocation';
 import { statusMostraTitular } from '@/lib/documentPrivacy';
+import { camposParaExibir } from '@/lib/camposEspecificos';
 
 export async function GET(
   request: NextRequest,
@@ -19,7 +20,7 @@ export async function GET(
       `SELECT id, title, description, status, category, type, location, latitude, longitude,
               qr_code, images, color, brand, breed, is_legacy, source,
               reward_amount, reward_description, created_at, updated_at,
-              subject_name, category_fields->>'document_last4' AS document_last4,
+              subject_name, category_fields->>'document_last4' AS document_last4, category_fields AS campos_brutos,
               (is_legacy IS TRUE OR EXISTS (SELECT 1 FROM users u WHERE u.id = objects.user_id AND u.is_legacy IS TRUE)) AS legacy_blocked
        FROM objects
        WHERE ${isUUID ? 'id::text = $1 OR qr_code = $1' : 'qr_code = $1'}`,
@@ -65,6 +66,13 @@ export async function GET(
       if (typeof row.document_last4 === 'string' && /^\d{1,4}$/.test(row.document_last4)) dadosDoDocumento.documento_final = row.document_last4;
     }
 
+    // Campos específicos da categoria (marca, modelo, cor, raça, porte, placa de veículo ROUBADO…): só a lista pública de `camposParaExibir` (sem IMEI, série, chassi, motor,
+    // microchip, brinco/registro nem conteúdo da carteira: esses são só do titular). Só cadastro de usuário; legado e sinal público nunca recebem. Sem dado, a chave nem existe
+    // (a resposta de quem não tem campos é IDÊNTICA à de antes).
+    const camposPublicos = row.source !== 'public_signal' && row.is_legacy !== true && row.legacy_blocked !== true
+      ? camposParaExibir((row.category || row.type) as string | null, row.campos_brutos as Record<string, unknown> | null, { publico: true, status: row.status as string })
+      : [];
+
     // Sinal público: título, descrição e endereço do local saem com a máscara de nome e sem o «Fonte: <endereço>» (o mesmo da lista pública). Usuário e legado: idêntico.
     return successResponse(maskSignalForPublicApi({
       id: row.id, title: row.title, description: row.description || '',
@@ -76,6 +84,7 @@ export async function GET(
       reward_description: row.reward_description || null,
       created_at: row.created_at, updated_at: row.updated_at,
       ...dadosDoDocumento,
+      ...(camposPublicos.length ? { campos_publicos: camposPublicos.map(({ chave, rotulo, valor }) => ({ chave, rotulo, valor })) } : {}),
     }));
   } catch (error) {
     return internalErrorResponse(error);
