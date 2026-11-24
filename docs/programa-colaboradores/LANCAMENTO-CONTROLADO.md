@@ -13,8 +13,8 @@
 |---|---|
 | 0 — Preparação | **FEITO** (este plano; script `tools/comparar-producao.mjs`; dois retratos «antes» da produção) |
 | 1 — Cópia de segurança | **CONFIRMADO (24/11/2026)** pelo backup próprio diário (repositório `m2r-backup-supabase`, run #36): ver «Passo 1». Não é preciso dump manual. |
-| 2 — Migration 026 | **NÃO APLICADA (24/11/2026, 03:2x UTC).** A tentativa de aplicar pelo conector **ficou esperando uma confirmação do usuário** (o conector pergunta antes de rodar instruções que ele considera destrutivas: a 026 tem `DROP TRIGGER IF EXISTS`) e **esgotou o tempo sem resposta**. **Conferido depois por leitura: a tabela `colaboradores` NÃO existe e nada foi alterado** (a aplicação é uma única transação: ou tudo ou nada). Aguarda a resposta do fundador à pergunta do conector. |
-| 3 — Mescla com interruptores desligados | NÃO iniciado (depende do passo 2) |
+| 2 — Migration 026 | **APLICADA e VERIFICADA (24/11/2026, 03:23 UTC)**, na segunda tentativa (a primeira ficou esperando a confirmação do conector e não aplicou nada). Ver «Passo 2 — resultado». |
+| 3 — Mescla com interruptores desligados | NÃO iniciado (aguarda ordem para seguir; autorização geral dos passos 0 a 3 vale, um de cada vez) |
 | 4 — Ligar o piloto | NÃO autorizado |
 
 ---
@@ -139,6 +139,23 @@ drop function if exists colaboradores_sem_delete();
 ```
 (a reversão está no fim do próprio arquivo e foi testada.) Depois, repetir a assinatura do passo 1.1: **tem de voltar à de antes**. Se o código do passo 3 já estiver no ar, a reversão também é segura (o código novo só toca nessas colunas com o interruptor ligado), mas não deve ser necessária.
 O **código antigo continua funcionando com a 026 aplicada** (a 026 só acrescenta).
+
+### Passo 2 — resultado (24/11/2026)
+**Aplicação:** `execute_sql` (não `apply_migration`), texto = `set local lock_timeout = '5s'; set local statement_timeout = '60s';` + o arquivo `026_colaboradores.sql` **sem nenhuma alteração** (SHA-256 `b73da9d3…`), numa única transação implícita. **Sem erro.** Antes: tabela e colunas inexistentes, **0 travas fortes em `objects`, 0 sessões ativas** (retrato T0 = 03:22:27 UTC). Depois: 03:23:39 UTC. (Primeira tentativa, 03:2x UTC: o conector esperou uma confirmação do usuário e esgotou o tempo; nada foi aplicado; conferido por leitura.)
+| Verificação | Esperado | Resultado |
+|---|---|---|
+| `objects.colaborador_id` e `objects.colaborador_codigo` | 2 colunas, nulas | `uuid`/`text`, ambas **nulo = YES** |
+| `objects` com atribuição preenchida | 0 | **0** |
+| tabela `colaboradores`: existe / RLS / linhas | sim / ligado / 0 | **true / true / 0** |
+| gatilho `trg_objects_colaborador_imutavel` | `BEFORE UPDATE OF colaborador_id, colaborador_codigo ... WHEN (...)` | **presente, definição igual à da 026** |
+| gatilho `trg_colaboradores_sem_delete` | `BEFORE DELETE` | **presente** |
+| privilégios de `anon`/`authenticated` em `colaboradores` | 0 | **0** |
+| contagens do esquema | tabelas 57, colunas 689, índices 205, restrições 203, gatilhos 6, funções 36 | **57, 689, 205, 203, 6, 36 (exatamente)** |
+| **Nada além dos objetos novos mudou:** as 6 assinaturas do passo 1, recalculadas **sem** os objetos novos | iguais às de antes | **IGUAIS** (colunas `0b1db7bd…`, índices `aa1d16c1…`, restrições `19d7e101…`, gatilhos `8406f67f…`, funções `53b9a1ec…`, tabelas `6854d4f3…`) |
+| **Aplicada exatamente como testada:** 7 assinaturas das definições novas (colunas, restrições, índices, corpo das funções, gatilhos, colunas e FK em `objects`) comparadas com um banco local onde apliquei o mesmo arquivo | iguais | **IGUAIS nas 7** |
+| dados existentes | iguais ao retrato T0 | `users` 4.367, `objects` 2.227, `matches` 1.350, `boosts` 2, `payment_settings` 13, `plan_configs` 3: **iguais**; **md5 dos ids** de `users`, `objects` e `matches` e **md5 do conteúdo (id, status, título)** de `objects`: **iguais**; nenhuma ocorrência nem usuário novo entre T0 e T1 |
+**Comparação da produção «antes × depois do passo 2»** (`tools/comparar-producao.mjs`, 13 rotas): **tudo igual** (só o texto do `/feed` mudou sozinho, similaridade 1,000; `/@backfindr`, `/colaborador/backfindr` e `/api/v1/colaboradores/validar` continuam **404**); `impressao` = `ce5fc691abb0904d` (**nenhum deploy novo**); `bundle`: nenhum trecho do programa no navegador; **4 cartazes públicos reais idênticos byte a byte**; `POST /api/v1/objects` sem login = 401 como antes. Retrato guardado em `lancamento/depois-passo2.json`.
+**Reversão (se necessária; nada usa as estruturas novas):** bloco de 2.5.
 
 ---
 
