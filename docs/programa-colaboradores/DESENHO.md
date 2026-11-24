@@ -120,7 +120,7 @@ Conclusão de contexto: o gargalo é visitante, como o fundador afirma. Ao mesmo
 ### 3.3 Código do colaborador: regra central
 - **Formas aceitas:** `@nome` (com ou sem `@`, qualquer caixa) ou `codigo_curto`. Os dois resolvem para o mesmo `colaborador_id`.
 - **Validação** (`GET /api/v1/colaboradores/validar?codigo=…`, pública, resposta única): devolve só `{ ok, nome }` para ativo e `{ ok:false }` para inválido **e** inativo (mesma resposta; não confirma existência). Limite por origem usando a tabela de controle já existente (`send_throttle_events`), não memória de instância.
-- **Preenchimento automático sem rastreamento prolongado:** o link `/@nome` (e os botões da página) levam `?c=<codigo_curto>` aos fluxos já existentes (`/flow/*`, `/auth/register`, `/dashboard/objects/new`). O código só viaja **na URL desta jornada** e, para sobreviver ao cadastro e ao login com Google (HIPÓTESE do §2.1), fica em `sessionStorage` **apenas até o envio da ocorrência ou o fechamento da aba**. Nenhum cookie novo, nenhum uso do `bf_acquisition`. O código não é credencial (é público, como o `@nome`), então o desenho **não** o põe na lista de bloqueio do `trackingGuard`; ele seguirá na URL para os rastreadores como qualquer parâmetro. Isso fica como decisão a confirmar (§7, ponto 12).
+- **Preenchimento automático sem rastreamento prolongado:** o link `/@nome` (e os botões da página) levam `?colab=<código>` aos fluxos já existentes (`/flow/*`, `/auth/register`, `/dashboard/objects/new`). O código só viaja **na URL desta jornada** e, para sobreviver ao cadastro e ao login com Google (HIPÓTESE do §2.1), fica em `sessionStorage` **apenas até o envio da ocorrência ou o fechamento da aba**. Nenhum cookie novo, nenhum uso do `bf_acquisition`. O código não é credencial (é público, como o `@nome`), então o desenho **não** o põe na lista de bloqueio do `trackingGuard`; ele seguirá na URL para os rastreadores como qualquer parâmetro. Isso fica como decisão a confirmar (§7, ponto 12).
 - **No formulário:** campo opcional e discreto «Código do colaborador» **no passo final**, em todos os modos (registrar, proteger, «+»). Ao digitar, valida no servidor e mostra «Colaborador: <nome> — confirmar». Pré-preenchido quando veio por link/código; a pessoa pode apagar. Código inválido ou inativo **não bloqueia o cadastro**: o campo mostra o aviso e a ocorrência só é enviada **sem código** se a pessoa limpar o campo (nunca em silêncio).
 - **No servidor (`POST /objects`):** lê **explicitamente** `colaborador_codigo`, **remove-o** de `categoryFields` antes de qualquer outro uso, resolve no banco, exige colaborador `ativo`, e grava `colaborador_id` e `colaborador_codigo` **no mesmo `INSERT`**. Se o código vier inválido ou inativo: responde erro claro (`CODIGO_COLABORADOR_INVALIDO`) e **não cria**; a tela explica e deixa limpar o campo. O reenvio do 409 (`confirm_duplicate`) reaproveita o mesmo corpo, então o código viaja junto. Ocorrência feita **pela conta do próprio colaborador** aceita o código, mas não gera comissão (§3.6).
 - **Imutabilidade:** gatilho do banco (acima) + nenhuma rota de edição toca essas colunas (a edição `PUT /objects/[id]` usa lista própria de colunas, VERIFICADO; um teste garante que continua assim).
@@ -137,7 +137,7 @@ Conclusão de contexto: o gargalo é visitante, como o fundador afirma. Ao mesmo
 
 ### 3.5 Página `/@nome` (conteúdo, SEO, estados)
 - **Topo:** nome, imagem, descrição, "por Backfindr" discreto, link de volta ao grupo/perfil em destaque (`rel="nofollow noopener noreferrer"`, só `https`, texto do usuário sempre escapado).
-- **Botões:** «Perdi», «Encontrei», «Roubaram algo meu» levam a `/flow/lost|found|stolen?c=<codigo>` (o mesmo fluxo e as mesmas regras de hoje).
+- **Botões:** «Perdi», «Encontrei», «Roubaram algo meu» levam a `/flow/lost|found|stolen?colab=<código>` (parâmetro renomeado de `?c=` na E1) (o mesmo fluxo e as mesmas regras de hoje).
 - **Feed da página:** consulta nova, mesma elegibilidade do Feed (sem legado) e mesmos campos públicos: primeiro as ocorrências com `colaborador_id` do colaborador (mais recentes primeiro), depois as da região (por **distância real** até o raio configurado, calculada no servidor com coordenadas que nunca saem). Não altera a memória nem a ordem de `/feed`.
 - **SEO:** `index, follow` só quando a página está `ativa`, **verificada** (proposta, §7 ponto 8) e tem pelo menos uma ocorrência visível; caso contrário `noindex, follow`. Canonical `https://backfindr.com/@nome`. Entra no sitemap apenas nesse caso. Revalidação de 5 min (como o Feed).
 - **Estados:** `ativo` → página; `suspenso` → redireciona 307 ao `/feed`; `saiu` ou `excluido` → redireciona 308 ao `/feed`; `@nome` que nunca existiu → 404 normal.
@@ -254,7 +254,7 @@ Etapa paralela e independente (**recomendada antes de E4, aprovação à parte**
 | 9 | Legado (Q-26 somente leitura) e colaborador | Legado sem conta atualizada não cadastra, logo não gera ocorrência com código; pode ser colaborador? | Permitir só após atualizar a conta? |
 | 10 | Prazo de liberação da comissão (janela de contestação) | Não verificei a janela de contestação do MP | Definir dias (configurável) |
 | 11 | "10 dias úteis" | Sem calendário de feriados no sistema | Contar só dias de semana (proposta) ou incluir feriados |
-| 12 | Código na URL e rastreadores | O código é público, não credencial; viajará em `?c=` para GA4/Meta/PostHog como qualquer parâmetro | Aceitar assim, ou removê-lo da URL antes de rastrear (mais trabalho) |
+| 12 | Código na URL e rastreadores | O código é público, não credencial; viajará em `?colab=` (antes `?c=`) para GA4/Meta/PostHog como qualquer parâmetro | Aceitar assim, ou removê-lo da URL antes de rastrear (mais trabalho) |
 | 13 | Visitas por mês | Contador próprio (aproximado, sem pessoa) ou ler do PostHog | Escolher |
 | 14 | Chave PIX e dados do recebedor | Cifrar exige variável nova; recolher CPF/CNPJ do recebedor é questão fiscal | Definir o que coletar; **jurídico/contador** |
 
@@ -292,7 +292,7 @@ Limite honesto: o retroativo só é confiável para boosts que existirem nas tab
 | Etapa | Estado | PR | Verificação |
 |---|---|---|---|
 | E0 — prova da rota `/@nome` | **VERIFICADA E APROVADA pelo fundador (23/11/2026).** NÃO mesclada: as etapas do piloto serão mescladas juntas, depois de aprovadas | #163 (empilhado sobre o #162) | local + prévia da Vercel (abaixo) |
-| E1 — atribuição | EM ANDAMENTO (iniciada em 23/11/2026, depois da aprovação da E0) | ver STATUS.md | — |
+| E1 — atribuição | **CÓDIGO PRONTO e verificado localmente** (PR em rascunho, empilhado sobre a E0); aguarda verificação na Vercel e aprovação do fundador. **Migration 026 NÃO aplicada em produção** (precisa de ordem escrita) | ver STATUS.md | `e1/NAO-REGRESSAO.md` |
 | E2 — página `/@nome` + feed + SEO | NÃO INICIADA | — | — |
 | E3 — cartaz com a marca | NÃO INICIADA | — | — |
 | E4 a E8 | SUSPENSAS (decisão do fundador, 23/11/2026) | — | — |
@@ -320,3 +320,12 @@ Achados da prova:
 2. `/@nome/` (com barra) redireciona 308 para `/@nome`; é a normalização do próprio Next e já é assim com o interruptor desligado.
 3. **Prova na Vercel: FEITA pelo fundador em 23/11/2026** (a sessão não consegue abrir a prévia, protegida por login da Vercel). Prévia da branch `claude/backfindr-colaboradores-e0`, com `COLABORADORES_ATIVO=1` restrita só a essa branch (Production nunca recebeu a variável; a variável foi apagada depois e nenhum deploy novo foi feito). Resultados informados pelo fundador: `/@backfindr` 200, página de prova, `robots` «noindex, nofollow»; `/@BackFindr` redireciona para `/@backfindr`, noindex; `/@ab` 404; `/feed`, `/` e `/achei` 200 com «index, follow» e títulos normais; `/perdi` respondeu 307. **Esse 307 já existe hoje e não foi introduzido pela E0** (conferido em 23/11/2026): `https://backfindr.com/perdi` em produção responde `HTTP/2 307` com `x-vercel-cache: HIT` e `age` ≈ 263.000 s (cerca de 3 dias, anterior à E0); `src/app/perdi/page.tsx` chama `redirect('/flow/lost')` e não foi alterado (último commit do arquivo: #89; a E0 não toca em `src/app/perdi`); o build local da `main` também deu 307 → `/flow/lost`, igual à E0 desligada e ligada.
 4. Os itens de «medir o tempo do `ALTER`» e «formato de estorno do Mercado Pago» da E0 original **saem da E0**: o primeiro vira medida da E1 (cópia local); o segundo pertence à E4 (suspensa).
+
+### E1 — o que foi construído (detalhe em `e1/NAO-REGRESSAO.md`)
+- `src/db/migrations/026_colaboradores.sql` (**não aplicada**): tabela `colaboradores`, colunas nulas `objects.colaborador_id` e `objects.colaborador_codigo`, gatilho de imutabilidade, reversão testada.
+- `src/lib/colaboradores/codigo.ts` (resolução do código, só servidor), `limite.ts` (30 pedidos/min por origem, em memória), `cliente.ts` (navegador: `?colab=`, `sessionStorage`).
+- `GET /api/v1/colaboradores/validar` (404 desligado; só `{ok, nome}`; inexistente = inativo = mesma resposta).
+- `POST /api/v1/objects`: lê o código de forma explícita (a chave sai de `category_fields`), valida no servidor, grava no mesmo `INSERT`; sem código executa o comando original.
+- Formulário: campo opcional e discreto no último passo, só com o programa ligado; `layout.tsx`: captura do `?colab=` na aba.
+- **Parâmetro da URL: `?colab=`** (o rascunho do desenho dizia `?c=`; mudou para evitar colisão com parâmetros existentes). Interruptores: `COLABORADORES_ATIVO=1` (servidor) e `NEXT_PUBLIC_COLABORADORES_ATIVO=1` (navegador, fixado no build); ligar juntos.
+- **Para ligar na prévia/produção (depende do Marcos):** aplicar a 026 no banco usado, criar o colaborador `@backfindr` (E2), definir as duas variáveis. Nada disso foi feito.

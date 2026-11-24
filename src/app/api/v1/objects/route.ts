@@ -10,6 +10,8 @@ import { enqueueSocialPosts } from '@/lib/socialPost';
 import { Events } from '@/lib/events';
 import { SYSTEM_ACCOUNT_ID } from '@/lib/systemAccount';
 import { findSimilarObjects, SIMILAR_OBJECT_ERROR } from '@/lib/similarObjects';
+import { colaboradoresAtivo } from '@/lib/colaboradores/rota';
+import { resolverColaborador, CODIGO_COLABORADOR_INVALIDO, MENSAGEM_CODIGO_INVALIDO, type ColaboradorResolvido } from '@/lib/colaboradores/codigo';
 
 // Limites de objetos por plano
 const PLAN_MAX_OBJECTS: Record<string, number> = {
@@ -173,7 +175,7 @@ export async function POST(request: NextRequest) {
     // ──────────────────────────────────────────────────────────────────────
 
     const body = await request.json();
-    const { title: tituloBruto, description: descricaoBruta, status, type, category, location, images, reward_amount, reward_description, confirm_duplicate, ...categoryFields } = body;
+    const { title: tituloBruto, description: descricaoBruta, status, type, category, location, images, reward_amount, reward_description, confirm_duplicate, colaborador_codigo: colaboradorCodigoBruto, ...categoryFields } = body;
     let { latitude, longitude } = body;
 
     // Documento de USUÁRIO: o número nunca fica inteiro (só os 4 últimos dígitos); sequências longas no texto livre são mascaradas.
@@ -195,6 +197,16 @@ export async function POST(request: NextRequest) {
 
     if (!title || (!type && !category)) {
       return successResponse({ detail: 'Title and type/category are required' }, 400);
+    }
+
+    // ── Programa de Colaboradores (E1): código do colaborador, lido de forma EXPLÍCITA (a chave acima sai de `categoryFields`: nunca vai para `category_fields`).
+    // Só com COLABORADORES_ATIVO=1; desligado, o valor é ignorado e nenhuma consulta é feita. Código inválido ou de colaborador inativo: o cadastro NÃO é criado.
+    let colaborador: ColaboradorResolvido | null = null;
+    if (colaboradoresAtivo() && colaboradorCodigoBruto !== undefined && colaboradorCodigoBruto !== null && !(typeof colaboradorCodigoBruto === 'string' && colaboradorCodigoBruto.trim() === '')) {
+      colaborador = await resolverColaborador(query, colaboradorCodigoBruto);
+      if (!colaborador) {
+        return successResponse({ error: CODIGO_COLABORADOR_INVALIDO, detail: MENSAGEM_CODIGO_INVALIDO }, 400);
+      }
     }
 
     // ── Aviso de objeto parecido (nunca bloqueia: confirm_duplicate: true cria) ──
@@ -246,7 +258,13 @@ export async function POST(request: NextRequest) {
     const cat = category || type;
     const qrCode = `${Math.random().toString(36).substring(2, 10).toUpperCase()}`;
 
-    const result = await query(
+    // Com colaborador: comando próprio (as 2 colunas da atribuição entram no MESMO INSERT, e o gatilho do banco impede mudá-las depois). Sem colaborador: o comando original, igual ao de sempre.
+    const result = colaborador ? await query(
+      `INSERT INTO objects (user_id, title, description, status, category, type, location, latitude, longitude, qr_code, images, is_public, reward_amount, reward_description, category_fields, subject_name, document_type, created_at, updated_at, colaborador_id, colaborador_codigo)
+       VALUES ($1, $2, $3, $4, $5, $5, $6, $7, $8, $9, $10, true, $11, $12, $13, $14, $15, NOW(), NOW(), $16, $17)
+       RETURNING id, title, description, status, category, type, location, latitude, longitude, qr_code, images, reward_amount, reward_description, category_fields, created_at, updated_at`,
+      [payload.sub, title, description || null, status || 'lost', cat, location || null, latitude || null, longitude || null, qrCode, JSON.stringify(images || []), reward_amount || null, reward_description || null, JSON.stringify(categoryFields), doc?.subjectName ?? null, doc?.documentType ?? null, colaborador.id, colaborador.codigoRegistrado]
+    ) : await query(
       `INSERT INTO objects (user_id, title, description, status, category, type, location, latitude, longitude, qr_code, images, is_public, reward_amount, reward_description, category_fields, subject_name, document_type, created_at, updated_at)
        VALUES ($1, $2, $3, $4, $5, $5, $6, $7, $8, $9, $10, true, $11, $12, $13, $14, $15, NOW(), NOW())
        RETURNING id, title, description, status, category, type, location, latitude, longitude, qr_code, images, reward_amount, reward_description, category_fields, created_at, updated_at`,

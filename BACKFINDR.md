@@ -27,6 +27,7 @@ Projeto anterior: Webjetos (2015) — migração planejada
 - Boost conectado ao checkout MercadoPago
 - Tela de sucesso com loop WhatsApp
 - **Incompleto:** Social Posts automático, Moderação, BarcodeDetector portaria
+- **Piloto: E0 aprovada; E1 (atribuição) pronta e verificada localmente, aguardando verificação na Vercel e aprovação (migration 026 NÃO aplicada em produção).**
 - **Piloto aprovado em 23/11/2026 (E0 a E3, sem parte financeira; E4 a E8 suspensas; estado real na §9 do desenho):** Programa de Colaboradores (páginas `/@nome`, código do colaborador gravado na ocorrência, comissão sobre «ampliar alcance»). Ver `docs/programa-colaboradores/DESENHO.md` e `DECISOES.md` (PC-01, PC-02). Diagnóstico verificado em 23/11/2026: o webhook de pagamento não é idempotente, não valida assinatura e ignora estorno; a tabela `social_posts` não existe no banco de produção.
 
 ### P2 — Backfindr B2B
