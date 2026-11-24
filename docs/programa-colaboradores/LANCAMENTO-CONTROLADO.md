@@ -189,7 +189,7 @@ Depois de **cada** mescla: esperar a implantação (a `impressao` muda), rodar a
 
 ### 4.0 Antes de começar (todos os itens precisam estar prontos)
 1. FUN: dá a ordem escrita para o Passo 4 e fica presente até o fim.
-2. **Link de volta (informado pelo fundador em 24/11/2026): `https://www.facebook.com/backfindr`** (página do Backfindr, ex-Webjetos, renomeada). **NÃO verificado por esta sessão:** a rede desta sessão não alcança o Facebook (bloqueio do proxy) e a busca na web não achou a página; o endereço não consta em nenhum arquivo do repositório nem no HTML do site. NAV: abre o endereço, confirma que responde e que é a página oficial do Backfindr, e avisa antes do 4.1; se não for, parar e perguntar ao fundador (não usar outro endereço).
+2. **Link de volta: `https://www.facebook.com/backfindr` — VERIFICADO em 24/11/2026 (~01:25) pelo Claude do navegador, informado pelo fundador:** o endereço responde e é a página oficial do Backfindr (nome «Backfindr», cerca de 46 mil seguidores, administrada pelo fundador; ex-Webjetos, renomeada). A foto de perfil da página é o mesmo símbolo do Backfindr, coerente com a imagem provisória. (Esta sessão não alcança o Facebook; a verificação é do Claude do navegador.) Nada a conferir antes do 4.1.
 3. **Imagem: `https://backfindr.com/brand/app-icon.png`, escolha PROVISÓRIA do fundador** (responde 200 `image/png`); ele pode trocá-la depois de ver a página real, **sem deploy**: ver «Trocar a imagem» no 4.1.
 4. CODE: confirma que a `main` e a produção estão como no fim do Passo 3 (`impressao` `ae027c42f88d3438`) e que os dois interruptores continuam ausentes.
 5. NAV: abre Vercel → Settings → Environment Variables e anota o valor **atual** de `MATCHING_ATIVO` em Production (não presumir: o plano dizia «1», mas só o painel diz). Passa o valor para o CODE registrar em 4.6.
@@ -201,7 +201,7 @@ Depois de **cada** mescla: esperar a implantação (a `impressao` muda), rodar a
 INSERT INTO colaboradores (slug, codigo_curto, nome, descricao, imagem_url, canal_url, modalidade, estado, interno)
 SELECT 'backfindr', g.codigo, 'Backfindr',
        'Ocorrências de objetos, documentos e pets perdidos, achados ou roubados registradas no Backfindr.',
-       'https://backfindr.com/brand/app-icon.png', 'https://www.facebook.com/backfindr',
+       'https://backfindr.com/brand/app-icon.png', 'https://www.facebook.com/backfindr', -- endereço VERIFICADO em 24/11/2026
        'comunidade_criador', 'ativo', TRUE
   FROM (SELECT string_agg(substr('23456789ABCDEFGHJKLMNPQRSTUVWXYZ', 1 + floor(random() * 32)::int, 1), '') AS codigo
           FROM generate_series(1, 4)) g
