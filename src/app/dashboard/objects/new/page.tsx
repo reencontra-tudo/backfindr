@@ -17,8 +17,7 @@ import { compressImages } from '@/lib/compressImage';
 import { ObjectCategory, ObjectStatus } from '@/types';
 import { LocationPicker } from '@/components/ui/LocationPicker';
 import { DynamicCategoryFields } from '@/components/ui/DynamicCategoryFields';
-import { descricaoDoTitulo, faltasDoAnimal, passoAnterior, passoInicial, proximoPasso, resumirErros, statusDefinidoPeloIntent } from '@/lib/formularioOcorrencia';
-import { getAllFieldsForCategory } from '@/config/categoryFields';
+import { camposEspecificosParaEnvio, descricaoDoTitulo, faltasDoAnimal, passoAnterior, passoInicial, proximoPasso, resumirErros, statusDefinidoPeloIntent } from '@/lib/formularioOcorrencia';
 import CampoCodigoColaborador from '@/components/colaboradores/CampoCodigoColaborador';
 import { codigoInicial, colaboradoresAtivoNoCliente, limparCodigoGuardado } from '@/lib/colaboradores/cliente';
 
@@ -322,21 +321,9 @@ function NewObjectForm() {
       // Programa de Colaboradores: só vai no corpo se o programa estiver ligado e houver texto no campo (o servidor valida; nunca confiar neste valor).
       if (colabAtivo && data.colaborador_codigo?.trim()) payload.colaborador_codigo = data.colaborador_codigo.trim();
 
-      if (isPet) {
-        if (data.pet_species) payload.pet_species = data.pet_species;
-        if (data.pet_breed) payload.pet_breed = data.pet_breed;
-        if (data.pet_microchip) payload.pet_microchip = data.pet_microchip;
-        if (data.pet_color) payload.pet_color = data.pet_color;
-      }
-
-      // Animal (criação/trabalho): os campos animal_* (espécie, cor/pelagem e opcionais) vão no corpo e o servidor os guarda em category_fields. Só para `animal`.
-      if (data.category === 'animal') {
-        const valores = getValues() as Record<string, unknown>;
-        for (const f of getAllFieldsForCategory('animal')) {
-          const v = valores[f.name];
-          if (typeof v === 'string' && v.trim()) payload[f.name] = v.trim();
-        }
-      }
+      // Campos específicos da categoria (marca, modelo, IMEI, placa, espécie, cor/pelagem…): TODOS os que o formulário mostra vão no corpo e o servidor os guarda em
+      // category_fields. Antes de 24/11/2026 só os de pet iam; os das demais categorias se perdiam em silêncio. Documento tem envio próprio (abaixo).
+      Object.assign(payload, camposEspecificosParaEnvio(data.category, getValues() as Record<string, unknown>));
 
       // Documento: nome do titular (público por escolha do dono), tipo e só os 4 últimos dígitos (o número inteiro nunca é pedido).
       if (data.category === 'document') {
@@ -649,59 +636,6 @@ function NewObjectForm() {
                   // «Encontrei»: não se pede nem se avisa sobre o nome do titular nem os 4 dígitos (o que foi digitado fica guardado se o status voltar para «perdi»)
                   hideFields={category === 'document' && status === 'found' ? ['document_owner_name', 'document_last4'] : []}
                 />
-              </div>
-            )}
-
-            {/* Legacy Pet fields (kept for backward compatibility) */}
-            {isPet && (
-              <div className="space-y-4 pt-2 border-t border-surface-border">
-                <p className="text-brand-400 text-sm font-medium flex items-center gap-2">
-                  🐾 Informações do Pet
-                </p>
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-xs text-slate-400 mb-1">Espécie</label>
-                    <select
-                      {...register('pet_species')}
-                      className="w-full bg-surface border border-surface-border rounded-xl px-3 py-2.5 text-slate-100 text-sm outline-none focus:border-brand-500 transition-colors"
-                    >
-                      <option value="">Selecionar</option>
-                      <option value="dog">Cachorro</option>
-                      <option value="cat">Gato</option>
-                      <option value="bird">Pássaro</option>
-                      <option value="rabbit">Coelho</option>
-                      <option value="other">Outro</option>
-                    </select>
-                  </div>
-                  <div>
-                    <label className="block text-xs text-slate-400 mb-1">
-                      Raça <span className="text-slate-600">(SRD = sem raça definida)</span>
-                    </label>
-                    <input
-                      {...register('pet_breed')}
-                      placeholder="Ex: Labrador, Poodle, SRD..."
-                      className="w-full bg-surface border border-surface-border rounded-xl px-3 py-2.5 text-slate-100 placeholder-slate-500 text-sm outline-none focus:border-brand-500 transition-colors"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-xs text-slate-400 mb-1">Cor predominante</label>
-                    <input
-                      {...register('pet_color')}
-                      placeholder="Ex: Caramelo e branco"
-                      className="w-full bg-surface border border-surface-border rounded-xl px-3 py-2.5 text-slate-100 placeholder-slate-500 text-sm outline-none focus:border-brand-500 transition-colors"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-xs text-slate-400 mb-1">
-                      Microchip <span className="text-slate-600">(se houver)</span>
-                    </label>
-                    <input
-                      {...register('pet_microchip')}
-                      placeholder="Ex: 985141002876543"
-                      className="w-full bg-surface border border-surface-border rounded-xl px-3 py-2.5 text-slate-100 placeholder-slate-500 text-sm outline-none focus:border-brand-500 transition-colors"
-                    />
-                  </div>
-                </div>
               </div>
             )}
 

@@ -79,3 +79,27 @@ export function faltasDoAnimal(categoria: string | undefined, valores: Record<st
   return Object.keys(faltas).length ? faltas : null;
 }
 
+// ─── Campos específicos da categoria no ENVIO (PR A, 24/11/2026) ───────────────────────────────────────────────
+// Histórico: o formulário mostra os campos de `config/categoryFields.ts` desde 20/05/2026, mas o envio só levava os de pet e documento; marca, modelo, IMEI, placa etc.
+// se perdiam em silêncio. Agora TODOS os campos exibidos de uma categoria vão no corpo (o servidor guarda o que não é campo conhecido em `category_fields`).
+// Documento fica de fora: tem envio próprio (`document_*`, com regras de privacidade).
+import { getAllFieldsForCategory } from '@/config/categoryFields';
+
+/** Valor a enviar: texto não vazio (aparado) ou número finito. Vazio, nulo e indefinido = não envia (como sempre). */
+const valorParaEnvio = (v: unknown): string | number | null => {
+  if (typeof v === 'string') { const t = v.trim(); return t === '' ? null : t; }
+  if (typeof v === 'number' && Number.isFinite(v)) return v;
+  return null;
+};
+
+/** Campos específicos da categoria que têm valor, no formato do corpo do envio. Categoria sem configuração ou `document`: `{}`. */
+export function camposEspecificosParaEnvio(categoria: string | undefined, valores: Record<string, unknown>): Record<string, string | number> {
+  if (!categoria || categoria === 'document') return {};
+  const out: Record<string, string | number> = {};
+  for (const f of getAllFieldsForCategory(categoria)) {
+    const v = valorParaEnvio(valores[f.name]);
+    if (v !== null) out[f.name] = v;
+  }
+  return out;
+}
+

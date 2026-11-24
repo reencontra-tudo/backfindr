@@ -23,6 +23,8 @@ export interface FieldDefinition {
   inputMode?: 'numeric' | 'text';
 }
 
+// Marcação «obrigatório» (asterisco): SÓ o Animal tem campos obrigatórios (espécie e cor/pelagem, exigidos de verdade em `faltasDoAnimal`).
+// Nas demais categorias nada exigia os campos e a marca enganava; decisão do fundador, 24/11/2026: todos opcionais.
 export const CATEGORY_FIELDS: Record<string, CategoryFieldConfig> = {
   vehicle: {
     category: 'vehicle',
@@ -41,14 +43,12 @@ export const CATEGORY_FIELDS: Record<string, CategoryFieldConfig> = {
           { value: 'scooter', label: 'Scooter' },
           { value: 'other', label: 'Outro' },
         ],
-        required: true,
       },
       {
         name: 'vehicle_brand',
         label: 'Marca',
         type: 'text',
         placeholder: 'Ex: Toyota, Honda, BMW',
-        required: true,
         hint: 'Digite a marca do veículo',
       },
       {
@@ -56,7 +56,6 @@ export const CATEGORY_FIELDS: Record<string, CategoryFieldConfig> = {
         label: 'Modelo',
         type: 'text',
         placeholder: 'Ex: Corolla, Civic, X5',
-        required: true,
       },
       {
         name: 'vehicle_year',
@@ -69,7 +68,6 @@ export const CATEGORY_FIELDS: Record<string, CategoryFieldConfig> = {
         name: 'vehicle_color',
         label: 'Cor Principal',
         type: 'color',
-        required: true,
       },
     ],
     optionalFields: [
@@ -125,21 +123,18 @@ export const CATEGORY_FIELDS: Record<string, CategoryFieldConfig> = {
           { value: 'oneplus', label: 'OnePlus' },
           { value: 'other', label: 'Outro' },
         ],
-        required: true,
       },
       {
         name: 'phone_model',
         label: 'Modelo',
         type: 'text',
         placeholder: 'Ex: iPhone 15 Pro, Galaxy S24',
-        required: true,
       },
       {
         name: 'phone_color',
         label: 'Cor',
         type: 'text',
         placeholder: 'Ex: Preto, Branco, Azul',
-        required: true,
       },
     ],
     optionalFields: [
@@ -189,28 +184,24 @@ export const CATEGORY_FIELDS: Record<string, CategoryFieldConfig> = {
           { value: 'game_console', label: 'Console de Videogame' },
           { value: 'other', label: 'Outro' },
         ],
-        required: true,
       },
       {
         name: 'electronics_brand',
         label: 'Marca',
         type: 'text',
         placeholder: 'Ex: Dell, Apple, Sony',
-        required: true,
       },
       {
         name: 'electronics_model',
         label: 'Modelo',
         type: 'text',
         placeholder: 'Ex: MacBook Pro 14", WH-1000XM5',
-        required: true,
       },
       {
         name: 'electronics_color',
         label: 'Cor',
         type: 'text',
         placeholder: 'Ex: Cinza, Prateado, Preto',
-        required: true,
       },
     ],
     optionalFields: [
@@ -313,21 +304,18 @@ export const CATEGORY_FIELDS: Record<string, CategoryFieldConfig> = {
           { value: 'hamster', label: 'Hamster' },
           { value: 'other', label: 'Outro' },
         ],
-        required: true,
       },
       {
         name: 'pet_breed',
         label: 'Raça',
         type: 'text',
         placeholder: 'Ex: Labrador, Persa, SRD',
-        required: true,
       },
       {
         name: 'pet_color',
         label: 'Cor / Padrão',
         type: 'text',
         placeholder: 'Ex: Preto e branco, Caramelo, Malhado',
-        required: true,
       },
       {
         name: 'pet_size',
@@ -339,7 +327,6 @@ export const CATEGORY_FIELDS: Record<string, CategoryFieldConfig> = {
           { value: 'large', label: 'Grande (15-30kg)' },
           { value: 'extra_large', label: 'Muito Grande (30kg+)' },
         ],
-        required: true,
       },
     ],
     optionalFields: [
@@ -387,13 +374,11 @@ export const CATEGORY_FIELDS: Record<string, CategoryFieldConfig> = {
           { value: 'plastic', label: 'Plástico' },
           { value: 'other', label: 'Outro' },
         ],
-        required: true,
       },
       {
         name: 'wallet_color',
         label: 'Cor',
         type: 'color',
-        required: true,
       },
       {
         name: 'wallet_brand',
@@ -438,14 +423,12 @@ export const CATEGORY_FIELDS: Record<string, CategoryFieldConfig> = {
           { value: 'student_id', label: 'Carteirinha de Estudante' },
           { value: 'other', label: 'Outro' },
         ],
-        required: true,
       },
       {
         name: 'document_owner_name',
         label: 'Nome do titular',
         type: 'text',
         placeholder: 'Nome como está no documento',
-        required: true,
         hint: 'Este nome aparecerá publicamente na página do objeto, para quem achar o documento reconhecer o titular.',
         maxLength: 100,
       },
@@ -473,14 +456,12 @@ export const CATEGORY_FIELDS: Record<string, CategoryFieldConfig> = {
         label: 'Quantidade de Chaves',
         type: 'number',
         placeholder: '1, 2, 3...',
-        required: true,
       },
       {
         name: 'keys_description',
         label: 'Descrição das Chaves',
         type: 'textarea',
         placeholder: 'Ex: 3 chaves de latão, uma com etiqueta azul com número 42',
-        required: true,
       },
       {
         name: 'keys_color',
@@ -517,20 +498,17 @@ export const CATEGORY_FIELDS: Record<string, CategoryFieldConfig> = {
           { value: 'cruiser', label: 'Cruiser' },
           { value: 'other', label: 'Outro' },
         ],
-        required: true,
       },
       {
         name: 'bike_brand',
         label: 'Marca',
         type: 'text',
         placeholder: 'Ex: Caloi, Monark, Specialized',
-        required: true,
       },
       {
         name: 'bike_color',
         label: 'Cor Principal',
         type: 'color',
-        required: true,
       },
       {
         name: 'bike_size',

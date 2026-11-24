@@ -135,17 +135,17 @@ describe('cadastro: cartões Pet e Animal', () => {
     expect(lista).toContain("{ value: 'phone', label: 'Celular', emoji: '📱' }");
     expect(lista).toContain("{ value: 'other', label: 'Outro', emoji: '📦' }");
   });
-  it('os campos animal_* só vão no envio quando a categoria é animal', () => {
-    expect(pagina).toContain("if (data.category === 'animal') {");
-    expect(pagina).toContain("getAllFieldsForCategory('animal')");
+  it('os campos animal_* vão no envio pelo auxiliar único de campos específicos (só os da categoria escolhida)', () => {
+    expect(pagina).toContain('camposEspecificosParaEnvio(data.category');
   });
 });
 
 // ───────────────────── 2. nada mudou para as demais categorias ─────────────────────
 describe('não regressão: demais categorias idênticas às da main', () => {
   const ESPERADO: Record<string, string> = {
-    vehicle: '3f6ba132d359ba01', phone: '0c605c7c472fc72c', electronics: 'da6bdf56bc953d23', pet: 'bf00b1641425ae1a',
-    wallet: '3d2df55b53df9fbe', document: '808b9b52300f4983', keys: 'eee9c801132d89c3', bike: 'eefcb760274f857c',
+    // Impressões digitais ATUALIZADAS em 24/11/2026 (PR A): a ÚNICA diferença para a main é a remoção da marcação «obrigatório» (24 linhas `required: true`, conferido por git diff).
+    vehicle: '40561cd20ec2f5d2', phone: '019908949b8a7b4f', electronics: '7a5d2f70fe00a90c', pet: '3d9d286a2280c0a2',
+    wallet: '5f4700fbd230adf4', document: '8ef60e5f1db701dd', keys: 'b3a107fabf9d5b22', bike: '22d5c6c978e1b7dc',
   };
   it('campos específicos das 8 categorias existentes: idênticos (impressão digital da main)', () => {
     for (const [c, esperado] of Object.entries(ESPERADO)) expect(h(CATEGORY_FIELDS[c]), c).toBe(esperado);
