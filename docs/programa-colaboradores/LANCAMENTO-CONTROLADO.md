@@ -215,6 +215,7 @@ RETURNING slug, codigo_curto, estado, interno, verificado_em IS NOT NULL AS veri
 5. **Reversão (sem apagar; o banco recusa `DELETE`):** `update colaboradores set estado = 'saiu', atualizado_em = now() where slug = 'backfindr';` → a página passa a redirecionar para o Feed. Para voltar: `estado = 'ativo'`.
 6. **Trocar a imagem do colaborador (SÓ se o fundador pedir; sem deploy; CODE):** `update colaboradores set imagem_url = '<NOVO_ENDEREÇO_HTTPS>', atualizado_em = now() where slug = 'backfindr' returning slug, imagem_url;` O endereço precisa ser `https` (a página ignora qualquer outro) e a imagem já precisa estar hospedada. A página é regenerada a cada 5 minutos: a nova imagem aparece em até 5 min, sem redeploy; o cartaz usa a imagem na próxima geração.
 7. Observação: o `seed-backfindr.sql` antigo (código `HX7R`, já verificado) **não será usado**; este SQL o substitui.
+8. **RESULTADO (24/11/2026):** executado; 1 linha `backfindr | 9H5V | ativo | true | false`. **Código curto do teste: `9H5V`** (usar no 4.3 e no 4.4). Novo «antes» do Passo 4: `lancamento/antes-passo4-1.json` e `antes-passo4-2.json`.
 
 ### 4.2 Desligar o matching antes do teste — NAV
 1. NAV: em Vercel → Settings → Environment Variables, abre `MATCHING_ATIVO` (Production).
