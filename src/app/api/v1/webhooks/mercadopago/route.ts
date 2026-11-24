@@ -12,6 +12,7 @@ import { MercadoPagoConfig, Payment } from "mercadopago";
 import { getClient } from "@/lib/db";
 import { Events } from "@/lib/events";
 import { assinaturaValida } from "@/lib/mpAssinatura";
+import { comissaoSombraAtiva, registrarComissaoSombra, registrarEstornoSombra, type EntradaPagamento } from "@/lib/colaboradores/comissao";
 
 const getMP = () => {
   const token = process.env.MP_ACCESS_TOKEN;
@@ -22,6 +23,23 @@ const getMP = () => {
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const PLANOS_VENDAVEIS = new Set(["pro", "business"]);
 const STATUS_DE_ESTORNO = new Set(["refunded", "cancelled", "charged_back"]);
+
+/**
+ * E4 (modo sombra): comissão do colaborador, numa camada ISOLADA. Só roda com COMISSAO_SOMBRA=1. Qualquer erro aqui vai para o log e NUNCA muda a resposta
+ * nem o boost/plano (o boost já foi ativado e gravado antes desta chamada).
+ */
+async function sombraSegura(f: (tx: { query: (t: string, p?: unknown[]) => Promise<{ rows: Record<string, unknown>[] }> }) => Promise<unknown>) {
+  if (!comissaoSombraAtiva()) return;
+  let client;
+  try {
+    client = await getClient();
+    await f(client);
+  } catch (e) {
+    console.error("MP webhook: comissão (modo sombra) falhou; o boost não foi afetado", e instanceof Error ? e.message : "erro");
+  } finally {
+    client?.release();
+  }
+}
 
 type Resultado = { status: string; evento?: { objectId: string; userId: string; boostType: string; valor: number } };
 
@@ -145,6 +163,8 @@ export async function POST(req: NextRequest) {
     // 3) Estorno, cancelamento e contestação: só registrar (o Boost não muda; a comissão é tratada na E4)
     if (payment && STATUS_DE_ESTORNO.has(String(payment.status))) {
       console.warn(`MP webhook: pagamento ${paymentId} com status ${payment.status} registrado (sem alterar boost nem plano)`);
+      const entrada: EntradaPagamento = { paymentId: String(paymentId), status: String(payment.status), valorBruto: Number(payment.transaction_amount) || 0, valorReembolsado: Number(payment.transaction_amount_refunded) || 0 };
+      await sombraSegura((tx) => registrarEstornoSombra(tx, entrada));
       return NextResponse.json({ status: "refund_noted" });
     }
 
@@ -160,6 +180,12 @@ export async function POST(req: NextRequest) {
     const r = await processarAprovado(String(paymentId), metadata, Number(payment.transaction_amount) || 0);
     if (r.evento) {
       Events.boostStarted(r.evento.objectId, r.evento.userId, r.evento.boostType, r.evento.valor).catch(() => {});
+    }
+    // E4 (modo sombra): só para Boost, também em `already_processed` (reprocessa o que falhou antes; é idempotente). Reembolso PARCIAL chega como `approved` com valor devolvido.
+    if (metadata.type === "boost" && (r.status === "processed" || r.status === "already_processed")) {
+      const entrada: EntradaPagamento = { paymentId: String(paymentId), status: "approved", valorBruto: Number(payment.transaction_amount) || 0, valorReembolsado: Number(payment.transaction_amount_refunded) || 0 };
+      await sombraSegura((tx) => registrarComissaoSombra(tx, entrada));
+      if ((entrada.valorReembolsado ?? 0) > 0) await sombraSegura((tx) => registrarEstornoSombra(tx, entrada));
     }
     return NextResponse.json({ status: r.status });
   } catch (error) {
