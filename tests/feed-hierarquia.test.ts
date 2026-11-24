@@ -1,5 +1,5 @@
 // Feed e /achei coerentes com a HIERARQUIA de categorias (decisão do fundador, 24/11/2026): Animal ⊃ Pet. O filtro «Pet» NÃO inclui «animal»; o filtro «Animal» inclui «pet».
-// Escopo: só animal/pet no Feed. As demais categorias seguem exatamente como eram (o filtro «Eletrônico» continua mostrando só eletrônico). O legado continua fora do Feed (exceção F-01).
+// Também Eletrônico ⊃ Celular (decisão do fundador, 24/11/2026): «Eletrônico» mostra electronics + phone; «Celular» só phone. As demais categorias seguem exatamente como eram. O legado continua fora do Feed (exceção F-01).
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { NextRequest } from 'next/server';
 import { readFileSync } from 'fs';
@@ -46,7 +46,9 @@ describe('chaves e rótulos do Feed', () => {
     expect(feedPertenceAoFiltro('animal', 'animal')).toBe(true);
     expect(feedPertenceAoFiltro('animal', 'pet')).toBe(false); // um cavalo roubado não é pet
     expect(feedPertenceAoFiltro('pet', 'pet')).toBe(true);
-    expect(feedPertenceAoFiltro('phone', 'electronics')).toBe(false); // no Feed, Eletrônico NÃO mudou (escopo: só animal/pet)
+    expect(feedPertenceAoFiltro('phone', 'electronics')).toBe(true); // Eletrônico inclui Celular
+    expect(feedPertenceAoFiltro('electronics', 'phone')).toBe(false); // Celular nunca inclui Eletrônico
+    expect(feedPertenceAoFiltro('phone', 'phone')).toBe(true);
     expect(feedPertenceAoFiltro('electronics', 'electronics')).toBe(true);
     expect(feedPertenceAoFiltro('vehicle', 'animal')).toBe(false);
   });
@@ -55,9 +57,11 @@ describe('chaves e rótulos do Feed', () => {
 describe('filtro de categoria do Feed (lista de verdade, banco simulado)', () => {
   it('Pet mostra SÓ pet: NUNCA animal', async () => { expect(await codigos('pet')).toEqual(['PET1', 'PET2']); });
   it('Animal mostra animal + pet', async () => { expect(await codigos('animal')).toEqual(['ANI1', 'ANI2', 'PET1', 'PET2']); });
-  it('as demais categorias seguem como eram: Celular só celular; Eletrônico só eletrônico (não inclui celular); Outros inclui o sem categoria', async () => {
+  it('Eletrônico mostra electronics + phone; Celular só phone', async () => {
     expect(await codigos('phone')).toEqual(['PHO1']);
-    expect(await codigos('electronics')).toEqual(['ELE1']);
+    expect(await codigos('electronics')).toEqual(['ELE1', 'PHO1']);
+  });
+  it('as demais categorias seguem como eram: Outros inclui o sem categoria', async () => {
     expect(await codigos('other')).toEqual(['NUL1', 'OUT1']);
   });
   it('sem filtro (ou «all»): todos os 8, nada some', async () => {

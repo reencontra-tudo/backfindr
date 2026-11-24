@@ -20,8 +20,8 @@ export function feedCategoryKey(raw: string | null | undefined): FeedCategoryKey
   return ALIASES[k] ?? 'other';
 }
 
-/** Filhas de cada categoria-mãe no FILTRO do Feed (só animal ⊃ pet; as demais relações de categorias do produto ficam como estão no Feed). */
-const FILHAS: Readonly<Record<string, readonly FeedCategoryKey[]>> = { animal: ['pet'] };
+/** Filhas de cada categoria-mãe no FILTRO do Feed (animal ⊃ pet e eletrônico ⊃ celular, decisão do fundador de 24/11/2026; mesmas relações de `src/lib/categorias.ts`). */
+const FILHAS: Readonly<Record<string, readonly FeedCategoryKey[]>> = { animal: ['pet'], electronics: ['phone'] };
 
 /** O item de categoria `itemKey` aparece no filtro `filtro`? A categoria-mãe inclui as filhas; a filha NUNCA inclui a mãe (Pet não mostra «animal»). */
 export function feedPertenceAoFiltro(itemKey: FeedCategoryKey, filtro: string): boolean {
