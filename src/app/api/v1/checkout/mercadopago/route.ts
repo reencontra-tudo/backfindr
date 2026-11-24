@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { MercadoPagoConfig, Preference } from "mercadopago";
 import { verifyToken } from "@/lib/jwt";
 import { query } from "@/lib/db";
+import { assinaturasPausadas, MSG_ASSINATURAS_PAUSADAS } from "@/lib/modoCrescimento";
 
 const getMP = () => {
   const token = process.env.MP_ACCESS_TOKEN;
@@ -48,6 +49,10 @@ export async function POST(req: NextRequest) {
     let metadata: Record<string, string> = {};
 
     if (type === "plan") {
+      // Modo crescimento (PL-01): nenhuma nova assinatura de plano. O Boost continua funcionando.
+      if (assinaturasPausadas()) {
+        return NextResponse.json({ error: MSG_ASSINATURAS_PAUSADAS, codigo: "ASSINATURAS_PAUSADAS" }, { status: 403 });
+      }
       // Checkout de plano de assinatura
       const planPrices: Record<string, { title: string; price: number }> = {
         pro: { title: "Backfindr Pro", price: 29.90 },

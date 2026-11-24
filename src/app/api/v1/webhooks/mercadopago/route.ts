@@ -110,8 +110,8 @@ export async function POST(req: NextRequest) {
 
     // 1) Assinatura (só exige quando o segredo está configurado)
     const segredo = process.env.MP_WEBHOOK_SECRET;
-    const dataIdUrl = new URL(req.url).searchParams.get("data.id");
-    const dataId = dataIdUrl ?? (data?.id !== undefined ? String(data.id) : null);
+    // O `data.id` da assinatura vem SÓ dos parâmetros da URL (`?data.id=`), nunca do corpo; ausente = omitido do manifest (regra do Mercado Pago e do SDK oficial).
+    const dataId = new URL(req.url).searchParams.get("data.id");
     if (segredo) {
       const ok = assinaturaValida({ xSignature: req.headers.get("x-signature"), xRequestId: req.headers.get("x-request-id"), dataId, segredo });
       if (!ok) {

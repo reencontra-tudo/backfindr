@@ -25,47 +25,79 @@ import { POST } from '@/app/api/v1/webhooks/mercadopago/route';
 const SEGREDO = 'segredo-de-teste-nao-real';
 const aviso = (corpo: unknown, headers: Record<string, string> = {}, qs = '') =>
   new NextRequest(`http://localhost/api/v1/webhooks/mercadopago${qs}`, { method: 'POST', headers: { 'content-type': 'application/json', ...headers }, body: JSON.stringify(corpo) });
-const assinado = (id: string, extra: Record<string, string> = {}) => {
-  const ts = '1700000000'; const rid = 'req-123';
-  return { 'x-signature': `ts=${ts},v1=${assinar(textoAssinado(id, rid, ts), SEGREDO)}`, 'x-request-id': rid, ...extra };
+/** Cabeçalhos assinados como o Mercado Pago faz: o `data.id` assinado é o da URL (null = sem `data.id` na URL, omitido do manifest). */
+const assinado = (idDaUrl: string | null, rid: string | null = 'req-123') => {
+  const ts = '1700000000';
+  return { 'x-signature': `ts=${ts},v1=${assinar(textoAssinado(idDaUrl, rid, ts), SEGREDO)}`, ...(rid ? { 'x-request-id': rid } : {}) };
 };
 const lerStatus = async (res: Response) => ((await res.json()) as { status?: string; error?: string });
 
 beforeEach(() => { delete process.env.MP_WEBHOOK_SECRET; process.env.MP_ACCESS_TOKEN = 'TEST-xyz'; mp.resposta = null; mp.erro = null; mp.chamadas = 0; });
 
-describe('A1. assinatura (funções puras)', () => {
-  it('lê ts e v1; monta o texto assinado como o Mercado Pago documenta; omite partes ausentes', () => {
-    expect(partesDaAssinatura('ts=123,v1=abc')).toEqual({ ts: '123', v1: 'abc' });
-    expect(partesDaAssinatura(null)).toEqual({ ts: null, v1: null });
-    expect(textoAssinado('ABC123', 'r1', '99')).toBe('id:abc123;request-id:r1;ts:99;');
-    expect(textoAssinado('12345', null, '99')).toBe('id:12345;ts:99;');
+// VETORES CONHECIDOS: gerados com o validador do SDK OFICIAL do Mercado Pago (`WebhookSignatureValidator`, mercadopago@3.6.2) e a mesma assinatura secreta de teste.
+// «sdk» = o que o validador oficial respondeu para o par (cabeçalho, id, request-id).
+const VETORES = [
+  { nome: 'completo', dataId: '123456789', rid: 'bb56a2f1-6aae-46ac-982e-9dcd3581d08e', ts: '1742505638', v1: 'eda250f461f9dd3bd3cd6fff8a578426356138442ef871008e1fdac482858272', sdk: true },
+  { nome: 'sem request-id (par omitido)', dataId: '123456789', rid: null, ts: '1742505638', v1: '7eee13bc502065aaf4d71f9b424dd8069b4ac145e7ef7a0dc83a440099c1b7e6', sdk: true },
+  { nome: 'sem data.id (par omitido)', dataId: null, rid: 'req-1', ts: '1742505638', v1: 'b48d75525c816cf5857ded83d7df8df3df432088cb3258a0a237a5d7f83fbcaf', sdk: true },
+  { nome: 'id alfanumérico assinado COMO VEIO', dataId: 'ABC123xyz', rid: 'req-2', ts: '1742505638', v1: '72be0aa6dfd8d7f64c539c25582575d2f15e3eb7be4c40b9b475a8d59ce607f0', sdk: true },
+  { nome: 'id alfanumérico assinado em MINÚSCULO (o SDK oficial recusa; nós aceitamos de propósito)', dataId: 'ABC123xyz', rid: 'req-2', ts: '1742505638', v1: '3e0808ff2bce895e4b979c4b1362987a153c96e1fbc2bd29ccfe32a003b34902', sdk: false },
+];
+
+describe('A1. assinatura (funções puras; vetores do SDK oficial)', () => {
+  it('lê ts e v1 como o SDK (vírgulas, espaços, chaves sem diferenciar maiúscula, chaves desconhecidas ignoradas)', () => {
+    expect(partesDaAssinatura('ts=123,v1=abc')).toEqual({ ts: '123', hashes: { v1: 'abc' } });
+    expect(partesDaAssinatura(' TS = 9 , V1 = aa , v2=bb , x=1 , lixo ')).toEqual({ ts: '9', hashes: { v1: 'aa', v2: 'bb' } });
+    expect(partesDaAssinatura(null)).toEqual({ ts: null, hashes: {} }); expect(partesDaAssinatura('   ')).toEqual({ ts: null, hashes: {} });
   });
-  it('válida só com o segredo certo e o texto exato', () => {
-    const ts = '10'; const v1 = assinar(textoAssinado('777', 'r', ts), SEGREDO);
-    const base = { xSignature: `ts=${ts},v1=${v1}`, xRequestId: 'r', dataId: '777', segredo: SEGREDO };
-    expect(assinaturaValida(base)).toBe(true);
-    expect(assinaturaValida({ ...base, segredo: 'outro' })).toBe(false);
-    expect(assinaturaValida({ ...base, dataId: '778' })).toBe(false);
-    expect(assinaturaValida({ ...base, xRequestId: 'x' })).toBe(false);
-    expect(assinaturaValida({ ...base, xSignature: null })).toBe(false);
-    expect(assinaturaValida({ ...base, xSignature: `ts=${ts},v1=${v1.slice(0, -1)}0` })).toBe(false);
+  it('manifest: `id:..;request-id:..;ts:..;` com pares ausentes OMITIDOS e id SEM mudar de caixa', () => {
+    expect(textoAssinado('123456789', 'r1', '99')).toBe('id:123456789;request-id:r1;ts:99;');
+    expect(textoAssinado('ABC123xyz', 'r1', '99')).toBe('id:ABC123xyz;request-id:r1;ts:99;');
+    expect(textoAssinado('12345', null, '99')).toBe('id:12345;ts:99;'); expect(textoAssinado(null, 'r1', '99')).toBe('request-id:r1;ts:99;');
+    expect(textoAssinado('  ', '', '99')).toBe('ts:99;');
+  });
+  for (const v of VETORES) {
+    it(`vetor do SDK oficial: ${v.nome}`, () => {
+      const base = { xSignature: `ts=${v.ts},v1=${v.v1}`, xRequestId: v.rid, dataId: v.dataId, segredo: SEGREDO };
+      expect(assinar(textoAssinado(v.dataId, v.rid, v.ts), SEGREDO) === v.v1).toBe(v.sdk);   // o HMAC do manifest «como veio» bate com o do SDK
+      expect(assinaturaValida(base)).toBe(true);                                              // nunca rejeitamos o que o SDK aceita (e aceitamos também o minúsculo)
+      expect(assinaturaValida({ ...base, segredo: 'outro-segredo' })).toBe(false);
+    });
+  }
+  it('rejeita: segredo vazio, sem ts, ts não numérico, sem v1, id/request-id/ts trocados, hash adulterado', () => {
+    const v = VETORES[0]; const ok = { xSignature: `ts=${v.ts},v1=${v.v1}`, xRequestId: v.rid, dataId: v.dataId, segredo: SEGREDO };
+    expect(assinaturaValida(ok)).toBe(true);
+    expect(assinaturaValida({ ...ok, segredo: '' })).toBe(false); expect(assinaturaValida({ ...ok, xSignature: `v1=${v.v1}` })).toBe(false);
+    expect(assinaturaValida({ ...ok, xSignature: `ts=abc,v1=${v.v1}` })).toBe(false); expect(assinaturaValida({ ...ok, xSignature: `ts=${v.ts}` })).toBe(false);
+    expect(assinaturaValida({ ...ok, xSignature: null })).toBe(false); expect(assinaturaValida({ ...ok, dataId: '123456780' })).toBe(false);
+    expect(assinaturaValida({ ...ok, xRequestId: 'outro' })).toBe(false); expect(assinaturaValida({ ...ok, xSignature: `ts=${Number(v.ts) + 1},v1=${v.v1}` })).toBe(false);
+    expect(assinaturaValida({ ...ok, xSignature: `ts=${v.ts},v1=${v.v1.slice(0, -1)}0` })).toBe(false); expect(assinaturaValida({ ...ok, xSignature: `ts=${v.ts},v1=${v.v1.slice(0, 10)}` })).toBe(false);
   });
 });
 
-describe('A2. rota: assinatura', () => {
+describe('A2. rota: assinatura (data.id vem da URL, nunca do corpo)', () => {
   it('COM segredo: sem assinatura = 401 e o Mercado Pago nem é consultado', async () => {
     process.env.MP_WEBHOOK_SECRET = SEGREDO;
-    const res = await POST(aviso({ type: 'payment', data: { id: '55' } }));
+    const res = await POST(aviso({ type: 'payment', data: { id: '55' } }, {}, '?data.id=55'));
     expect(res.status).toBe(401); expect(mp.chamadas).toBe(0);
   });
-  it('COM segredo: assinatura inválida = 401; assinatura boa passa (id da URL ou do corpo)', async () => {
+  it('COM segredo: assinatura inválida = 401; boa, com o id na URL, passa', async () => {
     process.env.MP_WEBHOOK_SECRET = SEGREDO;
-    expect((await POST(aviso({ type: 'payment', data: { id: '55' } }, { 'x-signature': 'ts=1,v1=00', 'x-request-id': 'r' }))).status).toBe(401);
+    expect((await POST(aviso({ type: 'payment', data: { id: '55' } }, { 'x-signature': 'ts=1,v1=00', 'x-request-id': 'r' }, '?data.id=55'))).status).toBe(401);
     mp.resposta = { status: 'pending' };
-    const ok1 = await POST(aviso({ type: 'payment', data: { id: '55' } }, assinado('55')));
-    expect(ok1.status).toBe(200); expect((await lerStatus(ok1)).status).toBe('not_approved');
-    const ok2 = await POST(aviso({ type: 'payment', data: { id: '999' } }, assinado('55'), '?data.id=55'));
-    expect(ok2.status).toBe(200);
+    const ok = await POST(aviso({ type: 'payment', data: { id: '55' } }, assinado('55'), '?data.id=55'));
+    expect(ok.status).toBe(200); expect((await lerStatus(ok)).status).toBe('not_approved');
+  });
+  it('o id do CORPO não vale para a assinatura: assinada com o id do corpo mas sem `?data.id=` na URL = 401; assinada sem id (par omitido) passa', async () => {
+    process.env.MP_WEBHOOK_SECRET = SEGREDO; mp.resposta = { status: 'pending' };
+    expect((await POST(aviso({ type: 'payment', data: { id: '55' } }, assinado('55')))).status).toBe(401);
+    expect((await POST(aviso({ type: 'payment', data: { id: '55' } }, assinado(null)))).status).toBe(200);
+    expect((await POST(aviso({ type: 'payment', data: { id: '999' } }, assinado('55'), '?data.id=55'))).status).toBe(200);   // vale o id da URL, não o do corpo
+  });
+  it('sem x-request-id (par omitido) também passa; id da URL trocado = 401', async () => {
+    process.env.MP_WEBHOOK_SECRET = SEGREDO; mp.resposta = { status: 'pending' };
+    expect((await POST(aviso({ type: 'payment', data: { id: '55' } }, assinado('55', null), '?data.id=55'))).status).toBe(200);
+    expect((await POST(aviso({ type: 'payment', data: { id: '55' } }, assinado('55'), '?data.id=56'))).status).toBe(401);
   });
   it('SEM segredo: segue como antes (não derruba pagamentos); só avisa no log', async () => {
     mp.resposta = { status: 'pending' };

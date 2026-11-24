@@ -4,9 +4,10 @@ import { useState } from 'react';
 import Link from 'next/link';
 import { ChevronDown, MapPin, ArrowRight } from 'lucide-react';
 import type { Metadata } from 'next';
+import { modoCrescimento, TEXTOS_CRESCIMENTO } from '@/lib/modoCrescimento';
 
 // ─── FAQ Data ─────────────────────────────────────────────────────────────────
-const SECTIONS = [
+export const SECTIONS_ORIGINAIS = [
   {
     title: 'Como funciona',
     items: [
@@ -144,6 +145,19 @@ function AccordionItem({ q, a }: { q: string; a: string }) {
 }
 
 // ─── Page ─────────────────────────────────────────────────────────────────────
+// MODO CRESCIMENTO (PL-01): Pro e Business escondidos. As respostas ORIGINAIS ficam acima, só inativas; desligado (NEXT_PUBLIC_MODO_CRESCIMENTO=0) = idêntico a antes.
+const PERGUNTAS_DE_PLANO_PAGO = ['Posso cancelar a qualquer momento?', 'O que acontece com meus objetos se eu cancelar o plano pago?', 'O plano Business aceita CNPJ?'];
+export function secoesDoFaq() {
+  if (!modoCrescimento()) return SECTIONS_ORIGINAIS;
+  return SECTIONS_ORIGINAIS.map((sec) => ({
+    ...sec,
+    items: sec.items
+      .filter((it) => !PERGUNTAS_DE_PLANO_PAGO.includes(it.q))
+      .map((it) => (it.q === 'Posso registrar mais de um pet?' ? { ...it, a: TEXTOS_CRESCIMENTO.faqPets }
+        : it.q === 'O plano gratuito tem limite?' ? { q: 'Existe limite de objetos?', a: TEXTOS_CRESCIMENTO.faqLimite } : it)),
+  }));
+}
+
 export default function FaqPage() {
   return (
     <div className="min-h-screen bg-[#07090e] text-white">
@@ -182,7 +196,7 @@ export default function FaqPage() {
       {/* Sections */}
       <div className="px-5 pb-24">
         <div className="mx-auto max-w-3xl space-y-12">
-          {SECTIONS.map((section) => (
+          {secoesDoFaq().map((section) => (
             <div key={section.title}>
               <h2 className="text-base font-bold text-teal-400 mb-4 uppercase tracking-wide text-xs">
                 {section.title}
