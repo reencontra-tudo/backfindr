@@ -26,13 +26,14 @@ interface Obj {
 }
 
 const CATEGORY_LABEL: Record<string, string> = {
-  phone: 'Celular', wallet: 'Carteira', keys: 'Chaves', bag: 'Bolsa', pet: 'Pet',
+  phone: 'Celular', wallet: 'Carteira', keys: 'Chaves', bag: 'Bolsa', animal: 'Animal', pet: 'Pet',
   bike: 'Bicicleta', vehicle: 'Veículo', document: 'Documento', jewelry: 'Joia', electronics: 'Eletrônico',
   clothing: 'Roupa', other: 'Outro',
 };
 const CATEGORY_FILTERS = [
   { value: 'all', label: 'Todos' },
   { value: 'phone', label: '📱 Celular' },
+  { value: 'animal', label: '🐾 Animal' },
   { value: 'pet', label: '🐾 Pet' },
   { value: 'vehicle', label: '🚗 Veículo' },
   { value: 'wallet', label: '👛 Carteira' },

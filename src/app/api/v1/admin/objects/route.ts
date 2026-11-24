@@ -2,6 +2,7 @@ export const dynamic = 'force-dynamic';
 import { NextRequest, NextResponse } from 'next/server';
 import { requireAdmin } from '@/lib/adminGuard';
 import { query } from '@/lib/db';
+import { categoriasDaLista } from '@/lib/categorias';
 
 export async function GET(req: NextRequest) {
   const auth = await requireAdmin(req);
@@ -48,7 +49,7 @@ export async function GET(req: NextRequest) {
   }
   if (status)   { conditions.push(`o.status = $${idx}`); params.push(status); idx++; }
   if (user)     { conditions.push(`o.user_id = $${idx}`); params.push(user); idx++; }
-  if (category) { conditions.push(`o.category = $${idx}`); params.push(category); idx++; }
+  if (category) { conditions.push(`o.category = ANY($${idx}::text[])`); params.push(categoriasDaLista(category)); idx++; }
 
   // Sempre fazemos JOIN com users para poder filtrar por b2b_partner_id
   const where = conditions.length > 0 ? `WHERE ${conditions.join(' AND ')}` : '';

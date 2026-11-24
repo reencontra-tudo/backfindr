@@ -116,8 +116,9 @@ describe('guardas de código: a hierarquia mora num lugar só e o mapa a usa', (
   it('as relações pai/filha não são repetidas em nenhum outro arquivo do mapa', () => {
     expect(mapa).not.toMatch(/pet\s*:\s*'animal'|animal\s*:\s*\[/);
   });
+  // 24/11/2026 (PR b): a lista pública (`objects/public`) passou a usar `categoriasDaLista` por ordem do fundador (Animal inclui Pet); coberto em tests/listas-animal.test.ts.
   it('escopo: Feed, busca, listas públicas, matching e cadastro NÃO importam o mapa de categorias nesta etapa', () => {
-    for (const f of ['src/lib/feed/category.ts', 'src/lib/matching.ts', 'src/lib/matchingFiltro.ts', 'src/lib/buscaDicionario.ts', 'src/app/api/v1/objects/public/route.ts', 'src/app/dashboard/objects/new/page.tsx']) {
+    for (const f of ['src/lib/feed/category.ts', 'src/lib/matching.ts', 'src/lib/matchingFiltro.ts', 'src/lib/buscaDicionario.ts', 'src/app/dashboard/objects/new/page.tsx']) {
       expect(read(f), f).not.toContain('@/lib/categorias');
     }
   });
