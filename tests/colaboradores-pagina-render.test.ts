@@ -57,10 +57,10 @@ describe.skipIf(!TEST_DB)('página /colaborador/[slug]', () => {
     expect((await meta({ params: { slug: 'grupo-sp' } })).robots?.index).toBe(false);
   });
 
-  it('LIGADO: estados — suspenso 307, saiu e excluído 308 (para o Feed), inexistente e @nome malformado 404', async () => {
+  it('LIGADO: estados — suspenso e saiu 307, excluído 308 (para o Feed; PC-13), inexistente e @nome malformado 404', async () => {
     ligar();
     expect((await erroDe(Pagina({ params: { slug: 'suspenso' } })))?.digest).toMatch(/^NEXT_REDIRECT;.*;\/feed;307;?$/);
-    expect((await erroDe(Pagina({ params: { slug: 'saiu' } })))?.digest).toMatch(/^NEXT_REDIRECT;.*;\/feed;308;?$/);
+    expect((await erroDe(Pagina({ params: { slug: 'saiu' } })))?.digest).toMatch(/^NEXT_REDIRECT;.*;\/feed;307;?$/);
     expect((await erroDe(Pagina({ params: { slug: 'excluido' } })))?.digest).toMatch(/^NEXT_REDIRECT;.*;\/feed;308;?$/);
     expect((await erroDe(Pagina({ params: { slug: 'nunca-existiu' } })))?.digest).toBe('NEXT_NOT_FOUND');
     expect((await erroDe(Pagina({ params: { slug: 'AB' } })))?.digest).toBe('NEXT_NOT_FOUND');

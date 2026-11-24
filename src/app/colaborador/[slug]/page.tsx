@@ -1,7 +1,7 @@
 // /colaborador/[slug] — destino interno da URL pública `/@nome` (Programa de Colaboradores, E2). Renderizada no servidor, estática com revalidação de 5 min
 // (como o Feed). Sem COLABORADORES_ATIVO=1 responde 404 ANTES de qualquer consulta ao banco, como se a rota não existisse.
 //
-// Estados: ativo = página; suspenso = 307 para o Feed; saiu ou excluído = 308 para o Feed; nunca existiu = 404.
+// Estados: ativo = página; suspenso ou saiu = 307 para o Feed (PC-13: o colaborador pode voltar); excluído = 308 para o Feed; nunca existiu = 404.
 // Indexação (PC-03): só ativa + verificada + com ao menos uma ocorrência cadastrada com o código; qualquer outra: noindex (e fora do sitemap).
 // Canônica sempre `/@nome` (o acesso direto a /colaborador/<nome> mostra o mesmo conteúdo, com a canônica apontando para a URL pública).
 import { cache } from 'react';

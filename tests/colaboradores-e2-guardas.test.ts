@@ -118,7 +118,8 @@ describe.skipIf(!TEST_DB)('2) gatilho da migration 026: só age sobre as colunas
 describe('3) PC-04: nada do site geral aponta para as páginas de colaborador', () => {
   const RAIZ = path.join(__dirname, '../src');
   const todos = (d: string): string[] => readdirSync(d).flatMap((n) => { const p = path.join(d, n); return statSync(p).isDirectory() ? todos(p) : /\.(ts|tsx)$/.test(n) ? [p] : []; });
-  const PERMITIDOS = ['app/colaborador/', 'lib/colaboradores/', 'lib/clarity.ts', 'middleware.ts'];
+  // E5 (24/11/2026): a tela de inscrição e o painel mínimo do colaborador também são arquivos do programa (só por link, noindex, fora de menu: ver tests/colaboradores-inscricao.test.ts).
+  const PERMITIDOS = ['app/colaborador/', 'lib/colaboradores/', 'lib/clarity.ts', 'middleware.ts', 'components/colaboradores/', 'app/dashboard/colaborador/'];
   it('só os arquivos do programa (e o middleware e a lista do Clarity) citam `/@` ou `/colaborador`', () => {
     const citam = todos(RAIZ).filter((f) => /['"`]\/@|\/colaborador['"`/]/.test(readFileSync(f, 'utf8'))).map((f) => path.relative(RAIZ, f).split(path.sep).join('/'));
     const fora = citam.filter((f) => !PERMITIDOS.some((p) => f.startsWith(p) || f === p));

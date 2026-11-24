@@ -22,7 +22,7 @@ export interface ColaboradorPagina {
 
 export type ResultadoPagina =
   | { tipo: 'pagina'; colaborador: ColaboradorPagina }
-  /** Colaborador suspenso: 307 (temporário) para o Feed. Saiu ou excluído: 308 (permanente) para o Feed. */
+  /** Suspenso ou que SAIU: 307 (temporário) para o Feed (o colaborador pode voltar: PC-13). Só EXCLUÍDO por transgressão: 308 (permanente). */
   | { tipo: 'redirecionar'; permanente: boolean }
   /** Nunca existiu: 404 normal. */
   | { tipo: 'nao-existe' };
@@ -52,8 +52,8 @@ export async function carregarColaborador(consulta: Consulta, slug: string): Pro
   const c = r.rows[0];
   if (!c) return { tipo: 'nao-existe' };
   const estado = String(c.estado) as EstadoColaborador;
-  if (estado === 'suspenso') return { tipo: 'redirecionar', permanente: false };
-  if (estado === 'saiu' || estado === 'excluido') return { tipo: 'redirecionar', permanente: true };
+  if (estado === 'suspenso' || estado === 'saiu') return { tipo: 'redirecionar', permanente: false };
+  if (estado === 'excluido') return { tipo: 'redirecionar', permanente: true };
   return {
     tipo: 'pagina',
     colaborador: {
