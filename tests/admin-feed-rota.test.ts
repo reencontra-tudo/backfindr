@@ -137,7 +137,7 @@ describe('menu e dashboard do admin', () => {
     expect(hrefs).toEqual(['/admin/dashboard', '/admin/analytics', '/feed', '/admin/objects', '/admin/users', '/admin/matches', '/admin/publicacoes', '/admin/moderacao', '/admin/public-signals',
       '/admin/b2b', '/admin/b2b-portal', '/admin/condominios', '/admin/custody', '/admin/custody/scan', '/admin/delivery/parceiros', '/admin/delivery/entregas', '/admin/delivery/rastreio',
       '/admin/marketing/leads', '/admin/marketing/automacao', '/admin/marketing/reativacao', '/admin/social-posts', '/admin/emails', '/admin/marketing/brand', '/admin/comunidade',
-      '/admin/financeiro', '/admin/planos', '/admin/relatorios', '/admin/sistema', '/admin/equipe']);
+      '/admin/financeiro', '/admin/planos', '/admin/relatorios', '/admin/sistema', '/admin/colaboradores', '/admin/equipe']); // E7 (24/11/2026): «Colaboradores» entra antes de «Equipe»; os demais, na mesma ordem
   });
   it('dashboard: o cartão entra uma única vez, sem mudar o resto da página', () => {
     const d = read('src/app/admin/dashboard/page.tsx');

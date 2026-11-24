@@ -102,6 +102,7 @@ const NAV = [
     items: [
       { href: '/admin/relatorios', icon: FileBarChart, label: 'Relatórios', badge: null, superOnly: false },
       { href: '/admin/sistema',    icon: Server,       label: 'Sistema',    badge: null, superOnly: false },
+      { href: '/admin/colaboradores', icon: Users,    label: 'Colaboradores', badge: null, superOnly: false },
       { href: '/admin/equipe',     icon: Users2,       label: 'Equipe',     badge: null, superOnly: true  },
     ],
   },
