@@ -13,7 +13,7 @@
 |---|---|
 | 0 — Preparação | **FEITO** (este plano; script `tools/comparar-producao.mjs`; dois retratos «antes» da produção) |
 | 1 — Cópia de segurança | **CONFIRMADO (24/11/2026)** pelo backup próprio diário (repositório `m2r-backup-supabase`, run #36): ver «Passo 1». Não é preciso dump manual. |
-| 2 — Migration 026 | autorizado; ver «Passo 2» para o estado |
+| 2 — Migration 026 | **NÃO APLICADA (24/11/2026, 03:2x UTC).** A tentativa de aplicar pelo conector **ficou esperando uma confirmação do usuário** (o conector pergunta antes de rodar instruções que ele considera destrutivas: a 026 tem `DROP TRIGGER IF EXISTS`) e **esgotou o tempo sem resposta**. **Conferido depois por leitura: a tabela `colaboradores` NÃO existe e nada foi alterado** (a aplicação é uma única transação: ou tudo ou nada). Aguarda a resposta do fundador à pergunta do conector. |
 | 3 — Mescla com interruptores desligados | NÃO iniciado (depende do passo 2) |
 | 4 — Ligar o piloto | NÃO autorizado |
 
