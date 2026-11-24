@@ -9,8 +9,12 @@ const read = (p: string) => readFileSync(p, 'utf8');
 describe('categoriasDaLista', () => {
   it('Animal inclui Pet', () => expect(categoriasDaLista('animal').sort()).toEqual(['animal', 'pet']));
   it('Pet mostra só pet', () => expect(categoriasDaLista('pet')).toEqual(['pet']));
-  it('as demais ficam iguais (inclusive Eletrônico, que NÃO inclui Celular nas listas)', () => {
-    for (const c of ['phone', 'electronics', 'vehicle', 'wallet', 'keys', 'bike', 'document', 'bag', 'jewelry', 'clothing', 'other', 'book', 'xyz'])
+  it('Eletrônico inclui Celular; Celular mostra só phone', () => {
+    expect(categoriasDaLista('electronics').sort()).toEqual(['electronics', 'phone']);
+    expect(categoriasDaLista('phone')).toEqual(['phone']);
+  });
+  it('as demais ficam iguais', () => {
+    for (const c of ['vehicle', 'wallet', 'keys', 'bike', 'document', 'bag', 'jewelry', 'clothing', 'other', 'book', 'xyz'])
       expect(categoriasDaLista(c)).toEqual([c]);
   });
 });

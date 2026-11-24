@@ -52,11 +52,11 @@ export function categoriasDoFiltro(filtro: Categoria): Categoria[] {
 
 /**
  * Categorias do BANCO que uma LISTA (admin, relatórios, busca do painel) mostra ao filtrar por `categoria`.
- * Decisão do fundador (24/11/2026): só Animal inclui Pet (animal → [animal, pet]); Pet mostra só pet; as demais mostram só a própria
- * (Eletrônico NÃO inclui Celular nas listas, igual ao que já era). Valor vazio ou desconhecido → só ele mesmo (comportamento anterior).
+ * Decisão do fundador (24/11/2026): mesma hierarquia do mapa — Animal inclui Pet (animal → [animal, pet]); Eletrônico inclui Celular
+ * (electronics → [electronics, phone]); Pet e Celular mostram só a própria; as demais mostram só a própria. Valor vazio ou desconhecido → só ele mesmo.
  */
 export function categoriasDaLista(categoria: string): string[] {
-  return categoria === 'animal' ? ['animal', 'pet'] : [categoria];
+  return ehCategoriaConhecida(categoria) ? [...categoriasDoFiltro(categoria)] : [categoria];
 }
 
 /** O item de categoria `raw` aparece no filtro `filtro`? Filtro vazio = todos. Mãe inclui filhas; filha NUNCA inclui a mãe nem as irmãs (Pet não mostra «animal»). */
