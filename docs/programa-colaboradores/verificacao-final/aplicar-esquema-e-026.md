@@ -1,3 +1,5 @@
+> **SUPERADO em 24/11/2026.** A verificação isolada no projeto «Resolve Tudo» foi **CANCELADA pelo fundador**; **nada foi executado lá, não há nada a limpar** (decisão PC-10 em `DECISOES.md`). Este arquivo fica só como registro. Caminho atual: `../LANCAMENTO-CONTROLADO.md`.
+
 Ordem de aplicação no banco do «Resolve Tudo» (SQL Editor), como o papel do teste (assim ele é o dono de tudo e `DROP SCHEMA ... CASCADE` limpa tudo):
 
 ```sql

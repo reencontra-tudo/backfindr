@@ -1,3 +1,5 @@
+> **SUPERADO em 24/11/2026.** A verificação isolada no projeto «Resolve Tudo» foi **CANCELADA pelo fundador**; **nada foi executado lá, não há nada a limpar** (decisão PC-10 em `DECISOES.md`). Este arquivo fica só como registro. Caminho atual: `../LANCAMENTO-CONTROLADO.md`.
+
 # Verificação final na Vercel — roteiro em linguagem simples (versão final, 23/11/2026)
 
 **NADA aqui foi executado. NADA é executado sem a ordem escrita do fundador.** O piloto (E0 a E3) está completo e aprovado, e **não será mesclado antes** desta verificação.

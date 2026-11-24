@@ -1,3 +1,5 @@
+-- SUPERADO em 24/11/2026: a verificação isolada no «Resolve Tudo» foi CANCELADA pelo fundador (nada foi executado lá; não há nada a limpar; decisão PC-10).
+-- Mantido só como registro. Caminho atual: docs/programa-colaboradores/LANCAMENTO-CONTROLADO.md
 -- LIMPEZA no banco do «Resolve Tudo» (SQL Editor; o fundador roda quando o teste terminar). Remove TUDO o que o teste criou e nada mais.
 drop schema if exists backfindr_teste cascade;                 -- tabelas, índices, funções, gatilhos e dados do teste
 reassign owned by backfindr_teste_app to postgres;

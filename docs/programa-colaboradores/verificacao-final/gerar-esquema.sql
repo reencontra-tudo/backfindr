@@ -1,3 +1,5 @@
+-- SUPERADO em 24/11/2026: a verificação isolada no «Resolve Tudo» foi CANCELADA pelo fundador (nada foi executado lá; não há nada a limpar; decisão PC-10).
+-- Mantido só como registro. Caminho atual: docs/programa-colaboradores/LANCAMENTO-CONTROLADO.md
 -- Gera o DDL (SOMENTE o esquema, sem dados) do schema `public` de um banco, por consultas de CATÁLOGO. Somente leitura.
 -- Uso (no banco de ORIGEM; ex.: o do Backfindr, em modo leitura):
 --   SET search_path = public;   -- faz as funções pg_get_* devolverem nomes SEM o prefixo «public.»

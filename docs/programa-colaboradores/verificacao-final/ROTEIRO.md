@@ -1,3 +1,5 @@
+> **SUPERADO em 24/11/2026.** A verificação isolada no projeto «Resolve Tudo» foi **CANCELADA pelo fundador**; **nada foi executado lá, não há nada a limpar** (decisão PC-10 em `DECISOES.md`). Este arquivo fica só como registro. Caminho atual: `../LANCAMENTO-CONTROLADO.md`.
+
 # Verificação final do piloto na Vercel — roteiro (23/11/2026)
 
 > **A versão final, em linguagem simples e passo a passo, é `ROTEIRO-SIMPLES.md`.** Este arquivo guarda o levantamento e as justificativas (isolamento de arquivos e mensagens, variáveis, riscos). A linha de base do «Resolve Tudo» está em `LINHA-DE-BASE-ANTES.md` (leitura feita pelo fundador em 23/11/2026; o conector não conseguiu autenticar).

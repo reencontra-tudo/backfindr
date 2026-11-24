@@ -1,3 +1,5 @@
+-- SUPERADO em 24/11/2026: a verificação isolada no «Resolve Tudo» foi CANCELADA pelo fundador (nada foi executado lá; não há nada a limpar; decisão PC-10).
+-- Mantido só como registro. Caminho atual: docs/programa-colaboradores/LANCAMENTO-CONTROLADO.md
 -- SOMENTE LEITURA. Versão para colar no SQL Editor do painel (sem variáveis do psql).
 -- Para a ORIGEM (projeto «backfindr»): rode como está (schema 'public').
 -- Para o DESTINO (projeto «Resolve Tudo»): troque as 5 ocorrências de 'public' que são o nome do schema pela palavra 'backfindr_teste'

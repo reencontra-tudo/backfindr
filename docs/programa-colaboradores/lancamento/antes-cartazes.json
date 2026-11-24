@@ -1,0 +1,25 @@
+{
+ "capturadoEm": "2026-11-24T02:23:55.981Z",
+ "cartazes": {
+  "0TUWMBUJ|square|publico": {
+   "pedido1": "200:331390:0e65c5a01c98293a21a026f4",
+   "pedido2": "200:331390:0e65c5a01c98293a21a026f4",
+   "estavel": true
+  },
+  "0TUWMBUJ|vertical|publico": {
+   "pedido1": "200:758798:c863a76f8baa9e1502bd5ee9",
+   "pedido2": "200:758798:c863a76f8baa9e1502bd5ee9",
+   "estavel": true
+  },
+  "GYDJZDCS|square|publico": {
+   "pedido1": "200:448364:05856eb8fffd78b25743250b",
+   "pedido2": "200:448364:05856eb8fffd78b25743250b",
+   "estavel": true
+  },
+  "GYDJZDCS|vertical|publico": {
+   "pedido1": "200:1200901:f11297a7c33db29667249dfd",
+   "pedido2": "200:1200901:f11297a7c33db29667249dfd",
+   "estavel": true
+  }
+ }
+}

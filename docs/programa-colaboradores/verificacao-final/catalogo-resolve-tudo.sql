@@ -1,3 +1,5 @@
+-- SUPERADO em 24/11/2026: a verificação isolada no «Resolve Tudo» foi CANCELADA pelo fundador (nada foi executado lá; não há nada a limpar; decisão PC-10).
+-- Mantido só como registro. Caminho atual: docs/programa-colaboradores/LANCAMENTO-CONTROLADO.md
 -- SOMENTE LEITURA. Catálogo do banco do projeto «Resolve Tudo» (nomes e contagens). Rode no SQL Editor do próprio painel do Supabase.
 -- NÃO lê nenhuma linha de nenhuma tabela e NÃO toca no Storage (os arquivos e os documentos ficam fora destas consultas).
 -- Cole o resultado de cada consulta (são só nomes e números; nenhum segredo) para a conferência. Rode as mesmas consultas DEPOIS da limpeza e compare.

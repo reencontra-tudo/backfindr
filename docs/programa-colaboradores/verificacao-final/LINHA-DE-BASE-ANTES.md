@@ -1,3 +1,5 @@
+> **SUPERADO em 24/11/2026.** A verificação isolada no projeto «Resolve Tudo» foi **CANCELADA pelo fundador**; **nada foi executado lá, não há nada a limpar** (decisão PC-10 em `DECISOES.md`). Este arquivo fica só como registro. Caminho atual: `../LANCAMENTO-CONTROLADO.md`.
+
 # «Resolve Tudo» — linha de base do «antes» (23/11/2026)
 
 Resultado do `catalogo-resolve-tudo.sql`, rodado pelo fundador no SQL Editor do painel (somente leitura: só catálogo, nada do Storage, nenhuma linha de tabela). **Esta é a referência para comparar depois da limpeza.** Nenhum segredo aqui.

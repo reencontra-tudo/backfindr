@@ -1,3 +1,5 @@
+-- SUPERADO em 24/11/2026: a verificação isolada no «Resolve Tudo» foi CANCELADA pelo fundador (nada foi executado lá; não há nada a limpar; decisão PC-10).
+-- Mantido só como registro. Caminho atual: docs/programa-colaboradores/LANCAMENTO-CONTROLADO.md
 -- SOMENTE LEITURA. Assinatura do esquema de um schema (colunas, índices, restrições, gatilhos, funções), normalizada para comparar a ORIGEM com o DESTINO.
 -- Uso: psql "<origem>"  -At -v S=public           -f comparar-esquema.sql      (no banco do Backfindr, em modo leitura)
 --      psql "<destino>" -At -v S=backfindr_teste  -f comparar-esquema.sql      (no banco de teste)

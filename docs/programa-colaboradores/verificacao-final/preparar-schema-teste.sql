@@ -1,3 +1,5 @@
+-- SUPERADO em 24/11/2026: a verificação isolada no «Resolve Tudo» foi CANCELADA pelo fundador (nada foi executado lá; não há nada a limpar; decisão PC-10).
+-- Mantido só como registro. Caminho atual: docs/programa-colaboradores/LANCAMENTO-CONTROLADO.md
 -- NO BANCO DO «RESOLVE TUDO» (SQL Editor do painel; é o fundador quem roda, só DEPOIS de a conferência de leitura mostrar que não há colisão).
 -- Cria um SCHEMA PRÓPRIO e um PAPEL PRÓPRIO para o teste. Nada é criado em `public`, em `storage` ou em `auth`, e o papel não recebe acesso a eles.
 -- A SENHA do papel é escolhida pelo fundador NESTE editor e vai direto para a variável da Vercel; NUNCA cole a senha no chat.
