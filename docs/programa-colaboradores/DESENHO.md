@@ -1,6 +1,6 @@
 # Programa de Colaboradores — diagnóstico e desenho (23/11/2026)
 
-**Estado: DESENHO PARA APROVAÇÃO. Nada foi construído, nenhuma migration foi escrita ou aplicada, nada mudou em código, banco, configuração ou produção.** Este documento só registra o que foi verificado e o que se propõe. As regras de negócio vieram do fundador (Marcos, 23/11/2026) e estão registradas em `DECISOES.md` (PC-01); este desenho é a PC-02 (PENDENTE de aprovação).
+**Estado (23/11/2026): desenho APROVADO PARCIALMENTE pelo fundador: só o piloto, etapas E0 a E3, sem nenhuma parte financeira (PC-02). Etapas E4 a E8 SUSPENSAS. O estado real de cada etapa está na seção 9.** (Texto original do desenho, preservado: «DESENHO PARA APROVAÇÃO. Nada foi construído…» valia até a aprovação.) Este documento só registra o que foi verificado e o que se propõe. As regras de negócio vieram do fundador (Marcos, 23/11/2026) e estão registradas em `DECISOES.md` (PC-01); este desenho é a PC-02 (PENDENTE de aprovação).
 
 Convenções: **VERIFICADO** = lido no código ou consultado no banco (somente leitura, agregado) em 23/11/2026. **HIPÓTESE** = não verificado. Estimativas são minhas, não medidas.
 
@@ -273,3 +273,50 @@ Pontos de menor peso que seguem o padrão do desenho (confirmar na aprovação):
 **Três alertas honestos.** (1) Com 2 compras de "ampliar alcance" na história do produto, o saque mínimo de R$ 50 pode levar meses para ser atingido por qualquer colaborador. (2) A política de privacidade ainda diz que não há rastreamento; o programa acrescenta dados novos, então o texto precisa ser atualizado antes do lançamento. (3) Não testei: o endereço `/@nome` na Vercel, o comportamento exato de estorno do Mercado Pago, nem nada no iPhone; a etapa E0 resolve os dois primeiros antes de qualquer código.
 
 **Antes de começar:** o Marcos precisa decidir ao menos os pontos 1, 2, 3, 7 e 8 da seção 7.
+
+---
+
+## 9. Estado real das etapas (atualizado a cada etapa)
+
+**Aprovação do fundador (23/11/2026):** executar SOMENTE o piloto (E0 a E3); E4 a E8 suspensas até o piloto mostrar resultado (PC-02). Uma etapa por PR, em rascunho, sem mesclar sem aprovação. Interruptor `COLABORADORES_ATIVO` desligado por padrão. Primeiro e único colaborador do piloto: o próprio Backfindr (`/@backfindr`), criado só pelo admin; o autoatendimento fica para depois.
+
+**Refinamentos registrados (DECISOES.md):** PC-03 (o Feed e o `/achei` não ganham dados novos próprios; o programa cria colunas e tabelas isoladas, sem alterar o comportamento deles; página não verificada = `noindex` e fora do sitemap), PC-04 (regra de comunicação de 04/10/2026: nenhum texto público sugere parcerias inexistentes), PC-05 (imutabilidade desde o piloto), PC-06 (LGPD do livro financeiro: parecer jurídico pendente, não bloqueia o piloto).
+
+**Confirmação pedida pelo fundador (ponto 2): o código fica gravado de forma imutável em cada ocorrência desde o piloto, e a comissão de compras do período poderá ser calculada depois.** Está garantido por construção, sem gravar nada financeiro agora:
+1. `objects.colaborador_id` e `objects.colaborador_codigo` são gravados **no mesmo `INSERT`** da ocorrência (E1);
+2. um gatilho no banco recusa qualquer `UPDATE` dessas colunas depois do cadastro (inclusive de nulo para valor), então nem uma rota nova nem um erro de código consegue trocar ou acrescentar o código depois;
+3. a compra de «ampliar alcance» já liga ao objeto (`boosts.object_id`, verificado), e o objeto carrega o código; logo, para qualquer compra feita no piloto, a consulta «boost → objeto → colaborador» devolve o colaborador, o valor (`boosts.amount_paid`, hoje a única fonte do valor; a E4 vai preferir o valor confirmado pelo Mercado Pago) e a data;
+4. o colaborador pode sair, ser suspenso ou excluído: a linha nunca é apagada (`ON DELETE RESTRICT`) e o texto do código fica na ocorrência.
+Limite honesto: o retroativo só é confiável para boosts que existirem nas tabelas atuais; estornos feitos **antes** da E4 não ficam registrados (o webhook de hoje os ignora), então a E4 terá de conferir os pagamentos do período no Mercado Pago antes de comissionar. Isso é uma tarefa da E4, hoje suspensa.
+
+| Etapa | Estado | PR | Verificação |
+|---|---|---|---|
+| E0 — prova da rota `/@nome` | **VERIFICADA E APROVADA pelo fundador (23/11/2026).** NÃO mesclada: as etapas do piloto serão mescladas juntas, depois de aprovadas | #163 (empilhado sobre o #162) | local + prévia da Vercel (abaixo) |
+| E1 — atribuição | EM ANDAMENTO (iniciada em 23/11/2026, depois da aprovação da E0) | ver STATUS.md | — |
+| E2 — página `/@nome` + feed + SEO | NÃO INICIADA | — | — |
+| E3 — cartaz com a marca | NÃO INICIADA | — | — |
+| E4 a E8 | SUSPENSAS (decisão do fundador, 23/11/2026) | — | — |
+
+### E0 — o que foi construído
+- `src/lib/colaboradores/rota.ts`: interruptor `COLABORADORES_ATIVO` (só liga com exatamente `1`), formato do `@nome` (3 a 30, `a-z0-9-`, sem hífen nas pontas) e decisão de rota (funções puras, usadas pelo middleware).
+- `src/middleware.ts`: com o interruptor ligado, `/@nome` é reescrito para `/colaborador/nome` (a URL do navegador não muda) e `/@Nome` redireciona 308 para a forma minúscula; **desligado, o bloco não faz nada** e o resto do middleware (cookie de origem, redirecionamento de links antigos com token) segue idêntico.
+- `src/app/colaborador/[slug]/page.tsx`: página **de prova** (sem banco, sem dados, `noindex`); com o interruptor desligado responde 404, como hoje. A página real é a E2.
+- `src/app/colaborador/layout.tsx` e `src/lib/clarity.ts`: a guarda do Clarity (`tests/clarity.test.ts`) exige decisão para toda pasta nova; `/colaborador` entrou como **pública e mascarada** (mesmo tratamento do Feed), sem gravação de texto na sessão.
+- `tests/colaboradores-rota.test.ts` (10 testes): formato, caminhos que não casam, interruptor, middleware ligado/desligado, caminhos não relacionados idênticos nos dois estados, cookie de origem e redirecionamento de token preservados.
+
+**Verificação de não regressão da E0:** `docs/programa-colaboradores/e0/NAO-REGRESSAO.md` (linha de base, comparação main × desligada × ligada, prints 375 px e desktop). Resultado: nenhuma diferença não planejada.
+
+### E0 — o que ficou provado (build local `next build` + `next start`)
+| Caso | Desligado | Ligado |
+|---|---|---|
+| `/@backfindr` | 404 (como hoje) | 200, página de prova, `noindex` |
+| `/@BackFindr` | 404 | 308 → `/@backfindr` |
+| `/@backfindr?c=ZL27` | 404 | 200 (a query chega) |
+| `/@ab`, `/@abc/def` | 404 | 404 |
+| `/colaborador/backfindr` (acesso direto) | 404 | 200 (a E2 passará a redirecionar para `/@backfindr`) |
+| `/feed`, `/robots.txt` | 200 | 200 |
+Achados da prova:
+1. **Cache de 404.** A página é estática com revalidação de 300 s (como o Feed). Uma resposta 404 gerada com o interruptor desligado (ou antes de o colaborador existir) fica guardada e pode ser servida por até 5 minutos depois de a página passar a existir. Mitigação prevista: na E2, criar/ativar o colaborador chama `revalidatePath` da própria página. Ao ligar o interruptor em produção, esperar até 5 minutos para que 404s antigos expirem.
+2. `/@nome/` (com barra) redireciona 308 para `/@nome`; é a normalização do próprio Next e já é assim com o interruptor desligado.
+3. **Prova na Vercel: FEITA pelo fundador em 23/11/2026** (a sessão não consegue abrir a prévia, protegida por login da Vercel). Prévia da branch `claude/backfindr-colaboradores-e0`, com `COLABORADORES_ATIVO=1` restrita só a essa branch (Production nunca recebeu a variável; a variável foi apagada depois e nenhum deploy novo foi feito). Resultados informados pelo fundador: `/@backfindr` 200, página de prova, `robots` «noindex, nofollow»; `/@BackFindr` redireciona para `/@backfindr`, noindex; `/@ab` 404; `/feed`, `/` e `/achei` 200 com «index, follow» e títulos normais; `/perdi` respondeu 307. **Esse 307 já existe hoje e não foi introduzido pela E0** (conferido em 23/11/2026): `https://backfindr.com/perdi` em produção responde `HTTP/2 307` com `x-vercel-cache: HIT` e `age` ≈ 263.000 s (cerca de 3 dias, anterior à E0); `src/app/perdi/page.tsx` chama `redirect('/flow/lost')` e não foi alterado (último commit do arquivo: #89; a E0 não toca em `src/app/perdi`); o build local da `main` também deu 307 → `/flow/lost`, igual à E0 desligada e ligada.
+4. Os itens de «medir o tempo do `ALTER`» e «formato de estorno do Mercado Pago» da E0 original **saem da E0**: o primeiro vira medida da E1 (cópia local); o segundo pertence à E4 (suspensa).

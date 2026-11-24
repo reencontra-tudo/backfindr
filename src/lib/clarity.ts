@@ -32,6 +32,7 @@ export const CLARITY_PUBLIC_PREFIXES = [
   '/achei',
   '/blog',
   '/buscar',
+  '/colaborador',
   '/comecar',
   '/comunidade',
   '/encontrei',
@@ -57,6 +58,7 @@ export const CLARITY_PUBLIC_PREFIXES = [
 export const CLARITY_MASKED_SEGMENTS = [
   'achei',
   'buscar',
+  'colaborador',
   'comunidade',
   'feed',
   'flow/bike',

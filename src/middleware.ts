@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { colaboradoresAtivo, rotaDeColaborador } from '@/lib/colaboradores/rota';
 
 const COOKIE_NAME = 'bf_acquisition';
 const COOKIE_MAX_AGE = 60 * 60 * 24 * 90; // 90 dias
@@ -20,7 +21,22 @@ export function middleware(request: NextRequest) {
     return NextResponse.redirect(clean);
   }
 
-  const response = NextResponse.next();
+  // Programa de Colaboradores (E0): `/@nome` → rota interna `/colaborador/nome`. Só com COLABORADORES_ATIVO=1; desligado, este bloco não faz nada
+  // e o caminho abaixo é exatamente o de antes (o cookie de origem continua sendo gravado com o caminho ORIGINAL).
+  let response = NextResponse.next();
+  if (colaboradoresAtivo()) {
+    const rota = rotaDeColaborador(request.nextUrl.pathname);
+    if (rota?.tipo === 'minusculas') {
+      const destino = request.nextUrl.clone();
+      destino.pathname = `/@${rota.slug}`;
+      return NextResponse.redirect(destino, 308);
+    }
+    if (rota?.tipo === 'reescrever') {
+      const destino = request.nextUrl.clone();
+      destino.pathname = `/colaborador/${rota.slug}`;
+      response = NextResponse.rewrite(destino);
+    }
+  }
 
   // First-touch attribution: só grava se ainda não existir o cookie
   const existing = request.cookies.get(COOKIE_NAME);
