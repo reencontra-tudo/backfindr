@@ -20,6 +20,7 @@ import { DynamicCategoryFields } from '@/components/ui/DynamicCategoryFields';
 import { camposEspecificosParaEnvio, descricaoDoTitulo, faltasDoAnimal, passoAnterior, passoInicial, proximoPasso, resumirErros, statusDefinidoPeloIntent } from '@/lib/formularioOcorrencia';
 import CampoCodigoColaborador from '@/components/colaboradores/CampoCodigoColaborador';
 import { codigoInicial, colaboradoresAtivoNoCliente, limparCodigoGuardado } from '@/lib/colaboradores/cliente';
+import { modoCrescimento } from '@/lib/modoCrescimento';
 
 // ─── Schema ──────────────────────────────────────────────────────────────────
 const schema = z.object({
@@ -386,7 +387,8 @@ function NewObjectForm() {
       // Tratar erro de limite de plano com redirecionamento para upgrade
       if (axios.isAxiosError(err) && err.response?.data?.error === 'limit_reached') {
         const msg = err.response.data.message ?? 'Limite de objetos atingido.';
-        toast.error(msg, {
+        // Modo crescimento (PL-01): sem convite a planos pagos (escondidos); o texto original com «Ver planos» volta com NEXT_PUBLIC_MODO_CRESCIMENTO=0.
+        toast.error(msg, modoCrescimento() ? { duration: 8000 } : {
           action: {
             label: 'Ver planos',
             onClick: () => router.push('/pricing'),

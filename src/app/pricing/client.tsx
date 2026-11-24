@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import Cookies from 'js-cookie';
+import { modoCrescimento, TEXTOS_CRESCIMENTO } from '@/lib/modoCrescimento';
 import { Check, Zap, Building2, Gift, ArrowRight, Star, Shield, Globe, Clock, MapPin } from 'lucide-react';
 
 interface Plan {
@@ -63,6 +64,11 @@ const PLAN_ORDER: Record<string, number> = { free: 0, pro: 1, business: 2 };
 
 export default function PricingPage() {
   const [plans, setPlans] = useState<Plan[]>(DEFAULT_PLANS);
+  // MODO CRESCIMENTO (PL-01): só o plano grátis aparece; os textos originais abaixo ficam guardados e voltam com NEXT_PUBLIC_MODO_CRESCIMENTO=0.
+  const crescimento = modoCrescimento();
+  const planosVisiveis = crescimento
+    ? plans.filter((p) => p.slug === 'free').map((p) => ({ ...p, features: [...TEXTOS_CRESCIMENTO.free.features] }))
+    : plans;
   const [loading, setLoading] = useState(true);
   const [selectedPlan, setSelectedPlan] = useState<string | null>(null);
   const [checkoutLoading, setCheckoutLoading] = useState(false);
@@ -158,10 +164,12 @@ export default function PricingPage() {
         <div className="text-center mb-14">
           <p className="text-teal-500 text-xs uppercase tracking-[0.15em] font-semibold mb-4">Planos</p>
           <h1 className="text-4xl font-bold tracking-tight mb-4">
-            Escolha como o Backfindr trabalha por você
+            {crescimento ? TEXTOS_CRESCIMENTO.precosTitulo : 'Escolha como o Backfindr trabalha por você'}
           </h1>
           <p className="text-white/40 text-lg max-w-md mx-auto">
-            Planos para proteger seus objetos, manter a IA trabalhando e ampliar suas oportunidades de reencontro.
+            {crescimento
+              ? TEXTOS_CRESCIMENTO.precosSubtitulo
+              : 'Planos para proteger seus objetos, manter a IA trabalhando e ampliar suas oportunidades de reencontro.'}
           </p>
 
           {testMode && (
@@ -178,8 +186,8 @@ export default function PricingPage() {
             <div className="w-8 h-8 border-2 border-teal-500/30 border-t-teal-500 rounded-full animate-spin" />
           </div>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-16">
-            {plans.map((plan) => (
+          <div className={crescimento ? 'grid grid-cols-1 gap-6 mb-16 max-w-md mx-auto' : 'grid grid-cols-1 md:grid-cols-3 gap-6 mb-16'}>
+            {planosVisiveis.map((plan) => (
               <div
                 key={plan.slug}
                 className={`relative rounded-2xl border p-6 flex flex-col ${PLAN_COLORS[plan.slug] || 'border-white/[0.08] bg-white/[0.02]'}`}
@@ -212,7 +220,7 @@ export default function PricingPage() {
                     )}
                   </div>
                   <p className="text-white/30 text-xs mt-1">
-                    Até {plan.max_objects.toLocaleString('pt-BR')} objetos
+                    {crescimento ? TEXTOS_CRESCIMENTO.free.linhaDoCartao : `Até ${plan.max_objects.toLocaleString('pt-BR')} objetos`}
                   </p>
                 </div>
 
@@ -313,7 +321,8 @@ export default function PricingPage() {
           </p>
         </div>
 
-        {/* Garantias */}
+        {/* Garantias (falam de assinatura de plano: escondidas no modo crescimento) */}
+        {!crescimento && (
         <div className="grid md:grid-cols-3 gap-6 text-center mb-14">
           {[
             { icon: <Shield className="w-5 h-5 text-teal-400" />, title: 'Cancele quando quiser', desc: 'Sem fidelidade. Cancele a qualquer momento pelo painel.' },
@@ -329,19 +338,28 @@ export default function PricingPage() {
             </div>
           ))}
         </div>
+        )}
 
         {/* FAQ */}
         <div>
           <h3 className="text-lg font-semibold mb-6 text-center">Perguntas frequentes</h3>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {[
+            {(crescimento
+              ? [
+                  TEXTOS_CRESCIMENTO.precosFaqQr,
+                  TEXTOS_CRESCIMENTO.precosFaqLimite,
+                  { q: 'O Boost é uma assinatura?', a: 'Não. O Boost é um pagamento único por período. Você escolhe quando ativar e por quanto tempo.' },
+                  { q: 'Posso pagar com Pix?', a: 'Sim. Aceitamos Pix via Mercado Pago. A ativação costuma levar de 1 a 5 minutos após o pagamento, dependendo do processamento bancário.' },
+                ]
+              : [
               { q: 'O QR Code expira?', a: 'Não. O QR Code é permanente em todos os planos. Se alguém encontrar seu item e escanear, você recebe o aviso independente do plano.' },
               { q: 'Posso cancelar a qualquer momento?', a: 'Sim. Sem multa, sem burocracia. Ao cancelar, você continua com acesso até o fim do período pago.' },
               { q: 'O que acontece se eu atingir o limite de objetos?', a: 'Você não consegue cadastrar novos objetos até fazer upgrade ou remover objetos existentes.' },
               { q: 'O Boost é uma assinatura?', a: 'Não. O Boost é um pagamento único por período. Você escolhe quando ativar e por quanto tempo.' },
               { q: 'Posso pagar com Pix?', a: 'Sim. Aceitamos Pix via Mercado Pago. A ativação costuma levar de 1 a 5 minutos após o pagamento, dependendo do processamento bancário.' },
               { q: 'O plano Business aceita CNPJ?', a: 'Sim. O plano Business aceita tanto CPF quanto CNPJ e inclui nota fiscal mediante solicitação.' },
-            ].map((item, i) => (
+              ]
+            ).map((item, i) => (
               <div key={i} className="border border-white/[0.08] rounded-xl p-4 bg-white/[0.02]">
                 <p className="font-medium text-sm mb-1.5">{item.q}</p>
                 <p className="text-white/40 text-sm">{item.a}</p>
