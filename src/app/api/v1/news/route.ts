@@ -1,80 +1,35 @@
+// Painel «Notícias recentes» do mapa. Busca o Google News RSS com as BUSCAS do escopo (recuperação/devolução de bens perdidos, furtados ou roubados no Brasil)
+// e devolve SÓ o que passa em `filtrarNoticias` (relevância, idade, país, duplicados). O filtro e as regras vivem em `src/lib/noticias/filtro.ts`;
+// os testes `tests/noticias-*.test.ts` garantem que esta rota continua usando o filtro.
+//
+// CACHE (definido de verdade em 24/11/2026): antes, `force-dynamic` anulava o `revalidate` e só existia cache em memória por instância. Agora:
+//  1) cabeçalho `Cache-Control: public, s-maxage=21600, stale-while-revalidate=86400` na resposta com itens (a rede da Vercel guarda por 6 h para todas as instâncias);
+//  2) resposta SEM itens (falha do Google ou filtro que não achou nada) usa `s-maxage=300`, para não guardar uma lista vazia por 6 h;
+//  3) a memória da instância continua como segunda camada (só guarda resposta com itens).
+// `force-dynamic` fica de propósito: evita buscar o Google durante o build.
 export const dynamic = 'force-dynamic';
-export const revalidate = 21600; // cache de 6 horas
 
 import { NextResponse } from 'next/server';
+import { BUSCAS, filtrarNoticias, lerRss, urlDaBusca, type Noticia } from '@/lib/noticias/filtro';
 
-interface NewsItem {
-  title: string;
-  link: string;
-  source: string;
-  pubDate: string;
-  description: string;
-}
-
-// Termos de busca relevantes para o contexto do Backfindr
-const SEARCH_QUERIES = [
-  'objeto perdido encontrado Brasil',
-  'celular roubado recuperado Brasil',
-  'achado e entregue Brasil',
-];
-
-// Cache em memória para evitar requisições excessivas ao Google
-let cachedNews: NewsItem[] = [];
-let cacheTimestamp = 0;
 const CACHE_TTL = 6 * 60 * 60 * 1000; // 6 horas em ms
+const CC_COM_ITENS = 'public, s-maxage=21600, stale-while-revalidate=86400';
+const CC_SEM_ITENS = 'public, s-maxage=300, stale-while-revalidate=300';
 
-function stripHtml(html: string): string {
-  return html.replace(/<[^>]*>/g, '').replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&quot;/g, '"').replace(/&#39;/g, "'").trim();
-}
+let cachedNews: Noticia[] = [];
+let cacheTimestamp = 0;
 
-function parseRSS(xml: string): NewsItem[] {
-  const items: NewsItem[] = [];
-  const itemRegex = /<item>([\s\S]*?)<\/item>/g;
-  let match;
-
-  while ((match = itemRegex.exec(xml)) !== null) {
-    const itemXml = match[1];
-
-    const titleMatch = itemXml.match(/<title>([\s\S]*?)<\/title>/);
-    const linkMatch = itemXml.match(/<link>([\s\S]*?)<\/link>/);
-    const pubDateMatch = itemXml.match(/<pubDate>([\s\S]*?)<\/pubDate>/);
-    const sourceMatch = itemXml.match(/<source[^>]*>([\s\S]*?)<\/source>/);
-    const descMatch = itemXml.match(/<description>([\s\S]*?)<\/description>/);
-
-    if (titleMatch && linkMatch) {
-      const title = stripHtml(titleMatch[1]);
-      const link = linkMatch[1].trim();
-      const pubDate = pubDateMatch ? pubDateMatch[1].trim() : '';
-      const source = sourceMatch ? stripHtml(sourceMatch[1]) : 'Google News';
-      const description = descMatch ? stripHtml(descMatch[1]).substring(0, 200) : '';
-
-      // Filtrar títulos muito genéricos ou irrelevantes
-      if (title && title.length > 10 && link.startsWith('http')) {
-        items.push({ title, link, source, pubDate, description });
-      }
-    }
-  }
-
-  return items;
-}
-
-async function fetchNewsFromQuery(query: string): Promise<NewsItem[]> {
-  const encodedQuery = encodeURIComponent(query);
-  const url = `https://news.google.com/rss/search?q=${encodedQuery}&hl=pt-BR&gl=BR&ceid=BR:pt-419`;
-
+async function buscar(busca: string): Promise<Noticia[]> {
   try {
-    const response = await fetch(url, {
+    const response = await fetch(urlDaBusca(busca), {
       headers: {
-        'User-Agent': 'Mozilla/5.0 (compatible; Backfindr/1.0; +https://backfindr.vercel.app)',
+        'User-Agent': 'Mozilla/5.0 (compatible; Backfindr/1.0; +https://backfindr.com)',
         'Accept': 'application/rss+xml, application/xml, text/xml',
       },
       signal: AbortSignal.timeout(8000),
     });
-
     if (!response.ok) return [];
-
-    const xml = await response.text();
-    return parseRSS(xml);
+    return lerRss(await response.text());
   } catch {
     return [];
   }
@@ -84,61 +39,30 @@ export async function GET() {
   try {
     const now = Date.now();
 
-    // Retornar cache se ainda válido
     if (cachedNews.length > 0 && now - cacheTimestamp < CACHE_TTL) {
-      return NextResponse.json({
-        success: true,
-        news: cachedNews,
-        cached: true,
-        cachedAt: new Date(cacheTimestamp).toISOString(),
-      });
+      return NextResponse.json(
+        { success: true, news: cachedNews, cached: true, cachedAt: new Date(cacheTimestamp).toISOString() },
+        { headers: { 'Cache-Control': CC_COM_ITENS } },
+      );
     }
 
-    // Buscar notícias de todas as queries em paralelo
-    const results = await Promise.allSettled(
-      SEARCH_QUERIES.map(q => fetchNewsFromQuery(q))
+    const resultados = await Promise.allSettled(BUSCAS.map((q) => buscar(q)));
+    const todos: Noticia[] = [];
+    for (const r of resultados) if (r.status === 'fulfilled') todos.push(...r.value);
+
+    const news = filtrarNoticias(todos, { agora: now });
+
+    if (news.length > 0) { cachedNews = news; cacheTimestamp = now; }
+
+    return NextResponse.json(
+      { success: true, news, cached: false, cachedAt: new Date(now).toISOString() },
+      { headers: { 'Cache-Control': news.length > 0 ? CC_COM_ITENS : CC_SEM_ITENS } },
     );
-
-    const allNews: NewsItem[] = [];
-    const seenTitles = new Set<string>();
-
-    for (const result of results) {
-      if (result.status === 'fulfilled') {
-        for (const item of result.value) {
-          // Deduplicar por título (normalizado)
-          const normalizedTitle = item.title.toLowerCase().substring(0, 60);
-          if (!seenTitles.has(normalizedTitle)) {
-            seenTitles.add(normalizedTitle);
-            allNews.push(item);
-          }
-        }
-      }
-    }
-
-    // Ordenar por data mais recente e limitar a 15 itens
-    const sortedNews = allNews
-      .sort((a, b) => {
-        const dateA = a.pubDate ? new Date(a.pubDate).getTime() : 0;
-        const dateB = b.pubDate ? new Date(b.pubDate).getTime() : 0;
-        return dateB - dateA;
-      })
-      .slice(0, 15);
-
-    // Atualizar cache
-    cachedNews = sortedNews;
-    cacheTimestamp = now;
-
-    return NextResponse.json({
-      success: true,
-      news: sortedNews,
-      cached: false,
-      cachedAt: new Date(now).toISOString(),
-    });
   } catch (error) {
     console.error('Erro ao buscar notícias:', error);
     return NextResponse.json(
       { success: false, error: 'Erro ao buscar notícias', news: [] },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

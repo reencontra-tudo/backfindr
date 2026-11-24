@@ -1,0 +1,52 @@
+busca 1 «polícia devolve celulares roubados»: 23 itens crus, 23 dentro de 30 dias, 22 passam na relevância (sem idade)
+busca 2 «mutirão devolução celulares roubados»: 10 itens crus, 10 dentro de 30 dias, 8 passam na relevância (sem idade)
+busca 3 «polícia recupera celulares roubados»: 54 itens crus, 54 dentro de 30 dias, 51 passam na relevância (sem idade)
+busca 4 «polícia recupera veículos roubados»: 100 itens crus, 100 dentro de 30 dias, 96 passam na relevância (sem idade)
+busca 5 «carga roubada recuperada»: 32 itens crus, 32 dentro de 30 dias, 26 passam na relevância (sem idade)
+busca 6 «objetos furtados recuperados polícia»: 68 itens crus, 68 dentro de 30 dias, 24 passam na relevância (sem idade)
+busca 7 «achados e perdidos devolução objetos»: 8 itens crus, 8 dentro de 30 dias, 1 passam na relevância (sem idade)
+
+TOTAL cru 295 → painel 15
+
+1. PMBA APREENDE ARMA DE FOGO, DROGAS E RECUPERA VEÍCULO ROUBADO | Rota 51 | 24 Nov 2026
+2. Celular furtado de jornalista durante a Micareta de Feira é recuperado e devolvido à proprietária | Boca News | 23 Nov 2026
+3. Polícia recupera carros furtados de prefeitura em cidade do Sul de Minas | Terra do Mandu | 23 Nov 2026
+4. Polícia recupera carro furtado após atender ocorrência de calúnia em Cascavel | Catve | 23 Nov 2026
+5. Polícia Civil recupera veículos oficiais furtados em Santa Rita de Caldas e prende dois suspeitos em Campestre | Amauri Jr News | 23 Nov 2026
+6. POLÍCIA CIVIL INICIA ATENDIMENTO A PESSOAS INTIMADAS PARA RECUPERAÇÃO DE CELULARES ROUBADOS, FURTADOS OU PERDIDOS NA GRANDE ILHA | Corpo de Bombeiros Militar do Maranhão | 23 Nov 2026
+7. PRF recupera carro roubado em Niterói | Governo Federal | 23 Nov 2026
+8. Influenciadora é assaltada, recupera celular e diz que policiais deram a ela bicicleta do ladrão | G1 | 23 Nov 2026
+9. Operação da Polícia Civil recupera 48 celulares furtados e prende cinco suspeitos na Micareta de Feira | Muita Informação | 23 Nov 2026
+10. Polícia intima 2,2 mil pessoas a devolverem celulares roubados no MA | Gazeta Carajás | 23 Nov 2026
+11. Polícia Militar prende suspeito e recupera relógio e drone furtados em Ponta Grossa | P1 News | 23 Nov 2026
+12. Polícia Militar registra prisões, recuperação de veículo furtado e oco... | Portal Tri Notícias | 23 Nov 2026
+13. Polícia Militar recupera veículo furtado em Nova Esperança do Sudoeste | Rádio Independência | 23 Nov 2026
+14. São Luís (MA): 2200 intimações para celulares roubados; veja mutirão | Diário do Estado | 22 Nov 2026
+15. Polícia intima 2,2 mil pessoas para devolver celulares com registro de roubo, furto ou perda no MA | G1 | 22 Nov 2026
+
+--- 67 derrubados por relevância (primeiros 25) ---
+- Devolução de celulares mostra como enfrentar crime com inteligência [sem perda/furto/roubo]
+- Rádio FM Maranhão do Sul 106,3 MHz [sem recuperação/devolução]
+- VÍDEOS: RJ1 de terça-feira, 10 de novembro de 2026 [sem recuperação/devolução]
+- Operação Pro Max: furto milionário em loja de celulares de SC leva polícia a nove cidades do RS [sem recuperação/devolução]
+- Cerca de 70 celulares são roubados de loja em shopping de Belém [sem recuperação/devolução]
+- Daniel Cady, ex de Ivete Sangalo sofre assalto em SP [sem recuperação/devolução]
+- Polícia apreende drogas e veículos roubados em Campo Grande [sem recuperação/devolução]
+- Polícia Militar prende dupla suspeita de roubar residência e manter família refém em Campinas [sem recuperação/devolução]
+- Polícia Militar recupera em Itaúna veículo roubado após homicídio e tentativa de execução [excluído: violência explícita]
+- Polícia Civil encontra em Rio do Sul carro furtado em Ituporanga [sem recuperação/devolução]
+- Carga de carne avaliada em R$ 900 mil é recuperada na Baixada [sem perda/furto/roubo]
+- Carga de cosméticos e eletrônicos avaliada em R$ 4 milhões é recuperada em Guadalupe [sem perda/furto/roubo]
+- PM persegue veículo e resgata vítima mantida refém durante roubo de carga [sem recuperação/devolução]
+- Polícia recupera 182 geladeiras roubadas e descobre fábrica clandestina de fluido de freio na Grande Curitiba [sem bem]
+- Carga de detergentes é recuperada na Avenida Brasil [sem perda/furto/roubo]
+- Carreta com carga roubada, avaliada em quase R$1 milhão em medicamentos, circulava com placas falsas [sem recuperação/devolução]
+- Polícia mira ourives após furto milionário de joias no DF [sem recuperação/devolução]
+- Furto de picanha em Toledo, mãe de 80 anos agredida pelo filho e família feita refém estão entre as ocorrência [sem recuperação/devolução]
+- Homem é preso pela 6ª vez após envolver-se em furto a churrascaria no Parque do Povo, em Presidente Prudente [sem recuperação/devolução]
+- Polícia Civil prende suspeito pela segunda vez em quatro dias por furtos em Rorainópolis [sem recuperação/devolução]
+- Cinco pessoas são encaminhadas à delegacia após furto em residência em Paranavaí [sem recuperação/devolução]
+- Furto a residência em São Carlos termina com dois presos [sem recuperação/devolução]
+- Quadrilha que furtava bagagens em postos de rodovias é alvo de operação [sem recuperação/devolução]
+- Fim da linha! Rastreamento de notebook leva PM a dupla com relógios de luxo furtados em Curitiba [sem recuperação/devolução]
+- Jovem é detido suspeito de furtar objetos de veículo em Faxinal dos Guedes [sem recuperação/devolução]
