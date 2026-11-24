@@ -1,0 +1,102 @@
+{
+ "3101-375": {
+  "inicial": "12 12 objetos 📍 Ative sua localização para ver ocorrências perto de você Ativar Mapa Interativo Adicione NEXT_PUBLIC_MAPBOX_TOKEN nas variáveis do Vercel para ativar.",
+  "busca_celular": "2 2 objetos 📍 Ative sua localização para ver ocorrências perto de você Ativar Mapa Interativo Adicione NEXT_PUBLIC_MAPBOX_TOKEN nas variáveis do Vercel para ativar.",
+  "temBotaoFiltro": 0,
+  "temBotaoNoticias": 1,
+  "noticias": [
+   "Influenciadora tem o celular roubado, recupera o aparelho, e policiais entregam bicicleta do assaltante em São Paulo - Terra",
+   "Celular furtado de jornalista durante a Micareta de Feira é recuperado e devolvido à proprietária - :: Bahia Jornal ::",
+   "Meta lança app Achados no Brasil para disputar OLX e Enjoei - TV Sim Brasil",
+   "Garotos de 10 anos encontram moeda de 1.900 anos em passeio escolar e relutam em entregar relíquia do Império Romano - CNN Brasil",
+   "(Multimídia) China entrega restos mortais de aviadores dos EUA encontrados ao longo da Rota do Hump da Segunda Guerra Mundial - Brasil 247",
+   "(Multimídia) China entrega restos mortais de aviadores americanos encontrados ao longo da Rota do Hump, da Segunda Guerra Mundial - Brasil 247",
+   "Perdeu algo no aeroporto? Veja como recuperar - MS em Foco",
+   "Polícia recupera 17 celulares com registro de roubo ou furto em casa abandonada em Belém - G1",
+   "Qual é o caminho dos celulares roubados no Brasil - Nexo Jornal",
+   "G7News. . O corpo de Thiago da Silva Sousa, de 27 anos, foi encontrado na manhã desta segunda-feira (5), na Represa do Riacho Grande, em São Bernardo do Campo. O jovem estava desaparecido desde sexta-feira (2), quando saiu para realizar entregas - Facebook",
+   "A Petrobras anunciou nesta sexta-feira (2) uma nova descoberta de petróleo em águas ultra profundas na Margem Equatorial brasileira, no estado do Amapá. Segundo a empresa, o intervalo de óleo foi encontrado em um poço a 2.886 metros de profundidad - Instagram",
+   "Dentista achado morto após sair para entregar prótese é sepultado em Itu - G1",
+   "Dentista é encontrado morto após quatro dias desaparecido em SP - Tribuna Online",
+   "Dentista desaparecido é encontrado morto em Itu, interior de SP - TV Sim Brasil",
+   "Quem era o dentista protético desaparecido e encontrado morto em zona rural - Metrópoles"
+  ],
+  "erros": []
+ },
+ "3101-1280": {
+  "inicial": "Backfindr Filtros Lista 12 Registrar 12 objetos 📍 Ative sua localização para ver ocorrências perto de você Ativar Mapa Interativo Adicione NEXT_PUBLIC_MAPBOX_TOKEN nas variáveis do Vercel para ativar.",
+  "busca_celular": "Backfindr Filtros Lista 2 Registrar 2 objetos 📍 Ative sua localização para ver ocorrências perto de você Ativar Mapa Interativo Adicione NEXT_PUBLIC_MAPBOX_TOKEN nas variáveis do Vercel para ativar.",
+  "temBotaoFiltro": 1,
+  "filtrosAbertos": "Backfindr Filtros Lista 12 Registrar STATUS Todos 🔴 Perdido 🟢 Achado 🟠 Roubado ✅ Recuperado CATEGORIA Todas 📱 Celular 👛 Carteira 🔑 Chaves 🎒 Bolsa/Mochila 🐾 Pet 🚲 Bicicleta 🚗 Veículo 📄 Documento 💍 Joia 💻 Eletrônico 👕 Roupa 📦 Outro RAIO Sem limite 5 km 10 km 25 km 50 km 100 km 12 objetos 📍 Ative sua localização para ver ocorrências perto de você Ativar Mapa Interativo Adicione NEXT_PUBLIC_MAPBOX_TOKEN nas variáveis do Vercel para ativar.",
+  "filtro_perdido": "Backfindr Filtros Lista 4 Registrar STATUS Todos 🔴 Perdido 🟢 Achado 🟠 Roubado ✅ Recuperado CATEGORIA Todas 📱 Celular 👛 Carteira 🔑 Chaves 🎒 Bolsa/Mochila 🐾 Pet 🚲 Bicicleta 🚗 Veículo 📄 Documento 💍 Joia 💻 Eletrônico 👕 Roupa 📦 Outro RAIO Sem limite 5 km 10 km 25 km 50 km 100 km Limpar filtros 4 objetos (filtrado) 📍 Ative sua localização para ver ocorrências perto de você Ativar Mapa Interativo Adicione NEXT_PUBLIC_MAPBOX_TOKEN nas variáveis do Vercel para ativar.",
+  "temBotaoNoticias": 1,
+  "noticias": [
+   "Influenciadora tem o celular roubado, recupera o aparelho, e policiais entregam bicicleta do assaltante em São Paulo - Terra",
+   "Celular furtado de jornalista durante a Micareta de Feira é recuperado e devolvido à proprietária - :: Bahia Jornal ::",
+   "Meta lança app Achados no Brasil para disputar OLX e Enjoei - TV Sim Brasil",
+   "Garotos de 10 anos encontram moeda de 1.900 anos em passeio escolar e relutam em entregar relíquia do Império Romano - CNN Brasil",
+   "(Multimídia) China entrega restos mortais de aviadores dos EUA encontrados ao longo da Rota do Hump da Segunda Guerra Mundial - Brasil 247",
+   "(Multimídia) China entrega restos mortais de aviadores americanos encontrados ao longo da Rota do Hump, da Segunda Guerra Mundial - Brasil 247",
+   "Perdeu algo no aeroporto? Veja como recuperar - MS em Foco",
+   "Polícia recupera 17 celulares com registro de roubo ou furto em casa abandonada em Belém - G1",
+   "Qual é o caminho dos celulares roubados no Brasil - Nexo Jornal",
+   "G7News. . O corpo de Thiago da Silva Sousa, de 27 anos, foi encontrado na manhã desta segunda-feira (5), na Represa do Riacho Grande, em São Bernardo do Campo. O jovem estava desaparecido desde sexta-feira (2), quando saiu para realizar entregas - Facebook",
+   "A Petrobras anunciou nesta sexta-feira (2) uma nova descoberta de petróleo em águas ultra profundas na Margem Equatorial brasileira, no estado do Amapá. Segundo a empresa, o intervalo de óleo foi encontrado em um poço a 2.886 metros de profundidad - Instagram",
+   "Dentista achado morto após sair para entregar prótese é sepultado em Itu - G1",
+   "Dentista é encontrado morto após quatro dias desaparecido em SP - Tribuna Online",
+   "Dentista desaparecido é encontrado morto em Itu, interior de SP - TV Sim Brasil",
+   "Quem era o dentista protético desaparecido e encontrado morto em zona rural - Metrópoles"
+  ],
+  "erros": []
+ },
+ "3102-375": {
+  "inicial": "12 12 objetos 📍 Ative sua localização para ver ocorrências perto de você Ativar Mapa Interativo Adicione NEXT_PUBLIC_MAPBOX_TOKEN nas variáveis do Vercel para ativar.",
+  "busca_celular": "2 2 objetos 📍 Ative sua localização para ver ocorrências perto de você Ativar Mapa Interativo Adicione NEXT_PUBLIC_MAPBOX_TOKEN nas variáveis do Vercel para ativar.",
+  "temBotaoFiltro": 0,
+  "temBotaoNoticias": 1,
+  "noticias": [
+   "PMBA APREENDE ARMA DE FOGO, DROGAS E RECUPERA VEÍCULO ROUBADO",
+   "Celular furtado de jornalista durante a Micareta de Feira é recuperado e devolvido à proprietária",
+   "Polícia recupera carros furtados de prefeitura em cidade do Sul de Minas",
+   "Operação Consciência Negra: Polícia Rodoviária Federal recupera veículos roubados e prende três pessoas no RN",
+   "Polícia Civil recupera objetos furtados após denúncia anônima motivada por reportagem em Palmas",
+   "Polícia Civil recupera veículos oficiais furtados em Santa Rita de Caldas e prende dois suspeitos em Campestre",
+   "POLÍCIA CIVIL INICIA ATENDIMENTO A PESSOAS INTIMADAS PARA RECUPERAÇÃO DE CELULARES ROUBADOS, FURTADOS OU PERDIDOS NA GRANDE ILHA",
+   "PRF recupera carro roubado em Niterói",
+   "Influenciadora é assaltada, recupera celular e diz que policiais deram a ela bicicleta do ladrão",
+   "PM recupera carro roubado e prende procurado da Justiça em Sumaré",
+   "Operação da Polícia Civil recupera 48 celulares furtados e prende cinco suspeitos na Micareta de Feira",
+   "Polícia intima 2,2 mil pessoas a devolverem celulares roubados no MA",
+   "Polícia Militar prende suspeito e recupera relógio e drone furtados em Ponta Grossa",
+   "Polícia Militar registra prisões, recuperação de veículo furtado e oco...",
+   "Polícia Militar recupera veículo furtado e celular em Nova Esperança do Sudoeste"
+  ],
+  "erros": []
+ },
+ "3102-1280": {
+  "inicial": "Backfindr Filtros Lista 12 Registrar 12 objetos 📍 Ative sua localização para ver ocorrências perto de você Ativar Mapa Interativo Adicione NEXT_PUBLIC_MAPBOX_TOKEN nas variáveis do Vercel para ativar.",
+  "busca_celular": "Backfindr Filtros Lista 2 Registrar 2 objetos 📍 Ative sua localização para ver ocorrências perto de você Ativar Mapa Interativo Adicione NEXT_PUBLIC_MAPBOX_TOKEN nas variáveis do Vercel para ativar.",
+  "temBotaoFiltro": 1,
+  "filtrosAbertos": "Backfindr Filtros Lista 12 Registrar STATUS Todos 🔴 Perdido 🟢 Achado 🟠 Roubado ✅ Recuperado CATEGORIA Todas 📱 Celular 👛 Carteira 🔑 Chaves 🎒 Bolsa/Mochila 🐾 Pet 🚲 Bicicleta 🚗 Veículo 📄 Documento 💍 Joia 💻 Eletrônico 👕 Roupa 📦 Outro RAIO Sem limite 5 km 10 km 25 km 50 km 100 km 12 objetos 📍 Ative sua localização para ver ocorrências perto de você Ativar Mapa Interativo Adicione NEXT_PUBLIC_MAPBOX_TOKEN nas variáveis do Vercel para ativar.",
+  "filtro_perdido": "Backfindr Filtros Lista 4 Registrar STATUS Todos 🔴 Perdido 🟢 Achado 🟠 Roubado ✅ Recuperado CATEGORIA Todas 📱 Celular 👛 Carteira 🔑 Chaves 🎒 Bolsa/Mochila 🐾 Pet 🚲 Bicicleta 🚗 Veículo 📄 Documento 💍 Joia 💻 Eletrônico 👕 Roupa 📦 Outro RAIO Sem limite 5 km 10 km 25 km 50 km 100 km Limpar filtros 4 objetos (filtrado) 📍 Ative sua localização para ver ocorrências perto de você Ativar Mapa Interativo Adicione NEXT_PUBLIC_MAPBOX_TOKEN nas variáveis do Vercel para ativar.",
+  "temBotaoNoticias": 1,
+  "noticias": [
+   "PMBA APREENDE ARMA DE FOGO, DROGAS E RECUPERA VEÍCULO ROUBADO",
+   "Celular furtado de jornalista durante a Micareta de Feira é recuperado e devolvido à proprietária",
+   "Polícia recupera carros furtados de prefeitura em cidade do Sul de Minas",
+   "Operação Consciência Negra: Polícia Rodoviária Federal recupera veículos roubados e prende três pessoas no RN",
+   "Polícia Civil recupera objetos furtados após denúncia anônima motivada por reportagem em Palmas",
+   "Polícia Civil recupera veículos oficiais furtados em Santa Rita de Caldas e prende dois suspeitos em Campestre",
+   "POLÍCIA CIVIL INICIA ATENDIMENTO A PESSOAS INTIMADAS PARA RECUPERAÇÃO DE CELULARES ROUBADOS, FURTADOS OU PERDIDOS NA GRANDE ILHA",
+   "PRF recupera carro roubado em Niterói",
+   "Influenciadora é assaltada, recupera celular e diz que policiais deram a ela bicicleta do ladrão",
+   "PM recupera carro roubado e prende procurado da Justiça em Sumaré",
+   "Operação da Polícia Civil recupera 48 celulares furtados e prende cinco suspeitos na Micareta de Feira",
+   "Polícia intima 2,2 mil pessoas a devolverem celulares roubados no MA",
+   "Polícia Militar prende suspeito e recupera relógio e drone furtados em Ponta Grossa",
+   "Polícia Militar registra prisões, recuperação de veículo furtado e oco...",
+   "Polícia Militar recupera veículo furtado e celular em Nova Esperança do Sudoeste"
+  ],
+  "erros": []
+ }
+}
