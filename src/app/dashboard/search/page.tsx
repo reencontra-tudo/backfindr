@@ -13,6 +13,7 @@ import ObjectThumb from '@/components/ObjectThumb';
 const CATEGORIES = [
   { value: '', label: 'Todas', highlight: false },
   { value: 'phone', label: '📱 Celular', highlight: true },
+  { value: 'animal', label: '🐾 Animal', highlight: true },
   { value: 'pet', label: '🐾 Pet', highlight: true },
   { value: 'vehicle', label: '🚗 Veículo', highlight: true },
   { value: 'wallet', label: '👛 Carteira', highlight: false },

@@ -15,12 +15,12 @@ import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react
 import Link from 'next/link';
 import {
   MapPin, Newspaper, Search, Map as MapIcon, PlusCircle,
-  Smartphone, Wallet, Key, Backpack, PawPrint, Bike, Car, FileText, Gem, Laptop, Shirt, Package, LayoutGrid, Rows3, type LucideIcon,
+  Smartphone, Wallet, Key, Backpack, PawPrint, Wheat, Bike, Car, FileText, Gem, Laptop, Shirt, Package, LayoutGrid, Rows3, type LucideIcon,
 } from 'lucide-react';
 import ShareModal from '@/components/ShareModal';
 import { APP_URL } from '@/lib/constants';
 import { relativeTimeLabel } from '@/lib/feed/time';
-import { FEED_CATEGORY_LABELS, feedCardLabel, type FeedCategoryKey } from '@/lib/feed/category';
+import { FEED_CATEGORY_LABELS, type FeedCategoryKey } from '@/lib/feed/category';
 import { feedEvents, feedOrigin } from '@/lib/feed/analytics';
 import { acheiHref } from '@/lib/feed/contexto';
 import type { FeedItem } from '@/lib/feed/query';
@@ -67,7 +67,7 @@ const STATUS_TEXT: Record<string, string> = { lost: SITUACAO.lost.texto, found: 
 const STATUS_DOT: Record<string, string> = { lost: SITUACAO.lost.ponto, found: SITUACAO.found.ponto, stolen: SITUACAO.stolen.ponto };
 
 const CATEGORY_ICON: Record<FeedCategoryKey, LucideIcon> = {
-  pet: PawPrint, document: FileText, phone: Smartphone, wallet: Wallet, keys: Key, bag: Backpack,
+  animal: Wheat, pet: PawPrint, document: FileText, phone: Smartphone, wallet: Wallet, keys: Key, bag: Backpack,
   bike: Bike, vehicle: Car, jewelry: Gem, electronics: Laptop, clothing: Shirt, other: Package,
 };
 
@@ -203,7 +203,7 @@ function FeedCard({ item, index, vis }: { item: FeedItem; index: number; vis: Vi
         <span className={`h-2 w-2 shrink-0 rounded-full ${STATUS_DOT[item.status] ?? 'bg-slate-400'}`} aria-hidden />
         <span className={`font-semibold ${STATUS_TEXT[item.status] ?? ''}`}>{item.status_label}</span>
         <span aria-hidden>·</span>
-        <span>{feedCardLabel(item.category, item.category_label)}</span>
+        <span>{FEED_CATEGORY_LABELS[item.category]}</span>
       </p>
       <p className={`mt-1 flex items-center gap-1 text-sm ${T.t3}`}>
         <MapPin className="h-3.5 w-3.5 shrink-0" aria-hidden />

@@ -50,6 +50,15 @@ export function categoriasDoFiltro(filtro: Categoria): Categoria[] {
   return CATEGORIAS.filter((c) => categoriaEAscendentes(c).includes(filtro));
 }
 
+/**
+ * Categorias do BANCO que uma LISTA (admin, relatórios, busca do painel) mostra ao filtrar por `categoria`.
+ * Decisão do fundador (24/11/2026): mesma hierarquia do mapa — Animal inclui Pet (animal → [animal, pet]); Eletrônico inclui Celular
+ * (electronics → [electronics, phone]); Pet e Celular mostram só a própria; as demais mostram só a própria. Valor vazio ou desconhecido → só ele mesmo.
+ */
+export function categoriasDaLista(categoria: string): string[] {
+  return ehCategoriaConhecida(categoria) ? [...categoriasDoFiltro(categoria)] : [categoria];
+}
+
 /** O item de categoria `raw` aparece no filtro `filtro`? Filtro vazio = todos. Mãe inclui filhas; filha NUNCA inclui a mãe nem as irmãs (Pet não mostra «animal»). */
 export function pertenceAoFiltro(raw: string | null | undefined, filtro: string): boolean {
   if (!filtro) return true;

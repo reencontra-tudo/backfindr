@@ -24,6 +24,7 @@ const CATEGORIES = [
   { value: 'phone', label: 'Celular' },
   { value: 'wallet', label: 'Carteira' },
   { value: 'keys', label: 'Chaves' },
+  { value: 'animal', label: 'Animal' },
   { value: 'pet', label: 'Pet' },
   { value: 'electronics', label: 'Eletrônicos' },
   { value: 'document', label: 'Documento' },
