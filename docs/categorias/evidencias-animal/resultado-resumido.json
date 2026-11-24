@@ -1,0 +1,762 @@
+{
+ "base/375/pet": {
+  "chegouNoUltimoPasso": true,
+  "posts": [
+   {
+    "title": "Teste de cadastro automatizado",
+    "description": "Descrição de teste com mais de dez letras",
+    "category": "pet",
+    "status": "lost",
+    "latitude": null,
+    "longitude": null,
+    "location": null,
+    "pet_breed": "SRD"
+   }
+  ],
+  "erros": [],
+  "campos": 10
+ },
+ "base/375/phone": {
+  "chegouNoUltimoPasso": true,
+  "posts": [
+   {
+    "title": "Teste de cadastro automatizado",
+    "description": "Descrição de teste com mais de dez letras",
+    "category": "phone",
+    "status": "lost",
+    "latitude": null,
+    "longitude": null,
+    "location": null
+   }
+  ],
+  "erros": [],
+  "campos": 5
+ },
+ "base/375/wallet": {
+  "chegouNoUltimoPasso": true,
+  "posts": [
+   {
+    "title": "Teste de cadastro automatizado",
+    "description": "Descrição de teste com mais de dez letras",
+    "category": "wallet",
+    "status": "lost",
+    "latitude": null,
+    "longitude": null,
+    "location": null
+   }
+  ],
+  "erros": [],
+  "campos": 6
+ },
+ "base/375/keys": {
+  "chegouNoUltimoPasso": true,
+  "posts": [
+   {
+    "title": "Teste de cadastro automatizado",
+    "description": "Descrição de teste com mais de dez letras",
+    "category": "keys",
+    "status": "lost",
+    "latitude": null,
+    "longitude": null,
+    "location": null
+   }
+  ],
+  "erros": [],
+  "campos": 5
+ },
+ "base/375/bag": {
+  "chegouNoUltimoPasso": true,
+  "posts": [
+   {
+    "title": "Teste de cadastro automatizado",
+    "description": "Descrição de teste com mais de dez letras",
+    "category": "bag",
+    "status": "lost",
+    "latitude": null,
+    "longitude": null,
+    "location": null
+   }
+  ],
+  "erros": [],
+  "campos": 2
+ },
+ "base/375/bike": {
+  "chegouNoUltimoPasso": true,
+  "posts": [
+   {
+    "title": "Teste de cadastro automatizado",
+    "description": "Descrição de teste com mais de dez letras",
+    "category": "bike",
+    "status": "lost",
+    "latitude": null,
+    "longitude": null,
+    "location": null
+   }
+  ],
+  "erros": [],
+  "campos": 7
+ },
+ "base/375/vehicle": {
+  "chegouNoUltimoPasso": true,
+  "posts": [
+   {
+    "title": "Teste de cadastro automatizado",
+    "description": "Descrição de teste com mais de dez letras",
+    "category": "vehicle",
+    "status": "lost",
+    "latitude": null,
+    "longitude": null,
+    "location": null
+   }
+  ],
+  "erros": [],
+  "campos": 8
+ },
+ "base/375/document": {
+  "chegouNoUltimoPasso": true,
+  "posts": [
+   {
+    "title": "Teste de cadastro automatizado",
+    "description": "Descrição de teste com mais de dez letras",
+    "category": "document",
+    "status": "lost",
+    "latitude": null,
+    "longitude": null,
+    "location": null
+   }
+  ],
+  "erros": [],
+  "campos": 5
+ },
+ "base/375/jewelry": {
+  "chegouNoUltimoPasso": true,
+  "posts": [
+   {
+    "title": "Teste de cadastro automatizado",
+    "description": "Descrição de teste com mais de dez letras",
+    "category": "jewelry",
+    "status": "lost",
+    "latitude": null,
+    "longitude": null,
+    "location": null
+   }
+  ],
+  "erros": [],
+  "campos": 2
+ },
+ "base/375/electronics": {
+  "chegouNoUltimoPasso": true,
+  "posts": [
+   {
+    "title": "Teste de cadastro automatizado",
+    "description": "Descrição de teste com mais de dez letras",
+    "category": "electronics",
+    "status": "lost",
+    "latitude": null,
+    "longitude": null,
+    "location": null
+   }
+  ],
+  "erros": [],
+  "campos": 6
+ },
+ "base/375/other": {
+  "chegouNoUltimoPasso": true,
+  "posts": [
+   {
+    "title": "Teste de cadastro automatizado",
+    "description": "Descrição de teste com mais de dez letras",
+    "category": "other",
+    "status": "lost",
+    "latitude": null,
+    "longitude": null,
+    "location": null
+   }
+  ],
+  "erros": [],
+  "campos": 2
+ },
+ "base/1280/pet": {
+  "chegouNoUltimoPasso": true,
+  "posts": [
+   {
+    "title": "Teste de cadastro automatizado",
+    "description": "Descrição de teste com mais de dez letras",
+    "category": "pet",
+    "status": "lost",
+    "latitude": null,
+    "longitude": null,
+    "location": null,
+    "pet_breed": "SRD"
+   }
+  ],
+  "erros": [],
+  "campos": 10
+ },
+ "base/1280/phone": {
+  "chegouNoUltimoPasso": true,
+  "posts": [
+   {
+    "title": "Teste de cadastro automatizado",
+    "description": "Descrição de teste com mais de dez letras",
+    "category": "phone",
+    "status": "lost",
+    "latitude": null,
+    "longitude": null,
+    "location": null
+   }
+  ],
+  "erros": [],
+  "campos": 5
+ },
+ "base/1280/wallet": {
+  "chegouNoUltimoPasso": true,
+  "posts": [
+   {
+    "title": "Teste de cadastro automatizado",
+    "description": "Descrição de teste com mais de dez letras",
+    "category": "wallet",
+    "status": "lost",
+    "latitude": null,
+    "longitude": null,
+    "location": null
+   }
+  ],
+  "erros": [],
+  "campos": 6
+ },
+ "base/1280/keys": {
+  "chegouNoUltimoPasso": true,
+  "posts": [
+   {
+    "title": "Teste de cadastro automatizado",
+    "description": "Descrição de teste com mais de dez letras",
+    "category": "keys",
+    "status": "lost",
+    "latitude": null,
+    "longitude": null,
+    "location": null
+   }
+  ],
+  "erros": [],
+  "campos": 5
+ },
+ "base/1280/bag": {
+  "chegouNoUltimoPasso": true,
+  "posts": [
+   {
+    "title": "Teste de cadastro automatizado",
+    "description": "Descrição de teste com mais de dez letras",
+    "category": "bag",
+    "status": "lost",
+    "latitude": null,
+    "longitude": null,
+    "location": null
+   }
+  ],
+  "erros": [],
+  "campos": 2
+ },
+ "base/1280/bike": {
+  "chegouNoUltimoPasso": true,
+  "posts": [
+   {
+    "title": "Teste de cadastro automatizado",
+    "description": "Descrição de teste com mais de dez letras",
+    "category": "bike",
+    "status": "lost",
+    "latitude": null,
+    "longitude": null,
+    "location": null
+   }
+  ],
+  "erros": [],
+  "campos": 7
+ },
+ "base/1280/vehicle": {
+  "chegouNoUltimoPasso": true,
+  "posts": [
+   {
+    "title": "Teste de cadastro automatizado",
+    "description": "Descrição de teste com mais de dez letras",
+    "category": "vehicle",
+    "status": "lost",
+    "latitude": null,
+    "longitude": null,
+    "location": null
+   }
+  ],
+  "erros": [],
+  "campos": 8
+ },
+ "base/1280/document": {
+  "chegouNoUltimoPasso": true,
+  "posts": [
+   {
+    "title": "Teste de cadastro automatizado",
+    "description": "Descrição de teste com mais de dez letras",
+    "category": "document",
+    "status": "lost",
+    "latitude": null,
+    "longitude": null,
+    "location": null
+   }
+  ],
+  "erros": [],
+  "campos": 5
+ },
+ "base/1280/jewelry": {
+  "chegouNoUltimoPasso": true,
+  "posts": [
+   {
+    "title": "Teste de cadastro automatizado",
+    "description": "Descrição de teste com mais de dez letras",
+    "category": "jewelry",
+    "status": "lost",
+    "latitude": null,
+    "longitude": null,
+    "location": null
+   }
+  ],
+  "erros": [],
+  "campos": 2
+ },
+ "base/1280/electronics": {
+  "chegouNoUltimoPasso": true,
+  "posts": [
+   {
+    "title": "Teste de cadastro automatizado",
+    "description": "Descrição de teste com mais de dez letras",
+    "category": "electronics",
+    "status": "lost",
+    "latitude": null,
+    "longitude": null,
+    "location": null
+   }
+  ],
+  "erros": [],
+  "campos": 6
+ },
+ "base/1280/other": {
+  "chegouNoUltimoPasso": true,
+  "posts": [
+   {
+    "title": "Teste de cadastro automatizado",
+    "description": "Descrição de teste com mais de dez letras",
+    "category": "other",
+    "status": "lost",
+    "latitude": null,
+    "longitude": null,
+    "location": null
+   }
+  ],
+  "erros": [],
+  "campos": 2
+ },
+ "novo/375/animal-sem-essenciais": {
+  "chegouNoUltimoPasso": true,
+  "posts": [],
+  "erros": [],
+  "campos": 4
+ },
+ "novo/375/pet": {
+  "chegouNoUltimoPasso": true,
+  "posts": [
+   {
+    "title": "Teste de cadastro automatizado",
+    "description": "Descrição de teste com mais de dez letras",
+    "category": "pet",
+    "status": "lost",
+    "latitude": null,
+    "longitude": null,
+    "location": null,
+    "pet_breed": "SRD"
+   }
+  ],
+  "erros": [],
+  "campos": 10
+ },
+ "novo/375/phone": {
+  "chegouNoUltimoPasso": true,
+  "posts": [
+   {
+    "title": "Teste de cadastro automatizado",
+    "description": "Descrição de teste com mais de dez letras",
+    "category": "phone",
+    "status": "lost",
+    "latitude": null,
+    "longitude": null,
+    "location": null
+   }
+  ],
+  "erros": [],
+  "campos": 5
+ },
+ "novo/375/wallet": {
+  "chegouNoUltimoPasso": true,
+  "posts": [
+   {
+    "title": "Teste de cadastro automatizado",
+    "description": "Descrição de teste com mais de dez letras",
+    "category": "wallet",
+    "status": "lost",
+    "latitude": null,
+    "longitude": null,
+    "location": null
+   }
+  ],
+  "erros": [],
+  "campos": 6
+ },
+ "novo/375/keys": {
+  "chegouNoUltimoPasso": true,
+  "posts": [
+   {
+    "title": "Teste de cadastro automatizado",
+    "description": "Descrição de teste com mais de dez letras",
+    "category": "keys",
+    "status": "lost",
+    "latitude": null,
+    "longitude": null,
+    "location": null
+   }
+  ],
+  "erros": [],
+  "campos": 5
+ },
+ "novo/375/bag": {
+  "chegouNoUltimoPasso": true,
+  "posts": [
+   {
+    "title": "Teste de cadastro automatizado",
+    "description": "Descrição de teste com mais de dez letras",
+    "category": "bag",
+    "status": "lost",
+    "latitude": null,
+    "longitude": null,
+    "location": null
+   }
+  ],
+  "erros": [],
+  "campos": 2
+ },
+ "novo/375/bike": {
+  "chegouNoUltimoPasso": true,
+  "posts": [
+   {
+    "title": "Teste de cadastro automatizado",
+    "description": "Descrição de teste com mais de dez letras",
+    "category": "bike",
+    "status": "lost",
+    "latitude": null,
+    "longitude": null,
+    "location": null
+   }
+  ],
+  "erros": [],
+  "campos": 7
+ },
+ "novo/375/vehicle": {
+  "chegouNoUltimoPasso": true,
+  "posts": [
+   {
+    "title": "Teste de cadastro automatizado",
+    "description": "Descrição de teste com mais de dez letras",
+    "category": "vehicle",
+    "status": "lost",
+    "latitude": null,
+    "longitude": null,
+    "location": null
+   }
+  ],
+  "erros": [],
+  "campos": 8
+ },
+ "novo/375/document": {
+  "chegouNoUltimoPasso": true,
+  "posts": [
+   {
+    "title": "Teste de cadastro automatizado",
+    "description": "Descrição de teste com mais de dez letras",
+    "category": "document",
+    "status": "lost",
+    "latitude": null,
+    "longitude": null,
+    "location": null
+   }
+  ],
+  "erros": [],
+  "campos": 5
+ },
+ "novo/375/jewelry": {
+  "chegouNoUltimoPasso": true,
+  "posts": [
+   {
+    "title": "Teste de cadastro automatizado",
+    "description": "Descrição de teste com mais de dez letras",
+    "category": "jewelry",
+    "status": "lost",
+    "latitude": null,
+    "longitude": null,
+    "location": null
+   }
+  ],
+  "erros": [],
+  "campos": 2
+ },
+ "novo/375/electronics": {
+  "chegouNoUltimoPasso": true,
+  "posts": [
+   {
+    "title": "Teste de cadastro automatizado",
+    "description": "Descrição de teste com mais de dez letras",
+    "category": "electronics",
+    "status": "lost",
+    "latitude": null,
+    "longitude": null,
+    "location": null
+   }
+  ],
+  "erros": [],
+  "campos": 6
+ },
+ "novo/375/other": {
+  "chegouNoUltimoPasso": true,
+  "posts": [
+   {
+    "title": "Teste de cadastro automatizado",
+    "description": "Descrição de teste com mais de dez letras",
+    "category": "other",
+    "status": "lost",
+    "latitude": null,
+    "longitude": null,
+    "location": null
+   }
+  ],
+  "erros": [],
+  "campos": 2
+ },
+ "novo/375/animal": {
+  "chegouNoUltimoPasso": true,
+  "posts": [
+   {
+    "title": "Teste de cadastro automatizado",
+    "description": "Descrição de teste com mais de dez letras",
+    "category": "animal",
+    "status": "lost",
+    "latitude": null,
+    "longitude": null,
+    "location": null,
+    "animal_species": "horse",
+    "animal_color": "alazão com estrela",
+    "animal_breed": "Mangalarga",
+    "animal_marks": "marca a fogo na anca"
+   }
+  ],
+  "erros": [],
+  "campos": 4
+ },
+ "novo/1280/animal-sem-essenciais": {
+  "chegouNoUltimoPasso": true,
+  "posts": [],
+  "erros": [],
+  "campos": 4
+ },
+ "novo/1280/pet": {
+  "chegouNoUltimoPasso": true,
+  "posts": [
+   {
+    "title": "Teste de cadastro automatizado",
+    "description": "Descrição de teste com mais de dez letras",
+    "category": "pet",
+    "status": "lost",
+    "latitude": null,
+    "longitude": null,
+    "location": null,
+    "pet_breed": "SRD"
+   }
+  ],
+  "erros": [],
+  "campos": 10
+ },
+ "novo/1280/phone": {
+  "chegouNoUltimoPasso": true,
+  "posts": [
+   {
+    "title": "Teste de cadastro automatizado",
+    "description": "Descrição de teste com mais de dez letras",
+    "category": "phone",
+    "status": "lost",
+    "latitude": null,
+    "longitude": null,
+    "location": null
+   }
+  ],
+  "erros": [],
+  "campos": 5
+ },
+ "novo/1280/wallet": {
+  "chegouNoUltimoPasso": true,
+  "posts": [
+   {
+    "title": "Teste de cadastro automatizado",
+    "description": "Descrição de teste com mais de dez letras",
+    "category": "wallet",
+    "status": "lost",
+    "latitude": null,
+    "longitude": null,
+    "location": null
+   }
+  ],
+  "erros": [],
+  "campos": 6
+ },
+ "novo/1280/keys": {
+  "chegouNoUltimoPasso": true,
+  "posts": [
+   {
+    "title": "Teste de cadastro automatizado",
+    "description": "Descrição de teste com mais de dez letras",
+    "category": "keys",
+    "status": "lost",
+    "latitude": null,
+    "longitude": null,
+    "location": null
+   }
+  ],
+  "erros": [],
+  "campos": 5
+ },
+ "novo/1280/bag": {
+  "chegouNoUltimoPasso": true,
+  "posts": [
+   {
+    "title": "Teste de cadastro automatizado",
+    "description": "Descrição de teste com mais de dez letras",
+    "category": "bag",
+    "status": "lost",
+    "latitude": null,
+    "longitude": null,
+    "location": null
+   }
+  ],
+  "erros": [],
+  "campos": 2
+ },
+ "novo/1280/bike": {
+  "chegouNoUltimoPasso": true,
+  "posts": [
+   {
+    "title": "Teste de cadastro automatizado",
+    "description": "Descrição de teste com mais de dez letras",
+    "category": "bike",
+    "status": "lost",
+    "latitude": null,
+    "longitude": null,
+    "location": null
+   }
+  ],
+  "erros": [],
+  "campos": 7
+ },
+ "novo/1280/vehicle": {
+  "chegouNoUltimoPasso": true,
+  "posts": [
+   {
+    "title": "Teste de cadastro automatizado",
+    "description": "Descrição de teste com mais de dez letras",
+    "category": "vehicle",
+    "status": "lost",
+    "latitude": null,
+    "longitude": null,
+    "location": null
+   }
+  ],
+  "erros": [],
+  "campos": 8
+ },
+ "novo/1280/document": {
+  "chegouNoUltimoPasso": true,
+  "posts": [
+   {
+    "title": "Teste de cadastro automatizado",
+    "description": "Descrição de teste com mais de dez letras",
+    "category": "document",
+    "status": "lost",
+    "latitude": null,
+    "longitude": null,
+    "location": null
+   }
+  ],
+  "erros": [],
+  "campos": 5
+ },
+ "novo/1280/jewelry": {
+  "chegouNoUltimoPasso": true,
+  "posts": [
+   {
+    "title": "Teste de cadastro automatizado",
+    "description": "Descrição de teste com mais de dez letras",
+    "category": "jewelry",
+    "status": "lost",
+    "latitude": null,
+    "longitude": null,
+    "location": null
+   }
+  ],
+  "erros": [],
+  "campos": 2
+ },
+ "novo/1280/electronics": {
+  "chegouNoUltimoPasso": true,
+  "posts": [
+   {
+    "title": "Teste de cadastro automatizado",
+    "description": "Descrição de teste com mais de dez letras",
+    "category": "electronics",
+    "status": "lost",
+    "latitude": null,
+    "longitude": null,
+    "location": null
+   }
+  ],
+  "erros": [],
+  "campos": 6
+ },
+ "novo/1280/other": {
+  "chegouNoUltimoPasso": true,
+  "posts": [
+   {
+    "title": "Teste de cadastro automatizado",
+    "description": "Descrição de teste com mais de dez letras",
+    "category": "other",
+    "status": "lost",
+    "latitude": null,
+    "longitude": null,
+    "location": null
+   }
+  ],
+  "erros": [],
+  "campos": 2
+ },
+ "novo/1280/animal": {
+  "chegouNoUltimoPasso": true,
+  "posts": [
+   {
+    "title": "Teste de cadastro automatizado",
+    "description": "Descrição de teste com mais de dez letras",
+    "category": "animal",
+    "status": "lost",
+    "latitude": null,
+    "longitude": null,
+    "location": null,
+    "animal_species": "horse",
+    "animal_color": "alazão com estrela",
+    "animal_breed": "Mangalarga",
+    "animal_marks": "marca a fogo na anca"
+   }
+  ],
+  "erros": [],
+  "campos": 4
+ }
+}

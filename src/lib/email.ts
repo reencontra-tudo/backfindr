@@ -1023,7 +1023,7 @@ export async function sendPWAIncentiveEmail(user: { name: string; email: string 
 // de e-mail não deve impedir a resposta ao finder).
 const CATEGORY_LABEL_EMAIL: Record<string, string> = {
   phone: 'celular', electronics: 'aparelho', wallet: 'carteira', keys: 'molho de chaves',
-  bag: 'bolsa/mochila', pet: 'pet', animal: 'pet', bike: 'bicicleta', vehicle: 'veículo',
+  bag: 'bolsa/mochila', pet: 'pet', animal: 'animal', bike: 'bicicleta', vehicle: 'veículo',
   document: 'documento', jewelry: 'joia/relógio', clothing: 'peça de roupa', other: 'objeto',
 };
 

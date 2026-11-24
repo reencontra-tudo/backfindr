@@ -3,7 +3,7 @@
 // e-mail, endereço exato, coordenadas, descrição bruta, contact_snapshot, match ou score.
 import { query } from '@/lib/db';
 import { maskPersonNames } from '@/lib/privacy/maskPersonNames';
-import { feedCategoryKey, FEED_CATEGORY_LABELS, isFeedCategoryKey, type FeedCategoryKey } from './category';
+import { feedCategoryKey, feedCategoryLabel, isFeedCategoryKey, type FeedCategoryKey } from './category';
 import { parseLocation, cityFromCoordinates, bandFor, norm, UF_CODES, NO_LOCATION_LABEL, type Municipality, type Visitor } from './location';
 import { rankFeed } from './order';
 import { STATUS_LABELS } from './time';
@@ -130,7 +130,7 @@ async function load(): Promise<Loaded> {
       code: String(r.code),
       title: maskPersonNames(r.title) || 'Ocorrência sem título',
       status, status_label: STATUS_LABELS[status] ?? '',
-      category: catKey, category_label: FEED_CATEGORY_LABELS[catKey],
+      category: catKey, category_label: feedCategoryLabel(r.category ?? r.type, catKey),
       origin,
       location_label: maskPersonNames(loc.label) || NO_LOCATION_LABEL,
       has_photo: Boolean(r.photo_url), photo_url: r.photo_url ?? null,

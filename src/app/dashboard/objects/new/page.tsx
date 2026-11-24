@@ -17,7 +17,8 @@ import { compressImages } from '@/lib/compressImage';
 import { ObjectCategory, ObjectStatus } from '@/types';
 import { LocationPicker } from '@/components/ui/LocationPicker';
 import { DynamicCategoryFields } from '@/components/ui/DynamicCategoryFields';
-import { descricaoDoTitulo, passoAnterior, passoInicial, proximoPasso, resumirErros, statusDefinidoPeloIntent } from '@/lib/formularioOcorrencia';
+import { descricaoDoTitulo, faltasDoAnimal, passoAnterior, passoInicial, proximoPasso, resumirErros, statusDefinidoPeloIntent } from '@/lib/formularioOcorrencia';
+import { getAllFieldsForCategory } from '@/config/categoryFields';
 import CampoCodigoColaborador from '@/components/colaboradores/CampoCodigoColaborador';
 import { codigoInicial, colaboradoresAtivoNoCliente, limparCodigoGuardado } from '@/lib/colaboradores/cliente';
 
@@ -56,8 +57,10 @@ const SIMILAR_STATUS_LABEL: Record<string, string> = {
 };
 
 // ─── Options ─────────────────────────────────────────────────────────────────
-const CATEGORIES: { value: ObjectCategory; label: string; emoji: string }[] = [
-  { value: 'pet', label: 'Pet / Animal', emoji: '🐾' },
+const CATEGORIES: { value: ObjectCategory; label: string; emoji: string; hint?: string }[] = [
+  // «Pet» e «Animal» (decisão do fundador, 24/11/2026, MC-01): quem tem cachorro, gato, pássaro ou coelho escolhe Pet; cavalo, boi, porco etc. (criação ou trabalho), Animal.
+  { value: 'pet', label: 'Pet', emoji: '🐾', hint: 'Animal de estimação: cachorro, gato, pássaro…' },
+  { value: 'animal', label: 'Animal', emoji: '🐴', hint: 'De criação ou trabalho: cavalo, boi, porco…' },
   { value: 'phone', label: 'Celular', emoji: '📱' },
   { value: 'wallet', label: 'Carteira', emoji: '👛' },
   { value: 'keys', label: 'Chaves', emoji: '🔑' },
@@ -253,6 +256,7 @@ function NewObjectForm() {
     handleSubmit,
     watch,
     setValue,
+    getValues,
     setFocus,
     formState: { errors },
   } = useForm<FormData>({ resolver: zodResolver(schema) });
@@ -260,6 +264,7 @@ function NewObjectForm() {
   const category = watch('category');
   const status = watch('status');
   const isPet = category === 'pet';
+  const isAnimal = category === 'animal';
 
   // Pré-preencher raça com SRD quando categoria for pet (se campo ainda estiver vazio)
   useEffect(() => {
@@ -322,6 +327,15 @@ function NewObjectForm() {
         if (data.pet_breed) payload.pet_breed = data.pet_breed;
         if (data.pet_microchip) payload.pet_microchip = data.pet_microchip;
         if (data.pet_color) payload.pet_color = data.pet_color;
+      }
+
+      // Animal (criação/trabalho): os campos animal_* (espécie, cor/pelagem e opcionais) vão no corpo e o servidor os guarda em category_fields. Só para `animal`.
+      if (data.category === 'animal') {
+        const valores = getValues() as Record<string, unknown>;
+        for (const f of getAllFieldsForCategory('animal')) {
+          const v = valores[f.name];
+          if (typeof v === 'string' && v.trim()) payload[f.name] = v.trim();
+        }
       }
 
       // Documento: nome do titular (público por escolha do dono), tipo e só os 4 últimos dígitos (o número inteiro nunca é pedido).
@@ -402,7 +416,12 @@ function NewObjectForm() {
   };
 
   // handleSubmit passa (data, event): não repassar o 2º argumento para confirmDuplicate.
-  const onSubmit = (data: FormData) => { setFaltando(null); return submitObject(data, false); };
+  const onSubmit = (data: FormData) => {
+    setFaltando(null);
+    const faltasAnimal = faltasDoAnimal(data.category, getValues() as Record<string, unknown>); // só para `animal`; nas demais categorias é sempre null
+    if (faltasAnimal) { onInvalid(faltasAnimal); return; }
+    return submitObject(data, false);
+  };
   // Validação falhou: leva ao primeiro passo com erro, diz o que falta e foca o campo (os campos de outros passos não estão na tela, então o botão parecia morto)
   const onInvalid = (erros: Record<string, { message?: string } | undefined>) => {
     const r = resumirErros(erros, mode, statusDoIntent);
@@ -528,6 +547,7 @@ function NewObjectForm() {
                 >
                   <div className="text-2xl mb-2">{cat.emoji}</div>
                   <div className="text-sm font-medium">{cat.label}</div>
+                  {cat.hint && <div className="mt-1 text-[11px] leading-snug text-slate-500">{cat.hint}</div>}
                 </button>
               ))}
             </div>
@@ -587,7 +607,7 @@ function NewObjectForm() {
               </label>
               <input
                 {...register('title')}
-                placeholder={isPet ? 'Ex: Labrador caramelo — Toby' : 'Ex: iPhone 15 Pro preto'}
+                placeholder={isPet ? 'Ex: Labrador caramelo — Toby' : isAnimal ? 'Ex: Égua alazã com estrela na testa' : 'Ex: iPhone 15 Pro preto'}
                 className={`w-full bg-surface border rounded-xl px-4 py-3 text-slate-100 placeholder-slate-500 text-sm outline-none focus:border-brand-500 transition-colors ${
                   errors.title ? 'border-red-500' : 'border-surface-border'
                 }`}
@@ -605,7 +625,9 @@ function NewObjectForm() {
                 placeholder={
                   isPet
                     ? 'Descreva cor, porte, sinais característicos, coleira...'
-                    : 'Descreva cor, marca, modelo, características únicas...'
+                    : isAnimal
+                      ? 'Descreva a pelagem, o porte, marcas e sinais (ferro, cicatriz), onde ficava...'
+                      : 'Descreva cor, marca, modelo, características únicas...'
                 }
                 className={`w-full bg-surface border rounded-xl px-4 py-3 text-slate-100 placeholder-slate-500 text-sm outline-none focus:border-brand-500 transition-colors resize-none ${
                   errors.description ? 'border-red-500' : 'border-surface-border'

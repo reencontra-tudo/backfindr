@@ -338,7 +338,7 @@ export default function ScanPage() {
         </div>
 
         {/* Pet details */}
-        {obj.category === 'pet' && (obj.pet_breed || obj.pet_color) && (
+        {(obj.category === 'pet' || obj.category === 'animal') && (obj.pet_breed || obj.pet_color) && (
           <div className="rounded-3xl bg-[#111118] border border-white/5 p-5 mb-5">
             <p className="text-[#00d4aa] text-xs font-semibold tracking-widest uppercase mb-3">🐾 Informações do pet</p>
             <div className="grid grid-cols-2 gap-4">
