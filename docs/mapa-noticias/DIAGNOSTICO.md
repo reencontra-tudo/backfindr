@@ -111,7 +111,7 @@ O filtro de relevância **não existe** (não é um filtro que falha: nunca foi 
 - *Exclusões:* dica ou serviço (passo a passo, dicas, GOV.BR, conta, senha, e-mail, golpe, pix, aplicativo), produto/app de nome parecido (Meta, OLX, Enjoei, marketplace, Facebook, Instagram, anúncio, promoção, oferta), política (eleição, partido, senador, deputado, STF, Congresso, Bolsonaro, Lula etc.), violência explícita (homicídio, assassinato, latrocínio, estupro, morto, tiroteio etc.), outro país (lista de países e cidades estrangeiras).
 - **Limites conhecidos:** a lista de países é parcial (não há como saber o país de um veículo só pelo nome); os termos precisam de manutenção; a mesma história em veículos diferentes com palavras muito diferentes ainda pode aparecer mais de uma vez.
 
-**3. Idade:** 30 dias (`IDADE_MAXIMA_DIAS`); sem data válida, descarta; data no futuro (> 1 dia) descarta.
+**3. Idade (regra do fundador, 24/11/2026, com reserva):** mostra as notícias dos **últimos 10 dias**; se houver **menos de 5**, completa com as mais novas de **até 30 dias** (só até chegar a 5; interpretação minha de «completar»); **nunca mostra mais de 30 dias**; sempre do mais novo para o mais antigo; vazio só se não houver nada do escopo em 30 dias. Sem data válida, descarta; data no futuro (> 1 dia) descarta. Duplicados saem antes da contagem.
 
 **4. Duplicados:** mesmo link; títulos com ≥ 60 % das palavras em comum (comparando radicais de 5 letras: «devolver/devolverem»); ou ≥ 30 % + o mesmo número («48 celulares»).
 
@@ -146,4 +146,13 @@ O filtro de relevância **não existe** (não é um filtro que falha: nunca foi 
 **Limites observados (honestos):** (a) a busca «achados e perdidos devolução objetos» trouxe só 8 itens e 1 passa no filtro: a cobertura de achados e perdidos de aeroportos, metrô e prefeituras é **fraca**; (b) a mesma história em veículos diferentes ainda aparece mais de uma vez (ex.: as intimações de celulares no MA); (c) o item «Influenciadora é assaltada, recupera celular...» passa e é borderline; (d) a lista de países é parcial; (e) sem IA, o filtro depende de termos: precisa de revisão periódica da amostra.
 
 **Não regressão do mapa (protocolo):** `src/app/map/*` e `src/lib/publicSignals/*` têm **diff zero** (só mudam `news/route.ts`, o módulo novo, 2 testes e documentação). Navegador automatizado (Chromium, 375 e 1280 px) contra DUAS compilações locais (linha de base e nova) com a mesma lista simulada de 12 pinos: texto inicial («12 objetos»), busca «celular» (12 → 2), filtros abertos e filtro «Perdido» (12 → 4) **idênticos** nas duas, sem erro de página, botão do painel de notícias igual; o painel abre com 15 itens nas duas (conteúdo diferente, como esperado). **Não verificado:** os pinos desenhados no mapa (dependem do Mapbox real, inalcançável aqui; o código do mapa não foi tocado) e o efeito do `s-maxage` na Vercel. Evidências em `docs/mapa-noticias/evidencias/`.
+
+## Medição da regra de idade (dados reais, 24/11/2026, 7 buscas, 254 itens crus)
+| Cenário | Itens do escopo e distintos |
+|---|---|
+| Só 10 dias | **81** (o painel mostra os 15 mais novos) |
+| Só 30 dias | 170 |
+| **Regra nova** (10 dias; completa até 5 só se vierem menos de 5) | **15** hoje (81 ≥ 5: usa só os 10 dias) |
+Por semana (distintos do escopo): dias 0-7: 61; 7-14: 82; 14-21: 16; 21-28: 11. **Mesmo a semana mais fraca da janela teve 11**, então 10 dias não deixaria o painel vazio nesta amostra. **Limite:** é uma amostra de um dia; a reserva de 30 dias existe justamente para uma semana fraca. A amostra de produção antiga (13 itens) não serve para esta conta: ela vinha das buscas amplas antigas.
+Testes novos da regra (8): 5 ou mais recentes mostra só elas; menos de 5 completa até 5 e nunca passa de 30; 4 recentes completa, 5 não; duplicada recente não conta duas vezes; vazio só sem nada em 30 dias; máximo 15. Conferi que falham se o mínimo ou o teto de 30 dias forem quebrados.
 
