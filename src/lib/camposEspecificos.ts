@@ -4,7 +4,7 @@
 // brinco/registro e conteúdo da carteira. (+ número do motor do veículo: mesma natureza do chassi; proposta a confirmar no PR.)
 // PÚBLICOS: todos os demais campos não sensíveis (marca, modelo, cor, tipo, raça, porte, marcas e sinais…) e a PLACA do veículo ROUBADO (exceção decidida
 // pelo fundador: é como as pessoas reconhecem o carro). Placa de veículo perdido/encontrado/protegido: só o titular.
-// Só os campos da CONFIGURAÇÃO (`config/categoryFields.ts`) são exibidos: qualquer outra chave em `category_fields` (latitude, longitude, document_last4…) nunca sai daqui.
+// Só os campos da CONFIGURAÇÃO (`config/categoryFields.ts`) são exibidos: qualquer outra chave em `category_fields` (coordenadas e os dados do documento) nunca sai daqui.
 import { getAllFieldsForCategory, getCategoryFieldConfig, type FieldDefinition } from '@/config/categoryFields';
 
 /** Campos que só o titular vê. */

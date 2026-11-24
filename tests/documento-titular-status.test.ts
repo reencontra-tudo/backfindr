@@ -214,7 +214,6 @@ describe('regressão estática: gate é lista de permissão e a saída pública 
       'src/app/api/v1/objects/route.ts',
       'src/app/api/v1/objects/scan/[code]/route.ts',
       'src/app/dashboard/objects/[id]/edit/page.tsx',
-      'src/app/dashboard/objects/[id]/page.tsx',
       'src/app/dashboard/objects/new/page.tsx',
       'src/config/categoryFields.ts',
       'src/lib/documentPrivacy.ts',
