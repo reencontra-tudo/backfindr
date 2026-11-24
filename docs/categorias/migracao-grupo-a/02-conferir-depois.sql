@@ -1,0 +1,67 @@
+-- Migração de dados (grupo A do LEVANTAMENTO-CATEGORIAS.md): 53 ocorrências do LEGADO que estão em `electronics` mas são celulares passam para `phone`.
+-- NÃO APLICADA. Só roda com a ORDEM FINAL do fundador, depois do PR dos filtros do mapa mesclado. Ver LEIA-ME.md (ordem dos arquivos, backup, conferências).
+-- Decisão: DECISOES.md, MC-01 (24/11/2026). B1, B2, B3 e D (carga/lote, vários aparelhos, título genérico, não-eletrônico) NÃO são tocados.
+-- SOMENTE LEITURA. Esperado: em_phone = 53; ainda_electronics = 0; auditoria = 53; backup = 53; os 53 continuam legado e com o mesmo id.
+WITH alvo(id) AS (VALUES
+    ('870822f1-a573-448a-8c52-606450e71514'::uuid),
+    ('b026519c-b860-4b7b-9c01-491eddfee26d'::uuid),
+    ('e6ce432b-7717-41a6-965a-4b76d2546b54'::uuid),
+    ('17b425b9-15f1-4d52-a7f8-a5bd38b966fc'::uuid),
+    ('167e4f72-0d38-4bfe-99b1-e88684e63c09'::uuid),
+    ('02645be5-bcf7-4e11-add3-addd3a38d4e0'::uuid),
+    ('c791e62c-3fd8-4aef-951e-399a6223f4e4'::uuid),
+    ('3ea5544d-a9ce-477e-9ec5-fc6a84c2b64b'::uuid),
+    ('b6350e91-02cb-422b-ad1f-2fa5ad4d822b'::uuid),
+    ('a9f981e8-c7ac-48cf-a232-381208bbf348'::uuid),
+    ('48ded550-184b-4781-aa43-dba20f2bfafb'::uuid),
+    ('7dc498fe-f1ca-4d74-85a3-073f4edd64df'::uuid),
+    ('f0e53971-1b49-4a20-bf5a-71d7519c8045'::uuid),
+    ('a9aeefd6-241a-47cf-83ea-254b1fd46bb6'::uuid),
+    ('8d2d8e7a-46ad-49e3-acab-ae01d5381f76'::uuid),
+    ('5f4de645-b019-4067-b4fa-fb82df28a615'::uuid),
+    ('ea386347-2d00-41bb-bbe9-afe59c0f20af'::uuid),
+    ('af07a8be-1430-4170-9d9c-e9f17f0bf7fe'::uuid),
+    ('6cb0f5d9-9d9e-485e-bd8c-f1a516e159c1'::uuid),
+    ('8acda873-c555-4cb0-a430-80344f881427'::uuid),
+    ('c6761cf2-f1fe-4ec4-a1df-21c32263bb01'::uuid),
+    ('f72a47a5-d168-4bac-9e69-18db3e8c7fad'::uuid),
+    ('4f34e247-1b35-4ab2-9c23-dfa33df305ed'::uuid),
+    ('354a3d68-070b-40bc-b0e4-f47c5060579b'::uuid),
+    ('e5bb783e-fdd8-4b54-8b66-412935811bb2'::uuid),
+    ('6e0d90f2-1803-4270-9b3d-0b0c86cecd27'::uuid),
+    ('668d6601-be39-4215-82e5-57fc106af6d9'::uuid),
+    ('1748a791-59d2-41b9-b61d-7253fd751454'::uuid),
+    ('e0cc77c5-f65f-4888-8cd3-d6c54ac13058'::uuid),
+    ('5c0f5371-8a92-44a4-889b-ae26be2e5c17'::uuid),
+    ('34744233-7f9b-40ec-977c-7e837acc6f94'::uuid),
+    ('bb710479-f2cc-49e5-b3a2-6682f6bed0a4'::uuid),
+    ('8d9abef8-fd1c-4c5f-bb87-e8b98192e37a'::uuid),
+    ('42ce7566-39af-4809-88f1-1b6ca4aea651'::uuid),
+    ('7c32b58b-543a-4a0e-8d9a-94ed63d33fb1'::uuid),
+    ('1762fafe-61f6-486d-ba50-6647f73a2bcc'::uuid),
+    ('72c924f9-8053-46bb-8326-003fcd70f22b'::uuid),
+    ('a1af8416-3133-427e-a0f2-e5b001a9d555'::uuid),
+    ('bfbe9a08-bcac-41a5-83e1-8ce1511d964f'::uuid),
+    ('ddd9a4df-eee0-42a5-9d61-d1bf5c405d31'::uuid),
+    ('224d01d2-4db4-4a9f-ac94-88531782764a'::uuid),
+    ('92702c43-506e-43cd-ac63-a1efa3db291a'::uuid),
+    ('4d94be03-f8a2-4401-a9f5-03d03c88b3e7'::uuid),
+    ('e3270814-d8ac-40f7-8a79-82a16e252646'::uuid),
+    ('ca5e2216-d8a7-48c5-89dc-04223f4fd54c'::uuid),
+    ('6c8e4970-de0a-4aba-8baa-9672df17a7ff'::uuid),
+    ('0d4f8c91-315e-4ada-824c-c999a09246df'::uuid),
+    ('cbebd6c6-f41c-45d9-a481-925162605ed2'::uuid),
+    ('1b5b1938-a481-45e5-b15e-20d17e72d484'::uuid),
+    ('4b590071-bcae-4bad-817c-11df648c78d9'::uuid),
+    ('c76a93e4-40fd-4913-824f-1779d70cbb52'::uuid),
+    ('e5249ae2-b83d-4e15-9d82-6f5d47a2fd0c'::uuid),
+    ('ea1d5545-73ec-44de-ba03-f522bb879341'::uuid)
+)
+SELECT (SELECT count(*) FROM objects o JOIN alvo a ON a.id = o.id WHERE o.category = 'phone' AND o.type = 'phone' AND o.is_legacy) AS em_phone,
+       (SELECT count(*) FROM objects o JOIN alvo a ON a.id = o.id WHERE o.category = 'electronics')                                  AS ainda_electronics,
+       (SELECT count(*) FROM objects_categoria_auditoria WHERE revertido_em IS NULL)                                               AS auditoria,
+       (SELECT count(*) FROM objects_categoria_backup_grupo_a)                                                                     AS backup;
+
+-- Contagens GERAIS por categoria: phone sobe 53 e electronics cai 53 (150 → 97 no legado); o total de objetos não muda; nenhuma outra categoria muda.
+SELECT coalesce(category, '(nulo)') AS categoria, count(*) AS total, count(*) FILTER (WHERE is_public) AS publicos
+  FROM objects GROUP BY 1 ORDER BY 1;
