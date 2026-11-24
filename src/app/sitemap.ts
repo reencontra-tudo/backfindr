@@ -3,6 +3,7 @@
 // Cobre: páginas estáticas + objetos públicos + posts da comunidade
 
 import type { MetadataRoute } from 'next';
+import { paginasDeColaboradorParaSitemap } from '@/lib/colaboradores/sitemap';
 
 const BASE = 'https://backfindr.com';
 
@@ -100,5 +101,8 @@ async function buildSitemap(): Promise<MetadataRoute.Sitemap> {
     if (items.length < OBJECTS_PAGE_SIZE) break;
   }
 
-  return [...STATIC_PAGES, ...communityUrls, ...objectUrls];
+  // Programa de Colaboradores: [] com o interruptor desligado (sitemap idêntico ao de antes).
+  const colaboradorUrls = await paginasDeColaboradorParaSitemap(BASE);
+
+  return [...STATIC_PAGES, ...communityUrls, ...objectUrls, ...colaboradorUrls];
 }

@@ -117,6 +117,13 @@ Conclusão de contexto: o gargalo é visitante, como o fundador afirma. Ao mesmo
 | `auditoria` | Trilha genérica, só `INSERT` | `ator_id`, `acao`, `alvo_tipo/id`, `antes/depois` resumidos, `motivo`, `criado_em`. Cobre estado do colaborador, verificação, saque, ajuste e configuração. |
 | `colaborador_visitas_dia` (opcional, E8) | Visitas por dia | contagem agregada por colaborador e dia, **sem IP, sem cookie, sem identificador**. Ver §3.8. |
 
+**Escopo do gatilho da migration 026 (confirmado em 23/11/2026, pedido do fundador).** O gatilho é `BEFORE UPDATE OF colaborador_id, colaborador_codigo ON objects ... WHEN (OLD.colaborador_id IS DISTINCT FROM NEW.colaborador_id OR OLD.colaborador_codigo IS DISTINCT FROM NEW.colaborador_codigo)`. Consequências, todas verificadas:
+1. **Só age sobre as colunas novas do programa.** `UPDATE OF <colunas>` faz o Postgres nem considerar o gatilho num `UPDATE` que não cita essas colunas. Os 26 comandos `UPDATE objects` do código (status, edição, matching e aviso de «encontrei», boost e webhook do Mercado Pago, imagens, categoria, descrição, busca, rotinas do admin) **nenhum cita as colunas do programa e nenhum usa lista de colunas dinâmica** (busca em `src/` em 23/11/2026).
+2. **Custo zero para `UPDATE`s normais.** Teste (`tests/colaboradores-e2-guardas.test.ts`, com `track_functions`): depois de `UPDATE`s de status, edição, boost, aviso de «encontrei» e imagens, em ocorrências com e sem colaborador, a função do gatilho foi executada **0 vezes**; listar as colunas do programa sem mudar o valor também executa **0 vezes** (cláusula `WHEN`); só uma mudança real chega à função e é recusada.
+3. **Nenhum gatilho em `INSERT` ou `DELETE` de `objects`** (o teste confere os bits do tipo do gatilho). No `INSERT`, a única diferença é a verificação da chave estrangeira, e só quando `colaborador_id` não é nulo.
+4. Reversão e idempotência testadas; a migration **não está aplicada em nenhum banco compartilhado com a produção**.
+Nada a ajustar: o gatilho já era assim.
+
 ### 3.3 Código do colaborador: regra central
 - **Formas aceitas:** `@nome` (com ou sem `@`, qualquer caixa) ou `codigo_curto`. Os dois resolvem para o mesmo `colaborador_id`.
 - **Validação** (`GET /api/v1/colaboradores/validar?codigo=…`, pública, resposta única): devolve só `{ ok, nome }` para ativo e `{ ok:false }` para inválido **e** inativo (mesma resposta; não confirma existência). Limite por origem usando a tabela de controle já existente (`send_throttle_events`), não memória de instância.
@@ -129,7 +136,7 @@ Conclusão de contexto: o gargalo é visitante, como o fundador afirma. Ao mesmo
 ### 3.4 Rotas e telas
 | Superfície | Rota | Observação |
 |---|---|---|
-| Página do colaborador | URL pública `/@nome` → reescrita para `/colaborador/[slug]` | Reescrita por middleware (regex `^/@([a-z0-9-]{3,30})$`), com alternativa `rewrites()` do `next.config.js`; a E0 decide testando em `next start` **e** em prévia da Vercel. O acesso direto a `/colaborador/x` redireciona 308 para `/@x` (uma só URL canônica). A parte `/@` não atrapalha os rastreadores existentes (o middleware atual continua rodando para ela). |
+| Página do colaborador | URL pública `/@nome` → reescrita para `/colaborador/[slug]` | Reescrita por middleware (regex `^/@([a-z0-9-]{3,30})$`), com alternativa `rewrites()` do `next.config.js`; a E0 decide testando em `next start` **e** em prévia da Vercel. O acesso direto a `/colaborador/x` **mostra a mesma página com a canônica apontando para `/@x`** (desvio do desenho original, que previa um redirecionamento 308: ver `e2/NAO-REGRESSAO.md` §6, item 3). A parte `/@` não atrapalha os rastreadores existentes (o middleware atual continua rodando para ela). |
 | Seja colaborador | `/colaborador/seja` (nome final a decidir) | Só por link direto; **sem menu, sem rodapé, sem sitemap, `noindex`**; não entra em `robots.ts` (um `Disallow` revelaria o endereço). |
 | Painel do colaborador | `/dashboard/colaborador/*` | Atrás do login; mostra só ocorrências com o código **pela saída pública** (`toPublicItem`), saldo, verificação, saque, troca de canal, saída. |
 | Admin | `/admin/colaboradores/*` | Mesmo `adminGuard`; ver §3.7. |
@@ -292,8 +299,8 @@ Limite honesto: o retroativo só é confiável para boosts que existirem nas tab
 | Etapa | Estado | PR | Verificação |
 |---|---|---|---|
 | E0 — prova da rota `/@nome` | **VERIFICADA E APROVADA pelo fundador (23/11/2026).** NÃO mesclada: as etapas do piloto serão mescladas juntas, depois de aprovadas | #163 (empilhado sobre o #162) | local + prévia da Vercel (abaixo) |
-| E1 — atribuição | **CÓDIGO PRONTO e verificado localmente** (PR em rascunho, empilhado sobre a E0); aguarda verificação na Vercel e aprovação do fundador. **Migration 026 NÃO aplicada em produção** (precisa de ordem escrita) | ver STATUS.md | `e1/NAO-REGRESSAO.md` |
-| E2 — página `/@nome` + feed + SEO | NÃO INICIADA | — | — |
+| E1 — atribuição | **APROVADA pelo fundador (23/11/2026) com base na verificação local; NÃO mesclada** (as etapas do piloto serão mescladas juntas). A verificação na Vercel passou para o fim do piloto. **Migration 026 NÃO aplicada em produção** (precisa de ordem escrita) | ver STATUS.md | `e1/NAO-REGRESSAO.md` |
+| E2 — página `/@nome` + feed + SEO | **CÓDIGO PRONTO e verificado localmente** (PR em rascunho, empilhado sobre a E1); aguarda aprovação do fundador. Sem verificação na Vercel (será feita uma vez, no fim do piloto) | ver STATUS.md | `e2/NAO-REGRESSAO.md` |
 | E3 — cartaz com a marca | NÃO INICIADA | — | — |
 | E4 a E8 | SUSPENSAS (decisão do fundador, 23/11/2026) | — | — |
 
@@ -329,3 +336,50 @@ Achados da prova:
 - Formulário: campo opcional e discreto no último passo, só com o programa ligado; `layout.tsx`: captura do `?colab=` na aba.
 - **Parâmetro da URL: `?colab=`** (o rascunho do desenho dizia `?c=`; mudou para evitar colisão com parâmetros existentes). Interruptores: `COLABORADORES_ATIVO=1` (servidor) e `NEXT_PUBLIC_COLABORADORES_ATIVO=1` (navegador, fixado no build); ligar juntos.
 - **Para ligar na prévia/produção (depende do Marcos):** aplicar a 026 no banco usado, criar o colaborador `@backfindr` (E2), definir as duas variáveis. Nada disso foi feito.
+
+### E2 — o que foi construído (detalhe em `e2/NAO-REGRESSAO.md`)
+- `src/app/colaborador/[slug]/page.tsx`: página real em `/@nome` (topo com nome, imagem ou inicial, descrição, «por Backfindr» discreto e link de volta ao grupo/perfil em destaque, `https` e `nofollow`; botões «Perdi algo / Encontrei algo / Roubaram algo meu» para os fluxos de sempre com `?colab=<código curto>`; feed da página). Estática com revalidação de 5 min; 404 desligada, antes de qualquer consulta ao banco.
+- Estados: ativo = página; suspenso = 307 e saiu/excluído = 308 para o Feed; inexistente = 404.
+- SEO (PC-03): `index` só com página ativa + verificada + ao menos uma ocorrência cadastrada com o código; senão `noindex`; canônica `/@nome`; sitemap só com esse mesmo critério (vazio desligado). Nenhum link do site geral, menu ou `robots.ts` aponta para as páginas de colaborador (teste de guarda, PC-04).
+- `src/lib/colaboradores/feed.ts`: consulta própria (mesma elegibilidade e mesmos campos públicos do Feed; primeiro as com o código, depois as da região por distância dentro do raio; até 24). O Feed geral não foi alterado (teste de paridade: o cartão é igual ao do Feed para a mesma ocorrência).
+- Admin: aviso visível quando `COLABORADORES_ATIVO` e `NEXT_PUBLIC_COLABORADORES_ATIVO` estão diferentes (rota `GET /api/v1/admin/colaboradores/interruptores`, só admin; nada renderizado quando iguais).
+- `docs/programa-colaboradores/seed-backfindr.sql`: seed do `@backfindr` (**não executado**; só para o banco isolado, com ordem do fundador).
+
+## 10. Verificação na Vercel, uma vez, ao final do piloto: banco isolado (levantamento de 23/11/2026; NADA foi executado)
+
+Decisão do fundador (23/11/2026): a verificação na Vercel será feita **uma vez**, depois da E3, com todas as etapas juntas, **num banco isolado**; a migration 026 **não** é aplicada em nenhum banco compartilhado com a produção.
+
+### 10.a As prévias da Vercel usam o mesmo banco da produção?
+**Não consigo ver as variáveis da Vercel; o que segue é evidência, não confirmação.**
+| Evidência | O que indica |
+|---|---|
+| `BACKFINDR.md` (auditoria de 25/08/2026): «Produção e Preview batem entre si (nenhuma variável só em um dos dois)» | `DATABASE_URL` existe nos dois escopos |
+| `BACKFINDR.md`: os testes foram feitos «via preview do Vercel, nunca localhost real» | as prévias acessam um banco real |
+| `docs/ROTACAO-SEGREDOS.md`: «Production e Preview têm valores independentes» (sobre os segredos rotacionados) | não diz nada sobre `DATABASE_URL` |
+| Supabase (consulta de 23/11/2026): a organização tem 3 projetos (um deles pausado) e **nenhuma branch de banco**; não existe banco de teste ou staging do Backfindr | se a prévia tem `DATABASE_URL`, ela só pode apontar para o projeto de produção do Backfindr (ou para um dos outros projetos, improvável) |
+**Conclusão (inferência):** é provável que as prévias usem o **mesmo banco da produção**. Regra até confirmar: **nenhum teste que escreva dados (cadastro, boost, conta) em prévia**. As verificações de E0 já feitas na prévia foram só de leitura de páginas.
+**Como o fundador confirma em 1 minuto, sem expor valores:** Vercel → projeto → Settings → Environment Variables → procurar `DATABASE_URL`. Se há **uma** linha marcada com Production e Preview, o valor é o mesmo. Se há duas linhas (uma Production, outra Preview), abrir «Edit» e comparar só o **nome do host** (`db.<identificador do projeto>.supabase.co`) sem copiar nem colar o valor.
+
+### 10.b Opção recomendada para o banco isolado
+Fatos verificados em 23/11/2026 (Supabase, MCP e documentação): a organização está no plano **Free**; o plano Free permite **2 projetos ativos** e projetos pausados não contam; hoje há 2 ativos (o do Backfindr e outro, «Resolve Tudo») e 1 pausado; o banco do Backfindr tem **50 MB, 56 tabelas** e a extensão `pg_trgm`; **não há histórico de migrations** no banco (a lista veio vazia) e a pasta `supabase/` do repositório só tem funções, sem migrations.
+| Opção | Custo estimado | Observações |
+|---|---|---|
+| **1. Novo projeto Supabase só para o teste (recomendada)**, copiando só o **esquema** | Free: US$ 0, **se** houver vaga: hoje não há (2 ativos); precisaria pausar temporariamente o projeto «Resolve Tudo» (decisão do fundador; eu não sei se ele está em uso). Pago: Pro a partir de US$ 25/mês e cerca de US$ 10/mês por projeto extra em computação Micro (o crédito de US$ 10 cobre um projeto); apagar o projeto depois do teste (se a cobrança é proporcional aos dias não foi verificado: conferir no painel antes de criar). | Mesmo motor e extensões da produção; sem dados pessoais (só esquema). |
+| 2. Branch de banco do Supabase | Exige plano pago (HIPÓTESE: não confirmado nas páginas lidas). US$ 0,01344 por hora de uma branch Micro (≈ US$ 0,32 por dia; ≈ US$ 9,8 por mês se ficar ligada), fora do teto de gasto, **mais** o plano Pro. | Como o banco não tem histórico de migrations, a branch nasceria **sem as tabelas** (HIPÓTESE: pelo que a documentação diz de como as branches são criadas, não confirmado aqui); o esquema precisaria ser carregado do mesmo jeito. Mais peças e mais custo que a opção 1. |
+| 3. Postgres gratuito de outro provedor | Preço e limites **não verificados** aqui. | Avaliar só se o fundador quiser evitar mexer no plano do Supabase; mesmo passo de carregar o esquema. |
+**Recomendação:** opção 1. Se o fundador preferir custo zero e o projeto «Resolve Tudo» puder ficar pausado por alguns dias, é a melhor; senão, plano Pro por um mês (≈ US$ 35 com 3 projetos ativos, conforme a conta da documentação) e apagar o projeto de teste depois.
+**Passos (nenhum executado):**
+1. Criar o projeto de teste, mesma região da produção, com senha forte própria (o fundador).
+2. **Copiar só o esquema:** o fundador roda `pg_dump --schema-only --no-owner --no-privileges` contra a produção (leitura) e restaura no projeto de teste. **Sem dados:** nenhum dado pessoal sai da produção.
+3. No banco de teste: `payments_enabled = false` em `payment_settings` (o boost entra em modo de teste, sem cobrança), usuários de teste e o necessário para o Feed (a tabela `municipalities` pode ficar vazia).
+4. Aplicar a 026 e o seed do `@backfindr` (10.c).
+5. **Apontar SÓ a prévia da branch do piloto para ele:** na Vercel, criar `DATABASE_URL`, `COLABORADORES_ATIVO=1` e `NEXT_PUBLIC_COLABORADORES_ATIVO=1` no ambiente **Preview** com o filtro **Git Branch = a branch do piloto (`claude/backfindr-colaboradores-e3`)**. A Vercel permite variáveis de Preview por branch, e a específica de uma branch prevalece sobre a de «todas as branches» (documentação da Vercel, **não conferida aqui**). Nada em Production nem nas demais prévias.
+6. **Prova de isolamento antes de qualquer cadastro:** gravar uma linha-marca no banco de teste (por exemplo, uma ocorrência com título «TESTE-ISOLADO») e confirmar que ela aparece na prévia da branch do piloto e **não** aparece em `backfindr.com` nem na prévia de outra branch.
+7. Cuidados na prévia de teste: e-mails de verdade podem sair no cadastro (usar endereços descartáveis); o token do Mercado Pago do ambiente Preview pode ser real (não tocar em pagamento: `payments_enabled = false` no banco de teste).
+8. Ao final: apagar as 3 variáveis e o projeto de teste; confirmar que a produção não mudou.
+
+### 10.c Aplicar e reverter a 026 no banco isolado
+- **Aplicar:** colar `src/db/migrations/026_colaboradores.sql` no SQL Editor do projeto de teste (é idempotente e aditiva); depois `docs/programa-colaboradores/seed-backfindr.sql`; depois as consultas de verificação que estão no fim de cada arquivo (somente leitura).
+- **Reverter a 026:** o bloco «Reversão» no fim do próprio arquivo (gatilho, função, índice, as duas colunas de `objects`, tabela `colaboradores`); testado em `tests/colaboradores-atribuicao.test.ts` (a reversão roda, o `objects` volta ao que era e reaplicar funciona). Perde-se só a atribuição gravada **no banco de teste**.
+- **Reverter só o seed:** `update colaboradores set estado = 'saiu' where slug = 'backfindr'` (a linha nunca é apagada); a página passa a redirecionar para o Feed.
+- **Desfazer tudo:** apagar o projeto de teste.

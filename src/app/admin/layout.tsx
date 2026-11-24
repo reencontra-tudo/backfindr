@@ -12,6 +12,7 @@ import {
 } from 'lucide-react';
 import { useAuthStore } from '@/hooks/useAuth';
 import { usePushNotifications } from '@/hooks/usePushNotifications';
+import AvisoInterruptores from '@/components/colaboradores/AvisoInterruptores';
 
 // ─── Tipos ────────────────────────────────────────────────────────────────────
 
@@ -466,7 +467,11 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         </header>
 
         {/* Content */}
-        <main className="flex-1 overflow-auto">{children}</main>
+        <main className="flex-1 overflow-auto">
+          {/* Programa de Colaboradores: aviso só quando os dois interruptores estão diferentes (não renderiza nada quando iguais) */}
+          <AvisoInterruptores />
+          {children}
+        </main>
       </div>
     </div>
   );
