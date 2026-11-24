@@ -1,0 +1,122 @@
+[
+ {
+  "intent": "lost",
+  "nome": "375",
+  "campoTexto": 0,
+  "campoInput": 0,
+  "sessionKeys": [
+   "ph_phc_v5Md8Nriyd8JaCjXyXYGSZody5nz3PEas5DePkssXdvf_posthog",
+   "ph_phc_v5Md8Nriyd8JaCjXyXYGSZody5nz3PEas5DePkssXdvf_primary_window_exists"
+  ],
+  "colabLS": [],
+  "colabCookie": [],
+  "reqColab": [],
+  "mutacoes": [],
+  "erros": [],
+  "log": [
+   "url /dashboard/objects/new?intent=lost&colab=teste123",
+   "h2: Que tipo de objeto é?",
+   "h2: 📍 Onde ocorreu?"
+  ]
+ },
+ {
+  "intent": "lost",
+  "nome": "desktop",
+  "campoTexto": 0,
+  "campoInput": 0,
+  "sessionKeys": [
+   "ph_phc_v5Md8Nriyd8JaCjXyXYGSZody5nz3PEas5DePkssXdvf_posthog",
+   "ph_phc_v5Md8Nriyd8JaCjXyXYGSZody5nz3PEas5DePkssXdvf_primary_window_exists"
+  ],
+  "colabLS": [],
+  "colabCookie": [],
+  "reqColab": [],
+  "mutacoes": [],
+  "erros": [],
+  "log": [
+   "url /dashboard/objects/new?intent=lost&colab=teste123",
+   "h2: Que tipo de objeto é?",
+   "h2: 📍 Onde ocorreu?"
+  ]
+ },
+ {
+  "intent": "found",
+  "nome": "375",
+  "campoTexto": 0,
+  "campoInput": 0,
+  "sessionKeys": [
+   "ph_phc_v5Md8Nriyd8JaCjXyXYGSZody5nz3PEas5DePkssXdvf_posthog",
+   "ph_phc_v5Md8Nriyd8JaCjXyXYGSZody5nz3PEas5DePkssXdvf_primary_window_exists"
+  ],
+  "colabLS": [],
+  "colabCookie": [],
+  "reqColab": [],
+  "mutacoes": [],
+  "erros": [],
+  "log": [
+   "url /dashboard/objects/new?intent=found&colab=teste123",
+   "h2: Que tipo de objeto é?",
+   "h2: 📍 Onde ocorreu?"
+  ]
+ },
+ {
+  "intent": "found",
+  "nome": "desktop",
+  "campoTexto": 0,
+  "campoInput": 0,
+  "sessionKeys": [
+   "ph_phc_v5Md8Nriyd8JaCjXyXYGSZody5nz3PEas5DePkssXdvf_posthog",
+   "ph_phc_v5Md8Nriyd8JaCjXyXYGSZody5nz3PEas5DePkssXdvf_primary_window_exists"
+  ],
+  "colabLS": [],
+  "colabCookie": [],
+  "reqColab": [],
+  "mutacoes": [],
+  "erros": [],
+  "log": [
+   "url /dashboard/objects/new?intent=found&colab=teste123",
+   "h2: Que tipo de objeto é?",
+   "h2: 📍 Onde ocorreu?"
+  ]
+ },
+ {
+  "intent": "stolen",
+  "nome": "375",
+  "campoTexto": 0,
+  "campoInput": 0,
+  "sessionKeys": [
+   "ph_phc_v5Md8Nriyd8JaCjXyXYGSZody5nz3PEas5DePkssXdvf_posthog",
+   "ph_phc_v5Md8Nriyd8JaCjXyXYGSZody5nz3PEas5DePkssXdvf_primary_window_exists"
+  ],
+  "colabLS": [],
+  "colabCookie": [],
+  "reqColab": [],
+  "mutacoes": [],
+  "erros": [],
+  "log": [
+   "url /dashboard/objects/new?intent=stolen&colab=teste123",
+   "h2: Que tipo de objeto é?",
+   "h2: 📍 Onde ocorreu?"
+  ]
+ },
+ {
+  "intent": "stolen",
+  "nome": "desktop",
+  "campoTexto": 0,
+  "campoInput": 0,
+  "sessionKeys": [
+   "ph_phc_v5Md8Nriyd8JaCjXyXYGSZody5nz3PEas5DePkssXdvf_posthog",
+   "ph_phc_v5Md8Nriyd8JaCjXyXYGSZody5nz3PEas5DePkssXdvf_primary_window_exists"
+  ],
+  "colabLS": [],
+  "colabCookie": [],
+  "reqColab": [],
+  "mutacoes": [],
+  "erros": [],
+  "log": [
+   "url /dashboard/objects/new?intent=stolen&colab=teste123",
+   "h2: Que tipo de objeto é?",
+   "h2: 📍 Onde ocorreu?"
+  ]
+ }
+]
