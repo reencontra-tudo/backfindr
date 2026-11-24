@@ -1,0 +1,814 @@
+{
+ "base/375/Pet": {
+  "controles": 14,
+  "ultimoPasso": true,
+  "erros": [],
+  "camposNoCorpo": [
+   "category",
+   "description",
+   "latitude",
+   "location",
+   "longitude",
+   "pet_breed",
+   "pet_color",
+   "pet_microchip",
+   "pet_species",
+   "status",
+   "title"
+  ]
+ },
+ "base/375/Animal": {
+  "controles": 10,
+  "ultimoPasso": true,
+  "erros": [],
+  "camposNoCorpo": [
+   "animal_age",
+   "animal_breed",
+   "animal_color",
+   "animal_id_tag",
+   "animal_marks",
+   "animal_sex",
+   "animal_size",
+   "animal_species",
+   "category",
+   "description",
+   "latitude",
+   "location",
+   "longitude",
+   "status",
+   "title"
+  ]
+ },
+ "base/375/Celular": {
+  "controles": 8,
+  "ultimoPasso": true,
+  "erros": [],
+  "camposNoCorpo": [
+   "category",
+   "description",
+   "latitude",
+   "location",
+   "longitude",
+   "status",
+   "title"
+  ]
+ },
+ "base/375/Carteira": {
+  "controles": 8,
+  "ultimoPasso": true,
+  "erros": [],
+  "camposNoCorpo": [
+   "category",
+   "description",
+   "latitude",
+   "location",
+   "longitude",
+   "status",
+   "title"
+  ]
+ },
+ "base/375/Chaves": {
+  "controles": 6,
+  "ultimoPasso": true,
+  "erros": [],
+  "camposNoCorpo": [
+   "category",
+   "description",
+   "latitude",
+   "location",
+   "longitude",
+   "status",
+   "title"
+  ]
+ },
+ "base/375/Bolsa / Mochila": {
+  "controles": 2,
+  "ultimoPasso": true,
+  "erros": [],
+  "camposNoCorpo": [
+   "category",
+   "description",
+   "latitude",
+   "location",
+   "longitude",
+   "status",
+   "title"
+  ]
+ },
+ "base/375/Bicicleta": {
+  "controles": 10,
+  "ultimoPasso": true,
+  "erros": [],
+  "camposNoCorpo": [
+   "category",
+   "description",
+   "latitude",
+   "location",
+   "longitude",
+   "status",
+   "title"
+  ]
+ },
+ "base/375/Veículo": {
+  "controles": 12,
+  "ultimoPasso": true,
+  "erros": [],
+  "camposNoCorpo": [
+   "category",
+   "description",
+   "latitude",
+   "location",
+   "longitude",
+   "status",
+   "title"
+  ]
+ },
+ "base/375/Documento": {
+  "controles": 5,
+  "ultimoPasso": true,
+  "erros": [],
+  "camposNoCorpo": [
+   "category",
+   "description",
+   "document_owner_name",
+   "document_type",
+   "latitude",
+   "location",
+   "longitude",
+   "status",
+   "title"
+  ]
+ },
+ "base/375/Joia / Relógio": {
+  "controles": 2,
+  "ultimoPasso": true,
+  "erros": [],
+  "camposNoCorpo": [
+   "category",
+   "description",
+   "latitude",
+   "location",
+   "longitude",
+   "status",
+   "title"
+  ]
+ },
+ "base/375/Eletrônico": {
+  "controles": 9,
+  "ultimoPasso": true,
+  "erros": [],
+  "camposNoCorpo": [
+   "category",
+   "description",
+   "latitude",
+   "location",
+   "longitude",
+   "status",
+   "title"
+  ]
+ },
+ "base/375/Outro": {
+  "controles": 2,
+  "ultimoPasso": true,
+  "erros": [],
+  "camposNoCorpo": [
+   "category",
+   "description",
+   "latitude",
+   "location",
+   "longitude",
+   "status",
+   "title"
+  ]
+ },
+ "base/1280/Pet": {
+  "controles": 14,
+  "ultimoPasso": true,
+  "erros": [],
+  "camposNoCorpo": [
+   "category",
+   "description",
+   "latitude",
+   "location",
+   "longitude",
+   "pet_breed",
+   "pet_color",
+   "pet_microchip",
+   "pet_species",
+   "status",
+   "title"
+  ]
+ },
+ "base/1280/Animal": {
+  "controles": 10,
+  "ultimoPasso": true,
+  "erros": [],
+  "camposNoCorpo": [
+   "animal_age",
+   "animal_breed",
+   "animal_color",
+   "animal_id_tag",
+   "animal_marks",
+   "animal_sex",
+   "animal_size",
+   "animal_species",
+   "category",
+   "description",
+   "latitude",
+   "location",
+   "longitude",
+   "status",
+   "title"
+  ]
+ },
+ "base/1280/Celular": {
+  "controles": 8,
+  "ultimoPasso": true,
+  "erros": [],
+  "camposNoCorpo": [
+   "category",
+   "description",
+   "latitude",
+   "location",
+   "longitude",
+   "status",
+   "title"
+  ]
+ },
+ "base/1280/Carteira": {
+  "controles": 8,
+  "ultimoPasso": true,
+  "erros": [],
+  "camposNoCorpo": [
+   "category",
+   "description",
+   "latitude",
+   "location",
+   "longitude",
+   "status",
+   "title"
+  ]
+ },
+ "base/1280/Chaves": {
+  "controles": 6,
+  "ultimoPasso": true,
+  "erros": [],
+  "camposNoCorpo": [
+   "category",
+   "description",
+   "latitude",
+   "location",
+   "longitude",
+   "status",
+   "title"
+  ]
+ },
+ "base/1280/Bolsa / Mochila": {
+  "controles": 2,
+  "ultimoPasso": true,
+  "erros": [],
+  "camposNoCorpo": [
+   "category",
+   "description",
+   "latitude",
+   "location",
+   "longitude",
+   "status",
+   "title"
+  ]
+ },
+ "base/1280/Bicicleta": {
+  "controles": 10,
+  "ultimoPasso": true,
+  "erros": [],
+  "camposNoCorpo": [
+   "category",
+   "description",
+   "latitude",
+   "location",
+   "longitude",
+   "status",
+   "title"
+  ]
+ },
+ "base/1280/Veículo": {
+  "controles": 12,
+  "ultimoPasso": true,
+  "erros": [],
+  "camposNoCorpo": [
+   "category",
+   "description",
+   "latitude",
+   "location",
+   "longitude",
+   "status",
+   "title"
+  ]
+ },
+ "base/1280/Documento": {
+  "controles": 5,
+  "ultimoPasso": true,
+  "erros": [],
+  "camposNoCorpo": [
+   "category",
+   "description",
+   "document_owner_name",
+   "document_type",
+   "latitude",
+   "location",
+   "longitude",
+   "status",
+   "title"
+  ]
+ },
+ "base/1280/Joia / Relógio": {
+  "controles": 2,
+  "ultimoPasso": true,
+  "erros": [],
+  "camposNoCorpo": [
+   "category",
+   "description",
+   "latitude",
+   "location",
+   "longitude",
+   "status",
+   "title"
+  ]
+ },
+ "base/1280/Eletrônico": {
+  "controles": 9,
+  "ultimoPasso": true,
+  "erros": [],
+  "camposNoCorpo": [
+   "category",
+   "description",
+   "latitude",
+   "location",
+   "longitude",
+   "status",
+   "title"
+  ]
+ },
+ "base/1280/Outro": {
+  "controles": 2,
+  "ultimoPasso": true,
+  "erros": [],
+  "camposNoCorpo": [
+   "category",
+   "description",
+   "latitude",
+   "location",
+   "longitude",
+   "status",
+   "title"
+  ]
+ },
+ "novo/375/Pet": {
+  "controles": 10,
+  "ultimoPasso": true,
+  "erros": [],
+  "camposNoCorpo": [
+   "category",
+   "description",
+   "latitude",
+   "location",
+   "longitude",
+   "pet_age",
+   "pet_breed",
+   "pet_collar_description",
+   "pet_color",
+   "pet_distinguishing_marks",
+   "pet_microchip",
+   "pet_size",
+   "pet_species",
+   "status",
+   "title"
+  ]
+ },
+ "novo/375/Animal": {
+  "controles": 10,
+  "ultimoPasso": true,
+  "erros": [],
+  "camposNoCorpo": [
+   "animal_age",
+   "animal_breed",
+   "animal_color",
+   "animal_id_tag",
+   "animal_marks",
+   "animal_sex",
+   "animal_size",
+   "animal_species",
+   "category",
+   "description",
+   "latitude",
+   "location",
+   "longitude",
+   "status",
+   "title"
+  ]
+ },
+ "novo/375/Celular": {
+  "controles": 8,
+  "ultimoPasso": true,
+  "erros": [],
+  "camposNoCorpo": [
+   "category",
+   "description",
+   "latitude",
+   "location",
+   "longitude",
+   "phone_brand",
+   "phone_color",
+   "phone_imei",
+   "phone_model",
+   "phone_serial",
+   "phone_storage",
+   "status",
+   "title"
+  ]
+ },
+ "novo/375/Carteira": {
+  "controles": 8,
+  "ultimoPasso": true,
+  "erros": [],
+  "camposNoCorpo": [
+   "category",
+   "description",
+   "latitude",
+   "location",
+   "longitude",
+   "status",
+   "title",
+   "wallet_brand",
+   "wallet_color",
+   "wallet_contents",
+   "wallet_distinguishing_marks",
+   "wallet_type"
+  ]
+ },
+ "novo/375/Chaves": {
+  "controles": 6,
+  "ultimoPasso": true,
+  "erros": [],
+  "camposNoCorpo": [
+   "category",
+   "description",
+   "keys_color",
+   "keys_count",
+   "keys_description",
+   "keys_distinguishing_marks",
+   "latitude",
+   "location",
+   "longitude",
+   "status",
+   "title"
+  ]
+ },
+ "novo/375/Bolsa / Mochila": {
+  "controles": 2,
+  "ultimoPasso": true,
+  "erros": [],
+  "camposNoCorpo": [
+   "category",
+   "description",
+   "latitude",
+   "location",
+   "longitude",
+   "status",
+   "title"
+  ]
+ },
+ "novo/375/Bicicleta": {
+  "controles": 10,
+  "ultimoPasso": true,
+  "erros": [],
+  "camposNoCorpo": [
+   "bike_brand",
+   "bike_color",
+   "bike_distinguishing_marks",
+   "bike_gears",
+   "bike_serial",
+   "bike_size",
+   "bike_type",
+   "category",
+   "description",
+   "latitude",
+   "location",
+   "longitude",
+   "status",
+   "title"
+  ]
+ },
+ "novo/375/Veículo": {
+  "controles": 12,
+  "ultimoPasso": true,
+  "erros": [],
+  "camposNoCorpo": [
+   "category",
+   "description",
+   "latitude",
+   "location",
+   "longitude",
+   "status",
+   "title",
+   "vehicle_brand",
+   "vehicle_color",
+   "vehicle_engine",
+   "vehicle_model",
+   "vehicle_plate",
+   "vehicle_transmission",
+   "vehicle_type",
+   "vehicle_vin",
+   "vehicle_year"
+  ]
+ },
+ "novo/375/Documento": {
+  "controles": 5,
+  "ultimoPasso": true,
+  "erros": [],
+  "camposNoCorpo": [
+   "category",
+   "description",
+   "document_owner_name",
+   "document_type",
+   "latitude",
+   "location",
+   "longitude",
+   "status",
+   "title"
+  ]
+ },
+ "novo/375/Joia / Relógio": {
+  "controles": 2,
+  "ultimoPasso": true,
+  "erros": [],
+  "camposNoCorpo": [
+   "category",
+   "description",
+   "latitude",
+   "location",
+   "longitude",
+   "status",
+   "title"
+  ]
+ },
+ "novo/375/Eletrônico": {
+  "controles": 9,
+  "ultimoPasso": true,
+  "erros": [],
+  "camposNoCorpo": [
+   "category",
+   "description",
+   "electronics_brand",
+   "electronics_color",
+   "electronics_imei",
+   "electronics_model",
+   "electronics_serial",
+   "electronics_specs",
+   "electronics_type",
+   "latitude",
+   "location",
+   "longitude",
+   "status",
+   "title"
+  ]
+ },
+ "novo/375/Outro": {
+  "controles": 2,
+  "ultimoPasso": true,
+  "erros": [],
+  "camposNoCorpo": [
+   "category",
+   "description",
+   "latitude",
+   "location",
+   "longitude",
+   "status",
+   "title"
+  ]
+ },
+ "novo/1280/Pet": {
+  "controles": 10,
+  "ultimoPasso": true,
+  "erros": [],
+  "camposNoCorpo": [
+   "category",
+   "description",
+   "latitude",
+   "location",
+   "longitude",
+   "pet_age",
+   "pet_breed",
+   "pet_collar_description",
+   "pet_color",
+   "pet_distinguishing_marks",
+   "pet_microchip",
+   "pet_size",
+   "pet_species",
+   "status",
+   "title"
+  ]
+ },
+ "novo/1280/Animal": {
+  "controles": 10,
+  "ultimoPasso": true,
+  "erros": [],
+  "camposNoCorpo": [
+   "animal_age",
+   "animal_breed",
+   "animal_color",
+   "animal_id_tag",
+   "animal_marks",
+   "animal_sex",
+   "animal_size",
+   "animal_species",
+   "category",
+   "description",
+   "latitude",
+   "location",
+   "longitude",
+   "status",
+   "title"
+  ]
+ },
+ "novo/1280/Celular": {
+  "controles": 8,
+  "ultimoPasso": true,
+  "erros": [],
+  "camposNoCorpo": [
+   "category",
+   "description",
+   "latitude",
+   "location",
+   "longitude",
+   "phone_brand",
+   "phone_color",
+   "phone_imei",
+   "phone_model",
+   "phone_serial",
+   "phone_storage",
+   "status",
+   "title"
+  ]
+ },
+ "novo/1280/Carteira": {
+  "controles": 8,
+  "ultimoPasso": true,
+  "erros": [],
+  "camposNoCorpo": [
+   "category",
+   "description",
+   "latitude",
+   "location",
+   "longitude",
+   "status",
+   "title",
+   "wallet_brand",
+   "wallet_color",
+   "wallet_contents",
+   "wallet_distinguishing_marks",
+   "wallet_type"
+  ]
+ },
+ "novo/1280/Chaves": {
+  "controles": 6,
+  "ultimoPasso": true,
+  "erros": [],
+  "camposNoCorpo": [
+   "category",
+   "description",
+   "keys_color",
+   "keys_count",
+   "keys_description",
+   "keys_distinguishing_marks",
+   "latitude",
+   "location",
+   "longitude",
+   "status",
+   "title"
+  ]
+ },
+ "novo/1280/Bolsa / Mochila": {
+  "controles": 2,
+  "ultimoPasso": true,
+  "erros": [],
+  "camposNoCorpo": [
+   "category",
+   "description",
+   "latitude",
+   "location",
+   "longitude",
+   "status",
+   "title"
+  ]
+ },
+ "novo/1280/Bicicleta": {
+  "controles": 10,
+  "ultimoPasso": true,
+  "erros": [],
+  "camposNoCorpo": [
+   "bike_brand",
+   "bike_color",
+   "bike_distinguishing_marks",
+   "bike_gears",
+   "bike_serial",
+   "bike_size",
+   "bike_type",
+   "category",
+   "description",
+   "latitude",
+   "location",
+   "longitude",
+   "status",
+   "title"
+  ]
+ },
+ "novo/1280/Veículo": {
+  "controles": 12,
+  "ultimoPasso": true,
+  "erros": [],
+  "camposNoCorpo": [
+   "category",
+   "description",
+   "latitude",
+   "location",
+   "longitude",
+   "status",
+   "title",
+   "vehicle_brand",
+   "vehicle_color",
+   "vehicle_engine",
+   "vehicle_model",
+   "vehicle_plate",
+   "vehicle_transmission",
+   "vehicle_type",
+   "vehicle_vin",
+   "vehicle_year"
+  ]
+ },
+ "novo/1280/Documento": {
+  "controles": 5,
+  "ultimoPasso": true,
+  "erros": [],
+  "camposNoCorpo": [
+   "category",
+   "description",
+   "document_owner_name",
+   "document_type",
+   "latitude",
+   "location",
+   "longitude",
+   "status",
+   "title"
+  ]
+ },
+ "novo/1280/Joia / Relógio": {
+  "controles": 2,
+  "ultimoPasso": true,
+  "erros": [],
+  "camposNoCorpo": [
+   "category",
+   "description",
+   "latitude",
+   "location",
+   "longitude",
+   "status",
+   "title"
+  ]
+ },
+ "novo/1280/Eletrônico": {
+  "controles": 9,
+  "ultimoPasso": true,
+  "erros": [],
+  "camposNoCorpo": [
+   "category",
+   "description",
+   "electronics_brand",
+   "electronics_color",
+   "electronics_imei",
+   "electronics_model",
+   "electronics_serial",
+   "electronics_specs",
+   "electronics_type",
+   "latitude",
+   "location",
+   "longitude",
+   "status",
+   "title"
+  ]
+ },
+ "novo/1280/Outro": {
+  "controles": 2,
+  "ultimoPasso": true,
+  "erros": [],
+  "camposNoCorpo": [
+   "category",
+   "description",
+   "latitude",
+   "location",
+   "longitude",
+   "status",
+   "title"
+  ]
+ }
+}
