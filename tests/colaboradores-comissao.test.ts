@@ -286,8 +286,9 @@ describe.skipIf(!TEST_DB)('B/C/E. com Postgres real', () => {
 
 describe('D. isolamento (sem banco)', () => {
   const r = (f: string) => readFileSync(path.join(__dirname, '..', f), 'utf8');
-  it('nenhuma tela mostra valor de comissão a colaborador (modo sombra): painel, página e kit seguem só com «Comissão em apuração»', () => {
-    for (const f of ['src/app/dashboard/colaborador/page.tsx', 'src/components/colaboradores/FormularioInscricao.tsx', 'src/app/colaborador/[slug]/page.tsx']) expect(r(f), f).not.toMatch(/saldoDoColaborador|colaborador_lancamentos|comissao_sombra|centavos/i);
+  it('nenhuma tela lê o livro: a inscrição e a página pública seguem sem valores; o painel só mostra o que o SERVIDOR devolve (E6: saldo atrás de COLABORADORES_SALDO)', () => {
+    for (const f of ['src/components/colaboradores/FormularioInscricao.tsx', 'src/app/colaborador/[slug]/page.tsx']) expect(r(f), f).not.toMatch(/saldoDoColaborador|colaborador_lancamentos|comissao_sombra|centavos/i);
+    expect(r('src/app/dashboard/colaborador/page.tsx')).not.toMatch(/saldoDoColaborador|colaborador_lancamentos|comissao_sombra/i); // a tela nunca importa o livro: só mostra `painel.saldo` vindo da API
     expect(r('src/app/dashboard/colaborador/page.tsx')).toContain('{dados.comissao}'); expect(r('src/lib/colaboradores/inscricao.ts')).toContain("TEXTO_COMISSAO_EM_APURACAO = 'Comissão em apuração'"); // o painel só mostra o texto «em apuração» vindo do servidor
   });
   it('o webhook chama a camada de comissão só por `sombraSegura` (erro nunca muda a resposta) e só com o interruptor', () => {

@@ -418,3 +418,6 @@ Inscrição só por link (`/colaborador/seja`, `noindex`), política oficial em 
 
 ### E4 — o que foi construído (24/11/2026, rascunho; detalhe no relatório do PR)
 Modo sombra: `src/lib/colaboradores/comissao.ts` (cálculo, elegibilidade, lançamento, estorno, saldo), camada isolada no webhook (`COMISSAO_SOMBRA`), rota de conferência do admin, migration 028 (`programa_config`, `pagamento_eventos`, `colaborador_lancamentos` só-INSERT, índice único em `boosts`). Decisões aplicadas: N1 só Boost, bruto para baixo, 14 dias, estorno desconta e o Boost não muda. **Não há tela de valores até a E6.**
+
+### E6 — o que foi construído (24/11/2026, rascunho; empilhado sobre a E4)
+Painel com ocorrências do link, saldo (atrás de `COLABORADORES_SALDO`), dados de pagamento cifrados (`PIX_CHAVE_CIFRAGEM`) e pedido/cancelamento de saque (atrás de `COLABORADORES_SAQUE`); migration 029 (`colaborador_dados_pagamento`, `colaborador_saques`). A fila de pagamento do admin é a E7.

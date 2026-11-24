@@ -27,3 +27,8 @@ export function limitar(chave: string, max: number, janelaMs: number, agora = Da
   u.n += 1; return u.n > max;
 }
 export const resetLimites = () => usos.clear();
+
+// E6: rotas que dependem de interruptores próprios (saldo e saque). Desligadas = 404 vazio.
+import { saldoVisivel, saqueAtivo } from './saque';
+export const desligadaSaldo = () => (saldoVisivel() ? null : new NextResponse(null, { status: 404 }));
+export const desligadaSaque = () => (saqueAtivo() ? null : new NextResponse(null, { status: 404 }));
