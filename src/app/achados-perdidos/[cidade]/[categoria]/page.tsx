@@ -5,9 +5,10 @@ import { query } from '@/lib/db'
 
 export const dynamic = 'force-dynamic'
 
-const CATEGORY_LABELS: Record<string, { label: string; icon: string }> = {
+// `nome` = como a categoria aparece em listas e no caminho de navegação (SEO opção A, 24/11/2026: «Pets e animais»). `label` continua nos títulos e frases («Pet Perdido em…», «Perdi um pet»), que não mudam.
+const CATEGORY_LABELS: Record<string, { label: string; icon: string; nome?: string }> = {
   celular:   { label: 'Celular',         icon: '📱' },
-  pet:       { label: 'Pet',             icon: '🐾' },
+  pet:       { label: 'Pet',             icon: '🐾', nome: 'Pets e animais' },
   documento: { label: 'Documento',       icon: '📄' },
   veiculo:   { label: 'Veículo',         icon: '🚗' },
   chave:     { label: 'Chave',           icon: '🔑' },
@@ -120,7 +121,7 @@ export default async function CidadeCategoria({ params }: Props) {
               {city.name}
             </Link>
             <span style={{ color: '#4B5563' }}>›</span>
-            <span style={{ color: '#FFFFFF' }}>{cat.label}</span>
+            <span style={{ color: '#FFFFFF' }}>{cat.nome ?? cat.label}</span>
           </nav>
 
           {/* Botão voltar */}
@@ -364,7 +365,7 @@ export default async function CidadeCategoria({ params }: Props) {
                   }}
                 >
                   <span>{info.icon}</span>
-                  <span>{info.label}</span>
+                  <span>{info.nome ?? info.label}</span>
                 </Link>
               ))}
           </div>
