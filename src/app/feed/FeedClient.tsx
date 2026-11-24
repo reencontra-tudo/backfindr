@@ -20,7 +20,7 @@ import {
 import ShareModal from '@/components/ShareModal';
 import { APP_URL } from '@/lib/constants';
 import { relativeTimeLabel } from '@/lib/feed/time';
-import { FEED_CATEGORY_LABELS, type FeedCategoryKey } from '@/lib/feed/category';
+import { FEED_CATEGORY_LABELS, feedCardLabel, type FeedCategoryKey } from '@/lib/feed/category';
 import { feedEvents, feedOrigin } from '@/lib/feed/analytics';
 import { acheiHref } from '@/lib/feed/contexto';
 import type { FeedItem } from '@/lib/feed/query';
@@ -203,7 +203,7 @@ function FeedCard({ item, index, vis }: { item: FeedItem; index: number; vis: Vi
         <span className={`h-2 w-2 shrink-0 rounded-full ${STATUS_DOT[item.status] ?? 'bg-slate-400'}`} aria-hidden />
         <span className={`font-semibold ${STATUS_TEXT[item.status] ?? ''}`}>{item.status_label}</span>
         <span aria-hidden>·</span>
-        <span>{item.category_label || FEED_CATEGORY_LABELS[item.category]}</span>
+        <span>{feedCardLabel(item.category, item.category_label)}</span>
       </p>
       <p className={`mt-1 flex items-center gap-1 text-sm ${T.t3}`}>
         <MapPin className="h-3.5 w-3.5 shrink-0" aria-hidden />

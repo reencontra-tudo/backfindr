@@ -8,7 +8,7 @@ import path from 'path';
 import { CATEGORY_FIELDS, getAllFieldsForCategory } from '@/config/categoryFields';
 import { buildPosterData } from '@/lib/posterFormatter';
 import { faltasDoAnimal, resumirErros, PASSO_DETALHES } from '@/lib/formularioOcorrencia';
-import { FEED_CATEGORY_LABELS, feedCategoryKey, feedCategoryLabel } from '@/lib/feed/category';
+import { FEED_CATEGORY_LABELS, feedCardLabel, feedCategoryKey, feedCategoryLabel } from '@/lib/feed/category';
 import { compactar, expandir, validarEstado } from '@/lib/feed/estado';
 import { pertenceAoFiltro } from '@/lib/categorias';
 import { expandCategoryGroup } from '@/lib/matching';
@@ -95,6 +95,13 @@ describe('Feed: só o RÓTULO muda; chave, filtros e busca ficam como eram', () 
     expect(Object.keys(FEED_CATEGORY_LABELS)).toHaveLength(12);
     expect(Object.keys(FEED_CATEGORY_LABELS)).not.toContain('animal'); // nenhuma opção nova nos filtros do Feed
   });
+  it('cartão: «Animal» só quando o item é animal; qualquer outro rótulo inconsistente do item é IGNORADO (como sempre: vale a chave)', () => {
+    expect(feedCardLabel('pet', 'Animal')).toBe('Animal');
+    expect(feedCardLabel('pet', 'Pet')).toBe('Pet');
+    expect(feedCardLabel('document', 'Celular')).toBe('Documento'); // rótulo do item errado não vence a chave
+    expect(feedCardLabel('phone', 'Animal')).toBe('Celular');
+    expect(feedCardLabel('pet', undefined)).toBe('Pet');
+  });
   it('estado salvo do Feed: «Animal» sobrevive à volta da página; item comum salva exatamente como antes', () => {
     const base = { code: 'ABC', title: 't', status: 'lost' as const, status_label: 'Perdido', origin: 'usuario' as const, location_label: 'SP', photo_url: null, created_at: '2026-11-24T00:00:00Z', source_url: null, source_name: null, can_report_found: true, has_photo: false };
     const animal = { ...base, category: 'pet' as const, category_label: 'Animal' };
@@ -107,7 +114,7 @@ describe('Feed: só o RÓTULO muda; chave, filtros e busca ficam como eram', () 
     expect(typeof validarEstado).toBe('function'); expect(estado.itens[0].category_label).toBe('Animal');
   });
   it('o cartão do Feed mostra o rótulo do item; as buscas do Feed usam o rótulo só para exibir', () => {
-    expect(read('src/app/feed/FeedClient.tsx')).toContain('{item.category_label || FEED_CATEGORY_LABELS[item.category]}');
+    expect(read('src/app/feed/FeedClient.tsx')).toContain('{feedCardLabel(item.category, item.category_label)}');
     expect(read('src/lib/feed/query.ts')).toContain('category_label: feedCategoryLabel(');
     expect(read('src/lib/colaboradores/feed.ts')).toContain('category_label: feedCategoryLabel(');
   });

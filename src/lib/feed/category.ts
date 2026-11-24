@@ -27,6 +27,14 @@ export function feedCategoryLabel(raw: string | null | undefined, key: FeedCateg
   return (raw ?? '').trim().toLowerCase() === 'animal' ? 'Animal' : FEED_CATEGORY_LABELS[key];
 }
 
+/**
+ * Rótulo do CARTÃO. Igual ao de sempre (pela chave), exceto quando o item é um «animal» (chave «pet», rótulo «Animal»): aí mostra «Animal».
+ * Só confia no rótulo do item para esse caso; para todo o resto o cartão segue exatamente como era.
+ */
+export function feedCardLabel(key: FeedCategoryKey, labelDoItem: string | null | undefined): string {
+  return key === 'pet' && labelDoItem === 'Animal' ? 'Animal' : FEED_CATEGORY_LABELS[key];
+}
+
 export function isFeedCategoryKey(v: string): v is FeedCategoryKey {
   return KNOWN.has(v);
 }
