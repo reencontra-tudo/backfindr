@@ -361,10 +361,10 @@ const FLOWS: Record<string, { text: string; buttons?: { label: string; action: s
 
   // ── Planos ──
   plan_free: {
-    text: 'O plano Grátis resolve pra maioria das pessoas:\n\n✅ Até 3 objetos cadastrados\n✅ QR Code permanente para cada objeto\n✅ Busca na rede\n✅ Notificações de match\n\nSe precisar de mais de 3 objetos ou quiser matching automático com IA rodando 24h, aí vale ver o Pro.\n\nVer planos 👇\n\nhttps://backfindr.com/pricing',
+    text: 'O plano Grátis resolve pra maioria das pessoas:\n\n✅ Cadastre quantos precisar\n✅ QR Code permanente para cada objeto\n✅ Busca na rede\n✅ Notificações de match\n\nSe quiser conhecer os recursos do plano pago, veja o Pro.\n\nVer planos 👇\n\nhttps://backfindr.com/pricing',
   },
   plan_pro: {
-    text: 'O Pro adiciona:\n\n🚀 Até 50 objetos cadastrados\n🤖 Matching automático com IA (24h por dia)\n🔔 Notificações push + e-mail em tempo real\n📧 Suporte por e-mail\n\nR$ 29/mês — sem fidelidade.\n\nhttps://backfindr.com/pricing',
+    text: 'O Pro adiciona:\n\n🤖 Matching automático com IA (24h por dia)\n🔔 Notificações push + e-mail em tempo real\n📧 Suporte por e-mail\n\nR$ 29/mês — sem fidelidade.\n\nhttps://backfindr.com/pricing',
   },
   plan_business: {
     text: 'Para empresas (hotéis, escolas, condomínios):\n\n🏢 Até 500 objetos\n⚡ Matching prioritário\n📲 Push + e-mail\n👥 Até 5 usuários\n🔗 API de integração\n\nR$ 149/mês. Para falar com a equipe:\nbusiness@backfindr.com',

@@ -81,13 +81,12 @@ PLANOS — CONHEÇA MAS SÓ MENCIONE SE PERGUNTADO
 REGRA: Nunca cite planos pagos ou preços proativamente. Se o usuário perguntar sobre planos, preços ou querer mais recursos, aí sim explique com naturalidade.
 
 PLANO GRÁTIS (padrão para todos):
-- Até 3 objetos cadastrados
+- Cadastre quantos precisar (só há um teto contra abuso: 100 objetos ativos e 10 cadastros por dia; não cite o teto a menos que perguntem)
 - QR Code permanente para cada objeto
 - Busca manual na rede
 - Suporte da comunidade
 
 PLANO PRO (R$ 29/mês) — para quem quiser tecnologia mais robusta:
-- Até 50 objetos cadastrados
 - Matching automático com IA (o sistema trabalha por você 24h)
 - Notificações push e e-mail em tempo real
 - Suporte por e-mail
@@ -431,8 +430,8 @@ function buildSystemPrompt(
     const lostHint = lostObjects.length > 0
       ? `\n[Nota interna: usuário tem ${lostObjects.length} objeto(s) perdido(s)/roubado(s). Se perguntar como aumentar as chances, você pode mencionar o Boost como recurso opcional — mas só se perguntar.]`
       : '';
-    const limitHint = userObjects.length >= 3
-      ? `\n[Nota interna: usuário está no limite de 3 objetos do plano Grátis. Se tentar cadastrar mais e perguntar o que fazer, explique que existem planos opcionais com mais capacidade.]`
+    const limitHint = userObjects.length >= 100
+      ? `\n[Nota interna: usuário chegou ao teto de 100 objetos ativos do plano Grátis. Se tentar cadastrar mais, sugira arquivar os já resolvidos.]`
       : '';
 
     prompt += `\nOBJETOS CADASTRADOS (${userObjects.length}):\n${objectList}${lostHint}${limitHint}\n`;

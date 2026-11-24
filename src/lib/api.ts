@@ -91,7 +91,7 @@ export const parseApiError = (e: unknown): string => {
     const data = e.response?.data;
     // Tratar erro de limite de objetos por plano
     if (data?.error === 'limit_reached') {
-      return data.message ?? 'Limite de objetos atingido. Faça upgrade do seu plano em /pricing.';
+      return data.message ?? 'Limite de cadastros atingido. Arquive os objetos já resolvidos ou veja os planos em /pricing.';
     }
     return data?.detail ?? data?.message ?? data?.error ?? e.message;
   }

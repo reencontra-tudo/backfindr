@@ -365,7 +365,7 @@ function BillingContent() {
           </div>
           <div className="space-y-2">
             {[
-              { slug: 'pro',      label: 'Pro',      price: 'R$ 29,00/mês',  desc: '50 objetos · IA · Notificações · Suporte por email', color: 'teal' },
+              { slug: 'pro',      label: 'Pro',      price: 'R$ 29,00/mês',  desc: 'IA · Notificações · Suporte por email', color: 'teal' },
               { slug: 'business', label: 'Business', price: 'R$ 149,90/mês', desc: '500 objetos · Prioritário · 5 usuários · API',        color: 'yellow' },
             ].map(plan => (
               <button

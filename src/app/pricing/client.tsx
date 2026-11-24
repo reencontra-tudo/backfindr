@@ -19,8 +19,8 @@ const DEFAULT_PLANS: Plan[] = [
     slug: 'free',
     name: 'Grátis',
     price_brl: 0,
-    max_objects: 3,
-    features: ['3 objetos cadastrados', 'QR Code permanente', 'Busca manual na rede', 'Suporte da comunidade'],
+    max_objects: 100,
+    features: ['Cadastre quantos precisar', 'QR Code permanente', 'Busca manual na rede', 'Suporte da comunidade'],
     is_active: true,
   },
   {
@@ -28,7 +28,7 @@ const DEFAULT_PLANS: Plan[] = [
     name: 'Pro',
     price_brl: 29.00,
     max_objects: 50,
-    features: ['50 objetos cadastrados', 'Matching automático com IA', 'Notificações push e email', 'QR Code personalizado', 'Suporte por email', 'Relatório básico'],
+    features: ['Matching automático com IA', 'Notificações push e email', 'QR Code personalizado', 'Suporte por email', 'Relatório básico'],
     is_active: true,
   },
   {
@@ -211,9 +211,11 @@ export default function PricingPage() {
                       </>
                     )}
                   </div>
-                  <p className="text-white/30 text-xs mt-1">
-                    Até {plan.max_objects.toLocaleString('pt-BR')} objetos
-                  </p>
+                  {plan.slug !== 'pro' && (
+                    <p className="text-white/30 text-xs mt-1">
+                      {plan.slug === 'free' ? 'Cadastre quantos precisar' : `Até ${plan.max_objects.toLocaleString('pt-BR')} objetos`}
+                    </p>
+                  )}
                 </div>
 
                 <ul className="space-y-2.5 flex-1 mb-6">
@@ -337,7 +339,7 @@ export default function PricingPage() {
             {[
               { q: 'O QR Code expira?', a: 'Não. O QR Code é permanente em todos os planos. Se alguém encontrar seu item e escanear, você recebe o aviso independente do plano.' },
               { q: 'Posso cancelar a qualquer momento?', a: 'Sim. Sem multa, sem burocracia. Ao cancelar, você continua com acesso até o fim do período pago.' },
-              { q: 'O que acontece se eu atingir o limite de objetos?', a: 'Você não consegue cadastrar novos objetos até fazer upgrade ou remover objetos existentes.' },
+              { q: 'O que acontece se eu atingir o limite de objetos?', a: 'No plano grátis há apenas um teto para evitar abuso (100 objetos ativos e 10 cadastros por dia); objetos já resolvidos, arquivados ou devolvidos não contam. Ao atingir o teto, você pode arquivar os que já foram resolvidos.' },
               { q: 'O Boost é uma assinatura?', a: 'Não. O Boost é um pagamento único por período. Você escolhe quando ativar e por quanto tempo.' },
               { q: 'Posso pagar com Pix?', a: 'Sim. Aceitamos Pix via Mercado Pago. A ativação costuma levar de 1 a 5 minutos após o pagamento, dependendo do processamento bancário.' },
               { q: 'O plano Business aceita CNPJ?', a: 'Sim. O plano Business aceita tanto CPF quanto CNPJ e inclui nota fiscal mediante solicitação.' },

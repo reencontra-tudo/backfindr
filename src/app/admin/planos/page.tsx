@@ -38,8 +38,8 @@ interface BoostPreview {
 // ─── Default data ─────────────────────────────────────────────────────────────
 
 const DEFAULT_PLANS: PlanConfig[] = [
-  { slug: 'free',     name: 'Grátis',   price_brl: 0,      max_objects: 3,   features: ['3 objetos', 'QR Code permanente', 'Busca manual', 'Suporte comunidade'], is_active: true },
-  { slug: 'pro',      name: 'Pro',      price_brl: 29.00,  max_objects: 50,  features: ['50 objetos', 'Matching automático', 'Notificações push e email', 'QR Code personalizado', 'Suporte por email'], is_active: true },
+  { slug: 'free',     name: 'Grátis',   price_brl: 0,      max_objects: 100, features: ['Cadastre quantos precisar', 'QR Code permanente', 'Busca manual', 'Suporte comunidade'], is_active: true },
+  { slug: 'pro',      name: 'Pro',      price_brl: 29.00,  max_objects: 50,  features: ['Matching automático', 'Notificações push e email', 'QR Code personalizado', 'Suporte por email'], is_active: true },
   { slug: 'business', name: 'Business', price_brl: 149.00, max_objects: 500, features: ['500 objetos', 'Matching prioritário', 'Notificações push e email', 'QR Code bulk', '5 usuários', 'Relatórios completos', 'API'], is_active: true },
 ];
 

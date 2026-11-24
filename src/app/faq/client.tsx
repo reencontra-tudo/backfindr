@@ -50,7 +50,7 @@ const SECTIONS = [
       },
       {
         q: 'Posso registrar mais de um pet?',
-        a: 'Sim. No plano gratuito você pode registrar até 3 objetos (incluindo pets). Para famílias com múltiplos animais, o plano Pro permite até 20 registros.',
+        a: 'Sim. No plano gratuito você pode cadastrar quantos pets precisar (há apenas um teto contra abuso: 100 objetos ativos e 10 cadastros por dia).',
       },
     ],
   },
@@ -59,7 +59,7 @@ const SECTIONS = [
     items: [
       {
         q: 'O plano gratuito tem limite?',
-        a: 'Sim. O plano gratuito permite até 3 objetos registrados simultaneamente. O QR Code é permanente e o matching por IA está incluído. Para mais objetos ou funcionalidades avançadas, veja os planos pagos.',
+        a: 'Não há limite prático: cadastre quantos objetos precisar. Existe apenas um teto contra abuso (100 objetos ativos e 10 cadastros por dia); objetos já resolvidos, arquivados ou devolvidos não contam. O QR Code é permanente e o matching por IA está incluído. Para funcionalidades avançadas, veja os planos pagos.',
       },
       {
         q: 'Posso cancelar a qualquer momento?',

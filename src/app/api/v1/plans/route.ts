@@ -10,8 +10,8 @@ const DEFAULT_PLANS = [
     slug: 'free',
     name: 'Grátis',
     price_brl: 0,
-    max_objects: 3,
-    features: ['3 objetos', 'QR Code permanente', 'Busca manual', 'Suporte comunidade'],
+    max_objects: 100,
+    features: ['Cadastre quantos precisar', 'QR Code permanente', 'Busca manual', 'Suporte comunidade'],
     is_active: true,
   },
   {
@@ -19,7 +19,7 @@ const DEFAULT_PLANS = [
     name: 'Pro',
     price_brl: 29.00,
     max_objects: 50,
-    features: ['50 objetos', 'Matching automático', 'Notificações push e email', 'QR Code personalizado', 'Suporte por email', 'Relatório básico'],
+    features: ['Matching automático', 'Notificações push e email', 'QR Code personalizado', 'Suporte por email', 'Relatório básico'],
     is_active: true,
   },
   {
