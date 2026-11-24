@@ -15,7 +15,7 @@
 | 1 — Cópia de segurança | **CONFIRMADO (24/11/2026)** pelo backup próprio diário (repositório `m2r-backup-supabase`, run #36): ver «Passo 1». Não é preciso dump manual. |
 | 2 — Migration 026 | **APLICADA e VERIFICADA (24/11/2026, 03:23 UTC)**, na segunda tentativa (a primeira ficou esperando a confirmação do conector e não aplicou nada). Ver «Passo 2 — resultado». |
 | 3 — Mescla com interruptores desligados | NÃO iniciado (aguarda ordem para seguir; autorização geral dos passos 0 a 3 vale, um de cada vez) |
-| 4 — Ligar o piloto | NÃO autorizado |
+| 4 — Ligar o piloto | **Roteiro final PRONTO (24/11/2026); NÃO executado; aguarda a ordem escrita do fundador** |
 
 ---
 
@@ -181,36 +181,83 @@ Depois de **cada** mescla: esperar a implantação (a `impressao` muda), rodar a
 
 ---
 
-## PASSO 4 — Ligar o piloto (**NÃO EXECUTAR; só depois de nova ordem escrita**)
-### 4.0 Decisões do fundador antes de ligar
-| # | Decisão | Recomendação |
-|---|---|---|
-| D1 | **Matching durante o teste.** Hoje `MATCHING_ATIVO` está ligado em produção; uma ocorrência de teste nova pode **casar com uma ocorrência real e avisar o dono dela por e-mail e push**. | **DECIDIDO pelo fundador (24/11/2026): desligar `MATCHING_ATIVO` durante o teste do piloto e religá-lo logo depois.** Entra no roteiro (4.2 e 4.3, passo 8). |
-| D2 | Quem cria as variáveis: o fundador ou o Claude do navegador (logado na Vercel). | — |
-| D3 | Ocorrência de teste: aceita ficar **pública por alguns minutos** no Feed, na página `/@backfindr` e em `/objeto/<código>` (e eventos de métricas: Lead/Purchase não; `ocorrencia_publicada` sim). | Título que deixe claro que é teste e **sem dado pessoal e sem foto**. |
-### 4.1 Preparar o banco (escrita na produção: só com ordem)
-1. Aplicar `docs/programa-colaboradores/seed-backfindr.sql` (SHA-256 `cc0bd70cd6f45f3a05fb3850eec3165643961bd00734586e79145e4d45b59ebe`): cria o colaborador interno `@backfindr` (código curto `HX7R`, `interno`, verificado). **Antes de ligar os interruptores**, assim a página já existe quando o programa for ligado (e um 404 guardado por 5 minutos não atrapalha).
-2. Conferir: `select slug, codigo_curto, estado, interno from colaboradores;` → `backfindr | HX7R | ativo | true`.
-### 4.2 Variáveis em **Production** (Vercel → Settings → Environment Variables → só Production)
-| Variável | Valor | Para quê |
-|---|---|---|
-| `COLABORADORES_ATIVO` | `1` | servidor: middleware, rotas, cadastro, página, sitemap, cartaz |
-| `NEXT_PUBLIC_COLABORADORES_ATIVO` | `1` | navegador: campo do formulário e captura do `?colab=` (**fixada no build**) |
-| `MATCHING_ATIVO` | `0` (**decidido: desligar durante o teste**; **alterar a existente**, anotando o valor antigo `1` para religar logo depois) | sem aviso a donos reais durante o teste |
-**Os dois interruptores são ligados juntos**; o painel do admin mostra um aviso se divergirem. **Redeploy necessário** (as `NEXT_PUBLIC_*` só valem em build novo): Vercel → Deployments → Redeploy do deploy de produção mais recente. Esperar `impressao` mudar. Esperar até 5 minutos pelos 404 guardados (cache da página).
-### 4.3 Roteiro de teste com `/@backfindr` (produção; uma única ocorrência de teste)
-1. `GET /@backfindr` → 200, «por Backfindr», botões, sem ocorrências, `noindex`. `GET /api/v1/colaboradores/validar?codigo=HX7R` → `{"ok":true,"nome":"Backfindr"}`.
-2. Entrar com a conta do **próprio fundador** (login por e-mail/senha). Na página `/@backfindr`, clicar «Encontrei algo» e registrar **uma** ocorrência «achado» de teste (ex.: «TESTE PILOTO — pode ignorar»), **sem foto**, categoria «outros», sem dado pessoal. O campo «Código do colaborador» vem preenchido e mostra «Colaborador: Backfindr».
-3. Conferir (até 5 minutos): a ocorrência aparece no **Feed** (`/api/v1/feed?status=found`) e na **página `/@backfindr`** (e a página passa a `index, follow` por ser verificada e ter conteúdo); `sitemap.xml` ganha `/@backfindr`.
-4. **Cartaz:** abrir `/api/v1/objects/<código>/poster?format=square` (e `vertical`, `a4`): leva «Divulgado por Backfindr».
-5. **Cadastro SEM código** (uma segunda, igual à de sempre) **não é necessário em produção**: já foi provado byte a byte localmente; se o fundador quiser, repetir **uma** ocorrência de teste sem código e arquivar em seguida.
-6. Conferir que **nenhum e-mail/push saiu para outras pessoas** (com D1 = desligar o matching) e que nenhum arquivo foi gravado no R2.
-7. **Arquivar a(s) ocorrência(s) de teste:** painel admin (Objetos ou Moderação) → status «archived» (`PUT /api/v1/admin/objects/<id>` com `{"status":"archived"}`; o dono não consegue arquivar sozinho). Conferir que sumiu do Feed e da página `/@backfindr` (até 5 minutos). O código fica gravado nelas (imutável), sem efeito.
-8. **Religar `MATCHING_ATIVO` ao valor antigo (`1`) logo depois do teste** (novo redeploy) e conferir (`impressao` muda); a ordem correta é: arquivar a(s) ocorrência(s) de teste (passo 7) **antes** de religar o matching.
-### 4.4 Reversão do passo 4 (tudo volta ao comportamento de hoje)
-1. Remover `COLABORADORES_ATIVO` e `NEXT_PUBLIC_COLABORADORES_ATIVO` de Production (e restaurar `MATCHING_ATIVO`) e **refazer o deploy**.
-2. Conferir com `comparar` e `bundle`: `/@backfindr` = 404, sem trecho do programa no navegador.
-3. O `@backfindr` no banco pode ficar (inofensivo) ou ir para `estado = 'saiu'`; as ocorrências de teste ficam arquivadas.
+## PASSO 4 — Ligar o piloto (**NÃO EXECUTAR; só com nova ordem escrita e com o fundador presente**)
+**Versão final do roteiro, de 24/11/2026** (substitui a versão anterior; decisões do fundador: PC-13). Teste com a própria `/@backfindr`, **mantida SEM verificação** durante o teste (fica `noindex` e fora do sitemap); a marcação como verificada será decidida depois pelo fundador. Quem faz cada passo: **CODE** = esta sessão (banco, pelo conector, e GitHub); **NAV** = Claude do navegador (Vercel); **FUN** = fundador (passkey, login e decisões).
+
+### 4.0 Antes de começar (todos os itens precisam estar prontos)
+1. FUN: dá a ordem escrita para o Passo 4 e fica presente até o fim.
+2. FUN: informa o endereço **https** da página do Facebook do Backfindr (não consta em lugar nenhum do repositório; esta sessão não inventa). Sem ele, o campo de link de volta fica vazio e o botão não aparece.
+3. FUN: confirma a imagem do colaborador. Proposta: `https://backfindr.com/brand/app-icon.png` (existe, responde 200 `image/png`).
+4. CODE: confirma que a `main` e a produção estão como no fim do Passo 3 (`impressao` `ae027c42f88d3438`) e que os dois interruptores continuam ausentes.
+5. NAV: abre Vercel → Settings → Environment Variables e anota o valor **atual** de `MATCHING_ATIVO` em Production (não presumir: o plano dizia «1», mas só o painel diz). Passa o valor para o CODE registrar em 4.6.
+
+### 4.1 Criar o colaborador `@backfindr` (produção, NÃO verificado) — CODE
+1. CODE: antes de escrever, confere que a tabela está vazia: `select count(*) from colaboradores;` → 0.
+2. CODE: roda o SQL abaixo (uma instrução; troque `<URL_FACEBOOK>` pelo endereço do item 4.0.2, ou use `NULL` se o fundador preferir sem link). O código curto é **sorteado pelo banco** (4 caracteres do alfabeto sem 0, O, 1, I; não repete código nem @nome existente). **`verificado_em` fica vazio de propósito.** Testado em banco local descartável em 24/11/2026: cria 1 linha, uma segunda execução não cria nada, o `DELETE` é recusado pelo gatilho.
+```sql
+INSERT INTO colaboradores (slug, codigo_curto, nome, descricao, imagem_url, canal_url, modalidade, estado, interno)
+SELECT 'backfindr', g.codigo, 'Backfindr',
+       'Ocorrências de objetos, documentos e pets perdidos, achados ou roubados registradas no Backfindr.',
+       'https://backfindr.com/brand/app-icon.png', '<URL_FACEBOOK>',
+       'comunidade_criador', 'ativo', TRUE
+  FROM (SELECT string_agg(substr('23456789ABCDEFGHJKLMNPQRSTUVWXYZ', 1 + floor(random() * 32)::int, 1), '') AS codigo
+          FROM generate_series(1, 4)) g
+ WHERE NOT EXISTS (SELECT 1 FROM colaboradores WHERE lower(slug) = 'backfindr')
+   AND NOT EXISTS (SELECT 1 FROM colaboradores WHERE upper(codigo_curto) = upper(g.codigo))
+RETURNING slug, codigo_curto, estado, interno, verificado_em IS NOT NULL AS verificado;
+```
+3. CODE: confere o resultado: 1 linha, `backfindr | <código> | ativo | true | false`. Se vier 0 linhas (código sorteado já existia), roda de novo.
+4. CODE: anota o **código curto** gerado (não é segredo; vai para o roteiro de teste).
+5. **Reversão (sem apagar; o banco recusa `DELETE`):** `update colaboradores set estado = 'saiu', atualizado_em = now() where slug = 'backfindr';` → a página passa a redirecionar para o Feed. Para voltar: `estado = 'ativo'`.
+6. Observação: o `seed-backfindr.sql` antigo (código `HX7R`, já verificado) **não será usado**; este SQL o substitui.
+
+### 4.2 Desligar o matching antes do teste — NAV
+1. NAV: em Vercel → Settings → Environment Variables, abre `MATCHING_ATIVO` (Production).
+2. NAV: confirma o valor anotado em 4.0.5 e o escreve na mensagem (valor para religar: `____`).
+3. NAV: troca o valor para `0` (não apaga a variável) e salva.
+4. FUN: autoriza com a passkey, se a Vercel pedir.
+
+### 4.3 Ligar o programa só em Production e fazer o deploy — NAV
+1. NAV: cria `COLABORADORES_ATIVO` = `1`, marcando **somente Production** (nem Preview, nem Development).
+2. NAV: cria `NEXT_PUBLIC_COLABORADORES_ATIVO` = `1`, marcando **somente Production**.
+3. FUN: autoriza com a passkey, se pedir.
+4. NAV: Deployments → último deploy de produção → Redeploy (as `NEXT_PUBLIC_*` só valem em build novo; `MATCHING_ATIVO=0` também entra aqui).
+5. CODE: espera a `impressao` mudar e roda `capturar` + `comparar`: agora `/@backfindr` deve abrir (200) e `/api/v1/colaboradores/validar?codigo=<código>` deve devolver `{"ok":true,"nome":"Backfindr"}`.
+
+### 4.4 Roteiro de teste (produção, UMA ocorrência de teste)
+1. CODE: abre `/@backfindr`: 200, «por Backfindr», imagem, descrição, link de volta ao Facebook, botões; **`noindex`** (tag `robots` e/ou cabeçalho); sem ocorrências.
+2. CODE: confere que `/sitemap.xml` **não** contém `/@backfindr` (sem verificação a página fica fora do sitemap).
+3. CODE: confere que `/@BackFindr` (maiúsculas) abre a mesma página e que a canônica é `/@backfindr`.
+4. FUN: entra com a conta do próprio fundador (login por e-mail e senha).
+5. FUN: em `/@backfindr`, toca em «Encontrei algo».
+6. FUN: confere que o campo «Código do colaborador» já vem preenchido e mostra «Colaborador: Backfindr».
+7. FUN: registra **uma** ocorrência «achado» com o título «TESTE PILOTO — pode ignorar», sem foto, categoria «outros», sem dado pessoal. Avisa o CODE assim que enviar.
+8. CODE: confere que a ocorrência aparece no **Feed geral** (`/api/v1/feed?status=found`; o Feed guarda por 120 s) e na **página `/@backfindr`** (até 5 min).
+9. CODE: confere que a página **continua `noindex`** e que o sitemap **continua sem** `/@backfindr` (a ocorrência já existe, mas a página não é verificada).
+10. CODE: abre o **cartaz** da ocorrência (`/api/v1/objects/<código>/poster?format=square`, depois `vertical` e `a4`): deve trazer «Divulgado por Backfindr».
+11. FUN: registra **uma segunda** ocorrência de teste **SEM código** (campo vazio, pelo fluxo normal, sem passar pela `/@backfindr`), título «TESTE PILOTO 2 — pode ignorar».
+12. CODE: confere que a segunda foi gravada **igual à de hoje** (sem colaborador: `colaborador_id` e `colaborador_codigo` nulos), que o cartaz dela **não** tem «Divulgado por» e que ela não aparece na página `/@backfindr`.
+13. CODE: confere que nenhuma ocorrência real foi tocada e que nenhum e-mail ou push saiu para outras pessoas (matching desligado).
+14. CODE: arquiva as 2 ocorrências de teste (sem apagar), uma instrução por ocorrência, pelo código curto delas: `update objects set status = 'archived', updated_at = now() where qr_code = '<código>' returning qr_code, status;` (é o mesmo valor que a moderação usa; o dono não consegue arquivar sozinho).
+15. CODE: espera até 5 min e confere que as duas sumiram do Feed e da página `/@backfindr`, e que o `colaborador_codigo` da primeira continua gravado (imutável).
+16. **Regra de indexação × arquivada (por leitura do código, 24/11/2026; não testado em produção):** a contagem que decide a indexação (`comCodigo`, em `src/lib/colaboradores/feed.ts`) usa a mesma elegibilidade do Feed (`FEED_ELIGIBILITY_WHERE`: `is_public`, não legado, `status IN ('lost','found','stolen')`, com `qr_code`) e o sitemap usa a mesma regra. **Uma ocorrência arquivada NÃO conta** para tornar a página indexável. O passo 15 mostra isso na prática (a página deixa de listá-la).
+
+### 4.5 Religar o matching — NAV
+1. NAV: só depois do passo 14 do 4.4 (ocorrências de teste arquivadas), abre `MATCHING_ATIVO` (Production).
+2. NAV: devolve o valor anotado em 4.0.5 (`____`) e salva.
+3. FUN: autoriza com a passkey, se pedir.
+4. NAV: Redeploy de produção.
+5. CODE: espera a `impressao` mudar e confere que o programa continua ligado (`/@backfindr` 200 e `noindex`).
+6. CODE: relata ao fundador: teste concluído, `/@backfindr` no ar sem verificação, matching religado.
+
+### 4.6 Reversão completa (tudo volta ao comportamento de hoje) — qualquer momento
+1. NAV: apaga `COLABORADORES_ATIVO` e `NEXT_PUBLIC_COLABORADORES_ATIVO` de Production.
+2. NAV: devolve `MATCHING_ATIVO` ao valor anotado em 4.0.5.
+3. FUN: autoriza com a passkey, se pedir.
+4. NAV: Redeploy de produção.
+5. CODE: espera a `impressao` mudar e roda `comparar`: `/@backfindr` volta a 404 (corpo da 404 de rotas internas é o já anotado).
+6. CODE (opcional, sem apagar): `update colaboradores set estado = 'saiu', atualizado_em = now() where slug = 'backfindr';` (a linha nunca é apagada). As ocorrências de teste ficam arquivadas; o vínculo gravado nelas é imutável e sem efeito com o programa desligado.
+7. Instant Rollback para `backfindr-3dtxeok5q` só se a produção mudar de comportamento de forma inesperada (FUN ou NAV).
 
 ---
 
@@ -221,4 +268,4 @@ Depois de **cada** mescla: esperar a implantação (a `impressao` muda), rodar a
 | 1 (dump) | **o fundador** (só ele tem a conexão e a senha; esta sessão não pode e não deve trazer os dados para o chat) |
 | 2 (026) | esta sessão, pelo conector, **depois** do passo 1 completo e de aviso |
 | 3 (mesclas) | esta sessão (GitHub); a confirmação das variáveis da Vercel e a anotação do deploy: o fundador ou o Claude do navegador |
-| 4 | só com nova ordem; variáveis e redeploy: o fundador ou o Claude do navegador; testes e arquivamento conforme 4.3 |
+| 4 | só com nova ordem e com o fundador presente; **cada passo do roteiro 4.0 a 4.6 diz quem faz** (CODE = esta sessão; NAV = Claude do navegador; FUN = fundador) |
