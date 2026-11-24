@@ -8,7 +8,7 @@ import path from 'path';
 import { CATEGORY_FIELDS, getAllFieldsForCategory } from '@/config/categoryFields';
 import { buildPosterData } from '@/lib/posterFormatter';
 import { faltasDoAnimal, resumirErros, PASSO_DETALHES } from '@/lib/formularioOcorrencia';
-import { FEED_CATEGORY_LABELS, feedCardLabel, feedCategoryKey, feedCategoryLabel } from '@/lib/feed/category';
+import { FEED_CATEGORY_LABELS, feedCategoryKey } from '@/lib/feed/category';
 import { compactar, expandir, validarEstado } from '@/lib/feed/estado';
 import { pertenceAoFiltro } from '@/lib/categorias';
 import { expandCategoryGroup } from '@/lib/matching';
@@ -82,41 +82,26 @@ describe('e-mails', () => {
   });
 });
 
-describe('Feed: só o RÓTULO muda; chave, filtros e busca ficam como eram', () => {
-  it('rótulo exibido: animal → «Animal»; os demais iguais ao de sempre', () => {
-    expect(feedCategoryLabel('animal')).toBe('Animal');
-    expect(feedCategoryLabel('ANIMAL ')).toBe('Animal');
-    expect(feedCategoryLabel('pet')).toBe('Pet');
-    for (const [k, rotulo] of Object.entries(FEED_CATEGORY_LABELS)) expect(feedCategoryLabel(k), k).toBe(rotulo);
-    for (const sujo of ['found', 'lost', '', null, undefined, 'book']) expect(feedCategoryLabel(sujo as string)).toBe('Outros');
+describe('Feed (PR do Feed, 24/11/2026): a hierarquia vale no filtro; Animal ⊃ Pet', () => {
+  it('«animal» tem chave e rótulo próprios no Feed (13 opções); «pet» continua «Pet»', () => {
+    expect(feedCategoryKey('animal')).toBe('animal');
+    expect(feedCategoryKey('ANIMAL ')).toBe('animal');
+    expect(feedCategoryKey('pet')).toBe('pet');
+    expect(Object.keys(FEED_CATEGORY_LABELS)).toHaveLength(13);
+    expect(FEED_CATEGORY_LABELS.animal).toBe('Animal');
+    for (const sujo of ['found', 'lost', '', null, undefined, 'book']) expect(FEED_CATEGORY_LABELS[feedCategoryKey(sujo as string)]).toBe('Outros');
   });
-  it('a CHAVE do Feed segue como era (animal → pet): filtros e busca do Feed não mudam', () => {
-    expect(feedCategoryKey('animal')).toBe('pet');
-    expect(Object.keys(FEED_CATEGORY_LABELS)).toHaveLength(12);
-    expect(Object.keys(FEED_CATEGORY_LABELS)).not.toContain('animal'); // nenhuma opção nova nos filtros do Feed
-  });
-  it('cartão: «Animal» só quando o item é animal; qualquer outro rótulo inconsistente do item é IGNORADO (como sempre: vale a chave)', () => {
-    expect(feedCardLabel('pet', 'Animal')).toBe('Animal');
-    expect(feedCardLabel('pet', 'Pet')).toBe('Pet');
-    expect(feedCardLabel('document', 'Celular')).toBe('Documento'); // rótulo do item errado não vence a chave
-    expect(feedCardLabel('phone', 'Animal')).toBe('Celular');
-    expect(feedCardLabel('pet', undefined)).toBe('Pet');
-  });
-  it('estado salvo do Feed: «Animal» sobrevive à volta da página; item comum salva exatamente como antes', () => {
+  it('estado salvo do Feed volta ao formato de sempre (sem rótulo à parte); «animal» é uma categoria válida', () => {
     const base = { code: 'ABC', title: 't', status: 'lost' as const, status_label: 'Perdido', origin: 'usuario' as const, location_label: 'SP', photo_url: null, created_at: '2026-11-24T00:00:00Z', source_url: null, source_name: null, can_report_found: true, has_photo: false };
-    const animal = { ...base, category: 'pet' as const, category_label: 'Animal' };
-    const pet = { ...base, category: 'pet' as const, category_label: 'Pet' };
-    expect(compactar(animal)).toHaveProperty('category_label', 'Animal');
-    expect(expandir(compactar(animal)).category_label).toBe('Animal');
-    expect(compactar(pet)).not.toHaveProperty('category_label'); // formato idêntico ao de antes
-    expect(expandir(compactar(pet)).category_label).toBe('Pet');
-    const estado = { v: 1, t: Date.now(), pagina: 1, itens: [compactar(animal)], cursor: null, temMais: false, filtros: { status: 'all', category: 'all', region: 'todas', geo: null }, marcos: [] };
-    expect(typeof validarEstado).toBe('function'); expect(estado.itens[0].category_label).toBe('Animal');
+    for (const [key, rotulo] of [['animal', 'Animal'], ['pet', 'Pet']] as const) {
+      const it = { ...base, category: key, category_label: rotulo };
+      expect(compactar(it)).not.toHaveProperty('category_label');
+      expect(expandir(compactar(it)).category_label).toBe(rotulo);
+    }
+    expect(typeof validarEstado).toBe('function');
   });
-  it('o cartão do Feed mostra o rótulo do item; as buscas do Feed usam o rótulo só para exibir', () => {
-    expect(read('src/app/feed/FeedClient.tsx')).toContain('{feedCardLabel(item.category, item.category_label)}');
-    expect(read('src/lib/feed/query.ts')).toContain('category_label: feedCategoryLabel(');
-    expect(read('src/lib/colaboradores/feed.ts')).toContain('category_label: feedCategoryLabel(');
+  it('o cartão do Feed mostra o rótulo da chave (como sempre)', () => {
+    expect(read('src/app/feed/FeedClient.tsx')).toContain('<span>{FEED_CATEGORY_LABELS[item.category]}</span>');
   });
 });
 
@@ -158,8 +143,10 @@ describe('não regressão: demais categorias idênticas às da main', () => {
     for (const c of cats) for (const s of sts) t[`${c}/${s}`] = buildPosterData({ title: 'Teste', description: 'd', category: c, status: s, created_at: '2026-01-01T00:00:00Z', qr_code: 'ABC' }, 'https://x.test').headline;
     expect(h(t)).toBe('ac977ff1c1601f00');
   });
-  it('Feed: rótulos das 12 categorias do Feed inalterados', () => {
-    expect(h(FEED_CATEGORY_LABELS)).toBe(h({ pet: 'Pet', document: 'Documento', phone: 'Celular', wallet: 'Carteira', keys: 'Chaves', bag: 'Bolsa ou mochila', bike: 'Bicicleta', vehicle: 'Veículo', jewelry: 'Joia', electronics: 'Eletrônico', clothing: 'Roupa', other: 'Outros' }));
+  it('Feed: rótulos das 12 categorias que já existiam seguem inalterados (a 13ª, «Animal», é a única a mais)', () => {
+    const { animal, ...demais } = FEED_CATEGORY_LABELS;
+    expect(animal).toBe('Animal');
+    expect(h(demais)).toBe(h({ pet: 'Pet', document: 'Documento', phone: 'Celular', wallet: 'Carteira', keys: 'Chaves', bag: 'Bolsa ou mochila', bike: 'Bicicleta', vehicle: 'Veículo', jewelry: 'Joia', electronics: 'Eletrônico', clothing: 'Roupa', other: 'Outros' }));
   });
 });
 

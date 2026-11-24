@@ -67,7 +67,8 @@ describe('máscara de nome de pessoa', () => {
 });
 
 describe('categorias', () => {
-  it('agrupa pet e animal', () => { expect(feedCategoryKey('animal')).toBe('pet'); expect(feedCategoryKey('pet')).toBe('pet'); });
+  // Hierarquia (24/11/2026): Animal ⊃ Pet. «animal» deixou de ser tratado como «pet»; o filtro «Animal» inclui os pets, o filtro «Pet» NÃO inclui animais.
+  it('animal e pet são categorias distintas (Animal é a mãe)', () => { expect(feedCategoryKey('animal')).toBe('animal'); expect(feedCategoryKey('pet')).toBe('pet'); });
   it('categorias sujas viram «Outros» só na tela', () => {
     for (const c of ['found', 'lost', '', null, undefined, 'xyz', 'book']) expect(FEED_CATEGORY_LABELS[feedCategoryKey(c as string)]).toBe('Outros');
   });
@@ -285,12 +286,16 @@ describe.skipIf(!TEST_DB)('Feed com banco real', () => {
     expect((await pool.query('SELECT count(*)::int n FROM objects')).rows[0].n).toBeGreaterThan(0);
   });
 
-  it('filtros: situação e categoria (pet+animal juntos; categoria suja = Outros)', async () => {
+  it('filtros: situação e categoria (Pet só pet; Animal = animal + pet; categoria suja = Outros)', async () => {
     expect((await all({ status: 'lost' })).every((i) => i.status === 'lost')).toBe(true);
     const pets = await all({ category: 'pet' });
     expect(pets.length).toBeGreaterThan(0);
     expect(pets.every((i) => i.category === 'pet' && i.category_label === 'Pet')).toBe(true);
-    expect(pets.map((i) => i.code)).toEqual(expect.arrayContaining(['USR00003', 'USR00004', 'SIG00004', 'SIG00009'])); // animal + pet
+    expect(pets.map((i) => i.code)).toContain('USR00004');                                   // pet
+    for (const animal of ['USR00003', 'SIG00009']) expect(pets.map((i) => i.code)).not.toContain(animal); // Pet NÃO inclui animal
+    const animais = await all({ category: 'animal' });                                       // Animal inclui pet
+    expect(animais.map((i) => i.code)).toEqual(expect.arrayContaining(['USR00003', 'USR00004', 'SIG00009']));
+    expect(animais.every((i) => i.category === 'animal' || i.category === 'pet')).toBe(true);
     const outros = await all({ category: 'other' });
     expect(outros.map((i) => i.code)).toContain('USR00005'); // categoria «found» no banco
     expect((await pool.query("SELECT category FROM objects WHERE qr_code='USR00005'")).rows[0].category).toBe('found'); // dado intocado
