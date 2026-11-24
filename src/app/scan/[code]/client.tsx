@@ -337,6 +337,21 @@ export default function ScanPage() {
           )}
         </div>
 
+        {/* Detalhes específicos da categoria: só os campos PÚBLICOS, em português (sensíveis nunca chegam aqui) */}
+        {obj.campos_publicos && obj.campos_publicos.length > 0 && (
+          <div className="rounded-3xl bg-[#111118] border border-white/5 p-5 mb-5" data-campos-publicos>
+            <p className="text-[#00d4aa] text-xs font-semibold tracking-widest uppercase mb-3">Detalhes</p>
+            <div className="grid grid-cols-2 gap-4">
+              {obj.campos_publicos.map((c) => (
+                <div key={c.chave}>
+                  <p className="text-slate-500 text-xs mb-0.5">{c.rotulo}</p>
+                  <p className="text-white font-semibold text-sm break-words">{c.valor}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
         {/* Pet details */}
         {(obj.category === 'pet' || obj.category === 'animal') && (obj.pet_breed || obj.pet_color) && (
           <div className="rounded-3xl bg-[#111118] border border-white/5 p-5 mb-5">

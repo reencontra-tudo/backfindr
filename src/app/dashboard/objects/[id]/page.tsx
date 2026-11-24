@@ -21,6 +21,7 @@ import { RegisteredObject, ObjectStatus } from '@/types';
 import Cookies from 'js-cookie';
 import ObjectThumb from '@/components/ObjectThumb';
 import { APP_URL } from '@/lib/constants';
+import { camposParaExibir } from '@/lib/camposEspecificos';
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
@@ -673,22 +674,25 @@ export default function ObjectDetailPage() {
                       <span className="text-slate-200 ml-auto text-right break-words max-w-[55%]">{obj.location.address}</span>
                     </div>
                   )}
-                  {/* Campos dinâmicos por categoria */}
-                  {obj.category_fields && Object.keys(obj.category_fields).length > 0 && (
-                    <div className="pt-3 mt-1 border-t border-surface-border space-y-3">
-                      {Object.entries(obj.category_fields).map(([key, value]) => {
-                        if (!value) return null;
-                        const label = key === 'document_last4' ? 'Final do documento' : key.split('_').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ');
-                        return (
-                          <div key={key} className="flex items-start gap-3 text-sm">
+                  {/* Campos específicos da categoria (visão do TITULAR: todos, com rótulo em português; os sensíveis levam o aviso «só você vê»). */}
+                  {(() => {
+                    const campos = camposParaExibir(obj.category, obj.campos_especificos ?? null, { publico: false });
+                    if (campos.length === 0) return null;
+                    return (
+                      <div className="pt-3 mt-1 border-t border-surface-border space-y-3" data-campos-titular>
+                        {campos.map((c) => (
+                          <div key={c.chave} className="flex items-start gap-3 text-sm">
                             <Info className="w-4 h-4 text-brand-400 flex-shrink-0 mt-0.5" />
-                            <span className="text-slate-400 flex-shrink-0">{label}</span>
-                            <span className="text-slate-200 ml-auto text-right font-medium break-words max-w-[55%]">{String(value)}</span>
+                            <span className="text-slate-400 flex-shrink-0">{c.rotulo}</span>
+                            <span className="text-slate-200 ml-auto text-right font-medium break-words max-w-[55%]">
+                              {c.valor}
+                              {c.sensivel && <span className="block text-[11px] font-normal text-slate-500">🔒 só você vê</span>}
+                            </span>
                           </div>
-                        );
-                      })}
-                    </div>
-                  )}
+                        ))}
+                      </div>
+                    );
+                  })()}
                 </div>
               </div>
 
