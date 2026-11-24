@@ -13,7 +13,7 @@ export const metadata: Metadata = {
 
 const CATEGORIES = [
   { slug: 'celular', label: 'Celular', icon: '📱' },
-  { slug: 'pet', label: 'Pet', icon: '🐾' },
+  { slug: 'pet', label: 'Pets e animais', icon: '🐾' },
   { slug: 'documento', label: 'Documento', icon: '📄' },
   { slug: 'veiculo', label: 'Veículo', icon: '🚗' },
   { slug: 'chave', label: 'Chave', icon: '🔑' },

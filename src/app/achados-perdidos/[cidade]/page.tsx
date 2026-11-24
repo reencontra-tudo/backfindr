@@ -14,7 +14,7 @@ const CATEGORIES = [
   },
   {
     slug: 'pet',
-    label: 'Pet',
+    label: 'Pets e animais',
     icon: '🐾',
     desc: 'Cão, gato, animal de estimação',
   },
