@@ -15,8 +15,12 @@ export interface Noticia {
   description: string;
 }
 
-/** Idade máxima de uma notícia no painel. */
+/** Idade máxima de QUALQUER notícia no painel (nunca passa disto). */
 export const IDADE_MAXIMA_DIAS = 30;
+/** O painel mostra primeiro só as notícias desta idade (regra do fundador, 24/11/2026). */
+export const IDADE_RECENTE_DIAS = 10;
+/** Se houver menos que isto nos últimos IDADE_RECENTE_DIAS, completa com as mais novas de até IDADE_MAXIMA_DIAS (interpretação: completa até este número). */
+export const MINIMO_RECENTES = 5;
 /** Máximo de itens devolvidos ao painel. */
 export const MAXIMO_ITENS = 15;
 /** Semelhança de títulos (Jaccard das palavras) a partir da qual dois itens são o mesmo assunto. */
@@ -135,12 +139,28 @@ export function semelhanca(a: string, b: string): number {
 }
 
 // ── Junção ────────────────────────────────────────────────────────────────────────────────────────────────────────────
-export interface OpcoesFiltro { agora?: number; dias?: number; maximo?: number }
+export interface OpcoesFiltro {
+  agora?: number;
+  /** Idade máxima absoluta (padrão 30). */
+  dias?: number;
+  /** Janela «recente» (padrão 10). */
+  diasRecentes?: number;
+  /** Mínimo de itens recentes para NÃO completar com os mais velhos (padrão 5). */
+  minimo?: number;
+  /** Máximo de itens devolvidos (padrão 15). */
+  maximo?: number;
+}
 
-/** Recebe os itens crus (já com HTML limpo) e devolve só os do escopo, recentes, sem duplicados, do mais novo para o mais antigo. */
+/**
+ * Recebe os itens crus (já com HTML limpo) e devolve só os do escopo, sem duplicados, do mais novo para o mais antigo.
+ * REGRA DE IDADE: mostra as dos últimos `diasRecentes` (10); se houver MENOS que `minimo` (5), completa com as mais novas de até `dias` (30), só até chegar ao mínimo;
+ * nunca passa de `dias`. Vazio só se não houver nada do escopo em `dias`.
+ */
 export function filtrarNoticias(itens: Noticia[], opcoes: OpcoesFiltro = {}): Noticia[] {
   const agora = opcoes.agora ?? Date.now();
   const dias = opcoes.dias ?? IDADE_MAXIMA_DIAS;
+  const diasRecentes = Math.min(opcoes.diasRecentes ?? IDADE_RECENTE_DIAS, dias);
+  const minimo = opcoes.minimo ?? MINIMO_RECENTES;
   const maximo = opcoes.maximo ?? MAXIMO_ITENS;
   const candidatos = itens
     .map((n) => ({ ...n, title: tituloSemFonte(n.title, n.source) }))
@@ -148,15 +168,19 @@ export function filtrarNoticias(itens: Noticia[], opcoes: OpcoesFiltro = {}): No
     .filter((n) => dentroDaIdade(n.pubDate, agora, dias))
     .filter((n) => avaliarTitulo(n.title).ok)
     .sort((x, y) => new Date(y.pubDate).getTime() - new Date(x.pubDate).getTime());
-  const escolhidos: Noticia[] = [];
+  // Duplicados primeiro (o mais novo de cada assunto fica), depois a regra de idade.
+  const distintos: Noticia[] = [];
   const links = new Set<string>();
   for (const n of candidatos) {
     if (links.has(n.link)) continue;
-    if (escolhidos.some((e) => mesmoAssunto(e.title, n.title))) continue;
+    if (distintos.some((e) => mesmoAssunto(e.title, n.title))) continue;
     links.add(n.link);
-    escolhidos.push(n);
-    if (escolhidos.length >= maximo) break;
+    distintos.push(n);
   }
+  const recentes = distintos.filter((n) => dentroDaIdade(n.pubDate, agora, diasRecentes));
+  const escolhidos = recentes.length >= minimo
+    ? recentes.slice(0, maximo)
+    : distintos.slice(0, Math.min(maximo, Math.max(minimo, recentes.length))); // `distintos` está do mais novo ao mais antigo: os recentes vêm primeiro
   return escolhidos;
 }
 

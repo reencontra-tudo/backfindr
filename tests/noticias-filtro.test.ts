@@ -4,7 +4,7 @@
 // sumir ou afrouxar sem alguém perceber: a rota nasceu em 13/04/2026 sem filtro nenhum e ninguém notou por 7 meses.
 import { describe, expect, it } from 'vitest';
 import {
-  BUSCAS, IDADE_MAXIMA_DIAS, MAXIMO_ITENS, avaliarTitulo, dentroDaIdade, filtrarNoticias, lerRss, limparHtml, semelhanca, tituloSemFonte, urlDaBusca, type Noticia,
+  BUSCAS, IDADE_MAXIMA_DIAS, IDADE_RECENTE_DIAS, MINIMO_RECENTES, MAXIMO_ITENS, avaliarTitulo, dentroDaIdade, filtrarNoticias, lerRss, limparHtml, semelhanca, tituloSemFonte, urlDaBusca, type Noticia,
 } from '@/lib/noticias/filtro';
 
 const AGORA = Date.parse('2026-11-24T04:42:00Z');
@@ -75,7 +75,7 @@ describe('exemplos do escopo definido pelo fundador', () => {
 describe('filtrarNoticias: a lista inteira da produção', () => {
   const todos = AMOSTRA.map(item);
   it('sem corte de idade, ficam exatamente os 6 relevantes (e nenhum dos 9 outros)', () => {
-    const r = filtrarNoticias(todos, { agora: AGORA, dias: 365 });
+    const r = filtrarNoticias(todos, { agora: AGORA, dias: 365, minimo: 99 });
     const links = r.map((x) => x.link);
     for (const a of AMOSTRA) expect(links.includes(item(a).link), `#${a.n}`).toBe(a.grupo === 'relevante');
   });
@@ -104,6 +104,49 @@ describe('idade', () => {
     expect(dentroDaIdade('', AGORA)).toBe(false);
     expect(dentroDaIdade('não é data', AGORA)).toBe(false);
     expect(dentroDaIdade('2027-01-01T00:00:00Z', AGORA)).toBe(false);
+  });
+});
+
+// Regra de idade (decisão do fundador, 24/11/2026): últimos 10 dias; se houver menos de 5, completa com as mais novas de até 30; nunca mais de 30.
+describe('regra de idade: 10 dias, com reserva até 30', () => {
+  const diasAtras = (d: number) => new Date(AGORA - d * 86_400_000).toISOString();
+  // títulos bem diferentes entre si (nenhum conta como duplicado) e todos do escopo
+  const ASSUNTOS = ['celulares roubados em Recife', 'veículos furtados em Goiânia', 'bicicletas roubadas em Curitiba', 'motos roubadas em Manaus', 'carga roubada em Campinas', 'objetos furtados em Palmas', 'documentos perdidos em Natal', 'notebooks furtados em Belém'];
+  const mk = (i: number, idade: number): Noticia => ({ title: `Polícia recupera ${ASSUNTOS[i % ASSUNTOS.length]} operação ${100 + i}`, link: `https://x.test/${i}`, source: 'Teste', pubDate: diasAtras(idade), description: '' });
+  const idades = (r: Noticia[]) => r.map((n) => Math.round((AGORA - Date.parse(n.pubDate)) / 86_400_000));
+  it('constantes: 10, 5 e 30', () => { expect([IDADE_RECENTE_DIAS, MINIMO_RECENTES, IDADE_MAXIMA_DIAS]).toEqual([10, 5, 30]); });
+  it('5 ou mais nos últimos 10 dias: mostra SÓ essas (as mais velhas ficam de fora, mesmo sendo do escopo)', () => {
+    const lista = [mk(0, 1), mk(1, 2), mk(2, 3), mk(3, 5), mk(4, 9), mk(5, 15), mk(6, 20), mk(7, 29)];
+    const r = filtrarNoticias(lista, { agora: AGORA });
+    expect(idades(r)).toEqual([1, 2, 3, 5, 9]);
+  });
+  it('menos de 5 nos últimos 10 dias: completa com as mais novas de até 30, só até 5, da mais nova para a mais antiga', () => {
+    const lista = [mk(0, 2), mk(1, 4), mk(2, 12), mk(3, 18), mk(4, 25), mk(5, 29)];
+    const r = filtrarNoticias(lista, { agora: AGORA });
+    expect(idades(r)).toEqual([2, 4, 12, 18, 25]);
+  });
+  it('nada acima de 30 dias, em hipótese alguma', () => {
+    const lista = [mk(0, 31), mk(1, 45), mk(2, 90), mk(3, 3)];
+    expect(idades(filtrarNoticias(lista, { agora: AGORA }))).toEqual([3]);
+    expect(filtrarNoticias([mk(0, 31), mk(1, 60)], { agora: AGORA })).toEqual([]);
+  });
+  it('painel vazio SÓ se não houver nada do escopo em 30 dias; com uma única notícia de 25 dias, ela aparece', () => {
+    expect(filtrarNoticias([], { agora: AGORA })).toEqual([]);
+    expect(idades(filtrarNoticias([mk(0, 25)], { agora: AGORA }))).toEqual([25]);
+  });
+  it('exatamente 4 recentes + velhas: completa para 5; exatamente 5 recentes: não completa', () => {
+    const velhas = [mk(5, 15), mk(6, 20), mk(7, 29)];
+    expect(idades(filtrarNoticias([mk(0, 1), mk(1, 2), mk(2, 3), mk(3, 4), ...velhas], { agora: AGORA }))).toEqual([1, 2, 3, 4, 15]);
+    expect(idades(filtrarNoticias([mk(0, 1), mk(1, 2), mk(2, 3), mk(3, 4), mk(4, 5), ...velhas], { agora: AGORA }))).toEqual([1, 2, 3, 4, 5]);
+  });
+  it('a duplicada recente não conta duas vezes para o mínimo', () => {
+    const a = mk(0, 1); const b = { ...mk(0, 2), link: 'https://x.test/dup' }; // mesmo título = mesmo assunto
+    const r = filtrarNoticias([a, b, mk(1, 12), mk(2, 14), mk(3, 16), mk(4, 18)], { agora: AGORA });
+    expect(idades(r)).toEqual([1, 12, 14, 16, 18]); // 1 recente (a duplicada saiu) → completa até 5
+  });
+  it('respeita o máximo de 15 mesmo com muitas recentes', () => {
+    const muitas = Array.from({ length: 30 }, (_, i) => mk(i, 1 + (i % 9)));
+    expect(filtrarNoticias(muitas.map((n, i) => ({ ...n, title: `Polícia recupera ${200 + i} celulares roubados lote ${'abcdefghijklmnopqrstuvwxyz'[i % 26]}${i * 7}` })), { agora: AGORA }).length).toBeLessThanOrEqual(15);
   });
 });
 
