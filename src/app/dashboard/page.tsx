@@ -1,5 +1,6 @@
 'use client';
 
+import { modoCrescimento } from '@/lib/modoCrescimento';
 import { useEffect, useState, useCallback } from 'react';
 import Link from 'next/link';
 import {
@@ -306,7 +307,7 @@ export default function DashboardPage() {
                 {isPaid && <span className="ml-2 text-xs font-normal opacity-70">ativo</span>}
               </p>
               {currentPlan === 'free' ? (
-                <p className="text-white/30 text-xs">Faça upgrade para mais recursos</p>
+                modoCrescimento() ? null : <p className="text-white/30 text-xs">Faça upgrade para mais recursos</p>
               ) : planInfo?.plan_expires_at ? (
                 <p className="text-white/30 text-xs">
                   Renova em {new Date(planInfo.plan_expires_at).toLocaleDateString('pt-BR')} · até {planInfo?.features?.max_objects ?? '—'} objetos

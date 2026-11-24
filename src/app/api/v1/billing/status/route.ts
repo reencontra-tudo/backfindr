@@ -3,12 +3,14 @@ import { NextRequest } from 'next/server';
 import { query } from '@/lib/db';
 import { verifyToken, extractTokenFromHeader } from '@/lib/jwt';
 import { successResponse, unauthorizedResponse, internalErrorResponse } from '@/lib/response';
+import { limitesDosPlanos } from '@/lib/planos';
 
-const PLAN_LIMITS: Record<string, { max_objects: number; ai_matching: boolean; push_notifications: boolean; priority_support: boolean; bulk_qr: boolean }> = {
-  free:     { max_objects: 3,   ai_matching: false, push_notifications: false, priority_support: false, bulk_qr: false },
-  pro:      { max_objects: 50,  ai_matching: true,  push_notifications: true,  priority_support: false, bulk_qr: false },
-  business: { max_objects: 500, ai_matching: true,  push_notifications: true,  priority_support: true,  bulk_qr: true  },
-};
+// Função (e não constante) para respeitar o interruptor do modo crescimento em tempo de execução.
+const planLimits = (): Record<string, { max_objects: number; ai_matching: boolean; push_notifications: boolean; priority_support: boolean; bulk_qr: boolean }> => ({
+  free:     { max_objects: limitesDosPlanos().free.maxObjetos, ai_matching: false, push_notifications: false, priority_support: false, bulk_qr: false },
+  pro:      { max_objects: limitesDosPlanos().pro.maxObjetos, ai_matching: true,  push_notifications: true,  priority_support: false, bulk_qr: false },
+  business: { max_objects: limitesDosPlanos().business.maxObjetos, ai_matching: true,  push_notifications: true,  priority_support: true,  bulk_qr: true  },
+});
 
 // GET /api/v1/billing/status — status detalhado do plano para o frontend
 export async function GET(request: NextRequest) {
@@ -48,7 +50,8 @@ export async function GET(request: NextRequest) {
     );
     const effectivePlan = isActive ? rawPlan : 'free';
 
-    const features = PLAN_LIMITS[effectivePlan] ?? PLAN_LIMITS['free'];
+    const limites = planLimits();
+    const features = limites[effectivePlan] ?? limites['free'];
 
     return successResponse({
       plan:            effectivePlan,

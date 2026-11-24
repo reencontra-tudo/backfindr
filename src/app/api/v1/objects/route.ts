@@ -4,6 +4,8 @@ import { MATCHING_ATIVO } from '@/lib/matchingSeguranca';
 import { awaitSends } from '@/lib/awaitSends';
 import { mascararDigitosLongos, camposDeDocumento, statusIgnoraTitular } from '@/lib/documentPrivacy';
 import { query } from '@/lib/db';
+import { limitesDoPlano, mensagemDeLimite, STATUS_QUE_NAO_CONTAM } from '@/lib/planos';
+import { modoCrescimento } from '@/lib/modoCrescimento';
 import { verifyToken, extractTokenFromHeader } from '@/lib/jwt';
 import { successResponse, unauthorizedResponse, internalErrorResponse } from '@/lib/response';
 import { enqueueSocialPosts } from '@/lib/socialPost';
@@ -13,12 +15,7 @@ import { findSimilarObjects, SIMILAR_OBJECT_ERROR } from '@/lib/similarObjects';
 import { colaboradoresAtivo } from '@/lib/colaboradores/rota';
 import { resolverColaborador, CODIGO_COLABORADOR_INVALIDO, MENSAGEM_CODIGO_INVALIDO, type ColaboradorResolvido } from '@/lib/colaboradores/codigo';
 
-// Limites de objetos por plano
-const PLAN_MAX_OBJECTS: Record<string, number> = {
-  free:     3,
-  pro:      50,
-  business: 500,
-};
+// Limites de objetos por plano: fonte única em `src/lib/planos.ts` (PL-01).
 
 // Helper para normalizar um row do banco para o formato RegisteredObject
 function normalizeObject(row: Record<string, unknown>) {
@@ -150,24 +147,37 @@ export async function POST(request: NextRequest) {
       !userRow.plan_expires_at || new Date(userRow.plan_expires_at) > new Date()
     );
     const effectivePlan = isPaidActive ? rawPlan : 'free';
-    const maxObjects = PLAN_MAX_OBJECTS[effectivePlan] ?? PLAN_MAX_OBJECTS['free'];
+    const crescimento = modoCrescimento();
+    const limites = limitesDoPlano(effectivePlan, crescimento);
+    const maxObjects = limites.maxObjetos;
 
-    // Contar objetos ativos do usuário (excluindo deletados/arquivados)
+    // Conta só objetos ATIVOS do próprio usuário: arquivados, devolvidos, apagados e LEGADOS não ocupam vaga (PL-01, vale para todos os planos).
+    // O limite diário (só free) olha os cadastros das últimas 24 h, de qualquer status, para não ser burlado apagando e recriando.
     const countResult = await query(
-      `SELECT COUNT(*) as count FROM objects WHERE user_id = $1 AND status != 'deleted'`,
-      [payload.sub]
+      `SELECT COUNT(*) FILTER (WHERE status <> ALL($2::text[]) AND COALESCE(is_legacy, false) = false) AS ativos,
+              COUNT(*) FILTER (WHERE created_at > NOW() - INTERVAL '24 hours' AND COALESCE(is_legacy, false) = false) AS hoje
+         FROM objects WHERE user_id = $1`,
+      [payload.sub, [...STATUS_QUE_NAO_CONTAM]]
     );
-    const currentCount = parseInt(countResult.rows[0].count);
+    const currentCount = parseInt(countResult.rows[0].ativos);
+    const criadosHoje = parseInt(countResult.rows[0].hoje);
 
-    if (currentCount >= maxObjects) {
+    const tipoDeLimite: 'total' | 'diario' | null =
+      currentCount >= maxObjects ? 'total'
+      : (limites.maxPorDia !== null && criadosHoje >= limites.maxPorDia) ? 'diario'
+      : null;
+
+    if (tipoDeLimite) {
       return successResponse(
         {
           error: 'limit_reached',
-          message: `Você atingiu o limite de ${maxObjects} objeto${maxObjects !== 1 ? 's' : ''} do plano ${effectivePlan}. Faça upgrade para adicionar mais.`,
+          limit_type: tipoDeLimite,
+          message: mensagemDeLimite(tipoDeLimite, effectivePlan, limites, crescimento),
           current_count: currentCount,
           max_objects: maxObjects,
           plan: effectivePlan,
-          upgrade_url: '/pricing',
+          // Modo crescimento: planos pagos escondidos, sem convite ao upgrade.
+          ...(crescimento ? {} : { upgrade_url: '/pricing' }),
         },
         403
       );

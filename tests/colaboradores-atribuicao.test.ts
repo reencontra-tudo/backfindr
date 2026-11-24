@@ -52,7 +52,7 @@ describe.skipIf(!TEST_DB)('Programa de Colaboradores E1 — atribuição na ocor
       qr_code varchar NOT NULL UNIQUE, images jsonb DEFAULT '[]', created_at timestamp DEFAULT now(),
       updated_at timestamp DEFAULT now(), category varchar, is_public boolean DEFAULT true,
       reward_amount numeric, reward_description text, category_fields jsonb DEFAULT '{}',
-      subject_name varchar, document_type varchar)`);
+      subject_name varchar, document_type varchar, is_legacy boolean DEFAULT false)`); // is_legacy: a rota conta só objetos não legados (PL-01)
     await pool.query(MIGRATION);
     vi.stubGlobal('fetch', vi.fn(() => Promise.resolve(new Response('{}'))));
     ({ POST } = await import('@/app/api/v1/objects/route'));

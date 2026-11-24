@@ -72,7 +72,7 @@ describe.skipIf(!TEST_DB)('POST /api/v1/objects — aviso de objeto parecido', (
       qr_code varchar NOT NULL UNIQUE, images jsonb DEFAULT '[]', created_at timestamp DEFAULT now(),
       updated_at timestamp DEFAULT now(), category varchar, is_public boolean DEFAULT true,
       reward_amount numeric, reward_description text, category_fields jsonb DEFAULT '{}',
-      subject_name varchar, document_type varchar)`);
+      subject_name varchar, document_type varchar, is_legacy boolean DEFAULT false)`); // is_legacy: a rota conta só objetos não legados (PL-01)
     await pool.query('CREATE INDEX idx_objects_user_id ON objects (user_id)');
     await pool.query('CREATE INDEX idx_objects_title_trgm ON objects USING gin (title gin_trgm_ops)');
     vi.stubGlobal('fetch', vi.fn(() => Promise.resolve(new Response('{}'))));
@@ -81,7 +81,7 @@ describe.skipIf(!TEST_DB)('POST /api/v1/objects — aviso de objeto parecido', (
 
   beforeEach(async () => {
     userId = randomUUID();
-    // plano business: não esbarra no limite de 3 objetos do plano free
+    // plano business: não esbarra no limite do plano free
     await pool.query(`INSERT INTO users (id, plan) VALUES ($1, 'business')`, [userId]);
   });
 

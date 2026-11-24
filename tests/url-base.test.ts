@@ -109,8 +109,11 @@ describe('links de e-mail', () => {
 describe('pagamento', () => {
   it('billing (upgrade): success, failure, pending e notification_url', async () => {
     await withEnv(PROD);
+    // PL-01: com o «modo crescimento» LIGADO, novas assinaturas de plano ficam pausadas (403). Este teste confere os endereços do checkout de plano,
+    // que continuam existindo no código (só inativos): por isso roda com o modo DESLIGADO (NEXT_PUBLIC_MODO_CRESCIMENTO=0).
+    process.env.NEXT_PUBLIC_MODO_CRESCIMENTO = '0';
     const b = await import('@/app/api/v1/billing/route');
-    await b.POST(await req('/b', { action: 'upgrade', plan_slug: 'pro' }));
+    try { await b.POST(await req('/b', { action: 'upgrade', plan_slug: 'pro' })); } finally { delete process.env.NEXT_PUBLIC_MODO_CRESCIMENTO; }
     expect(prefs[0].back_urls).toEqual({
       success: `${PROD}/checkout/success?type=plan&ref=pro`,
       failure: `${PROD}/checkout/failure`,

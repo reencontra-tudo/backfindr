@@ -3,6 +3,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import { query } from '@/lib/db';
 import { verifyToken, extractTokenFromHeader } from '@/lib/jwt';
 import { aplicarFiltroDeLinguagem } from '@/lib/assistantFilter';
+import { modoCrescimento } from '@/lib/modoCrescimento';
+import { promptDoModo } from '@/lib/promptAssistente';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 interface Message {
@@ -382,7 +384,7 @@ function buildSystemPrompt(
   userName?: string,
   currentPage?: string
 ): string {
-  let prompt = BASE_SYSTEM_PROMPT;
+  let prompt = promptDoModo(BASE_SYSTEM_PROMPT);
 
   // Adiciona contexto de página atual para o bot poder personalizar a resposta
   if (currentPage && currentPage !== '/') {
@@ -431,9 +433,13 @@ function buildSystemPrompt(
     const lostHint = lostObjects.length > 0
       ? `\n[Nota interna: usuário tem ${lostObjects.length} objeto(s) perdido(s)/roubado(s). Se perguntar como aumentar as chances, você pode mencionar o Boost como recurso opcional — mas só se perguntar.]`
       : '';
-    const limitHint = userObjects.length >= 3
-      ? `\n[Nota interna: usuário está no limite de 3 objetos do plano Grátis. Se tentar cadastrar mais e perguntar o que fazer, explique que existem planos opcionais com mais capacidade.]`
-      : '';
+    const limitHint = modoCrescimento()
+      ? (userObjects.length >= 100
+        ? `\n[Nota interna: usuário chegou ao teto de 100 objetos ativos do plano Grátis. Se tentar cadastrar mais, sugira arquivar os já resolvidos.]`
+        : '')
+      : (userObjects.length >= 3
+        ? `\n[Nota interna: usuário está no limite de 3 objetos do plano Grátis. Se tentar cadastrar mais e perguntar o que fazer, explique que existem planos opcionais com mais capacidade.]`
+        : '');
 
     prompt += `\nOBJETOS CADASTRADOS (${userObjects.length}):\n${objectList}${lostHint}${limitHint}\n`;
   } else if (userObjects !== null) {

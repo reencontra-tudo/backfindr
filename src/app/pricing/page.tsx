@@ -1,8 +1,9 @@
 import type { Metadata } from 'next';
 import PricingClient from './client';
 import { APP_URL } from '@/lib/constants';
+import { modoCrescimento } from '@/lib/modoCrescimento';
 
-export const metadata: Metadata = {
+const metadataOriginal: Metadata = {
   title: 'Planos e Preços — Escolha o seu',
   description: 'Compare os planos do Backfindr: Free, Pro e Business. QR Code permanente, matching por IA e chat mediado para recuperar objetos perdidos.',
   keywords: ['planos', 'preços', 'assinatura', 'QR Code', 'objeto perdido', 'Backfindr Pro', 'Backfindr Business'],
@@ -21,6 +22,20 @@ export const metadata: Metadata = {
     images: ['/icons/og-image.png'],
   },
 };
+
+// Modo crescimento (PL-01): sem Pro/Business nos textos de busca e compartilhamento. Desligado = metadados originais acima, sem mudança.
+const metadataCrescimento: Metadata = {
+  ...metadataOriginal,
+  title: 'Backfindr grátis — Cadastre seus objetos',
+  description: 'Cadastre quantos objetos precisar, sem custo: QR Code permanente e busca na rede para recuperar objetos perdidos.',
+  keywords: ['QR Code', 'objeto perdido', 'Backfindr', 'grátis'],
+  openGraph: { ...metadataOriginal.openGraph, title: 'Backfindr grátis', description: 'Comece grátis e cadastre quantos objetos precisar.' },
+  twitter: { ...metadataOriginal.twitter, title: 'Backfindr grátis', description: 'Cadastre quantos objetos precisar e recupere o que perdeu.' },
+};
+
+export function generateMetadata(): Metadata {
+  return modoCrescimento() ? metadataCrescimento : metadataOriginal;
+}
 
 export default function PricingPage() {
   return <PricingClient />;
