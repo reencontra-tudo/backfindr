@@ -193,6 +193,7 @@ Depois de **cada** mescla: esperar a implantação (a `impressao` muda), rodar a
 3. **Imagem: `https://backfindr.com/brand/app-icon.png`, escolha PROVISÓRIA do fundador** (responde 200 `image/png`); ele pode trocá-la depois de ver a página real, **sem deploy**: ver «Trocar a imagem» no 4.1.
 4. CODE: confirma que a `main` e a produção estão como no fim do Passo 3 (`impressao` `ae027c42f88d3438`) e que os dois interruptores continuam ausentes.
 5. NAV: abre Vercel → Settings → Environment Variables e anota o valor **atual** de `MATCHING_ATIVO` em Production (não presumir: o plano dizia «1», mas só o painel diz). Passa o valor para o CODE registrar em 4.6.
+   **REGISTRADO (24/11/2026, informado pelo NAV): `MATCHING_ATIVO` em Production = `1`.** É o valor para religar em 4.5 e para a reversão em 4.6.
 
 ### 4.1 Criar o colaborador `@backfindr` (produção, NÃO verificado) — CODE
 1. CODE: antes de escrever, confere que a tabela está vazia: `select count(*) from colaboradores;` → 0.
@@ -217,7 +218,7 @@ RETURNING slug, codigo_curto, estado, interno, verificado_em IS NOT NULL AS veri
 
 ### 4.2 Desligar o matching antes do teste — NAV
 1. NAV: em Vercel → Settings → Environment Variables, abre `MATCHING_ATIVO` (Production).
-2. NAV: confirma o valor anotado em 4.0.5 e o escreve na mensagem (valor para religar: `____`).
+2. NAV: confirma o valor anotado em 4.0.5 e o escreve na mensagem (valor para religar: `1`, registrado em 4.0.5).
 3. NAV: troca o valor para `0` (não apaga a variável) e salva.
 4. FUN: autoriza com a passkey, se a Vercel pedir.
 
@@ -249,7 +250,7 @@ RETURNING slug, codigo_curto, estado, interno, verificado_em IS NOT NULL AS veri
 
 ### 4.5 Religar o matching — NAV
 1. NAV: só depois do passo 14 do 4.4 (ocorrências de teste arquivadas), abre `MATCHING_ATIVO` (Production).
-2. NAV: devolve o valor anotado em 4.0.5 (`____`) e salva.
+2. NAV: devolve o valor anotado em 4.0.5 (`1`) e salva.
 3. FUN: autoriza com a passkey, se pedir.
 4. NAV: Redeploy de produção.
 5. CODE: espera a `impressao` mudar e confere que o programa continua ligado (`/@backfindr` 200 e `noindex`).
@@ -257,7 +258,7 @@ RETURNING slug, codigo_curto, estado, interno, verificado_em IS NOT NULL AS veri
 
 ### 4.6 Reversão completa (tudo volta ao comportamento de hoje) — qualquer momento
 1. NAV: apaga `COLABORADORES_ATIVO` e `NEXT_PUBLIC_COLABORADORES_ATIVO` de Production.
-2. NAV: devolve `MATCHING_ATIVO` ao valor anotado em 4.0.5.
+2. NAV: devolve `MATCHING_ATIVO` ao valor anotado em 4.0.5 (`1`).
 3. FUN: autoriza com a passkey, se pedir.
 4. NAV: Redeploy de produção.
 5. CODE: espera a `impressao` mudar e roda `comparar`: `/@backfindr` volta a 404 (corpo da 404 de rotas internas é o já anotado).
