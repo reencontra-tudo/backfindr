@@ -12,8 +12,8 @@
 | Passo | Estado |
 |---|---|
 | 0 — Preparação | **FEITO** (este plano; script `tools/comparar-producao.mjs`; dois retratos «antes» da produção) |
-| 1 — Cópia de segurança | **PARCIAL — BLOQUEADO**: feitos o registro da assinatura do esquema e das contagens (leitura). **O dump completo (esquema e dados) NÃO pôde ser feito por esta sessão** (ver «Passo 1»). **Os passos 2 e 3 NÃO foram iniciados.** |
-| 2 — Migration 026 | NÃO iniciado (depende do passo 1) |
+| 1 — Cópia de segurança | **CONFIRMADO (24/11/2026)** pelo backup próprio diário (repositório `m2r-backup-supabase`, run #36): ver «Passo 1». Não é preciso dump manual. |
+| 2 — Migration 026 | autorizado; ver «Passo 2» para o estado |
 | 3 — Mescla com interruptores desligados | NÃO iniciado (depende do passo 2) |
 | 4 — Ligar o piloto | NÃO autorizado |
 
@@ -77,40 +77,29 @@ Também: PostgreSQL 17.6; banco com 50 MB; **`objects` sem nenhuma coluna `colab
 **Linhas por tabela** (contagem exata, 24/11/2026): `users` 4.367 · `objects` 2.227 · `matches` 1.350 · `object_events` 49.537 · `user_lifecycle_events` 6.128 · `marketing_leads` 972 · `public_signal_evidence` 902 · `local_pages` 441 · `marketing_lead_acoes` 328 · `notifications` 134 · `municipality_events` 107 · `municipalities` 63 · `seo_content_seeds` 46 · `community_posts` 44 · `magic_link_tokens` 32 · `email_events` 15 · `email_messages` 15 · `payment_settings` 13 · `state_emergency_contacts` 11 · `analytics_snapshots` 9 · `marketing_apify_configs` 8 · `mensagens_conversa` 8 · `subscriptions_p1` 7 · `email_campaigns` 6 · `push_subscriptions` 6 · `community_comments` 5 · `send_throttle_events` 5 · `subscriptions` 4 · `plan_configs` 3 · `boosts` 2 · `conversas` 2 · `password_reset_tokens` 2 · `unidades` 2 · `analytics_tokens` 1 · `chat_messages` 1 · `condominios` 1 · `marketing_config` 1 · as demais (27 tabelas) com 0 linhas. Total: 56 tabelas.
 **Regra para comparar contagens depois (os dados são vivos):** tabelas de eventos e cadastros crescem sozinhas (`object_events`, `user_lifecycle_events`, `users`, `objects`, `notifications`, `email_*`). A regra é: **nenhuma contagem pode DIMINUIR**; para `users`, `objects` e `matches`, o número a mais tem de ser explicado por linhas com `created_at` posterior ao retrato; tabelas estáticas (as de configuração, de municípios, `local_pages`, `seo_content_seeds` etc.) devem ficar **iguais**.
 
-### 1.2 O que NÃO pôde ser feito por esta sessão: o dump completo (esquema e dados)
-**Motivo (divergência: parar e reportar):**
-- Esta sessão **não tem a cadeia de conexão nem a senha do banco** (só um conector de consulta, que roda SQL), então **não consegue rodar `pg_dump`**.
-- Gerar o dump pelo conector significaria **trazer os dados (4.367 usuários, e-mails, telefones) para dentro desta conversa**: contraria a regra de nunca expor dados pessoais e não é um dump íntegro.
-- O organização do Supabase está no plano **Free** (verificado em 23/11/2026), que, pelo que conheço, **não tem backup automático nem restauração por ponto no tempo** (**não confirmado** nas páginas lidas: conferir em Supabase → Database → Backups). Ou seja, **o dump manual é a única rede de segurança.**
+### 1.2 Cópia de segurança: o backup próprio diário (corrige o registro anterior)
+**Correção de registro (informação do fundador, 24/11/2026):** o Supabase do Backfindr **não tem backup nativo** (plano Free), **mas existe um backup próprio diário e ele funciona**: repositório `reencontra-tudo/m2r-backup-supabase`, fluxo `backup-supabase.yml` (GitHub Actions, `pg_dump` 17 em formato custom, com um papel **somente leitura** `backup_ro`, enviado ao bucket R2 `m2r-bancos-backup`, caminho `backfindr-supabase/postgres/diario/AAAA/MM/`), mais um **teste de restauração** (`teste-restore.yml`). Qualquer frase anterior (neste plano, em `STATUS.md`, `DESENHO.md` ou `BACKFINDR.md`) que dissesse que não há backup foi **corrigida** nesta data.
 
-### 1.3 Como o fundador faz o dump (no computador dele; a senha não vai para o chat nem para a linha de comando)
-```bash
-# 1) Pasta segura, fora do repositório, só do seu usuário
-mkdir -p ~/backups-backfindr && chmod 700 ~/backups-backfindr
-# 2) A senha vai numa variável digitada no próprio terminal (não cole em chat, não salve em arquivo):
-read -s PGPASSWORD; export PGPASSWORD
-# 3) Dump completo (esquema + dados) em formato «custom» (compactado, restaurável por tabela).
-#    Use o host/usuário da tela «Connect» do Supabase (Session pooler, porta 5432, se o seu provedor de rede não tiver IPv6).
-pg_dump "host=<HOST> port=5432 dbname=postgres user=<USUARIO> sslmode=require" \
-  --format=custom --no-owner --no-privileges \
-  --file="$HOME/backups-backfindr/backfindr-2026-11-24.dump"
-unset PGPASSWORD
-chmod 600 ~/backups-backfindr/backfindr-2026-11-24.dump
-# 4) Integridade: tamanho, soma de verificação e índice do conteúdo
-ls -l ~/backups-backfindr/backfindr-2026-11-24.dump
-shasum -a 256 ~/backups-backfindr/backfindr-2026-11-24.dump > ~/backups-backfindr/backfindr-2026-11-24.dump.sha256
-pg_restore --list ~/backups-backfindr/backfindr-2026-11-24.dump | grep -c "TABLE DATA"        # esperado: 56 tabelas com dados listados
-```
-**Conferência de integridade a mostrar ao Claude (sem dados):** o tamanho do arquivo, a soma `sha256`, e o número de linhas `TABLE DATA` (esperado 56). Opcional e mais forte: restaurar numa base **local descartável** (`createdb teste_restauracao && pg_restore --no-owner --no-privileges -d teste_restauracao <arquivo>`) e comparar `select count(*)` de `users`, `objects` e `matches` com a tabela acima (diferenças só por atividade ocorrida depois do dump).
-**Cuidados:** o arquivo contém dados pessoais: fica só no computador do fundador (ou em cofre dele), com permissão `600`, **nunca** no repositório, no chat, em e-mail ou em pasta sincronizada pública. Apagar quando não for mais necessário.
+### 1.3 Confirmação da integridade da cópia (por SOMENTE LEITURA, 24/11/2026)
+**Como foi confirmado:** pelos metadados e pelo registro (log) da execução, lidos pelo GitHub (sem baixar nenhum dado e sem acesso ao R2: as credenciais do R2 estão no cofre local do fundador e **não foram usadas nem vistas por esta sessão**). O próprio `backup.sh` faz as verificações e imprime só contagens e tamanhos (nunca URL, senha ou chave).
+| Item | Resultado |
+|---|---|
+| Execução | **run #36** (id 45317836084), `workflow_dispatch`, disparada em **24/11/2026 03:12:13 UTC (00:12 em Brasília)**, **concluída com sucesso** em ~71 s; 36 execuções no total, as anteriores (agendadas, diárias) também com sucesso (#31 a #35 conferidas) |
+| Origem | papel somente leitura `backup_ro` (não é superusuário), servidor 17.6, **56 tabelas em `public`**, banco de **50 MB** (igual ao que esta sessão mediu) |
+| Arquivo gerado | **5.890.594 bytes** (`pg_dump --format=custom --compress=9`), cliente `pg_dump` 17.12 |
+| Conteúdo (`pg_restore --list`) | **1.245 objetos; 56 tabelas em `public`; 56 tabelas COM DADOS (`TABLE DATA`)** |
+| Envio ao R2 | tamanho no R2 = **5.890.594 bytes** (igual ao local) e **SHA-256 conferido**; o arquivo foi **baixado de volta** do R2 e listado: **1.245 objetos** (igual) |
+| Destino | bucket `m2r-bancos-backup`, caminho `backfindr-supabase/postgres/diario/2026/11/` (nome `backfindr-supabase_<data UTC>.dump`; o nome exato não é impresso no log) |
+| Momento do dump | 03:12:43 a 03:13:12 UTC, **antes de qualquer alteração da 026**: é o estado «antes» |
+| Teste de restauração | último com sucesso: **run #8, em 16/11/2026** (restaura num PostgreSQL 17 descartável e compara). O agendado de 05/11 (#7) falhou antes de um conserto (PR #5 do repositório do backup), e o de 16/11, depois do conserto, passou. As mensagens de erro do `vault.*` no log são esperadas (esquema interno do Supabase que não existe num PostgreSQL comum), não afetam `public` |
+**Limites desta confirmação (honestos):** (a) **não listei o objeto no R2 com as credenciais** (não as tenho): confio nas verificações que o próprio fluxo fez e registrou (tamanho, SHA-256 e leitura de volta). (b) O log **não traz as contagens de linhas** de `users`, `objects` e `matches` dentro do dump; elas estão em 1.1 (medidas ao vivo nesta data) e o teste de restauração do fluxo compara contagens. (c) O teste mensal de restauração mais recente com sucesso é de 16/11, não de hoje. **Nada disso impede o passo 2:** a 026 é aditiva e reversível, e o dump de 00:12 é íntegro pelas verificações do próprio fluxo.
 
 ### 1.4 Como restaurar, se for preciso
-- **Só a migration 026 (o caso mais provável):** não precisa do dump; basta a **reversão** do passo 2.5 (as colunas e a tabela são novas e estarão vazias).
-- **Uma tabela danificada:** `pg_restore --no-owner --no-privileges --data-only -t <tabela> -d "<banco>" <arquivo>` (depois de limpar a tabela, sob ordem do fundador).
-- **O banco inteiro:** criar um projeto Supabase novo e `pg_restore --no-owner --no-privileges -d "<novo banco>" <arquivo>`; apontar `DATABASE_URL` da Vercel para o novo banco (decisão do fundador). O Supabase mantém extensões; conferir `pg_trgm` e `pgcrypto`.
+- **Só a migration 026 (o caso mais provável):** não precisa do backup; basta a **reversão** do passo 2.5 (colunas e tabela novas, vazias).
+- **Uma tabela ou o banco:** baixar o `.dump` do R2 (credenciais do cofre do fundador), `pg_restore --no-owner --no-privileges` para um banco descartável, conferir contagens e, se for o caso, restaurar a tabela (`-t <tabela> --data-only`) ou criar um projeto novo e apontar a `DATABASE_URL` (decisão do fundador). O `teste-restore.yml` do repositório do backup mostra o procedimento automatizado.
 
 ### 1.5 Estado do passo 1
-**NÃO COMPLETO.** Faltam o dump e a confirmação de integridade (1.3). **Sem isso os passos 2 e 3 não começam.** Se o fundador preferir seguir sem o dump (por decisão dele, escrita), a 026 é **aditiva e reversível** (colunas nulas e tabela nova, sem alterar dado existente); o risco residual é de um erro inesperado no `ALTER TABLE objects`, mitigado pelo `lock_timeout` e pela transação única (2.2), mas **a decisão de dispensar o dump é dele, não minha**.
+**COMPLETO (24/11/2026).** Cópia íntegra, de 00:12 BRT, com as 56 tabelas com dados. Os passos 2 e 3 seguem autorizados, um de cada vez, parando em qualquer divergência.
 
 ---
 
@@ -155,8 +144,8 @@ O **código antigo continua funcionando com a 026 aplicada** (a 026 só acrescen
 
 ## PASSO 3 — Mescla com os interruptores DESLIGADOS (só depois do passo 2 verificado)
 ### 3.1 Pré-condições (todas)
-1. **`COLABORADORES_ATIVO` e `NEXT_PUBLIC_COLABORADORES_ATIVO` NÃO existem em Production.** Esta sessão **não consegue ler as variáveis da Vercel**: a confirmação é do **fundador ou do Claude do navegador** (Vercel → Settings → Environment Variables; procurar as duas; **nenhuma** das duas pode aparecer em Production nem em «All Environments»). Além disso, a verificação indireta pós-deploy (3.3) **pega** o erro: se alguma existisse, `/@backfindr` abriria e o `bundle` mostraria trechos.
-2. **Anotar a implantação de produção atual** (`ce5fc691abb0904d` pela impressão; o fundador anota o identificador/URL dela na Vercel): é o destino do **Instant Rollback**.
+1. **`COLABORADORES_ATIVO` e `NEXT_PUBLIC_COLABORADORES_ATIVO` NÃO existem em NENHUM ambiente da Vercel: CONFIRMADO em 24/11/2026** (verificado pelo Claude do navegador no painel e informado pelo fundador). (Esta sessão não lê as variáveis da Vercel; a confirmação é a deles.) Texto original da pré-condição: a confirmação é do **fundador ou do Claude do navegador** (Vercel → Settings → Environment Variables; procurar as duas; **nenhuma** das duas pode aparecer em Production nem em «All Environments»). Além disso, a verificação indireta pós-deploy (3.3) **pega** o erro: se alguma existisse, `/@backfindr` abriria e o `bundle` mostraria trechos.
+2. **Implantação de produção atual (destino do Instant Rollback): `backfindr-3dtxeok5q`, commit `5e0749c`, de 19/11/2026** (informado pelo fundador; impressão `ce5fc691abb0904d`).
 3. Passos 1 e 2 completos e verificados. A `main` ainda em `5e0749c`. Nenhum PR da pilha com alteração nova não revisada.
 ### 3.2 Mescla (na ordem do 0.1, um PR de cada vez, com os comandos do 0.1)
 Depois de **cada** mescla: esperar a implantação (a `impressao` muda), rodar a comparação rápida (`/`, `/feed`, `/@backfindr` = 404, `/robots.txt`). **Qualquer divergência = parar.**
@@ -178,7 +167,7 @@ Depois de **cada** mescla: esperar a implantação (a `impressao` muda), rodar a
 ### 4.0 Decisões do fundador antes de ligar
 | # | Decisão | Recomendação |
 |---|---|---|
-| D1 | **Matching durante o teste.** Hoje `MATCHING_ATIVO` está ligado em produção; uma ocorrência de teste nova pode **casar com uma ocorrência real e avisar o dono dela por e-mail e push**. | **Desligar `MATCHING_ATIVO` durante o teste** (variável `MATCHING_ATIVO=0`, no mesmo redeploy de 4.2) e religar depois; ou escolher um título e uma categoria que não casem com nada (menos seguro). |
+| D1 | **Matching durante o teste.** Hoje `MATCHING_ATIVO` está ligado em produção; uma ocorrência de teste nova pode **casar com uma ocorrência real e avisar o dono dela por e-mail e push**. | **DECIDIDO pelo fundador (24/11/2026): desligar `MATCHING_ATIVO` durante o teste do piloto e religá-lo logo depois.** Entra no roteiro (4.2 e 4.3, passo 8). |
 | D2 | Quem cria as variáveis: o fundador ou o Claude do navegador (logado na Vercel). | — |
 | D3 | Ocorrência de teste: aceita ficar **pública por alguns minutos** no Feed, na página `/@backfindr` e em `/objeto/<código>` (e eventos de métricas: Lead/Purchase não; `ocorrencia_publicada` sim). | Título que deixe claro que é teste e **sem dado pessoal e sem foto**. |
 ### 4.1 Preparar o banco (escrita na produção: só com ordem)
@@ -189,7 +178,7 @@ Depois de **cada** mescla: esperar a implantação (a `impressao` muda), rodar a
 |---|---|---|
 | `COLABORADORES_ATIVO` | `1` | servidor: middleware, rotas, cadastro, página, sitemap, cartaz |
 | `NEXT_PUBLIC_COLABORADORES_ATIVO` | `1` | navegador: campo do formulário e captura do `?colab=` (**fixada no build**) |
-| `MATCHING_ATIVO` | `0` (se D1 = desligar; **alterar a existente** e anotar o valor antigo para religar) | sem aviso a donos reais durante o teste |
+| `MATCHING_ATIVO` | `0` (**decidido: desligar durante o teste**; **alterar a existente**, anotando o valor antigo `1` para religar logo depois) | sem aviso a donos reais durante o teste |
 **Os dois interruptores são ligados juntos**; o painel do admin mostra um aviso se divergirem. **Redeploy necessário** (as `NEXT_PUBLIC_*` só valem em build novo): Vercel → Deployments → Redeploy do deploy de produção mais recente. Esperar `impressao` mudar. Esperar até 5 minutos pelos 404 guardados (cache da página).
 ### 4.3 Roteiro de teste com `/@backfindr` (produção; uma única ocorrência de teste)
 1. `GET /@backfindr` → 200, «por Backfindr», botões, sem ocorrências, `noindex`. `GET /api/v1/colaboradores/validar?codigo=HX7R` → `{"ok":true,"nome":"Backfindr"}`.
@@ -199,7 +188,7 @@ Depois de **cada** mescla: esperar a implantação (a `impressao` muda), rodar a
 5. **Cadastro SEM código** (uma segunda, igual à de sempre) **não é necessário em produção**: já foi provado byte a byte localmente; se o fundador quiser, repetir **uma** ocorrência de teste sem código e arquivar em seguida.
 6. Conferir que **nenhum e-mail/push saiu para outras pessoas** (com D1 = desligar o matching) e que nenhum arquivo foi gravado no R2.
 7. **Arquivar a(s) ocorrência(s) de teste:** painel admin (Objetos ou Moderação) → status «archived» (`PUT /api/v1/admin/objects/<id>` com `{"status":"archived"}`; o dono não consegue arquivar sozinho). Conferir que sumiu do Feed e da página `/@backfindr` (até 5 minutos). O código fica gravado nelas (imutável), sem efeito.
-8. Religar `MATCHING_ATIVO` ao valor antigo (novo redeploy).
+8. **Religar `MATCHING_ATIVO` ao valor antigo (`1`) logo depois do teste** (novo redeploy) e conferir (`impressao` muda); a ordem correta é: arquivar a(s) ocorrência(s) de teste (passo 7) **antes** de religar o matching.
 ### 4.4 Reversão do passo 4 (tudo volta ao comportamento de hoje)
 1. Remover `COLABORADORES_ATIVO` e `NEXT_PUBLIC_COLABORADORES_ATIVO` de Production (e restaurar `MATCHING_ATIVO`) e **refazer o deploy**.
 2. Conferir com `comparar` e `bundle`: `/@backfindr` = 404, sem trecho do programa no navegador.
