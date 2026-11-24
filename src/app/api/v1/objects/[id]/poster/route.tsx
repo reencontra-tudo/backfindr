@@ -2,6 +2,7 @@ import { ImageResponse } from 'next/og';
 import { NextRequest } from 'next/server';
 import { query } from '@/lib/db';
 import { buildPosterData } from '@/lib/posterFormatter';
+import { chamadaDoCartaz } from '@/lib/cartazChamada';
 import { maskSharedTexts } from '@/lib/objectPublicView';
 import { enderecoPublico, ehCadastroDeUsuario, arredondaCoordenada } from '@/lib/publicLocation';
 import sharp from 'sharp';
@@ -164,6 +165,7 @@ export async function GET(
       localizacao = enderecoPublico(end, { is_legacy: false, source: obj.source }) ?? '';
     }
 
+    const chamada = chamadaDoCartaz(obj.status);
     const pd = buildPosterData({
       title:       shown.title ?? obj.title,
       description: shown.description ?? null,
@@ -329,10 +331,10 @@ export async function GET(
                 )}
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
                   <span style={{ color: teal, fontSize: '26px', fontWeight: 900, display: 'flex' }}>
-                    VOCÊ VIU? ESCANEIE
+                    {chamada.quadrado.titulo}
                   </span>
                   <span style={{ color: 'rgba(255,255,255,0.6)', fontSize: '20px', display: 'flex' }}>
-                    Avise o dono — backfindr.com
+                    {chamada.quadrado.linha}
                   </span>
                   {marca && <MarcaDoCartaz marca={marca} fonte={20} cor="rgba(255,255,255,0.85)" logo={26} margemTopo={2} />}
                 </div>
@@ -484,10 +486,10 @@ export async function GET(
               )}
               <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', flex: 1 }}>
                 <span style={{ color: teal, fontSize: '34px', fontWeight: 900, display: 'flex', flexWrap: 'wrap' }}>
-                  AJUDE A ENCONTRAR
+                  {chamada.vertical.titulo}
                 </span>
                 <span style={{ color: 'rgba(255,255,255,0.8)', fontSize: '26px', lineHeight: 1.4, display: 'flex', flexWrap: 'wrap' }}>
-                  Você viu? Escaneie e avise o dono!
+                  {chamada.vertical.linha}
                 </span>
                 <span style={{ color: teal, fontSize: '22px', display: 'flex' }}>
                   {appUrl.replace('https://', '')}
@@ -652,10 +654,10 @@ export async function GET(
             )}
             <div style={{ display: 'flex', flexDirection: 'column', gap: '20px', flex: 1 }}>
               <span style={{ color: '#111827', fontSize: '88px', fontWeight: 900, lineHeight: 0.92, letterSpacing: '-2px', display: 'flex', flexWrap: 'wrap' }}>
-                ESCANEIE SE VOCÊ VIU
+                {chamada.a4.titulo}
               </span>
               <span style={{ color: '#374151', fontSize: '56px', fontWeight: 600, lineHeight: 1.3, display: 'flex', flexWrap: 'wrap' }}>
-                Escaneie o QR Code para abrir a página do objeto e avisar que você o encontrou.
+                {chamada.a4.texto}
               </span>
               <span style={{ color: tealA4, fontSize: '48px', fontWeight: 700, display: 'flex' }}>
                 backfindr.com/scan/{obj.qr_code}
