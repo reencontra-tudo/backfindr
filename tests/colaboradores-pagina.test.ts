@@ -81,12 +81,12 @@ describe.skipIf(!TEST_DB)('página, feed do colaborador e sitemap (banco real)',
   afterEach(() => { delete process.env.COLABORADORES_ATIVO; });
 
   describe('estados da página', () => {
-    it('ativo → página com os dados; suspenso → 307; saiu e excluído → 308; inexistente → 404; sem diferenciar maiúscula', async () => {
+    it('ativo → página com os dados; suspenso e saiu → 307; excluído → 308; inexistente → 404; sem diferenciar maiúscula', async () => {
       const a = await carregarColaborador(consulta, 'Grupo-SP');
       expect(a.tipo).toBe('pagina');
       if (a.tipo === 'pagina') { expect(a.colaborador.nome).toBe('Grupo SP'); expect(a.colaborador.codigoCurto).toBe('HX7R'); expect(a.colaborador.verificado).toBe(true); expect(a.colaborador.canalUrl).toBe('https://www.facebook.com/groups/x'); }
       expect(await carregarColaborador(consulta, 'suspenso')).toEqual({ tipo: 'redirecionar', permanente: false });
-      expect(await carregarColaborador(consulta, 'saiu')).toEqual({ tipo: 'redirecionar', permanente: true });
+      expect(await carregarColaborador(consulta, 'saiu')).toEqual({ tipo: 'redirecionar', permanente: false }); // PC-13: «saiu» = 307 (volta possível)
       expect(await carregarColaborador(consulta, 'excluido')).toEqual({ tipo: 'redirecionar', permanente: true });
       expect(await carregarColaborador(consulta, 'nunca-existiu')).toEqual({ tipo: 'nao-existe' });
     });
