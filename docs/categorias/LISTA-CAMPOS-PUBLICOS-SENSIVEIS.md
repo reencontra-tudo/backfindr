@@ -2,7 +2,9 @@
 
 **Para o fundador conferir antes da mescla.** Regra (decisão MC-02): **sensíveis só o TITULAR vê** (nunca em página pública, cartaz, Feed, SEO, JSON-LD nem e-mail para terceiros): IMEI, número de série, chassi, microchip, brinco/registro, conteúdo da carteira. **Público:** a PLACA do veículo ROUBADO (é como as pessoas reconhecem o carro) e os demais campos não sensíveis. A regra mora num lugar só: `src/lib/camposEspecificos.ts`.
 
-**Dois pontos para o fundador confirmar:**
+**DECISÕES CONFIRMADAS pelo fundador em 24/11/2026:** número do motor = SENSÍVEL; placa pública SÓ com o veículo roubado; **aviso nos campos de texto livre públicos** (cadastro e edição, mesmo texto): «Este texto é público. Não escreva aqui IMEI, número de série, chassi, documentos ou dados pessoais — eles têm campo próprio protegido.» (campos: especificações técnicas, marcas e sinais, descrição das chaves e da coleira).
+
+**(Pontos que estavam em aberto, agora decididos):**
 1. **Número do motor (`vehicle_engine`)** NÃO estava na sua lista; marquei como **sensível** (mesma natureza do chassi). Se preferir público, é uma linha.
 2. **Placa:** pública só quando o veículo está **roubado** (leitura literal de «placa de veículo roubado»). Veículo perdido, encontrado ou protegido: só o titular. Se quiser pública também em «perdido», é uma linha.
 (Campo de texto livre como «Especificações técnicas» (eletrônico), «Marcas e sinais» e «Descrição das chaves» são públicos: o titular deve evitar escrever ali dados de identificação; vale um aviso no formulário, a decidir.)

@@ -18,6 +18,14 @@ export const CAMPOS_SENSIVEIS: ReadonlySet<string> = new Set([
   'wallet_contents',                            // carteira: conteúdo
 ]);
 
+/** Campos de TEXTO LIVRE que aparecem em página pública: levam o aviso de que o texto é público (decisão do fundador, 24/11/2026; mesmo texto no cadastro e na edição). */
+export const CAMPOS_TEXTO_LIVRE_PUBLICO: ReadonlySet<string> = new Set([
+  'electronics_specs',                                                      // eletrônico: especificações técnicas
+  'wallet_distinguishing_marks', 'keys_description', 'keys_distinguishing_marks', 'bike_distinguishing_marks',
+  'pet_distinguishing_marks', 'pet_collar_description', 'animal_marks',     // marcas e sinais, descrição das chaves e da coleira
+]);
+export const AVISO_TEXTO_PUBLICO = 'Este texto é público. Não escreva aqui IMEI, número de série, chassi, documentos ou dados pessoais — eles têm campo próprio protegido.';
+
 /** Placa: pública só quando o veículo é ROUBADO. */
 export const CAMPO_PLACA = 'vehicle_plate';
 export const STATUS_PLACA_PUBLICA = 'stolen';

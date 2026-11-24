@@ -182,9 +182,9 @@ describe('guardas de código', () => {
     const lidores = lista('src').filter((f) => /\.(ts|tsx)$/.test(f) && read(f).includes('category_fields')).filter((f) => !permitidos.has(f));
     expect(lidores).toEqual([]);
   });
-  it('só a rota do scan e o painel/edição do titular importam o módulo de exibição; cartaz, Feed, e-mail, SEO e JSON-LD NÃO', () => {
+  it('só a rota do scan, o painel/edição do titular e o componente de campos (aviso) importam o módulo de exibição; cartaz, Feed, e-mail, SEO e JSON-LD NÃO', () => {
     const importam = lista('src').filter((f) => /\.(ts|tsx)$/.test(f) && read(f).includes('@/lib/camposEspecificos')).sort();
-    expect(importam).toEqual(['src/app/api/v1/objects/[id]/route.ts', 'src/app/api/v1/objects/scan/[code]/route.ts', 'src/app/dashboard/objects/[id]/edit/page.tsx', 'src/app/dashboard/objects/[id]/page.tsx'].sort());
+    expect(importam).toEqual(['src/app/api/v1/objects/[id]/route.ts', 'src/app/api/v1/objects/scan/[code]/route.ts', 'src/app/dashboard/objects/[id]/edit/page.tsx', 'src/app/dashboard/objects/[id]/page.tsx', 'src/components/ui/DynamicCategoryFields.tsx'].sort());
   });
   it('o scan usa a lista PÚBLICA (publico: true) e remove a marca de sensível da resposta', () => {
     const r = read('src/app/api/v1/objects/scan/[code]/route.ts');
@@ -203,5 +203,44 @@ describe('guardas de código', () => {
   });
   it('JSON-LD da página do objeto continua sem campos específicos', () => {
     expect(read('src/app/objeto/[code]/page.tsx')).not.toMatch(/campos_publicos|campos_especificos|imei|serial/i);
+  });
+});
+
+// ───────────────── 5. aviso nos campos de texto livre públicos (cadastro e edição) ─────────────────
+import React, { createElement } from 'react';
+(globalThis as unknown as { React: typeof React }).React = React; // o componente usa JSX sem importar React (execução de teste)
+import { renderToStaticMarkup } from 'react-dom/server';
+import { DynamicCategoryFields } from '@/components/ui/DynamicCategoryFields';
+import { AVISO_TEXTO_PUBLICO, CAMPOS_TEXTO_LIVRE_PUBLICO } from '@/lib/camposEspecificos';
+
+describe('aviso «este texto é público» nos campos de texto livre públicos', () => {
+  it('o texto do aviso é exatamente o decidido pelo fundador', () => {
+    expect(AVISO_TEXTO_PUBLICO).toBe('Este texto é público. Não escreva aqui IMEI, número de série, chassi, documentos ou dados pessoais — eles têm campo próprio protegido.');
+  });
+  it('a lista são os campos de texto livre PÚBLICOS: textarea ou texto, nunca um campo sensível, e todos existem na configuração', () => {
+    const todos = new Map(Object.values(CATEGORY_FIELDS).flatMap((c) => getAllFieldsForCategory(c.category).map((f) => [f.name, f] as const)));
+    for (const n of CAMPOS_TEXTO_LIVRE_PUBLICO) { expect(todos.has(n), n).toBe(true); expect(CAMPOS_SENSIVEIS.has(n), n).toBe(false); expect(['text', 'textarea']).toContain(todos.get(n)!.type); }
+    expect([...CAMPOS_TEXTO_LIVRE_PUBLICO].sort()).toEqual(['animal_marks', 'bike_distinguishing_marks', 'electronics_specs', 'keys_description', 'keys_distinguishing_marks', 'pet_collar_description', 'pet_distinguishing_marks', 'wallet_distinguishing_marks']);
+  });
+  it('toda textarea pública da configuração tem o aviso (nenhum campo de texto livre público fica sem ele); o conteúdo da carteira (sensível) não leva', () => {
+    for (const cfg of Object.values(CATEGORY_FIELDS)) for (const f of getAllFieldsForCategory(cfg.category)) {
+      if (f.type === 'textarea' && !CAMPOS_SENSIVEIS.has(f.name)) expect(CAMPOS_TEXTO_LIVRE_PUBLICO.has(f.name), f.name).toBe(true);
+    }
+    expect(CAMPOS_TEXTO_LIVRE_PUBLICO.has('wallet_contents')).toBe(false);
+  });
+  it('o componente (usado no CADASTRO e na EDIÇÃO) mostra o aviso uma vez por campo de texto livre público, e em nenhum outro', () => {
+    // campos principais (visíveis sem abrir «detalhes adicionais»): chaves tem keys_description; os opcionais são conferidos pela regra acima
+    const html = renderToStaticMarkup(createElement(DynamicCategoryFields, { category: 'keys', values: {}, onChange: () => {} }));
+    expect((html.match(/data-aviso-texto-publico/g) ?? []).length).toBe(1);
+    expect(html).toContain('Este texto é público.');
+    for (const cat of ['phone', 'vehicle', 'document']) {
+      const h = renderToStaticMarkup(createElement(DynamicCategoryFields, { category: cat, values: {}, onChange: () => {} }));
+      expect(h, cat).not.toContain('data-aviso-texto-publico');
+    }
+  });
+  it('cadastro e edição usam o MESMO componente (mesmo aviso nos dois)', () => {
+    expect(read('src/app/dashboard/objects/new/page.tsx')).toContain('<DynamicCategoryFields');
+    expect(read('src/app/dashboard/objects/[id]/edit/page.tsx')).toContain('<DynamicCategoryFields');
+    expect(read('src/components/ui/DynamicCategoryFields.tsx')).toContain('AVISO_TEXTO_PUBLICO');
   });
 });
