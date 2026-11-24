@@ -6,7 +6,7 @@
 // na mesma ordem do Feed geral (usuário antes de sinal público, com foto antes de sem foto, mais recentes). Sem região ou sem raio: só o grupo 1.
 import { maskPersonNames } from '@/lib/privacy/maskPersonNames';
 import { FEED_ELIGIBILITY_WHERE, sourceName, toPublicItem, type FeedItem, type FeedStatus } from '@/lib/feed/query';
-import { feedCategoryKey, FEED_CATEGORY_LABELS } from '@/lib/feed/category';
+import { feedCategoryKey, feedCategoryLabel } from '@/lib/feed/category';
 import { parseLocation, NO_LOCATION_LABEL } from '@/lib/feed/location';
 import { rankFeed } from '@/lib/feed/order';
 import { STATUS_LABELS } from '@/lib/feed/time';
@@ -43,7 +43,7 @@ function paraItem(r: Record<string, unknown>) {
     code: String(r.code),
     title: maskPersonNames(r.title as string) || 'Ocorrência sem título',
     status, status_label: STATUS_LABELS[status] ?? '',
-    category: catKey, category_label: FEED_CATEGORY_LABELS[catKey],
+    category: catKey, category_label: feedCategoryLabel((r.category ?? r.type) as string | null, catKey),
     origin,
     location_label: maskPersonNames(loc.label) || NO_LOCATION_LABEL,
     has_photo: Boolean(r.photo_url), photo_url: (r.photo_url as string | null) ?? null,

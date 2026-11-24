@@ -237,6 +237,65 @@ export const CATEGORY_FIELDS: Record<string, CategoryFieldConfig> = {
     ],
   },
 
+  // Animal de CRIAÇÃO ou TRABALHO (cavalo, boi, porco...). Quem tem cachorro, gato, pássaro ou coelho escolhe «Pet» (decisão do fundador, 24/11/2026, MC-01).
+  // Nomes próprios (animal_*), sem reaproveitar pet_*. Essenciais: espécie e cor/pelagem. Todo o resto é opcional.
+  animal: {
+    category: 'animal',
+    label: 'Animal',
+    emoji: '🐴',
+    essentialFields: [
+      {
+        name: 'animal_species',
+        label: 'Espécie',
+        type: 'select',
+        required: true,
+        options: [
+          { value: 'horse', label: 'Cavalo / égua' },
+          { value: 'cattle', label: 'Boi / vaca / bezerro' },
+          { value: 'pig', label: 'Porco' },
+          { value: 'sheep', label: 'Ovelha' },
+          { value: 'goat', label: 'Cabra / bode' },
+          { value: 'poultry', label: 'Ave de criação (galinha, pato...)' },
+          { value: 'donkey', label: 'Burro / jumento / mula' },
+          { value: 'other', label: 'Outro' },
+        ],
+      },
+      {
+        name: 'animal_color',
+        label: 'Cor / pelagem',
+        type: 'text',
+        required: true,
+        placeholder: 'Ex: alazão com estrela na testa, preto, malhado',
+        maxLength: 80,
+      },
+    ],
+    optionalFields: [
+      { name: 'animal_breed', label: 'Raça', type: 'text', placeholder: 'Ex: Mangalarga, Nelore (se souber)', maxLength: 80 },
+      {
+        name: 'animal_sex',
+        label: 'Sexo',
+        type: 'select',
+        options: [
+          { value: 'male', label: 'Macho' },
+          { value: 'female', label: 'Fêmea' },
+          { value: 'unknown', label: 'Não sei' },
+        ],
+      },
+      { name: 'animal_age', label: 'Idade aproximada', type: 'text', placeholder: 'Ex: 5 anos', maxLength: 40 },
+      {
+        name: 'animal_size',
+        label: 'Porte',
+        type: 'select',
+        options: [
+          { value: 'small', label: 'Pequeno' },
+          { value: 'medium', label: 'Médio' },
+          { value: 'large', label: 'Grande' },
+        ],
+      },
+      { name: 'animal_marks', label: 'Marcas e sinais', type: 'textarea', placeholder: 'Ex: ferro/marca a fogo, cicatriz, mancha, crina, ferradura', maxLength: 300 },
+      { name: 'animal_id_tag', label: 'Identificação (brinco, microchip ou registro)', type: 'text', placeholder: 'Número do brinco, microchip ou registro, se houver', maxLength: 80 },
+    ],
+  },
   pet: {
     category: 'pet',
     label: 'Pet / Animal',

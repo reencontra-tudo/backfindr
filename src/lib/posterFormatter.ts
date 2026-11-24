@@ -67,6 +67,16 @@ const HEADLINE_MAP: Record<string, Record<string, string>> = {
     returned:          'ANIMAL DEVOLVIDO',
     protected:         'ANIMAL PROTEGIDO',
   },
+  // «Animal» (criação/trabalho): título próprio, igual ao do pet, para NUNCA cair em «OBJETO ROUBADO» (decisão do fundador, 24/11/2026).
+  animal: {
+    lost:              'ANIMAL PERDIDO',
+    found:             'ANIMAL ENCONTRADO',
+    stolen:            'ANIMAL ROUBADO',
+    stolen_pickpocket: 'ANIMAL FURTADO',
+    in_possession:     'ANIMAL EM POSSE',
+    returned:          'ANIMAL DEVOLVIDO',
+    protected:         'ANIMAL PROTEGIDO',
+  },
   dog: {
     lost:              'CACHORRO PERDIDO',
     found:             'CACHORRO ENCONTRADO',
@@ -224,6 +234,7 @@ const HEADLINE_MAP: Record<string, Record<string, string>> = {
 
 const CATEGORY_LABEL: Record<string, string> = {
   pet:        'Pet',
+  animal:     'Animal',
   dog:        'Cachorro',
   cat:        'Gato',
   phone:      'Celular',

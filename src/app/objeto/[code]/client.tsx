@@ -23,7 +23,7 @@ const CATEGORY_EMOJI: Record<string, string> = {
 
 const CATEGORY_LABEL: Record<string, string> = {
   phone: 'Celular', wallet: 'Carteira', keys: 'Chaves', bag: 'Bolsa',
-  pet: 'Animal de Estimação', bike: 'Bicicleta', vehicle: 'Veículo', document: 'Documento',
+  pet: 'Animal de Estimação', animal: 'Animal', bike: 'Bicicleta', vehicle: 'Veículo', document: 'Documento',
   jewelry: 'Joia / Relógio', electronics: 'Eletrônico', clothing: 'Roupa', other: 'Objeto',
 };
 
@@ -386,7 +386,7 @@ export default function PublicObjectClient({ obj, signalSource = null }: { obj: 
                 )}
 
                 {/* Detalhes do pet */}
-                {obj.category === 'pet' && (obj.pet_breed || obj.pet_color || obj.pet_species) && (
+                {(obj.category === 'pet' || obj.category === 'animal') && (obj.pet_breed || obj.pet_color || obj.pet_species) && (
                   <div className="bg-white/[0.03] border border-white/[0.06] rounded-xl p-4 mb-5">
                     <p className="text-white/40 text-xs mb-3">🐾 Informações do animal</p>
                     <div className="grid grid-cols-2 gap-3">

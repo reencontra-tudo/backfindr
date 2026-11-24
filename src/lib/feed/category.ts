@@ -19,6 +19,14 @@ export function feedCategoryKey(raw: string | null | undefined): FeedCategoryKey
   return ALIASES[k] ?? 'other';
 }
 
+/**
+ * Rótulo para EXIBIR no Feed. «animal» aparece como «Animal», não como «Pet» (decisão do fundador, 24/11/2026: exceção pontual, só o rótulo).
+ * A CHAVE (`feedCategoryKey`, que ainda traduz animal → pet) NÃO muda: filtros e busca do Feed seguem como eram.
+ */
+export function feedCategoryLabel(raw: string | null | undefined, key: FeedCategoryKey = feedCategoryKey(raw)): string {
+  return (raw ?? '').trim().toLowerCase() === 'animal' ? 'Animal' : FEED_CATEGORY_LABELS[key];
+}
+
 export function isFeedCategoryKey(v: string): v is FeedCategoryKey {
   return KNOWN.has(v);
 }
