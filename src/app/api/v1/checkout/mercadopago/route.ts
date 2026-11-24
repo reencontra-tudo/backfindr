@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { MercadoPagoConfig, Preference } from "mercadopago";
 import { verifyToken } from "@/lib/jwt";
+import { query } from "@/lib/db";
 
 const getMP = () => {
   const token = process.env.MP_ACCESS_TOKEN;
@@ -12,6 +13,11 @@ export async function POST(req: NextRequest) {
   try {
     const authHeader = req.headers.get("authorization");
     const user = authHeader ? verifyToken(authHeader.replace("Bearer ", "")) : null;
+
+    // Endurecimento (24/11/2026): exige LOGIN (antes aceitava usuário «anonymous»), tanto para plano quanto para boost.
+    if (!user?.sub) {
+      return NextResponse.json({ error: "Faça login para continuar." }, { status: 401 });
+    }
 
     const body = await req.json();
     // Suportar ambas as nomenclaturas (planId / plan_slug, objectId / object_id, boostType / boost_type)
@@ -65,7 +71,7 @@ export async function POST(req: NextRequest) {
       metadata = {
         type: "plan",
         plan_id: resolvedPlanId,
-        user_id: user?.sub || "anonymous",
+        user_id: user.sub,
       };
     } else if (type === "boost") {
       // Checkout de boost para objeto
@@ -80,6 +86,18 @@ export async function POST(req: NextRequest) {
         return NextResponse.json({ error: "Tipo de boost inválido" }, { status: 400 });
       }
 
+      // Endurecimento (24/11/2026): o objeto precisa existir E pertencer a quem está pagando (404 igual nos dois casos: não revela objeto alheio).
+      if (!resolvedObjectId) {
+        return NextResponse.json({ error: "Objeto não informado" }, { status: 400 });
+      }
+      const dono = await query(
+        "SELECT 1 FROM objects WHERE id::text = $1 AND user_id::text = $2 AND status <> 'deleted' LIMIT 1",
+        [String(resolvedObjectId), String(user.sub)],
+      );
+      if (dono.rows.length === 0) {
+        return NextResponse.json({ error: "Objeto não encontrado" }, { status: 404 });
+      }
+
       items = [{
         id: `boost_${resolvedBoostType}`,
         title: boost.title,
@@ -92,8 +110,8 @@ export async function POST(req: NextRequest) {
       metadata = {
         type: "boost",
         boost_type: resolvedBoostType,
-        object_id: resolvedObjectId || "",
-        user_id: user?.sub || "anonymous",
+        object_id: String(resolvedObjectId),
+        user_id: user.sub,
         days: String(boost.days),
       };
     } else {
