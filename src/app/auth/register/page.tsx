@@ -14,6 +14,7 @@ import { PortaDeEntrada } from '@/components/auth/PortaDeEntrada';
 import Cookies from 'js-cookie';
 import { analytics } from '@/providers/PostHogProvider';
 import { buscarContexto, lerDe, type ContextoAchei } from '@/lib/feed/contexto';
+import { modoCrescimento } from '@/lib/modoCrescimento';
 
 const schema = z.object({
   name: z.string().min(2, 'Nome muito curto'),
@@ -41,7 +42,8 @@ const PLAN_INFO: Record<string, { name: string; price: string; icon: React.React
 function RegisterForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const planSlug        = searchParams.get('plan')             || '';
+  // Modo crescimento (PL-01): planos pagos escondidos; um link antigo com ?plan=pro/business é ignorado (cadastro normal, sem checkout).
+  const planSlug        = modoCrescimento() ? '' : (searchParams.get('plan') || '');
   useEffect(() => { guardarProximaPagina(searchParams.get('next')); }, [searchParams]);
   const intentSlug      = searchParams.get('intent')           || '';
   const prefillTitle    = searchParams.get('prefill_title')    || '';

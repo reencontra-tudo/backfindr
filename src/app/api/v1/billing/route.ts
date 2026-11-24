@@ -4,6 +4,7 @@ import { query } from '@/lib/db';
 import { verifyToken } from '@/lib/jwt';
 import { successResponse, errorResponse, internalErrorResponse } from '@/lib/response';
 import { APP_URL } from '@/lib/constants';
+import { assinaturasPausadas, MSG_ASSINATURAS_PAUSADAS } from '@/lib/modoCrescimento';
 
 // GET /api/v1/billing — status do plano atual + histórico de pagamentos
 export async function GET(request: NextRequest) {
@@ -106,6 +107,8 @@ export async function POST(request: NextRequest) {
     const appUrl = APP_URL;
 
     if (action === 'upgrade') {
+      // Modo crescimento (PL-01): nenhuma nova assinatura de plano (cancelar e usar o plano atual continuam funcionando).
+      if (assinaturasPausadas()) return errorResponse(MSG_ASSINATURAS_PAUSADAS, 403);
       // Redirecionar para checkout do Mercado Pago
       const slug = plan_slug || 'pro';
       const planPrices: Record<string, { title: string; price: number }> = {

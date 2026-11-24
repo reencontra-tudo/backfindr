@@ -103,8 +103,8 @@ export async function POST(req: NextRequest) {
       sql: `
         INSERT INTO plan_configs (slug, name, price_brl, max_objects, features)
         VALUES
-          ('free',     'Grátis',   0,      100, '["Cadastre quantos precisar","QR Code permanente","Busca manual","Suporte comunidade"]'),
-          ('pro',      'Pro',      29.00,  50,  '["Matching automático","Notificações push e email","QR Code personalizado","Suporte por email","Relatório básico"]'),
+          ('free',     'Grátis',   0,      3,   '["3 objetos","QR Code permanente","Busca manual","Suporte comunidade"]'),
+          ('pro',      'Pro',      29.00,  50,  '["50 objetos","Matching automático","Notificações push e email","QR Code personalizado","Suporte por email","Relatório básico"]'),
           ('business', 'Business', 149.00, 500, '["500 objetos","Matching prioritário","Notificações push e email","QR Code bulk","5 usuários na conta","Relatórios completos","Suporte prioritário","Acesso à API"]')
         ON CONFLICT (slug) DO NOTHING
       `,

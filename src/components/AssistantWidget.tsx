@@ -1,5 +1,6 @@
 'use client';
 
+import { modoCrescimento, TEXTOS_CRESCIMENTO } from '@/lib/modoCrescimento';
 import { useState, useRef, useEffect, useCallback } from 'react';
 import { usePathname } from 'next/navigation';
 import { MessageCircle, X, Send, Bot, ChevronDown } from 'lucide-react';
@@ -28,7 +29,8 @@ interface Message {
 
 const APP_URL = 'https://backfindr.com';
 
-const FLOWS: Record<string, { text: string; buttons?: { label: string; action: string }[] }> = {
+// MODO CRESCIMENTO (PL-01): as respostas ORIGINAIS abaixo ficam guardadas; `FLOWS` (mais abaixo) troca só as de planos quando o modo está ligado.
+const FLOWS_ORIGINAIS: Record<string, { text: string; buttons?: { label: string; action: string }[] }> = {
   initial: {
     text: 'Oi 👋\nVocê perdeu ou encontrou algo?',
     buttons: [
@@ -361,10 +363,10 @@ const FLOWS: Record<string, { text: string; buttons?: { label: string; action: s
 
   // ── Planos ──
   plan_free: {
-    text: 'O plano Grátis resolve pra maioria das pessoas:\n\n✅ Cadastre quantos precisar\n✅ QR Code permanente para cada objeto\n✅ Busca na rede\n✅ Notificações de match\n\nSe quiser conhecer os recursos do plano pago, veja o Pro.\n\nVer planos 👇\n\nhttps://backfindr.com/pricing',
+    text: 'O plano Grátis resolve pra maioria das pessoas:\n\n✅ Até 3 objetos cadastrados\n✅ QR Code permanente para cada objeto\n✅ Busca na rede\n✅ Notificações de match\n\nSe precisar de mais de 3 objetos ou quiser matching automático com IA rodando 24h, aí vale ver o Pro.\n\nVer planos 👇\n\nhttps://backfindr.com/pricing',
   },
   plan_pro: {
-    text: 'O Pro adiciona:\n\n🤖 Matching automático com IA (24h por dia)\n🔔 Notificações push + e-mail em tempo real\n📧 Suporte por e-mail\n\nR$ 29/mês — sem fidelidade.\n\nhttps://backfindr.com/pricing',
+    text: 'O Pro adiciona:\n\n🚀 Até 50 objetos cadastrados\n🤖 Matching automático com IA (24h por dia)\n🔔 Notificações push + e-mail em tempo real\n📧 Suporte por e-mail\n\nR$ 29/mês — sem fidelidade.\n\nhttps://backfindr.com/pricing',
   },
   plan_business: {
     text: 'Para empresas (hotéis, escolas, condomínios):\n\n🏢 Até 500 objetos\n⚡ Matching prioritário\n📲 Push + e-mail\n👥 Até 5 usuários\n🔗 API de integração\n\nR$ 149/mês. Para falar com a equipe:\nbusiness@backfindr.com',
@@ -393,6 +395,15 @@ const FLOWS: Record<string, { text: string; buttons?: { label: string; action: s
 };
 
 // ─── Saudação por horário ─────────────────────────────────────────────────────
+
+const FLOWS: typeof FLOWS_ORIGINAIS = modoCrescimento()
+  ? {
+      ...FLOWS_ORIGINAIS,
+      plan_free: { text: TEXTOS_CRESCIMENTO.assistenteFree },
+      plan_pro: { text: TEXTOS_CRESCIMENTO.assinaturasPausadasAssistente },
+      plan_business: { text: TEXTOS_CRESCIMENTO.assinaturasPausadasAssistente },
+    }
+  : FLOWS_ORIGINAIS;
 
 function getGreeting(): string {
   const hour = new Date().getHours();
@@ -460,6 +471,12 @@ function getContextualOpening(pathname: string): ContextualOpening {
     };
   }
   if (pathname === '/dashboard/settings' || pathname === '/dashboard/billing') {
+    if (modoCrescimento()) {
+      return {
+        text: 'Posso te ajudar com configurações ou dúvidas 👇',
+        buttons: [{ label: '❓ Posso cancelar a qualquer hora?', action: 'cancel_help' }],
+      };
+    }
     return {
       text: 'Posso te ajudar com configurações ou dúvidas sobre planos 👇',
       buttons: [
@@ -469,6 +486,12 @@ function getContextualOpening(pathname: string): ContextualOpening {
     };
   }
   if (pathname === '/pricing') {
+    if (modoCrescimento()) {
+      return {
+        text: 'Dúvidas? Me conta o que você precisa que eu te ajudo 👇',
+        buttons: [{ label: '🆓 É gratuito mesmo?', action: 'plan_free' }],
+      };
+    }
     return {
       text: 'Comparando os planos? Me conta o que você precisa que te ajudo a escolher 👇',
       buttons: [

@@ -12,6 +12,7 @@ import { toast } from 'sonner';
 import { useAuthStore } from '@/hooks/useAuth';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
+import { modoCrescimento } from '@/lib/modoCrescimento';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 interface BillingData {
@@ -347,8 +348,8 @@ function BillingContent() {
         </div>
       </div>
 
-      {/* Upgrade (apenas para free ou cancelado) */}
-      {(!isPaid || billing?.is_cancelled) && (
+      {/* Upgrade (apenas para free ou cancelado). MODO CRESCIMENTO (PL-01): escondido; contas com plano pago continuam vendo o próprio plano. */}
+      {!modoCrescimento() && (!isPaid || billing?.is_cancelled) && (
         <div className="border border-teal-500/20 bg-teal-500/[0.03] rounded-2xl p-6 mb-5">
           <div className="flex items-start gap-3 mb-5">
             <div className="w-9 h-9 rounded-xl bg-teal-500/20 flex items-center justify-center flex-shrink-0">
@@ -365,7 +366,7 @@ function BillingContent() {
           </div>
           <div className="space-y-2">
             {[
-              { slug: 'pro',      label: 'Pro',      price: 'R$ 29,00/mês',  desc: 'IA · Notificações · Suporte por email', color: 'teal' },
+              { slug: 'pro',      label: 'Pro',      price: 'R$ 29,00/mês',  desc: '50 objetos · IA · Notificações · Suporte por email', color: 'teal' },
               { slug: 'business', label: 'Business', price: 'R$ 149,90/mês', desc: '500 objetos · Prioritário · 5 usuários · API',        color: 'yellow' },
             ].map(plan => (
               <button
@@ -538,10 +539,12 @@ function BillingContent() {
 
       {/* Links */}
       <div className="flex items-center justify-between text-sm">
-        <Link href="/pricing" className="text-teal-400 hover:text-teal-300 transition-colors flex items-center gap-1">
-          Ver todos os planos
-          <ExternalLink className="w-3.5 h-3.5" />
-        </Link>
+        {!modoCrescimento() ? (
+          <Link href="/pricing" className="text-teal-400 hover:text-teal-300 transition-colors flex items-center gap-1">
+            Ver todos os planos
+            <ExternalLink className="w-3.5 h-3.5" />
+          </Link>
+        ) : <span />}
         <a
           href="mailto:suporte@backfindr.com?subject=Dúvida sobre cobrança"
           className="text-white/30 hover:text-white/60 transition-colors"

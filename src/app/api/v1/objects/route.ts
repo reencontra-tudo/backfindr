@@ -5,6 +5,7 @@ import { awaitSends } from '@/lib/awaitSends';
 import { mascararDigitosLongos, camposDeDocumento, statusIgnoraTitular } from '@/lib/documentPrivacy';
 import { query } from '@/lib/db';
 import { limitesDoPlano, mensagemDeLimite, STATUS_QUE_NAO_CONTAM } from '@/lib/planos';
+import { modoCrescimento } from '@/lib/modoCrescimento';
 import { verifyToken, extractTokenFromHeader } from '@/lib/jwt';
 import { successResponse, unauthorizedResponse, internalErrorResponse } from '@/lib/response';
 import { enqueueSocialPosts } from '@/lib/socialPost';
@@ -146,7 +147,8 @@ export async function POST(request: NextRequest) {
       !userRow.plan_expires_at || new Date(userRow.plan_expires_at) > new Date()
     );
     const effectivePlan = isPaidActive ? rawPlan : 'free';
-    const limites = limitesDoPlano(effectivePlan);
+    const crescimento = modoCrescimento();
+    const limites = limitesDoPlano(effectivePlan, crescimento);
     const maxObjects = limites.maxObjetos;
 
     // Conta só objetos ATIVOS do próprio usuário: arquivados, devolvidos, apagados e LEGADOS não ocupam vaga (PL-01, vale para todos os planos).
@@ -170,11 +172,12 @@ export async function POST(request: NextRequest) {
         {
           error: 'limit_reached',
           limit_type: tipoDeLimite,
-          message: mensagemDeLimite(tipoDeLimite, effectivePlan, limites),
+          message: mensagemDeLimite(tipoDeLimite, effectivePlan, limites, crescimento),
           current_count: currentCount,
           max_objects: maxObjects,
           plan: effectivePlan,
-          upgrade_url: '/pricing',
+          // Modo crescimento: planos pagos escondidos, sem convite ao upgrade.
+          ...(crescimento ? {} : { upgrade_url: '/pricing' }),
         },
         403
       );

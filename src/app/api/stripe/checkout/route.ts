@@ -2,6 +2,7 @@ export const dynamic = 'force-dynamic';
 import { NextRequest, NextResponse } from 'next/server';
 import Stripe from 'stripe';
 import { cookies } from 'next/headers';
+import { assinaturasPausadas, MSG_ASSINATURAS_PAUSADAS } from '@/lib/modoCrescimento';
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY ?? '', {
   apiVersion: '2024-06-20',
@@ -11,6 +12,11 @@ const API_URL = process.env.NEXT_PUBLIC_API_URL ?? '';
 
 export async function POST(request: NextRequest) {
   try {
+    // Modo crescimento (PL-01): nenhuma nova assinatura de plano.
+    if (assinaturasPausadas()) {
+      return NextResponse.json({ error: MSG_ASSINATURAS_PAUSADAS, codigo: 'ASSINATURAS_PAUSADAS' }, { status: 403 });
+    }
+
     const { price_id, success_url, cancel_url } = await request.json();
 
     // Get user from backend
