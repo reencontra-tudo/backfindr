@@ -260,6 +260,7 @@ RETURNING slug, codigo_curto, estado, interno, verificado_em IS NOT NULL AS veri
 4. NAV: Redeploy de produção.
 5. CODE: espera a `impressao` mudar e confere que o programa continua ligado (`/@backfindr` 200 e `noindex`).
 6. CODE: relata ao fundador: teste concluído, `/@backfindr` no ar sem verificação, matching religado.
+7. **RESULTADO (24/11/2026): PASSO 4 CONCLUÍDO.** `MATCHING_ATIVO` religado (`1`), redeploy `A8Va2nZtu` (commit do #189); `impressao` `20975cd4002580dd`; `/@backfindr` 200 `noindex`; cron do matching operando (16:15 BRT: `ok:true`, sem erro). Estado final: piloto LIGADO; `@backfindr` SEM verificação, código `9H5V`; 2 ocorrências de teste arquivadas; plano do fundador devolvido. Os deploys automáticos dos PRs de documentação #186–#189 (14:00–16:00) rodaram com `MATCHING_ATIVO=0` e o programa ligado: sem efeito a corrigir.
 
 ### 4.6 Reversão completa (tudo volta ao comportamento de hoje) — qualquer momento
 1. NAV: apaga `COLABORADORES_ATIVO` e `NEXT_PUBLIC_COLABORADORES_ATIVO` de Production.
