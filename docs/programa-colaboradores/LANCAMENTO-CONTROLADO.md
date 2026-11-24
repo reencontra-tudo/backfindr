@@ -14,7 +14,7 @@
 | 0 — Preparação | **FEITO** (este plano; script `tools/comparar-producao.mjs`; dois retratos «antes» da produção) |
 | 1 — Cópia de segurança | **CONFIRMADO (24/11/2026)** pelo backup próprio diário (repositório `m2r-backup-supabase`, run #36): ver «Passo 1». Não é preciso dump manual. |
 | 2 — Migration 026 | **APLICADA e VERIFICADA (24/11/2026, 03:23 UTC)**, na segunda tentativa (a primeira ficou esperando a confirmação do conector e não aplicou nada). Ver «Passo 2 — resultado». |
-| 3 — Mescla com interruptores desligados | NÃO iniciado (aguarda ordem para seguir; autorização geral dos passos 0 a 3 vale, um de cada vez) |
+| 3 — Mescla com interruptores desligados | **CONCLUÍDO e VERIFICADO (24/11/2026)**: #162 a #166 mesclados na ordem; ver «Passo 3 — resultado». |
 | 4 — Ligar o piloto | **Roteiro final PRONTO (24/11/2026); NÃO executado; aguarda a ordem escrita do fundador** |
 
 ---
@@ -177,6 +177,9 @@ Depois de **cada** mescla: esperar a implantação (a `impressao` muda), rodar a
 1. **Vercel → Deployments → Instant Rollback** para a implantação anotada em 3.1 (imediato, sem git). A `main` continua com as mesclas, mas a produção volta ao código de antes.
 2. Para desfazer na `main`: abrir **PRs de reversão** (`git revert -m 1 <commit de mescla>`, do último para o primeiro) e mesclá-los sob ordem do fundador. **Não** fazer push direto na `main`.
 3. A 026 **não** precisa ser revertida (aditiva).
+### 3.5 Passo 3 — resultado (24/11/2026)
+**Passo 3 CONCLUÍDO (24/11/2026): #162 a #166 mesclados na `main` em ordem, um de cada vez, com interruptores DESLIGADOS (não existem na Vercel); produção sem mudança de comportamento; PARADO aqui, Passo 4 NÃO iniciado.** Commits de mescla: #162 `9c7928ac`, #163 `10ca3b2e`, #164 `40d309de`, #165 `936850c8`, #166 `a2a4ca4f` (`main` em `a2a4ca4`). Impressão de produção: `ce5fc691abb0904d` → `004efedc3c60b3b2` → `6fc480ae26040ada` → `5836d4974d10097c` → `cadd3a3456f870ae` → `ae027c42f88d3438`. Comparação final «antes × depois» (`lancamento/depois-passo3.json`): 13 rotas iguais, exceto (a) `/feed` (variação natural, similaridade 1,000) e (b) o CORPO da 404 de duas rotas internas novas e não linkadas, aceitas por ordem do fundador (`/colaborador/backfindr`: 404 com corpo quase vazio em vez da tela padrão; `/api/v1/colaboradores/validar`: 404 com corpo vazio; status continua 404); `/@backfindr` e `/@BackFindr` = 404 iguais ao «antes»; `sitemap.xml` e `robots.txt` iguais (nenhuma menção a colaborador); 4 cartazes públicos reais **idênticos byte a byte**; `POST /api/v1/objects` sem login = 401. Trechos inativos do programa aparecem no código do navegador (`bf_colab`, `/api/v1/colaboradores`, `colaborador_codigo`): anotados, não são comportamento (critério substituído, PC-12). Verificação de comportamento em navegador automatizado (perdido, achado e roubado com `?colab=teste123`, até o último passo, SEM enviar, 375 px e 1280 px): campo «Código do colaborador» ausente, nenhuma chave «colab» guardada, nenhuma requisição a `/api/v1/colaboradores`, nenhuma ocorrência criada; e, pelo Claude do navegador na produção, `/flow/lost` e `/flow/found` com `?colab=` sem nada guardado. Reversão disponível: Instant Rollback para `backfindr-3dtxeok5q` (não usado). **Aguarda a ordem escrita do fundador para o Passo 4.**
+
 **AO FIM DO PASSO 3: PARAR e reportar.**
 
 ---
