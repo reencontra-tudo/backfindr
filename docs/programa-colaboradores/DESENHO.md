@@ -421,3 +421,6 @@ Modo sombra: `src/lib/colaboradores/comissao.ts` (cálculo, elegibilidade, lanç
 
 ### E6 — o que foi construído (24/11/2026, rascunho; empilhado sobre a E4)
 Painel com ocorrências do link, saldo (atrás de `COLABORADORES_SALDO`), dados de pagamento cifrados (`PIX_CHAVE_CIFRAGEM`) e pedido/cancelamento de saque (atrás de `COLABORADORES_SAQUE`); migration 029 (`colaborador_dados_pagamento`, `colaborador_saques`). A fila de pagamento do admin é a E7.
+
+### E7 — o que foi construído (24/11/2026, rascunho; empilhado sobre a E6)
+Tela `/admin/colaboradores` (lista com métricas do mês, verificações, saques, regras, exportação CSV), ações auditadas (`auditoria`, só INSERT), exclusão com cancelamento de saldo configurável, regras versionadas só para frente; migration 030. Visitas por mês: E8.
