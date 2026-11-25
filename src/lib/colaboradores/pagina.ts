@@ -69,9 +69,13 @@ export async function carregarColaborador(consulta: Consulta, slug: string): Pro
  * Indexação (PC-03): só uma página ATIVA, VERIFICADA e com pelo menos uma ocorrência cadastrada com o código é indexável.
  * Qualquer outra (inclusive a ainda não verificada, mesmo com conteúdo) fica `noindex` e fora do sitemap.
  */
-export function paginaIndexavel(c: Pick<ColaboradorPagina, 'estado' | 'verificado'>, ocorrenciasComCodigo: number): boolean {
+export function paginaIndexavel(c: Pick<ColaboradorPagina, 'estado' | 'verificado'> & { slug?: string }, ocorrenciasComCodigo: number): boolean {
+  if (c.slug && ehSlugDeTeste(c.slug)) return false;   // PC-16: colaborador de TESTE nunca é indexado
   return c.estado === 'ativo' && c.verificado && ocorrenciasComCodigo > 0;
 }
+
+/** PC-16 (modo teste): @nome que começa com `teste-` é colaborador de teste — fora do sitemap e com `noindex`, mesmo verificado e com conteúdo. */
+export const ehSlugDeTeste = (slug: string): boolean => slug.toLowerCase().startsWith('teste-');
 
 /** Endereço público e canônico da página. */
 export const caminhoPagina = (slug: string) => `/@${slug.toLowerCase()}`;
