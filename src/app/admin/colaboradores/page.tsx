@@ -2,6 +2,7 @@
 // Admin do Programa de Colaboradores (E7 + E8): lista com métricas do mês (inclui visitas), fila de verificação de canais, fila de saques (pagar/recusar), análises de antifraude, regras, auditoria e exportação CSV.
 // Sem COLABORADORES_ATIVO as APIs respondem 404 e a tela mostra «indisponível». Toda ação é registrada em `auditoria` (só INSERT). Dados de pagamento sempre MASCARADOS.
 import { useCallback, useEffect, useState } from 'react';
+import Link from 'next/link';
 
 type Aba = 'colaboradores' | 'verificacoes' | 'saques' | 'analises' | 'regras' | 'auditoria';
 interface Sinal { id: string; tipo: string; pagamento_ref: string | null; bloqueia: boolean; detalhe: Record<string, unknown>; criado_em: string; slug: string; nome: string }
@@ -52,6 +53,11 @@ export default function AdminColaboradores() {
   return (
     <div className="space-y-4 p-4 text-sm text-white/75" data-admin-colaboradores>
       <h1 className="text-xl font-bold text-white">Colaboradores</h1>
+      {/* Modo teste (PC-16): este é o ÚNICO lugar do site com link para a inscrição; a página só abre com COLABORADORES_INSCRICAO ligado e é noindex. */}
+      <p>
+        <Link href="/colaborador/seja" data-link-inscricao className="inline-flex min-h-[40px] items-center rounded-xl border border-white/15 px-4 text-white hover:bg-white/5">Abrir página de inscrição (modo teste)</Link>
+        <span className="ml-2 text-xs text-white/50">Só abre com a inscrição ligada. Não é divulgada ao público.</span>
+      </p>
       <nav className="flex flex-wrap gap-2" aria-label="Seções">
         {(['colaboradores', 'verificacoes', 'saques', 'analises', 'regras', 'auditoria'] as Aba[]).map((a) => (
           <button key={a} type="button" onClick={() => setAba(a)} className={`min-h-[40px] rounded-xl px-4 font-medium ${aba === a ? 'bg-teal-500 text-black' : 'bg-white/10 text-white hover:bg-white/15'}`}>

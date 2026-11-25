@@ -137,7 +137,7 @@ Nada a ajustar: o gatilho já era assim.
 | Superfície | Rota | Observação |
 |---|---|---|
 | Página do colaborador | URL pública `/@nome` → reescrita para `/colaborador/[slug]` | Reescrita por middleware (regex `^/@([a-z0-9-]{3,30})$`), com alternativa `rewrites()` do `next.config.js`; a E0 decide testando em `next start` **e** em prévia da Vercel. O acesso direto a `/colaborador/x` **mostra a mesma página com a canônica apontando para `/@x`** (desvio do desenho original, que previa um redirecionamento 308: ver `e2/NAO-REGRESSAO.md` §6, item 3). A parte `/@` não atrapalha os rastreadores existentes (o middleware atual continua rodando para ela). |
-| Seja colaborador | `/colaborador/seja` (nome final a decidir) | Só por link direto; **sem menu, sem rodapé, sem sitemap, `noindex`**; não entra em `robots.ts` (um `Disallow` revelaria o endereço). |
+| Seja colaborador | `/colaborador/seja` (nome final a decidir) | Só por link direto (**refinamento de 25/11/2026, modo teste: o único link do site fica em `/admin/colaboradores`**); **sem menu, sem rodapé, sem sitemap, `noindex`**; não entra em `robots.ts` (um `Disallow` revelaria o endereço). |
 | Painel do colaborador | `/dashboard/colaborador/*` | Atrás do login; mostra só ocorrências com o código **pela saída pública** (`toPublicItem`), saldo, verificação, saque, troca de canal, saída. |
 | Admin | `/admin/colaboradores/*` | Mesmo `adminGuard`; ver §3.7. |
 | APIs | `GET /api/v1/colaboradores/validar`, `GET /api/v1/colaboradores/[slug]/feed`, `POST/PATCH /api/v1/colaboradores/*` (autenticadas), `POST /api/v1/admin/colaboradores/*` | Validação com zod no servidor (padrão novo e isolado). |

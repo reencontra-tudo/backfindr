@@ -48,7 +48,7 @@ Cada passo só começa depois do anterior dar certo e só com a sua ordem.
 9. **ABERTURA PÚBLICA:** divulgar a inscrição e aceitar colaboradores de verdade, com `COLABORADORES_INSCRICAO` ligado, só por link, sem menu nem buscadores (e, antes do saque ao público, resolver a pendência da chave PIX, seção 6).
 
 ## 5b. Modo teste (decidido em 25/11/2026) — o que é e o que NÃO é
-- **Modo teste:** você liga os interruptores em produção, um por vez, **sem divulgar nada** (sem link, menu, rodapé ou botão «Seja colaborador»), para testar o fluxo real: inscrição, painel, feed, visitas, antifraude, saldo, saque e um pagamento de teste. Pode ser feito **antes do parecer**.
+- **Modo teste:** você liga os interruptores em produção, um por vez, **sem divulgar nada** (sem menu, rodapé ou botão «Seja colaborador» para o público; **o único link para a inscrição fica no admin**, em `/admin/colaboradores`, «Abrir página de inscrição (modo teste)»), para testar o fluxo real: inscrição, painel, feed, visitas, antifraude, saldo, saque e um pagamento de teste. Pode ser feito **antes do parecer**.
 - **Abertura pública:** aceitar colaboradores de verdade e pagar saque a terceiros. **Continua dependendo do parecer jurídico e contábil.**
 - **Como reconhecer o que é teste:** @nome começando com `teste-`, e-mail com `+teste` e título da ocorrência com `[TESTE]`.
 - **Cuidados:** a ocorrência de teste é pública no feed e no mapa; quem souber o endereço de `/colaborador/seja` consegue se inscrever (não há lista de autorizados); e, com o @nome `teste-`, a página sai do sitemap e fica `noindex` (PR de código à parte).
