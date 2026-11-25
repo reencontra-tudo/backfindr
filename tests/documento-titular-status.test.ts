@@ -1,6 +1,7 @@
 // Fase 0: titular e final do documento só em «perdi» e «roubado» (lista de permissão); «encontrei» não mostra nem grava.
 // Postgres REAL (pula sem TEST_DATABASE_URL) + formulário. Só dados FICTÍCIOS.
 import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
+import { removerTabelas } from './helpers/limpeza-banco';
 import { Pool } from 'pg';
 import { randomUUID } from 'crypto';
 import { NextRequest } from 'next/server';
@@ -9,6 +10,9 @@ import React, { createElement } from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { statusMostraTitular, statusIgnoraTitular } from '@/lib/documentPrivacy';
 import { DynamicCategoryFields } from '@/components/ui/DynamicCategoryFields';
+
+/** Tabelas que este arquivo cria no banco de teste; removidas ao terminar (ver helpers/limpeza-banco.ts). */
+const TABELAS_DO_TESTE = ['objects', 'users'];
 
 (globalThis as unknown as { React: typeof React }).React = React; // o componente usa JSX clássico
 const TEST_DB = process.env.TEST_DATABASE_URL;
@@ -107,7 +111,7 @@ describe.skipIf(!TEST_DB)('API: titular só em perdi/roubado (Postgres real)', (
     userId = randomUUID();
     await pool.query(`INSERT INTO users (id, plan) VALUES ($1, 'business')`, [userId]);
   });
-  afterAll(async () => { vi.unstubAllGlobals(); await pool?.end(); });
+  afterAll(async () => { vi.unstubAllGlobals(); await removerTabelas(pool, TABELAS_DO_TESTE); await pool?.end(); });
 
   it('perdi e roubado: titular e final saem na API por código (como antes)', async () => {
     for (const status of ['lost', 'stolen']) {

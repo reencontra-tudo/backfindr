@@ -4,6 +4,7 @@
 //     npx vitest@2 run --config tests/vitest.config.ts tests/flow-match-relevance.test.ts
 // ATENÇÃO: a parte 2 recria as tabelas do banco de teste. Use banco descartável.
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
+import { removerTabelas } from './helpers/limpeza-banco';
 import React from 'react';
 import { readFileSync, readdirSync } from 'fs';
 import path from 'path';
@@ -18,6 +19,9 @@ if (TEST_DB) process.env.DATABASE_URL = TEST_DB;
 import { isBuscaAmpla, palavrasDeIdentificacao, tituloRecuperado, temPalavraEmComum, temPalavraIdentificadoraEmComum, palavrasDoTexto, CORES, PALAVRAS_VAZIAS, MAX_REGISTROS_RECENTES, DIAS_REGISTROS_RECENTES } from '@/lib/flowMatch/relevance';
 import { formatAge } from '@/lib/flowMatch/age';
 import FlowMatchCard from '@/components/flow/FlowMatchCard';
+
+/** Tabelas que este arquivo cria no banco de teste; removidas ao terminar (ver helpers/limpeza-banco.ts). */
+const TABELAS_DO_TESTE = ['local_pages', 'municipalities', 'municipality_events', 'object_events', 'objects', 'public_signal_evidence', 'users'];
 
 const root = path.join(__dirname, '..');
 const read = (rel: string) => readFileSync(path.join(root, rel), 'utf8');
@@ -187,7 +191,7 @@ describe.skipIf(!TEST_DB)('rota /api/v1/objects/public com banco real', () => {
     await pool.query(read('tests/fixtures/flow-match-seed.sql'));
     GET = (await import('@/app/api/v1/objects/public/route')).GET as never;
   });
-  afterAll(async () => { await pool?.end(); });
+  afterAll(async () => { await removerTabelas(pool, TABELAS_DO_TESTE); await pool?.end(); });
 
   it('SEM strict (padrão): «Pochete de couro preta» continua devolvendo os 5 animais pretos como hoje, e a resposta não ganha campos novos', async () => {
     const d = await flowFound('Pochete de couro preta');

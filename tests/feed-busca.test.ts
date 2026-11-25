@@ -2,6 +2,7 @@
 //   TEST_DATABASE_URL=postgres://postgres:pw@127.0.0.1:5432/backfindr_test npx vitest@2 run --config tests/vitest.config.ts tests/feed-busca.test.ts
 // ATENÇÃO: a parte de banco recria as tabelas do banco de teste (tests/fixtures/feed-schema.sql). Use banco descartável.
 import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
+import { removerTabelas } from './helpers/limpeza-banco';
 import { readFileSync } from 'fs';
 import path from 'path';
 import { Pool } from 'pg';
@@ -15,6 +16,9 @@ if (TEST_DB) process.env.DATABASE_URL = TEST_DB;
 
 import { BUSCA_MAX_CARACTERES, consultaDaUrl, normalizarConsulta } from '@/lib/feed/consulta';
 import { SCORE_MIN_BUSCA, expandirKeyword } from '@/lib/buscaPublica';
+
+/** Tabelas que este arquivo cria no banco de teste; removidas ao terminar (ver helpers/limpeza-banco.ts). */
+const TABELAS_DO_TESTE = ['local_pages', 'municipalities', 'municipality_events', 'object_events', 'public_signal_evidence', 'users'];
 
 const read = (rel: string) => readFileSync(path.join(__dirname, '..', rel), 'utf8');
 
@@ -70,7 +74,7 @@ describe.skipIf(!TEST_DB)('busca do Feed com banco real', () => {
     ({ GET } = await import('@/app/api/v1/feed/busca/route'));
   });
   beforeEach(reset);
-  afterAll(async () => { await pool?.end(); });
+  afterAll(async () => { await removerTabelas(pool, TABELAS_DO_TESTE); await pool?.end(); });
 
   it('acha perdido, achado e roubado (os três tipos) numa só busca, sem login', async () => {
     const r = await busca.buscarNoFeed('oculos grau', {});

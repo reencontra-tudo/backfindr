@@ -1,6 +1,7 @@
 // Webhook do Mercado Pago ENDURECIDO (24/11/2026): assinatura, idempotência, erro de verdade, estorno só registrado, dono do objeto.
 // Parte A: sem banco (Mercado Pago simulado). Parte B: Postgres REAL (precisa de TEST_DATABASE_URL; senão é pulada) — prova a idempotência, inclusive em aviso duplicado SIMULTÂNEO.
 import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
+import { removerTabelas } from './helpers/limpeza-banco';
 import { Pool } from 'pg';
 import { randomUUID } from 'node:crypto';
 import { NextRequest } from 'next/server';
@@ -21,6 +22,9 @@ vi.spyOn(console, 'warn').mockImplementation(() => {});
 vi.spyOn(console, 'log').mockImplementation(() => {});
 
 import { POST } from '@/app/api/v1/webhooks/mercadopago/route';
+
+/** Tabelas que este arquivo cria no banco de teste; removidas ao terminar (ver helpers/limpeza-banco.ts). */
+const TABELAS_DO_TESTE = ['boosts', 'objects', 'subscriptions_p1', 'users'];
 
 const SEGREDO = 'segredo-de-teste-nao-real';
 const aviso = (corpo: unknown, headers: Record<string, string> = {}, qs = '') =>
@@ -145,7 +149,7 @@ describe.skipIf(!TEST_DB)('B. com Postgres real: idempotência e dono do objeto'
     await pool.query(`INSERT INTO users (id, plan) VALUES ($1,'free'), ($2,'free')`, [U1, U2]);
     await pool.query(`INSERT INTO objects (id, user_id) VALUES ($1,$2), ($3,$4)`, [O1, U1, O2, U2]);
   });
-  afterAll(async () => { await pool?.end(); const { closePool } = await import('@/lib/db'); await closePool(); });
+  afterAll(async () => { await removerTabelas(pool, TABELAS_DO_TESTE); await pool?.end(); const { closePool } = await import('@/lib/db'); await closePool(); });
 
   it('boost aprovado: ativa uma vez (boost + objeto)', async () => {
     const r = await aprovado('100', { type: 'boost', boost_type: 'boost_7', object_id: O1, user_id: U1, days: '7' });

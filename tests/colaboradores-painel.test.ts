@@ -1,6 +1,7 @@
 // Programa de Colaboradores, E6 (painel): dados de pagamento cifrados, pedido de saque, ocorrências do link e rotas. A, C: sem banco. B, D: Postgres REAL (puladas sem TEST_DATABASE_URL).
 // Aplica as migrations 026, 028 e 029 sobre tabelas mínimas. ATENÇÃO: recria users, objects, boosts, colaboradores e as tabelas novas no banco de teste.
 import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
+import { removerTabelas } from './helpers/limpeza-banco';
 import { Pool } from 'pg';
 import { randomBytes, randomUUID } from 'node:crypto';
 import { readFileSync } from 'node:fs';
@@ -16,6 +17,9 @@ import { CifragemIndisponivel, cifrar, cifragemConfigurada, cnpjValido, cpfValid
 import { PRAZO_SAQUE_DIAS_UTEIS_PADRAO, saldoVisivel, saqueAtivo, somarDiasUteis, SAQUE_MINIMO_PADRAO_CENTAVOS, salvarDadosPagamento, lerDadosPagamento, solicitarSaque, cancelarSaque, saqueMinimoCentavos } from '@/lib/colaboradores/saque';
 import { CAMPOS_DA_OCORRENCIA, ocorrenciasDoColaborador, painelDoColaborador } from '@/lib/colaboradores/painel';
 import { saldoDoColaborador } from '@/lib/colaboradores/comissao';
+
+/** Tabelas que este arquivo cria no banco de teste; removidas ao terminar (ver helpers/limpeza-banco.ts). */
+const TABELAS_DO_TESTE = ['auditoria', 'boosts', 'colaborador_dados_pagamento', 'colaborador_lancamentos', 'colaborador_saques', 'colaboradores', 'objects', 'pagamento_eventos', 'programa_config', 'users'];
 
 const CHAVE = randomBytes(32).toString('base64'); // chave de teste, gerada na hora (nunca uma chave real)
 const ENV = { PIX_CHAVE_CIFRAGEM: CHAVE };
@@ -94,7 +98,7 @@ describe.skipIf(!TEST_DB)('B/D. com Postgres real', () => {
     await pool.query(`CREATE TABLE boosts (id uuid PRIMARY KEY DEFAULT gen_random_uuid(), object_id uuid NOT NULL, user_id uuid NOT NULL, type varchar NOT NULL, status varchar NOT NULL, amount_paid numeric, provider varchar, provider_ref varchar, starts_at timestamptz, expires_at timestamptz, created_at timestamptz DEFAULT now(), updated_at timestamptz, active boolean NOT NULL DEFAULT true)`);
     for (const m of ['026_colaboradores.sql', '028_colaboradores_comissao.sql', '029_colaboradores_saque.sql', '030_colaboradores_auditoria.sql']) await pool.query(MIG(m));
   });
-  afterAll(async () => { await pool?.end(); const { closePool } = await import('@/lib/db'); await closePool(); });
+  afterAll(async () => { await removerTabelas(pool, TABELAS_DO_TESTE); await pool?.end(); const { closePool } = await import('@/lib/db'); await closePool(); });
 
   describe('B. dados de pagamento, saque e ocorrências', () => {
     it('a migration 029 é idempotente e cria as 2 tabelas', async () => {

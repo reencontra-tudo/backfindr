@@ -2,9 +2,13 @@
 //   TEST_DATABASE_URL=postgres://postgres:pw@127.0.0.1:5432/backfindr_test npx vitest run --config tests/vitest.config.ts tests/admin-feed-contagem.test.ts
 // ATENÇÃO: recria as tabelas do banco de teste (tests/fixtures/feed-schema.sql). Use banco descartável.
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
+import { removerTabelas } from './helpers/limpeza-banco';
 import { readFileSync } from 'fs';
 import path from 'path';
 import { Pool } from 'pg';
+
+/** Tabelas que este arquivo cria no banco de teste; removidas ao terminar (ver helpers/limpeza-banco.ts). */
+const TABELAS_DO_TESTE = ['local_pages', 'municipalities', 'municipality_events', 'object_events', 'objects', 'public_signal_evidence', 'users'];
 
 const TEST_DB = process.env.TEST_DATABASE_URL;
 if (TEST_DB) process.env.DATABASE_URL = TEST_DB;
@@ -19,7 +23,7 @@ describe.skipIf(!TEST_DB)('contagem do admin × Feed (banco real)', () => {
     await pool.query(readFileSync(path.join(__dirname, 'fixtures/feed-seed.sql'), 'utf8'));
     stats = await import('@/lib/feed/stats'); q = await import('@/lib/feed/query');
   });
-  afterAll(async () => { await pool.end(); });
+  afterAll(async () => { await removerTabelas(pool, TABELAS_DO_TESTE); await pool.end(); });
 
   it('o total do admin é igual ao número de linhas que a consulta do Feed lê (mesma regra), e a divisão por origem e status bate linha a linha', async () => {
     const feed = await pool.query(q.FEED_SQL, [q.FEED_MAX_CANDIDATES + 1]);

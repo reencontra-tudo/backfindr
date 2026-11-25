@@ -2,6 +2,7 @@
 // Com banco real (TEST_DATABASE_URL): elegibilidade e indistinguibilidade da resposta.
 //   npx vitest@2 run --config tests/vitest.config.ts tests/achei-contexto.test.ts
 import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
+import { removerTabelas } from './helpers/limpeza-banco';
 import { readFileSync } from 'fs';
 import path from 'path';
 import { Pool } from 'pg';
@@ -19,6 +20,9 @@ import { acheiHref, buscarContexto, cadastroHref, codigoSelecionavel, lerDe, ler
 import AcheiClient from '@/app/achei/client';
 import { LIMITE_POR_MINUTO } from '@/lib/feed/limite';
 import { FEED_ELIGIBILITY_WHERE } from '@/lib/feed/query';
+
+/** Tabelas que este arquivo cria no banco de teste; removidas ao terminar (ver helpers/limpeza-banco.ts). */
+const TABELAS_DO_TESTE = ['local_pages', 'municipalities', 'municipality_events', 'object_events', 'objects', 'public_signal_evidence', 'users'];
 
 const read = (f: string) => readFileSync(path.join(__dirname, '..', f), 'utf8');
 
@@ -183,7 +187,7 @@ describe.skipIf(!TEST_DB)('rota /api/v1/feed/contexto — banco real', () => {
     GET = (await import('@/app/api/v1/feed/contexto/route')).GET;
     ({ resetLimite } = await import('@/lib/feed/limite'));
   });
-  afterAll(async () => { await pool?.end(); });
+  afterAll(async () => { await removerTabelas(pool, TABELAS_DO_TESTE); await pool?.end(); });
   beforeEach(() => resetLimite());
   const pede = async (de: string) => { const r = await GET(new NextRequest(`http://localhost/api/v1/feed/contexto?de=${encodeURIComponent(de)}`, { headers: { 'x-forwarded-for': '7.7.7.7' } })); return { status: r.status, corpo: await r.text(), cab: r.headers.get('cache-control') }; };
 

@@ -1,11 +1,15 @@
 // Programa de Colaboradores, E3: marca do colaborador no cartaz. Regras da consulta e da logo (o cartaz em si é comparado byte a byte no navegador/servidor local).
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
+import { removerTabelas } from './helpers/limpeza-banco';
 import { Pool } from 'pg';
 import { randomUUID } from 'crypto';
 import { readFileSync } from 'fs';
 import path from 'path';
 import sharp from 'sharp';
 import { nomeParaCartaz, NOME_MAX, logoComoDataUrl, obterMarcaDoCartaz } from '@/lib/colaboradores/marca';
+
+/** Tabelas que este arquivo cria no banco de teste; removidas ao terminar (ver helpers/limpeza-banco.ts). */
+const TABELAS_DO_TESTE = ['colaboradores', 'local_pages', 'municipalities', 'municipality_events', 'object_events', 'objects', 'public_signal_evidence', 'users'];
 
 const TEST_DB = process.env.TEST_DATABASE_URL;
 if (TEST_DB) process.env.DATABASE_URL = TEST_DB;
@@ -77,7 +81,7 @@ describe.skipIf(!TEST_DB)('marca com banco real', () => {
   const obj = async (colab: string | null) => (await pool.query(`INSERT INTO objects (user_id, title, status, category, type, qr_code, images, is_public, is_legacy, colaborador_id, colaborador_codigo) VALUES ($1,'x','found','keys','keys',$2,'[]',true,false,$3,$4) RETURNING id`, [randomUUID(), randomUUID().slice(0, 8).toUpperCase(), colab, colab ? 'HX7R' : null])).rows[0].id as string;
 
   beforeAll(async () => { pool = new Pool({ connectionString: TEST_DB }); await pool.query(SCHEMA); });
-  afterAll(async () => { await pool?.end(); });
+  afterAll(async () => { await removerTabelas(pool, TABELAS_DO_TESTE); await pool?.end(); });
 
   it('MIGRATION NÃO APLICADA (o caso da produção hoje): com o programa ligado, devolve null sem lançar erro', async () => {
     process.env.COLABORADORES_ATIVO = '1';

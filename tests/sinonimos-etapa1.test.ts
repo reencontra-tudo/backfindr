@@ -1,6 +1,7 @@
 // ETAPA 1 dos sinônimos: dicionário ampliado SÓ para a busca (Feed e /achei, via `amplo=1`); matching e fluxos /flow/* congelados. Sem banco nas duas primeiras partes.
 //   TEST_DATABASE_URL=postgres://postgres:pw@127.0.0.1:5432/backfindr_test npx vitest@2 run --config tests/vitest.config.ts tests/sinonimos-etapa1.test.ts
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
+import { removerTabelas } from './helpers/limpeza-banco';
 import { readFileSync, readdirSync, statSync } from 'fs';
 import path from 'path';
 import { Pool } from 'pg';
@@ -12,6 +13,9 @@ if (TEST_DB) process.env.DATABASE_URL = TEST_DB;
 import { calculateMatchScore, hasTextOverlap } from '@/lib/matching';
 import { DICIONARIO_AMPLIADO, SINONIMOS, calcularScoreBusca, categoriasDaBuscaTexto, expandirKeyword, expandirTokens, nivelBuscaAmpliada, normalizarPalavra, tokenizar } from '@/lib/buscaPublica';
 import { CATEGORIAS, FORA_DO_DICIONARIO, GRUPOS, RELACOES, TERMOS_DE_CARRO, TERMOS_DE_MOTO } from '@/lib/buscaDicionario';
+
+/** Tabelas que este arquivo cria no banco de teste; removidas ao terminar (ver helpers/limpeza-banco.ts). */
+const TABELAS_DO_TESTE = ['local_pages', 'municipalities', 'municipality_events', 'object_events', 'objects', 'public_signal_evidence', 'users'];
 
 const read = (rel: string) => readFileSync(path.join(__dirname, '..', rel), 'utf8');
 const AMP = { dicionario: 'ampliado' as const, radical: true, semAcento: true };
@@ -175,7 +179,7 @@ describe.skipIf(!TEST_DB)('busca com banco real (Feed e /achei)', () => {
   const pub = async (qs: string) => { const r = await GETPUB(new NextRequest(`http://localhost/api/v1/objects/public?${qs}`)); return ((await r.json()).items as Array<{ unique_code: string }>).map((i) => i.unique_code); };
   beforeAll(async () => { pool = new Pool({ connectionString: TEST_DB }); q = await import('@/lib/feed/query'); busca = await import('@/lib/feed/busca'); ({ GET: GETPUB } = await import('@/app/api/v1/objects/public/route')); });
   beforeEach(reset);
-  afterAll(async () => { await pool?.end(); });
+  afterAll(async () => { await removerTabelas(pool, TABELAS_DO_TESTE); await pool?.end(); });
 
   it('Feed: «carro» acha «Chevrolet Spin» (mesmo com category other) e NÃO acha moto nem Honda sem a palavra; legado NUNCA', async () => {
     const c = await codes('carro');

@@ -2,6 +2,7 @@
 // A e E: sem banco. B e D: Postgres REAL (puladas sem TEST_DATABASE_URL); aplicam as migrations 026, 028, 029 e 030 sobre tabelas mínimas.
 // ATENÇÃO: recria users, objects, boosts, colaboradores e as tabelas novas no banco de teste.
 import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
+import { removerTabelas } from './helpers/limpeza-banco';
 import { Pool } from 'pg';
 import { randomUUID } from 'node:crypto';
 import { readFileSync } from 'node:fs';
@@ -22,6 +23,9 @@ import { saldoDoColaborador } from '@/lib/colaboradores/comissao';
 import { salvarDadosPagamento, solicitarSaque } from '@/lib/colaboradores/saque';
 import { validarDadosPagamento } from '@/lib/colaboradores/pagamento';
 import { randomBytes } from 'node:crypto';
+
+/** Tabelas que este arquivo cria no banco de teste; removidas ao terminar (ver helpers/limpeza-banco.ts). */
+const TABELAS_DO_TESTE = ['auditoria', 'boosts', 'colaborador_dados_pagamento', 'colaborador_lancamentos', 'colaborador_saques', 'colaborador_verificacoes', 'colaboradores', 'objects', 'pagamento_eventos', 'politica_aceites', 'programa_config', 'users'];
 
 const ENV = { PIX_CHAVE_CIFRAGEM: randomBytes(32).toString('base64') };
 
@@ -77,7 +81,7 @@ describe.skipIf(!TEST_DB)('B/D. com Postgres real', () => {
     for (const m of ['026_colaboradores.sql', '027_colaboradores_inscricao.sql', '028_colaboradores_comissao.sql', '029_colaboradores_saque.sql', '030_colaboradores_auditoria.sql']) await pool.query(MIG(m));
   });
   beforeEach(async () => { adm.papel = 'admin'; adm.id = await novoUsuario(); });
-  afterAll(async () => { await pool?.end(); const { closePool } = await import('@/lib/db'); await closePool(); });
+  afterAll(async () => { await removerTabelas(pool, TABELAS_DO_TESTE); await pool?.end(); const { closePool } = await import('@/lib/db'); await closePool(); });
 
   describe('B. regras do admin', () => {
     it('a migration 030 é idempotente e a auditoria só aceita INSERT', async () => {

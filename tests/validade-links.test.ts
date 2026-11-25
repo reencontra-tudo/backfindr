@@ -5,6 +5,7 @@
 //
 //   TEST_DATABASE_URL=postgres://u:pw@127.0.0.1:5432/bftest npx vitest run --config tests/vitest.config.ts tests/validade-links.test.ts
 import { afterAll, afterEach, beforeAll, describe, expect, it, vi } from 'vitest';
+import { removerTabelas } from './helpers/limpeza-banco';
 import { readFileSync } from 'node:fs';
 import path from 'node:path';
 import { Pool } from 'pg';
@@ -21,6 +22,9 @@ import {
 } from '@/lib/linkPublico';
 import { isTrackingBlocked } from '@/lib/trackingGuard';
 import LinkConcluido from '@/components/LinkConcluido';
+
+/** Tabelas que este arquivo cria no banco de teste; removidas ao terminar (ver helpers/limpeza-banco.ts). */
+const TABELAS_DO_TESTE = ['condominios', 'custodias', 'custody_eventos', 'entrega_eventos', 'entregadores', 'entregas', 'estabelecimentos', 'users'];
 
 (globalThis as unknown as { React: typeof React }).React = React; // JSX do componente, como nos outros testes
 const TEST_DB = process.env.TEST_DATABASE_URL;
@@ -259,7 +263,7 @@ describe.skipIf(!TEST_DB)('links públicos com Postgres real', () => {
     ({ POST: confirmarCustodia } = await import('@/app/api/v1/custody/confirmar/[token]/route'));
   });
   afterAll(async () => {
-    await pool?.end();
+    await removerTabelas(pool, TABELAS_DO_TESTE); await pool?.end();
     const { closePool } = await import('@/lib/db');
     await closePool();
   });

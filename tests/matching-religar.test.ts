@@ -1,11 +1,15 @@
 // Religar o matching com segurança: interruptor MATCHING_ATIVO (desligado por padrão), gancho corrigido,
 // conta de sistema e legado sem aviso, eventos. Postgres REAL (pula sem TEST_DATABASE_URL); e-mail, push e rede SIMULADOS. Só dados FICTÍCIOS.
 import { afterAll, beforeAll, beforeEach, afterEach, describe, expect, it, vi } from 'vitest';
+import { removerTabelas } from './helpers/limpeza-banco';
 import { Pool } from 'pg';
 import { randomUUID } from 'crypto';
 import { NextRequest } from 'next/server';
 import { readFileSync } from 'fs';
 import { SYSTEM_ACCOUNT_ID } from '@/lib/systemAccount';
+
+/** Tabelas que este arquivo cria no banco de teste; removidas ao terminar (ver helpers/limpeza-banco.ts). */
+const TABELAS_DO_TESTE = ['matches', 'object_events', 'objects', 'users'];
 
 const TEST_DB = process.env.TEST_DATABASE_URL;
 if (TEST_DB) process.env.DATABASE_URL = TEST_DB;
@@ -92,7 +96,7 @@ describe.skipIf(!TEST_DB)('matching: interruptor, gancho, travas e eventos (Post
     await pool.query('TRUNCATE object_events, matches, objects, users CASCADE');
   });
   afterEach(() => { delete process.env.MATCHING_ATIVO; vi.unstubAllGlobals(); });
-  afterAll(async () => { delete process.env.CRON_SECRET; await pool?.end(); });
+  afterAll(async () => { delete process.env.CRON_SECRET; await removerTabelas(pool, TABELAS_DO_TESTE); await pool?.end(); });
 
   // ─── (a) desligado ───────────────────────────────────────────────────────────────────────────
   it('(a) desligado: o cron responde sem processar nada e sem efeito colateral; sem segredo continua 401', async () => {

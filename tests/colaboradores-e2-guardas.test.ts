@@ -3,6 +3,7 @@
 //  2) o gatilho da migration 026 só age sobre as colunas do programa (nenhum custo nem risco para UPDATEs normais de ocorrências);
 //  3) PC-04: nenhuma página nem menu do site geral aponta para `/@nome` ou para a página do colaborador.
 import { afterEach, describe, expect, it, vi } from 'vitest';
+import { removerTabelas } from './helpers/limpeza-banco';
 import { readFileSync, readdirSync, statSync } from 'fs';
 import path from 'path';
 import { NextRequest, NextResponse } from 'next/server';
@@ -10,6 +11,9 @@ import { renderToStaticMarkup } from 'react-dom/server';
 import * as ReactNs from 'react';
 import { Pool } from 'pg';
 import { estadoInterruptores, lerInterruptores, textoDoAviso } from '@/lib/colaboradores/interruptores';
+
+/** Tabelas que este arquivo cria no banco de teste; removidas ao terminar (ver helpers/limpeza-banco.ts). */
+const TABELAS_DO_TESTE = ['colaboradores', 'objects', 'users'];
 
 (globalThis as unknown as { React: unknown }).React = ReactNs;
 
@@ -111,7 +115,7 @@ describe.skipIf(!TEST_DB)('2) gatilho da migration 026: só age sobre as colunas
       expect(tipos[0] & 4).toBe(0);                                       // bit 4 = INSERT
       expect(tipos[0] & 8).toBe(0);                                       // bit 8 = DELETE
       expect(tipos[0] & 16).toBe(16);                                     // bit 16 = UPDATE
-    } finally { c.release(); await pool.end(); }
+    } finally { c.release(); await removerTabelas(pool, TABELAS_DO_TESTE); await pool.end(); }
   });
 });
 

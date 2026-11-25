@@ -1,6 +1,7 @@
 // Ocorrência pública × ocorrência pública NUNCA vira match AUTOMÁTICO (só o administrador, manualmente, pode unir dois sinais).
 // Postgres REAL (pula sem TEST_DATABASE_URL); e-mail, push e rede SIMULADOS. Só dados FICTÍCIOS.
 import { afterAll, beforeAll, beforeEach, afterEach, describe, expect, it, vi } from 'vitest';
+import { removerTabelas } from './helpers/limpeza-banco';
 import { Pool } from 'pg';
 import { randomUUID } from 'crypto';
 import { NextRequest } from 'next/server';
@@ -9,6 +10,9 @@ import { readFileSync } from 'fs';
 import { SYSTEM_ACCOUNT_ID } from '@/lib/systemAccount';
 import { ehSinalPublico, parEhSinalComSinal, parAutomaticoPermitido, parPodeVirarMatch, montarBuscaDeCandidatos } from '@/lib/matchingFiltro';
 import { classifyStage2, semanticMatchScore } from '@/lib/matching';
+
+/** Tabelas que este arquivo cria no banco de teste; removidas ao terminar (ver helpers/limpeza-banco.ts). */
+const TABELAS_DO_TESTE = ['matches', 'object_events', 'objects', 'users'];
 
 const TEST_DB = process.env.TEST_DATABASE_URL;
 if (TEST_DB) process.env.DATABASE_URL = TEST_DB;
@@ -133,7 +137,7 @@ describe.skipIf(!TEST_DB)('sinal × sinal nos caminhos automáticos (Postgres re
     sistema = await mkUser({ system: true, id: SYSTEM_ACCOUNT_ID });
   });
   afterEach(() => { delete process.env.MATCHING_ATIVO; vi.unstubAllGlobals(); });
-  afterAll(async () => { delete process.env.CRON_SECRET; await pool?.end(); });
+  afterAll(async () => { delete process.env.CRON_SECRET; await removerTabelas(pool, TABELAS_DO_TESTE); await pool?.end(); });
 
   for (const [rotulo, rodar] of caminhos) {
     describe(rotulo, () => {

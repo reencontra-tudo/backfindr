@@ -2,6 +2,7 @@
 // Partes A, D e E: sem banco. Parte B e C: Postgres REAL (sem TEST_DATABASE_URL são puladas); aplicam as migrations 026 e 027 sobre tabelas mínimas.
 // ATENÇÃO: recria users, objects, colaboradores e as tabelas da 027 no banco de teste.
 import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
+import { removerTabelas } from './helpers/limpeza-banco';
 import { Pool } from 'pg';
 import { randomUUID } from 'node:crypto';
 import { readFileSync } from 'node:fs';
@@ -29,6 +30,9 @@ import {
 } from '@/lib/colaboradores/inscricao';
 import { tipoDaImagem, LIMITE_IMAGEM_BYTES } from '@/lib/colaboradores/imagem';
 import { POLITICA_VERSAO } from '@/content/politicaColaboradores';
+
+/** Tabelas que este arquivo cria no banco de teste; removidas ao terminar (ver helpers/limpeza-banco.ts). */
+const TABELAS_DO_TESTE = ['auditoria', 'colaborador_verificacoes', 'colaboradores', 'objects', 'politica_aceites', 'users'];
 
 const OK = { slug: 'Grupo-Zona-Leste', nome: '  Animais  Perdidos ZL ', descricao: 'Ajudamos a reencontrar pets.', canal_url: 'https://www.facebook.com/groups/zonaleste', aceite: true, politica_versao: POLITICA_VERSAO };
 
@@ -99,7 +103,7 @@ describe.skipIf(!TEST_DB)('B. banco real: inscrição, verificação, saída e r
     await pool.query(readFileSync(path.join(__dirname, '../src/db/migrations/027_colaboradores_inscricao.sql'), 'utf8'));
     await pool.query(readFileSync(path.join(__dirname, '../src/db/migrations/030_colaboradores_auditoria.sql'), 'utf8')); // E8: a inscrição e o resto agora gravam auditoria
   });
-  afterAll(async () => { await pool?.end(); const { closePool } = await import('@/lib/db'); await closePool(); });
+  afterAll(async () => { await removerTabelas(pool, TABELAS_DO_TESTE); await pool?.end(); const { closePool } = await import('@/lib/db'); await closePool(); });
 
   it('a migration 027 é idempotente (rodar de novo não falha nem duplica)', async () => {
     await pool.query(readFileSync(path.join(__dirname, '../src/db/migrations/027_colaboradores_inscricao.sql'), 'utf8'));
@@ -219,7 +223,7 @@ describe.skipIf(!TEST_DB)('C. rotas com banco real', () => {
     R.decidir = (await import('@/app/api/v1/admin/colaboradores/verificacoes/[id]/route')).POST as never;
   });
   beforeEach(async () => { ligar(); adm.papel = 'admin'; const { resetLimites } = await import('@/lib/colaboradores/rotaInscricao'); resetLimites(); adm.id = await novoUsuario(); });
-  afterAll(async () => { delete process.env.COLABORADORES_ATIVO; delete process.env.COLABORADORES_INSCRICAO; await pool?.end(); const { closePool } = await import('@/lib/db'); await closePool(); });
+  afterAll(async () => { delete process.env.COLABORADORES_ATIVO; delete process.env.COLABORADORES_INSCRICAO; await removerTabelas(pool, TABELAS_DO_TESTE); await pool?.end(); const { closePool } = await import('@/lib/db'); await closePool(); });
 
   it('DESLIGADA (sem COLABORADORES_INSCRICAO): todas as rotas respondem 404 vazio e nada é gravado', async () => {
     desligar(); const u = await novoUsuario();

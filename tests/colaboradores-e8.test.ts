@@ -2,6 +2,7 @@
 // A e E: sem banco. B, C e D: Postgres REAL (puladas sem TEST_DATABASE_URL); aplicam as migrations 026 a 031 sobre tabelas mínimas.
 // ATENÇÃO: recria users, objects, boosts, colaboradores e as tabelas novas no banco de teste.
 import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
+import { removerTabelas } from './helpers/limpeza-banco';
 import { Pool } from 'pg';
 import { randomBytes, randomUUID } from 'node:crypto';
 import { readFileSync } from 'node:fs';
@@ -25,6 +26,9 @@ import { criarInscricao, minhaColaboracao, reativarPagina, sairDoPrograma, troca
 import { cancelarSaque, salvarDadosPagamento, solicitarSaque } from '@/lib/colaboradores/saque';
 import { validarDadosPagamento } from '@/lib/colaboradores/pagamento';
 import { POLITICA_VERSAO } from '@/content/politicaColaboradores';
+
+/** Tabelas que este arquivo cria no banco de teste; removidas ao terminar (ver helpers/limpeza-banco.ts). */
+const TABELAS_DO_TESTE = ['auditoria', 'boosts', 'colaborador_dados_pagamento', 'colaborador_lancamentos', 'colaborador_saques', 'colaborador_sinais', 'colaborador_verificacoes', 'colaborador_visitas_dia', 'colaboradores', 'objects', 'pagamento_eventos', 'politica_aceites', 'programa_config', 'users'];
 
 const ENV = { PIX_CHAVE_CIFRAGEM: randomBytes(32).toString('base64') };
 
@@ -82,7 +86,7 @@ describe.skipIf(!TEST_DB)('B/C/D. com Postgres real', () => {
     for (const m of ['026_colaboradores.sql', '027_colaboradores_inscricao.sql', '028_colaboradores_comissao.sql', '029_colaboradores_saque.sql', '030_colaboradores_auditoria.sql', '031_colaboradores_antifraude_visitas.sql']) await pool.query(MIG(m));
   });
   beforeEach(() => { desligarTudo(); adm.papel = 'admin'; zerarTeto(); });
-  afterAll(async () => { desligarTudo(); await pool?.end(); const { closePool } = await import('@/lib/db'); await closePool(); });
+  afterAll(async () => { desligarTudo(); await removerTabelas(pool, TABELAS_DO_TESTE); await pool?.end(); const { closePool } = await import('@/lib/db'); await closePool(); });
 
   describe('B. antifraude: sinais para análise manual', () => {
     it('a migration 031 é idempotente e cria as 2 tabelas', async () => {

@@ -6,6 +6,7 @@
 //
 // ATENÇÃO: a parte 2 recria as tabelas do banco de teste (tests/fixtures/feed-schema.sql). Use banco descartável.
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
+import { removerTabelas } from './helpers/limpeza-banco';
 import { readFileSync } from 'fs';
 import path from 'path';
 import { Pool } from 'pg';
@@ -25,6 +26,9 @@ import { parseLocation, NO_LOCATION_LABEL, cityFromCoordinates, bandFor } from '
 import { rankFeed, signalCapHolds, type Rankable } from '@/lib/feed/order';
 import { relativeTimeLabel } from '@/lib/feed/time';
 import { encodeCursor, decodeCursor } from '@/lib/feed/query';
+
+/** Tabelas que este arquivo cria no banco de teste; removidas ao terminar (ver helpers/limpeza-banco.ts). */
+const TABELAS_DO_TESTE = ['local_pages', 'municipalities', 'municipality_events', 'object_events', 'objects', 'public_signal_evidence', 'users'];
 
 // Nomes sintéticos usados nos dados de teste (tests/fixtures/feed-seed.sql)
 const NAMES = ['Pablo Miguel Ferreira de Melo Sebastiani', 'Marco Antônio Padovani', 'Filipe de Mello pequeno', 'Tiago da Silva',
@@ -170,7 +174,7 @@ describe.skipIf(!TEST_DB)('Feed com banco real', () => {
     ({ GET } = await import('@/app/api/v1/feed/route'));
   });
   beforeEach(reset);
-  afterAll(async () => { await pool?.end(); });
+  afterAll(async () => { await removerTabelas(pool, TABELAS_DO_TESTE); await pool?.end(); });
 
   it('NUNCA mostra legado, arquivado, devolvido, protegido nem objeto não público', async () => {
     const codes = (await all()).map((i) => i.code);

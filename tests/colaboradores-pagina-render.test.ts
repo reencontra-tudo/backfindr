@@ -1,12 +1,16 @@
 // Programa de Colaboradores, E2: a página `/colaborador/[slug]` (servidor) por dentro: interruptor, estados, metadados de indexação e marcação.
 // Postgres REAL (sem TEST_DATABASE_URL a suíte é pulada). `cache` do React só existe no servidor do Next; aqui vira função comum.
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
+import { removerTabelas } from './helpers/limpeza-banco';
 import { Pool } from 'pg';
 import { randomUUID } from 'crypto';
 import { readFileSync } from 'fs';
 import path from 'path';
 import { renderToStaticMarkup } from 'react-dom/server';
 import * as ReactNs from 'react';
+
+/** Tabelas que este arquivo cria no banco de teste; removidas ao terminar (ver helpers/limpeza-banco.ts). */
+const TABELAS_DO_TESTE = ['colaboradores', 'local_pages', 'municipalities', 'municipality_events', 'object_events', 'objects', 'public_signal_evidence', 'users'];
 
 // O vitest compila JSX no modo clássico (o Next usa o automático): publica o React como global para a página renderizar.
 (globalThis as unknown as { React: unknown }).React = ReactNs;
@@ -36,7 +40,7 @@ describe.skipIf(!TEST_DB)('página /colaborador/[slug]', () => {
     const mod = await import('@/app/colaborador/[slug]/page');
     Pagina = mod.default as never; meta = mod.generateMetadata as never;
   });
-  afterAll(async () => { await pool?.end(); });
+  afterAll(async () => { await removerTabelas(pool, TABELAS_DO_TESTE); await pool?.end(); });
   beforeEach(async () => {
     await pool.query('DELETE FROM objects');
     await pool.query('ALTER TABLE colaboradores DISABLE TRIGGER trg_colaboradores_sem_delete'); await pool.query('DELETE FROM colaboradores'); await pool.query('ALTER TABLE colaboradores ENABLE TRIGGER trg_colaboradores_sem_delete');

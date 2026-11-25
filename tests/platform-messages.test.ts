@@ -7,6 +7,7 @@
 // ATENÇÃO: o schema de teste é recriado (DROP/CREATE de users, objects, notifications, object_events).
 // Use banco descartável.
 import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
+import { removerTabelas } from './helpers/limpeza-banco';
 import { Pool } from 'pg';
 import { randomUUID } from 'crypto';
 import { NextRequest } from 'next/server';
@@ -24,6 +25,9 @@ vi.mock('@/lib/jwt', () => ({
 }));
 
 import { SYSTEM_ACCOUNT_ID } from '@/lib/systemAccount';
+
+/** Tabelas que este arquivo cria no banco de teste; removidas ao terminar (ver helpers/limpeza-banco.ts). */
+const TABELAS_DO_TESTE = ['notifications', 'object_events', 'objects', 'users'];
 
 describe.skipIf(!TEST_DB)('POST /api/v1/admin/platform-messages', () => {
   let pool: Pool;
@@ -84,7 +88,7 @@ describe.skipIf(!TEST_DB)('POST /api/v1/admin/platform-messages', () => {
     owner = await mkUser('user');
   });
 
-  afterAll(async () => { await pool?.end(); });
+  afterAll(async () => { await removerTabelas(pool, TABELAS_DO_TESTE); await pool?.end(); });
 
   it('admin cria a mensagem com sucesso (tipo, url e auditoria)', async () => {
     const res = await send(admin, valid({ link: '/dashboard/objects/abc' }));

@@ -1,6 +1,7 @@
 // Programa de Colaboradores, E2: regras da página `/@nome`, feed da página e sitemap. Postgres REAL (sem TEST_DATABASE_URL a suíte é pulada).
 // Usa o esquema mínimo do Feed (tests/fixtures/feed-schema.sql) + a migration 026. ATENÇÃO: recria as tabelas do banco de teste.
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it } from 'vitest';
+import { removerTabelas } from './helpers/limpeza-banco';
 import { Pool } from 'pg';
 import { randomUUID } from 'crypto';
 import { readFileSync } from 'fs';
@@ -13,6 +14,9 @@ const MIGRATION = readFileSync(path.join(__dirname, '../src/db/migrations/026_co
 
 import { carregarColaborador, paginaIndexavel, urlSegura, linksDeCadastro, caminhoPagina } from '@/lib/colaboradores/pagina';
 import { feedDoColaborador, COLAB_FEED_MAX, regiaoValida } from '@/lib/colaboradores/feed';
+
+/** Tabelas que este arquivo cria no banco de teste; removidas ao terminar (ver helpers/limpeza-banco.ts). */
+const TABELAS_DO_TESTE = ['colaboradores', 'local_pages', 'municipalities', 'municipality_events', 'object_events', 'objects', 'public_signal_evidence', 'users'];
 
 describe('regras puras da página', () => {
   it('urlSegura aceita só https sem credenciais', () => {
@@ -57,7 +61,7 @@ describe.skipIf(!TEST_DB)('página, feed do colaborador e sitemap (banco real)',
     await pool.query(SCHEMA);
     await pool.query(MIGRATION);
   });
-  afterAll(async () => { await pool?.end(); });
+  afterAll(async () => { await removerTabelas(pool, TABELAS_DO_TESTE); await pool?.end(); });
 
   beforeEach(async () => {
     await pool.query('DELETE FROM objects');

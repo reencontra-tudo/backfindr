@@ -2,11 +2,15 @@
 // Aplica a migration 026 de verdade sobre um objects mínimo e exercita POST /api/v1/objects e GET /api/v1/colaboradores/validar.
 // ATENÇÃO: recria users, objects e colaboradores no banco de teste.
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
+import { removerTabelas } from './helpers/limpeza-banco';
 import { Pool } from 'pg';
 import { randomUUID } from 'crypto';
 import { readFileSync } from 'fs';
 import path from 'path';
 import { NextRequest } from 'next/server';
+
+/** Tabelas que este arquivo cria no banco de teste; removidas ao terminar (ver helpers/limpeza-banco.ts). */
+const TABELAS_DO_TESTE = ['colaboradores', 'objects', 'users'];
 
 const TEST_DB = process.env.TEST_DATABASE_URL;
 if (TEST_DB) process.env.DATABASE_URL = TEST_DB;
@@ -59,7 +63,7 @@ describe.skipIf(!TEST_DB)('Programa de Colaboradores E1 — atribuição na ocor
     ({ GET: VALIDAR } = await import('@/app/api/v1/colaboradores/validar/route'));
     ({ resetLimiteValidacao: resetLimite } = await import('@/lib/colaboradores/limite'));
   });
-  afterAll(async () => { await pool?.end(); });
+  afterAll(async () => { await removerTabelas(pool, TABELAS_DO_TESTE); await pool?.end(); });
 
   beforeEach(async () => {
     await pool.query('DELETE FROM objects');

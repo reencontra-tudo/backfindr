@@ -2,11 +2,15 @@
 // Parte 1: funções puras. Parte 2: POST/PATCH/leitura por código num Postgres REAL (pula sem TEST_DATABASE_URL).
 // Só dados FICTÍCIOS.
 import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
+import { removerTabelas } from './helpers/limpeza-banco';
 import { Pool } from 'pg';
 import { randomUUID } from 'crypto';
 import { NextRequest } from 'next/server';
 import { readFileSync } from 'fs';
 import { mascararDigitosLongos, ultimos4Digitos, nomeDoTitular, tipoDeDocumento, camposDeDocumento } from '@/lib/documentPrivacy';
+
+/** Tabelas que este arquivo cria no banco de teste; removidas ao terminar (ver helpers/limpeza-banco.ts). */
+const TABELAS_DO_TESTE = ['objects', 'users'];
 
 const TEST_DB = process.env.TEST_DATABASE_URL;
 if (TEST_DB) process.env.DATABASE_URL = TEST_DB;
@@ -110,7 +114,7 @@ describe.skipIf(!TEST_DB)('documento de usuário: POST, PATCH e leitura por cód
     userId = randomUUID();
     await pool.query(`INSERT INTO users (id, plan) VALUES ($1, 'business')`, [userId]);
   });
-  afterAll(async () => { vi.unstubAllGlobals(); await pool?.end(); });
+  afterAll(async () => { vi.unstubAllGlobals(); await removerTabelas(pool, TABELAS_DO_TESTE); await pool?.end(); });
 
   it('POST: titular e tipo vão para as colunas; só os 4 últimos dígitos ficam; número inteiro não existe em lugar nenhum', async () => {
     const res = await post({ title: 'RG perdido', description: 'Perdi minha carteira de identidade', category: 'document',

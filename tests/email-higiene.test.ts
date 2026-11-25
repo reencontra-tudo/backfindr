@@ -7,6 +7,7 @@
 //
 // ATENÇÃO: o schema de teste é recriado (DROP/CREATE das tabelas usadas). Use banco descartável.
 import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
+import { removerTabelas } from './helpers/limpeza-banco';
 import { Pool } from 'pg';
 import crypto, { randomUUID } from 'crypto';
 import fs from 'fs';
@@ -44,6 +45,9 @@ import {
   verifyUnsubscribeToken,
 } from '@/lib/emailPolicy';
 import { deliverEmail } from '@/lib/emailSend';
+
+/** Tabelas que este arquivo cria no banco de teste; removidas ao terminar (ver helpers/limpeza-banco.ts). */
+const TABELAS_DO_TESTE = ['email_campaigns', 'email_events', 'email_messages', 'email_preferences', 'email_suppressions', 'objects', 'reactivation_emails', 'user_lifecycle_events', 'users'];
 
 describe.skipIf(!TEST_DB)('higiene de e-mail', () => {
   let pool: Pool;
@@ -103,7 +107,7 @@ describe.skipIf(!TEST_DB)('higiene de e-mail', () => {
   });
 
   afterAll(async () => {
-    await pool?.end();
+    await removerTabelas(pool, TABELAS_DO_TESTE); await pool?.end();
   });
 
   beforeEach(async () => {

@@ -6,11 +6,15 @@
 //
 //   TEST_DATABASE_URL=postgres://u:pw@127.0.0.1:5432/bftest npx vitest run --config tests/vitest.config.ts tests/links-custodia-entrega.test.ts
 import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest';
+import { removerTabelas } from './helpers/limpeza-banco';
 import { readFileSync, readdirSync, statSync } from 'node:fs';
 import path from 'node:path';
 import { Pool } from 'pg';
 import { NextRequest } from 'next/server';
 import { gerarQrCode, gerarToken } from '@/lib/notifyModulos';
+
+/** Tabelas que este arquivo cria no banco de teste; removidas ao terminar (ver helpers/limpeza-banco.ts). */
+const TABELAS_DO_TESTE = ['condominios', 'custodias', 'custody_eventos', 'entrega_eventos', 'entregadores', 'entregas', 'estabelecimentos', 'users'];
 
 const TEST_DB = process.env.TEST_DATABASE_URL;
 if (TEST_DB) process.env.DATABASE_URL = TEST_DB;
@@ -131,7 +135,7 @@ describe.skipIf(!TEST_DB)('rotas de entrega e de custódia com o esquema real', 
   beforeAll(async () => {
     pool = new Pool({ connectionString: TEST_DB });
     await pool.query(`
-      DROP TABLE IF EXISTS custody_eventos, custodias, entregas, entregadores, estabelecimentos, condominios CASCADE;
+      DROP TABLE IF EXISTS custody_eventos, entrega_eventos, custodias, entregas, entregadores, estabelecimentos, condominios CASCADE;
       DROP TABLE IF EXISTS users CASCADE;
       CREATE TABLE users (id uuid PRIMARY KEY, email varchar(255) NOT NULL, name varchar(255) NOT NULL, phone varchar(50), plan varchar(50) DEFAULT 'free', role varchar(50), b2b_partner_id uuid);
       CREATE TABLE condominios (id uuid PRIMARY KEY DEFAULT gen_random_uuid(), nome varchar(255) NOT NULL, endereco text NOT NULL);
@@ -148,6 +152,7 @@ describe.skipIf(!TEST_DB)('rotas de entrega e de custódia com o esquema real', 
         descricao text, qr_code varchar(20) NOT NULL UNIQUE, link_token varchar(100) NOT NULL UNIQUE, status varchar(30) NOT NULL DEFAULT 'aguardando', custodiante_id uuid,
         custodiante_tipo varchar(30), custodiado_em timestamptz, entregue_em timestamptz, created_at timestamptz NOT NULL DEFAULT now(), updated_at timestamptz NOT NULL DEFAULT now());
       CREATE TABLE custody_eventos (id uuid PRIMARY KEY DEFAULT gen_random_uuid(), custodia_id uuid, tipo varchar(50), user_id uuid, lat numeric, lng numeric, observacao text, created_at timestamptz NOT NULL DEFAULT now());
+      CREATE TABLE entrega_eventos (id uuid PRIMARY KEY DEFAULT gen_random_uuid(), entrega_id uuid NOT NULL REFERENCES entregas(id) ON DELETE CASCADE, tipo varchar(30) NOT NULL, lat numeric, lng numeric, user_id uuid, observacao text, created_at timestamptz NOT NULL DEFAULT now());
     `);
     await pool.query(`INSERT INTO users (id, email, name, phone) VALUES ($1,'dono@t.test','Dono Teste','11988887777'), ($2,'ent@t.test','Entregador Teste','(11) 99999-0000')`, [U.dono, U.entregadorUser]);
     await pool.query(`INSERT INTO entregadores (user_id) VALUES ($1)`, [U.entregadorUser]);
@@ -157,7 +162,7 @@ describe.skipIf(!TEST_DB)('rotas de entrega e de custódia com o esquema real', 
     ({ GET: linkCustodiaGET } = await import('@/app/api/v1/custody/link/[token]/route'));
   });
   afterAll(async () => {
-    await pool?.end();
+    await removerTabelas(pool, TABELAS_DO_TESTE); await pool?.end();
     const { closePool } = await import('@/lib/db');
     await closePool();
   });

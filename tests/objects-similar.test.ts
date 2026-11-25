@@ -6,6 +6,7 @@
 //
 // ATENÇÃO: o schema de teste é recriado (DROP/CREATE de users e objects). Use banco descartável.
 import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
+import { removerTabelas } from './helpers/limpeza-banco';
 import { Pool } from 'pg';
 import { randomUUID } from 'crypto';
 import { NextRequest } from 'next/server';
@@ -25,6 +26,9 @@ vi.mock('@/lib/events', () => {
 vi.mock('@/lib/socialPost', () => ({ enqueueSocialPosts: () => Promise.resolve() }));
 
 import { SYSTEM_ACCOUNT_ID } from '@/lib/systemAccount';
+
+/** Tabelas que este arquivo cria no banco de teste; removidas ao terminar (ver helpers/limpeza-banco.ts). */
+const TABELAS_DO_TESTE = ['objects', 'users'];
 
 describe.skipIf(!TEST_DB)('POST /api/v1/objects — aviso de objeto parecido', () => {
   let pool: Pool;
@@ -87,7 +91,7 @@ describe.skipIf(!TEST_DB)('POST /api/v1/objects — aviso de objeto parecido', (
 
   afterAll(async () => {
     vi.unstubAllGlobals();
-    await pool?.end();
+    await removerTabelas(pool, TABELAS_DO_TESTE); await pool?.end();
   });
 
   it('(a) objeto novo sem parecido -> 201', async () => {

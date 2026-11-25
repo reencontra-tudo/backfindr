@@ -1,6 +1,7 @@
 // Programa de Colaboradores, E4: comissão em MODO SOMBRA. Partes A e D (sem banco) e B, C, E (Postgres REAL; sem TEST_DATABASE_URL são puladas).
 // Aplica as migrations 026 e 028 sobre tabelas mínimas. ATENÇÃO: recria users, objects, boosts, colaboradores e as tabelas novas no banco de teste.
 import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
+import { removerTabelas } from './helpers/limpeza-banco';
 import { Pool } from 'pg';
 import { randomUUID } from 'node:crypto';
 import { readFileSync } from 'node:fs';
@@ -30,6 +31,9 @@ import {
   centavosDoValor, comissaoEmCentavos, comissaoSombraAtiva, configVigente, elegibilidade, registrarComissaoSombra, registrarEstornoSombra, saldoDoColaborador, PADRAO,
   type ContextoElegibilidade,
 } from '@/lib/colaboradores/comissao';
+
+/** Tabelas que este arquivo cria no banco de teste; removidas ao terminar (ver helpers/limpeza-banco.ts). */
+const TABELAS_DO_TESTE = ['boosts', 'colaborador_lancamentos', 'colaboradores', 'objects', 'pagamento_eventos', 'programa_config', 'users'];
 
 describe('A. cálculo (sem banco)', () => {
   it('centavos sem erro de ponto flutuante (preços reais dos boosts)', () => {
@@ -97,7 +101,7 @@ describe.skipIf(!TEST_DB)('B/C/E. com Postgres real', () => {
     await pool.query(MIG('026_colaboradores.sql'));
     await pool.query(MIG('028_colaboradores_comissao.sql'));
   });
-  afterAll(async () => { await pool?.end(); const { closePool } = await import('@/lib/db'); await closePool(); });
+  afterAll(async () => { await removerTabelas(pool, TABELAS_DO_TESTE); await pool?.end(); const { closePool } = await import('@/lib/db'); await closePool(); });
 
   describe('B. migration 028 e livro imutável', () => {
     it('é idempotente; cria as 3 tabelas e as 6 regras iniciais do fundador', async () => {

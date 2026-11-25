@@ -7,8 +7,12 @@
 //
 //   TEST_DATABASE_URL=postgres://postgres:pw@127.0.0.1:5432/backfindr_test npx vitest@2 run --config tests/vitest.config.ts tests/scan-registro.test.ts
 import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
+import { removerTabelas } from './helpers/limpeza-banco';
 import { Pool } from 'pg';
 import { NextRequest } from 'next/server';
+
+/** Tabelas que este arquivo cria no banco de teste; removidas ao terminar (ver helpers/limpeza-banco.ts). */
+const TABELAS_DO_TESTE = ['object_events', 'objects', 'users'];
 
 const TEST_DB = process.env.TEST_DATABASE_URL;
 if (TEST_DB) process.env.DATABASE_URL = TEST_DB;
@@ -69,7 +73,7 @@ describe.skipIf(!TEST_DB)('registro de escaneamentos', () => {
         ('${IDS.legacyOwner}', '${LEGACY_OWNER}', 'Objeto de dono legado', 'lost', 'phone', 'LEG2', false, NULL, '[]'),
         ('${IDS.signal}', NULL, 'Sinal público', 'found', 'pet', 'SIG1', false, 'public_signal', '[]');`);
   });
-  afterAll(async () => { await pool?.end(); });
+  afterAll(async () => { await removerTabelas(pool, TABELAS_DO_TESTE); await pool?.end(); });
 
   describe('GET /objects/scan/[code]', () => {
     it('USUÁRIO: continua gravando 1 evento de abertura de página (sem via), como antes', async () => {

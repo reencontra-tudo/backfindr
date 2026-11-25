@@ -2,6 +2,7 @@
 // Parte 1 (sem banco): componentes, regras de texto, rotas e eventos. Parte 2 (Postgres real, só com TEST_DATABASE_URL): a página.
 //   TEST_DATABASE_URL=postgres://postgres:pw@127.0.0.1:5432/backfindr_test npx vitest@2 run --config tests/vitest.config.ts tests/feed-apresentacao.test.ts
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
+import { removerTabelas } from './helpers/limpeza-banco';
 import React from 'react';
 import { existsSync, readFileSync } from 'fs';
 import path from 'path';
@@ -15,6 +16,9 @@ if (TEST_DB) process.env.DATABASE_URL = TEST_DB;
 import { CTA_ROUTES, IntroButtons, RegisterMenu } from '@/app/feed/FeedCta';
 import FeedClient from '@/app/feed/FeedClient';
 import type { FeedItem } from '@/lib/feed/query';
+
+/** Tabelas que este arquivo cria no banco de teste; removidas ao terminar (ver helpers/limpeza-banco.ts). */
+const TABELAS_DO_TESTE = ['local_pages', 'municipalities', 'municipality_events', 'object_events', 'objects', 'public_signal_evidence', 'users'];
 
 const root = path.join(__dirname, '..');
 const read = (rel: string) => readFileSync(path.join(root, rel), 'utf8');
@@ -215,7 +219,7 @@ describe.skipIf(!TEST_DB)('página /feed com banco real', () => {
     await pool.query(readFileSync(path.join(__dirname, 'fixtures/feed-seed.sql'), 'utf8'));
     FeedPage = (await import('@/app/feed/[[...slug]]/page')).default as never;
   });
-  afterAll(async () => { await pool?.end(); });
+  afterAll(async () => { await removerTabelas(pool, TABELAS_DO_TESTE); await pool?.end(); });
 
   it('página 1: UM h1 («Feed de ocorrências»), chamada curta e os dois botões logo depois e ANTES dos filtros; o texto longo foi para o bloco depois do 3º card', async () => {
     const h = await page();
