@@ -57,8 +57,18 @@ Cada passo só começa depois do anterior dar certo e só com a sua ordem.
 ## 6. Pendências
 **Obrigatória antes do saque ao público:** como o admin vê a chave PIX completa para pagar, de forma auditada (hoje só vê o final). Opções: botão auditado «ver chave completa»; «PIX copia e cola» entregue ao admin sem mostrar a chave; ou pagamento por integração. Nenhuma implementada.
 
+**Obrigatória antes de haver colaborador real com saldo ou saque:** auditar a impersonação do super admin e registrar as ações como do admin (seção 9, item 4).
+
 **Não travam a abertura:**
 Liberar o `@nome` após 12 meses sem atividade (E5b); diferenciais reais do Pro; CI com Postgres (hoje a regra QA-01 cobre); aviso aos 21 titulares afetados; decidir se o `@backfindr` será verificado.
+
+## 9. Pendências achadas no modo teste (25/11/2026) — nada foi corrigido ainda
+Achadas por leitura do código e de produção durante o teste. **Nenhuma foi corrigida; cada correção precisa de ordem sua.**
+1. **Tela de matches mostra «8000%».** A pontuação é guardada de 0 a 100 (por exemplo 80) e a tela do usuário multiplica por 100 de novo (`dashboard/matches/page.tsx:110`). Só a exibição está errada; o valor do banco está certo.
+2. **O matching cruza ocorrências do mesmo dono.** Uma ocorrência perdida e uma achada do MESMO usuário viram match e geram aviso (e-mail e push) para ele mesmo. Não há regra registrada sobre isso. **Decisão do Marcos pendente.**
+3. **A etiqueta `[TESTE]` conta como palavra em comum no matching.** Por isso ocorrências de teste sem relação entre si podem casar. Vale lembrar ao testar, porque a convenção de dados de teste pede `[TESTE]` no título.
+4. **Impersonação do super admin ("Navegar como este usuário" / "Acessar como") sem auditoria, e as ações ficam registradas como feitas pelo próprio usuário.** A rota não grava nada no banco e a auditoria do programa registra o usuário alvo como autor. Com a impersonação dá para abrir o painel do colaborador e, com saque ligado, mexer em dados de pagamento e pedir saque. **OBRIGATÓRIO resolver antes de existir colaborador real com saldo ou saque.**
+5. **O canal do colaborador não aparece no admin depois da aprovação.** A aba Verificações lista só as pendentes; a tela e o CSV não mostram o canal. Só a página pública mostra.
 
 ## 7. Limites desta entrega (sem enfeite)
 - As telas novas do admin foram validadas por teste e build; **não foram fotografadas em 375 px e no desktop**, porque o admin exige login e eu não uso credenciais suas. Se quiser, você abre e me manda o que achar estranho.
