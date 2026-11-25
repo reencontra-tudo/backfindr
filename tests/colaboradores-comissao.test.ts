@@ -90,7 +90,7 @@ describe.skipIf(!TEST_DB)('B/C/E. com Postgres real', () => {
 
   beforeAll(async () => {
     pool = new Pool({ connectionString: TEST_DB });
-    await pool.query('DROP TABLE IF EXISTS colaborador_lancamentos, pagamento_eventos, programa_config, colaborador_verificacoes, politica_aceites, boosts, objects, colaboradores, users CASCADE');
+    await pool.query('DROP TABLE IF EXISTS colaborador_sinais, colaborador_visitas_dia, auditoria, colaborador_lancamentos, pagamento_eventos, programa_config, colaborador_verificacoes, politica_aceites, boosts, objects, colaboradores, users CASCADE');
     await pool.query('CREATE TABLE users (id uuid PRIMARY KEY)');
     await pool.query("CREATE TABLE objects (id uuid PRIMARY KEY DEFAULT gen_random_uuid(), user_id uuid, title text, status text DEFAULT 'lost', is_boosted boolean DEFAULT false, boost_expires_at timestamptz, updated_at timestamptz, created_at timestamp DEFAULT now())");
     await pool.query(`CREATE TABLE boosts (id uuid PRIMARY KEY DEFAULT gen_random_uuid(), object_id uuid NOT NULL, user_id uuid NOT NULL, type varchar NOT NULL, status varchar NOT NULL, amount_paid numeric, provider varchar, provider_ref varchar, starts_at timestamptz, expires_at timestamptz, created_at timestamptz DEFAULT now(), updated_at timestamptz, active boolean NOT NULL DEFAULT true)`);

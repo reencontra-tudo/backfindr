@@ -42,7 +42,7 @@ describe('A. regras, CSV e interruptor (sem banco)', () => {
     for (const t of ['=HYPERLINK("http://x")', '+1+1', '-2+3', '@SUM(A1)', '\t=1']) expect(celulaCsv(t).startsWith('"\'')).toBe(true);
     expect(celulaCsv('Grupo "Zona Leste"')).toBe('"Grupo ""Zona Leste"""'); expect(celulaCsv(null)).toBe('""'); expect(celulaCsv(247)).toBe('"247"');
     const csv = csvDaLista('2026-11', [{ slug: 'a-b', nome: '=cmd|calc', estado: 'ativo', verificado: true, ocorrencias_no_mes: 2, compras_no_mes: 1, comissao_no_mes_centavos: 247, saldo_total_centavos: 247 }]);
-    expect(csv.split('\r\n')[0]).toBe('mes,slug,nome,estado,verificado,ocorrencias_no_mes,compras_no_mes,comissao_no_mes_centavos,saldo_total_centavos'); expect(csv).toContain(`"'=cmd|calc"`); expect(csv).not.toMatch(/chave|pix|documento|cpf/i);
+    expect(csv.split('\r\n')[0]).toBe('mes,slug,nome,estado,verificado,visitas_no_mes,ocorrencias_no_mes,compras_no_mes,comissao_no_mes_centavos,saldo_total_centavos'); expect(csv).toContain(`"'=cmd|calc"`); expect(csv).not.toMatch(/chave|pix|documento|cpf/i);
   });
 });
 
@@ -70,7 +70,7 @@ describe.skipIf(!TEST_DB)('B/D. com Postgres real', () => {
 
   beforeAll(async () => {
     pool = new Pool({ connectionString: TEST_DB });
-    await pool.query('DROP TABLE IF EXISTS auditoria, colaborador_saques, colaborador_dados_pagamento, colaborador_lancamentos, pagamento_eventos, programa_config, colaborador_verificacoes, politica_aceites, boosts, objects, colaboradores, users CASCADE');
+    await pool.query('DROP TABLE IF EXISTS colaborador_sinais, colaborador_visitas_dia, auditoria, colaborador_saques, colaborador_dados_pagamento, colaborador_lancamentos, pagamento_eventos, programa_config, colaborador_verificacoes, politica_aceites, boosts, objects, colaboradores, users CASCADE');
     await pool.query('CREATE TABLE users (id uuid PRIMARY KEY)');
     await pool.query("CREATE TABLE objects (id uuid PRIMARY KEY DEFAULT gen_random_uuid(), user_id uuid, title text, status text DEFAULT 'lost', created_at timestamp DEFAULT now())");
     await pool.query(`CREATE TABLE boosts (id uuid PRIMARY KEY DEFAULT gen_random_uuid(), object_id uuid NOT NULL, user_id uuid NOT NULL, type varchar NOT NULL, status varchar NOT NULL, amount_paid numeric, provider varchar, provider_ref varchar, starts_at timestamptz, expires_at timestamptz, created_at timestamptz DEFAULT now(), updated_at timestamptz, active boolean NOT NULL DEFAULT true)`);
@@ -134,7 +134,7 @@ describe.skipIf(!TEST_DB)('B/D. com Postgres real', () => {
       expect((await saldoDoColaborador(consulta, a.id)).totalCentavos).toBe(antes); expect((await q('SELECT estado, comprovante, decidido_por FROM colaborador_saques WHERE id = $1', [a.saqueId]))[0]).toMatchObject({ estado: 'pago', comprovante: 'PIX 12345', decidido_por: adm.id });
       const b = await comSaque(8000); expect(await tx((t) => recusarSaque(t, b.saqueId, adm.id, ''))).toEqual({ ok: false, erro: 'MOTIVO_OBRIGATORIO' });
       expect(await tx((t) => recusarSaque(t, b.saqueId, adm.id, 'dados de pagamento inválidos'))).toEqual({ ok: true }); expect((await saldoDoColaborador(consulta, b.id)).disponivelCentavos).toBe(8000);
-      expect((await auditorias(a.saqueId)).map((x) => x.acao)).toEqual(['saque_pago']); expect(JSON.stringify(await auditorias(b.saqueId))).not.toMatch(/52998224725|chave|documento/);
+      expect((await auditorias(a.saqueId)).map((x) => x.acao)).toEqual(['saque_solicitado', 'saque_pago']);   // E8: o pedido do colaborador também é auditado expect(JSON.stringify(await auditorias(b.saqueId))).not.toMatch(/52998224725|chave|documento/);
     });
     it('a fila de saques mostra só dados MASCARADOS', async () => {
       const c = await comSaque(9000); const fila = await listarSaquesAdmin(consulta, 'solicitado'); const x = fila.find((s) => s.id === c.saqueId)!;

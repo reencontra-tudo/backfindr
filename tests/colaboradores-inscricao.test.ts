@@ -92,11 +92,12 @@ describe.skipIf(!TEST_DB)('B. banco real: inscrição, verificação, saída e r
 
   beforeAll(async () => {
     pool = new Pool({ connectionString: TEST_DB });
-    await pool.query('DROP TABLE IF EXISTS colaborador_verificacoes, politica_aceites, objects, colaboradores, users CASCADE');
+    await pool.query('DROP TABLE IF EXISTS auditoria, colaborador_verificacoes, politica_aceites, objects, colaboradores, users CASCADE');
     await pool.query('CREATE TABLE users (id uuid PRIMARY KEY)');
     await pool.query('CREATE TABLE objects (id uuid PRIMARY KEY DEFAULT gen_random_uuid(), user_id uuid, title text, status text DEFAULT \'lost\', created_at timestamp DEFAULT now())');
     await pool.query(readFileSync(path.join(__dirname, '../src/db/migrations/026_colaboradores.sql'), 'utf8'));
     await pool.query(readFileSync(path.join(__dirname, '../src/db/migrations/027_colaboradores_inscricao.sql'), 'utf8'));
+    await pool.query(readFileSync(path.join(__dirname, '../src/db/migrations/030_colaboradores_auditoria.sql'), 'utf8')); // E8: a inscrição e o resto agora gravam auditoria
   });
   afterAll(async () => { await pool?.end(); const { closePool } = await import('@/lib/db'); await closePool(); });
 
@@ -202,11 +203,12 @@ describe.skipIf(!TEST_DB)('C. rotas com banco real', () => {
 
   beforeAll(async () => {
     pool = new Pool({ connectionString: TEST_DB });
-    await pool.query('DROP TABLE IF EXISTS colaborador_verificacoes, politica_aceites, objects, colaboradores, users CASCADE');
+    await pool.query('DROP TABLE IF EXISTS auditoria, colaborador_verificacoes, politica_aceites, objects, colaboradores, users CASCADE');
     await pool.query('CREATE TABLE users (id uuid PRIMARY KEY)');
     await pool.query("CREATE TABLE objects (id uuid PRIMARY KEY DEFAULT gen_random_uuid(), user_id uuid, title text, status text DEFAULT 'lost', created_at timestamp DEFAULT now())");
     await pool.query(readFileSync(path.join(__dirname, '../src/db/migrations/026_colaboradores.sql'), 'utf8'));
     await pool.query(readFileSync(path.join(__dirname, '../src/db/migrations/027_colaboradores_inscricao.sql'), 'utf8'));
+    await pool.query(readFileSync(path.join(__dirname, '../src/db/migrations/030_colaboradores_auditoria.sql'), 'utf8'));
     R.inscricao = (await import('@/app/api/v1/colaboradores/inscricao/route')).POST as never;
     R.disp = (await import('@/app/api/v1/colaboradores/disponibilidade/route')).GET as never;
     R.minha = (await import('@/app/api/v1/colaboradores/minha/route')).GET as never;

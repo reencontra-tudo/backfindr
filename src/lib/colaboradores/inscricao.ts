@@ -6,6 +6,7 @@ import { randomInt } from 'node:crypto';
 import { SLUG_REGEX } from './rota';
 import { urlSegura } from './pagina';
 import { POLITICA_VERSAO } from '@/content/politicaColaboradores';
+import { auditar } from './auditoria';
 
 export const ALFABETO = '23456789ABCDEFGHJKLMNPQRSTUVWXYZ'; // sem 0, O, 1, I
 export const TEXTO_COMISSAO_EM_APURACAO = 'Comissão em apuração';
@@ -130,6 +131,7 @@ export async function criarInscricao(tx: Transacao, userId: string, d: DadosInsc
 
     await tx.query(`INSERT INTO politica_aceites (user_id, versao) VALUES ($1, $2) ON CONFLICT (user_id, versao) DO NOTHING`, [userId, POLITICA_VERSAO]);
     const verificacao = await novaVerificacao(tx, String(colab.id), d.canalUrl);
+    await auditar(tx, { ator: userId, acao: 'inscricao_criada', alvoTipo: 'colaborador', alvoId: String(colab.id), depois: { slug: String(colab.slug), politicaVersao: POLITICA_VERSAO } });
     await tx.query('COMMIT');
     return { ok: true, colaborador: { id: String(colab.id), slug: String(colab.slug), codigoCurto: String(colab.codigo_curto), nome: String(colab.nome) }, verificacao };
   } catch (e) {
@@ -186,13 +188,18 @@ export async function minhaColaboracao(consulta: Consulta, userId: string, appUr
 
 /** Saída voluntária: a página passa a redirecionar para o Feed (307); a linha nunca é apagada (PC-13, POLÍTICA §8). */
 export async function sairDoPrograma(consulta: Consulta, userId: string): Promise<boolean> {
-  const r = await consulta(`UPDATE colaboradores SET estado = 'saiu', saiu_em = NOW(), atualizado_em = NOW() WHERE user_id = $1 AND estado = 'ativo' AND interno = FALSE RETURNING id`, [userId]);
+  // Uma só instrução: a mudança e a linha de auditoria acontecem juntas ou nenhuma.
+  const r = await consulta(
+    `WITH alterada AS (UPDATE colaboradores SET estado = 'saiu', saiu_em = NOW(), atualizado_em = NOW() WHERE user_id = $1 AND estado = 'ativo' AND interno = FALSE RETURNING id)
+     INSERT INTO auditoria (ator_id, acao, alvo_tipo, alvo_id, antes, depois) SELECT $1, 'colaborador_saiu', 'colaborador', id::text, '{"estado":"ativo"}'::jsonb, '{"estado":"saiu"}'::jsonb FROM alterada RETURNING alvo_id`, [userId]);
   return r.rows.length > 0;
 }
 
 /** Reativação PELO PRÓPRIO colaborador que saiu por vontade própria (PC-13). Suspenso e excluído NÃO se reativam sozinhos. */
 export async function reativarPagina(consulta: Consulta, userId: string): Promise<boolean> {
-  const r = await consulta(`UPDATE colaboradores SET estado = 'ativo', saiu_em = NULL, atualizado_em = NOW() WHERE user_id = $1 AND estado = 'saiu' AND interno = FALSE RETURNING id`, [userId]);
+  const r = await consulta(
+    `WITH alterada AS (UPDATE colaboradores SET estado = 'ativo', saiu_em = NULL, atualizado_em = NOW() WHERE user_id = $1 AND estado = 'saiu' AND interno = FALSE RETURNING id)
+     INSERT INTO auditoria (ator_id, acao, alvo_tipo, alvo_id, antes, depois) SELECT $1, 'colaborador_reativou', 'colaborador', id::text, '{"estado":"saiu"}'::jsonb, '{"estado":"ativo"}'::jsonb FROM alterada RETURNING alvo_id`, [userId]);
   return r.rows.length > 0;
 }
 
@@ -205,9 +212,11 @@ export async function trocarCanal(tx: Transacao, userId: string, canalUrlBruto: 
     const c = await tx.query(`SELECT id FROM colaboradores WHERE user_id = $1 AND estado = 'ativo' AND interno = FALSE FOR UPDATE`, [userId]);
     if (c.rows.length === 0) { await tx.query('ROLLBACK'); return { ok: false, erro: 'NAO_ENCONTRADO' }; }
     const id = String(c.rows[0].id);
+    const anterior = await tx.query('SELECT canal_url FROM colaboradores WHERE id = $1', [id]);
     await tx.query(`UPDATE colaborador_verificacoes SET estado = 'substituida', decidido_em = NOW() WHERE colaborador_id = $1 AND estado = 'pendente'`, [id]);
     await tx.query(`UPDATE colaboradores SET canal_url = $2, verificado_em = NULL, verificado_por = NULL, atualizado_em = NOW() WHERE id = $1`, [id, canal]);
     const verificacao = await novaVerificacao(tx, id, canal);
+    await auditar(tx, { ator: userId, acao: 'canal_trocado', alvoTipo: 'colaborador', alvoId: id, antes: { canalUrl: anterior.rows[0]?.canal_url ?? null }, depois: { canalUrl: canal, verificado: false } });
     await tx.query('COMMIT');
     return { ok: true, verificacao };
   } catch (e) {
@@ -241,6 +250,7 @@ export async function decidirVerificacao(tx: Transacao, verificacaoId: string, d
     if (decisao === 'aprovar') {
       await tx.query(`UPDATE colaboradores SET verificado_em = NOW(), verificado_por = $2, atualizado_em = NOW() WHERE id = $1`, [v.rows[0].colaborador_id, adminId]);
     }
+    await auditar(tx, { ator: adminId, acao: decisao === 'aprovar' ? 'verificacao_aprovada' : 'verificacao_recusada', alvoTipo: 'verificacao', alvoId: verificacaoId, antes: { estado: 'pendente' }, depois: { estado: decisao === 'aprovar' ? 'aprovada' : 'recusada', colaboradorId: String(v.rows[0].colaborador_id) }, motivo: m });
     await tx.query('COMMIT');
     return { ok: true };
   } catch (e) {

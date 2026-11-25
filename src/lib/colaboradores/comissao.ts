@@ -5,6 +5,8 @@
 // compra e copiado para o lançamento; só Boost (N1); não gera para colaborador inativo, interno, compra de teste, compra do próprio colaborador, nem dono da ocorrência = colaborador;
 // só pagamento aprovado; estorno/cancelamento/contestação = lançamento negativo (o Boost continua ativo, #4); a comissão só conta como DISPONÍVEL depois do prazo (14 dias)
 // e com o canal VERIFICADO.
+import { antifraudeAtivo, avaliarCompra, avaliarColaborador } from './antifraude';
+
 export const comissaoSombraAtiva = (env: Record<string, string | undefined> = process.env): boolean => env.COLABORADORES_ATIVO === '1' && env.COMISSAO_SOMBRA === '1';
 
 export type Arredondamento = 'baixo' | 'cima' | 'meio';
@@ -118,6 +120,18 @@ export async function registrarComissaoSombra(tx: Transacao, e: EntradaPagamento
       [colaborador!.id, comissao, boost.id, boost.object_id, e.paymentId, cfg.percentual, valorCentavos, disponivelEm, `comissao:${e.paymentId}`],
     );
     await registrarEvento(tx, e, { valorCentavos, comissaoCentavos: comissao, percentual: cfg.percentual });
+    // E8: sinais de antifraude (só com COLABORADORES_ANTIFRAUDE=1). Falha aqui NUNCA desfaz a comissão: ponto de salvamento + registro no log.
+    if (ins.rows[0] && antifraudeAtivo()) {
+      await tx.query('SAVEPOINT antifraude');
+      try {
+        await avaliarCompra(tx, { colaboradorId: colaborador!.id, pagamentoRef: e.paymentId, compradorId: String(boost.user_id) });
+        await avaliarColaborador(tx, colaborador!.id, agora);
+        await tx.query('RELEASE SAVEPOINT antifraude');
+      } catch (erroAntifraude) {
+        await tx.query('ROLLBACK TO SAVEPOINT antifraude');
+        console.error('[colaboradores] antifraude falhou; a comissão foi mantida', erroAntifraude instanceof Error ? erroAntifraude.message : 'erro');
+      }
+    }
     await tx.query('COMMIT');
     return ins.rows[0] ? { resultado: 'lancado', lancamentoId: String(ins.rows[0].id), valorCentavos: comissao } : { resultado: 'ja_lancado' };
   } catch (err) {
@@ -166,10 +180,12 @@ export interface Saldo { pendenteCentavos: number; disponivelCentavos: number; t
  * Saldo = SOMA do livro (nunca um campo). Disponível: comissões cujo prazo passou, com o canal VERIFICADO e fora de análise, mais todos os lançamentos negativos/ajustes
  * (descontos valem na hora). Pendente: o que ainda não pode ser sacado (prazo não venceu, canal não verificado ou em análise).
  */
-export async function saldoDoColaborador(consulta: Consulta, colaboradorId: string, agora: Date = new Date()): Promise<Saldo> {
+export async function saldoDoColaborador(consulta: Consulta, colaboradorId: string, agora: Date = new Date(), comSinais: boolean = antifraudeAtivo()): Promise<Saldo> {
+  // E8: com COLABORADORES_ANTIFRAUDE=1, comissão com sinal de compra ABERTO ou CONFIRMADO fica retida (fora do disponível) até o admin descartar o sinal.
+  const retida = comSinais ? ` AND NOT EXISTS (SELECT 1 FROM colaborador_sinais s WHERE s.colaborador_id = l.colaborador_id AND s.pagamento_ref = l.pagamento_ref AND s.bloqueia AND s.estado IN ('aberto','confirmado'))` : '';
   const r = await consulta(
     `SELECT
-       COALESCE(SUM(l.valor_centavos) FILTER (WHERE l.tipo = 'comissao' AND (l.disponivel_em IS NULL OR l.disponivel_em <= $2) AND c.verificado_em IS NOT NULL AND NOT l.em_analise), 0)::int AS liberada,
+       COALESCE(SUM(l.valor_centavos) FILTER (WHERE l.tipo = 'comissao' AND (l.disponivel_em IS NULL OR l.disponivel_em <= $2) AND c.verificado_em IS NOT NULL AND NOT l.em_analise${retida}), 0)::int AS liberada,
        COALESCE(SUM(l.valor_centavos) FILTER (WHERE l.tipo <> 'comissao'), 0)::int AS outros,
        COALESCE(SUM(l.valor_centavos), 0)::int AS total
        FROM colaborador_lancamentos l JOIN colaboradores c ON c.id = l.colaborador_id WHERE l.colaborador_id = $1`,
