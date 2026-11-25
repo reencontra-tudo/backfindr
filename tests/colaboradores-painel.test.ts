@@ -88,11 +88,11 @@ describe.skipIf(!TEST_DB)('B/D. com Postgres real', () => {
 
   beforeAll(async () => {
     pool = new Pool({ connectionString: TEST_DB });
-    await pool.query('DROP TABLE IF EXISTS colaborador_saques, colaborador_dados_pagamento, colaborador_lancamentos, pagamento_eventos, programa_config, colaborador_verificacoes, politica_aceites, boosts, objects, colaboradores, users CASCADE');
+    await pool.query('DROP TABLE IF EXISTS auditoria, colaborador_saques, colaborador_dados_pagamento, colaborador_lancamentos, pagamento_eventos, programa_config, colaborador_verificacoes, politica_aceites, boosts, objects, colaboradores, users CASCADE');
     await pool.query('CREATE TABLE users (id uuid PRIMARY KEY)');
     await pool.query("CREATE TABLE objects (id uuid PRIMARY KEY DEFAULT gen_random_uuid(), user_id uuid, title text, status text DEFAULT 'lost', category text, type text, qr_code text, is_public boolean DEFAULT true, is_legacy boolean DEFAULT false, subject_name text, description text, location text, created_at timestamp DEFAULT now())");
     await pool.query(`CREATE TABLE boosts (id uuid PRIMARY KEY DEFAULT gen_random_uuid(), object_id uuid NOT NULL, user_id uuid NOT NULL, type varchar NOT NULL, status varchar NOT NULL, amount_paid numeric, provider varchar, provider_ref varchar, starts_at timestamptz, expires_at timestamptz, created_at timestamptz DEFAULT now(), updated_at timestamptz, active boolean NOT NULL DEFAULT true)`);
-    for (const m of ['026_colaboradores.sql', '028_colaboradores_comissao.sql', '029_colaboradores_saque.sql']) await pool.query(MIG(m));
+    for (const m of ['026_colaboradores.sql', '028_colaboradores_comissao.sql', '029_colaboradores_saque.sql', '030_colaboradores_auditoria.sql']) await pool.query(MIG(m));
   });
   afterAll(async () => { await pool?.end(); const { closePool } = await import('@/lib/db'); await closePool(); });
 

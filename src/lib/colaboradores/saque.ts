@@ -5,6 +5,7 @@
 import { saldoDoColaborador, type Consulta, type Transacao } from './comissao';
 import { cifrar, finalDe, type DadosPagamento } from './pagamento';
 import { inscricaoAtiva } from './inscricao';
+import { auditar } from './auditoria';
 
 export const saldoVisivel = (env: Record<string, string | undefined> = process.env) => inscricaoAtiva(env) && env.COLABORADORES_SALDO === '1';
 export const saqueAtivo = (env: Record<string, string | undefined> = process.env) => saldoVisivel(env) && env.COLABORADORES_SAQUE === '1';
@@ -31,11 +32,16 @@ export interface DadosPagamentoMascarados { tipoChave: string; chaveFinal: strin
 export async function salvarDadosPagamento(consulta: Consulta, colaboradorId: string, d: DadosPagamento, env: Record<string, string | undefined> = process.env): Promise<void> {
   // cifrar() lança CifragemIndisponivel sem a chave: nunca grava em claro.
   const chaveCif = cifrar(d.chave, env); const docCif = cifrar(d.documento, env);
+  // Uma só instrução: a gravação e a auditoria (só tipo e final; NUNCA a chave nem o documento) acontecem juntas ou nenhuma.
   await consulta(
-    `INSERT INTO colaborador_dados_pagamento (colaborador_id, tipo_chave, chave_cifrada, chave_final, titular_nome, documento_tipo, documento_cifrado, documento_final)
-     VALUES ($1,$2,$3,$4,$5,$6,$7,$8)
-     ON CONFLICT (colaborador_id) DO UPDATE SET tipo_chave = EXCLUDED.tipo_chave, chave_cifrada = EXCLUDED.chave_cifrada, chave_final = EXCLUDED.chave_final, titular_nome = EXCLUDED.titular_nome,
-       documento_tipo = EXCLUDED.documento_tipo, documento_cifrado = EXCLUDED.documento_cifrado, documento_final = EXCLUDED.documento_final, atualizado_em = NOW()`,
+    `WITH gravada AS (
+       INSERT INTO colaborador_dados_pagamento (colaborador_id, tipo_chave, chave_cifrada, chave_final, titular_nome, documento_tipo, documento_cifrado, documento_final)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8)
+       ON CONFLICT (colaborador_id) DO UPDATE SET tipo_chave = EXCLUDED.tipo_chave, chave_cifrada = EXCLUDED.chave_cifrada, chave_final = EXCLUDED.chave_final, titular_nome = EXCLUDED.titular_nome,
+         documento_tipo = EXCLUDED.documento_tipo, documento_cifrado = EXCLUDED.documento_cifrado, documento_final = EXCLUDED.documento_final, atualizado_em = NOW()
+       RETURNING colaborador_id, tipo_chave, chave_final)
+     INSERT INTO auditoria (ator_id, acao, alvo_tipo, alvo_id, depois)
+     SELECT (SELECT user_id FROM colaboradores WHERE id = colaborador_id), 'dados_pagamento_atualizados', 'colaborador', colaborador_id::text, jsonb_build_object('tipoChave', tipo_chave, 'chaveFinal', chave_final) FROM gravada`,
     [colaboradorId, d.tipoChave, chaveCif, finalDe(d.chave), d.titularNome, d.documentoTipo, docCif, finalDe(d.documento)],
   );
 }
@@ -68,6 +74,7 @@ export async function solicitarSaque(tx: Transacao, userId: string, agora: Date 
     const s = await tx.query(`INSERT INTO colaborador_saques (colaborador_id, valor_centavos, solicitado_em) VALUES ($1,$2,$3) RETURNING id`, [id, saldo.disponivelCentavos, agora.toISOString()]);
     const sid = String(s.rows[0].id);
     await tx.query(`INSERT INTO colaborador_lancamentos (colaborador_id, tipo, valor_centavos, chave_idempotencia, motivo) VALUES ($1,'saque_reservado',$2,$3,'saque solicitado')`, [id, -saldo.disponivelCentavos, `saque:${sid}`]);
+    await auditar(tx, { ator: userId, acao: 'saque_solicitado', alvoTipo: 'saque', alvoId: sid, depois: { valorCentavos: saldo.disponivelCentavos } });
     await tx.query('COMMIT');
     return { ok: true, saque: { id: sid, valorCentavos: saldo.disponivelCentavos, previstoAte: somarDiasUteis(agora, PRAZO_SAQUE_DIAS_UTEIS_PADRAO).toISOString() } };
   } catch (e) {
@@ -88,6 +95,7 @@ export async function cancelarSaque(tx: Transacao, userId: string, agora: Date =
     const sid = String(s.rows[0].id); const valor = Number(s.rows[0].valor_centavos);
     await tx.query(`UPDATE colaborador_saques SET estado = 'cancelado', decidido_em = $2, motivo = 'cancelado pelo colaborador' WHERE id = $1`, [sid, agora.toISOString()]);
     await tx.query(`INSERT INTO colaborador_lancamentos (colaborador_id, tipo, valor_centavos, chave_idempotencia, motivo) VALUES ($1,'saque_cancelado',$2,$3,'cancelado pelo colaborador')`, [id, valor, `saque_cancelado:${sid}`]);
+    await auditar(tx, { ator: userId, acao: 'saque_cancelado_pelo_colaborador', alvoTipo: 'saque', alvoId: sid, antes: { estado: 'solicitado' }, depois: { estado: 'cancelado', valorCentavos: valor } });
     await tx.query('COMMIT');
     return { ok: true, valorCentavos: valor };
   } catch (e) {

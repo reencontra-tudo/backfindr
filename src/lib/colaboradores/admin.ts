@@ -5,10 +5,8 @@ import { semControleTexto } from './texto';
 
 export const adminAtivo = (env: Record<string, string | undefined> = process.env): boolean => env.COLABORADORES_ATIVO === '1';
 
-export async function auditar(tx: Transacao, a: { ator: string; acao: string; alvoTipo: string; alvoId: string; antes?: unknown; depois?: unknown; motivo?: string | null }) {
-  await tx.query(`INSERT INTO auditoria (ator_id, acao, alvo_tipo, alvo_id, antes, depois, motivo) VALUES ($1,$2,$3,$4,$5::jsonb,$6::jsonb,$7)`,
-    [a.ator, a.acao, a.alvoTipo, a.alvoId, a.antes === undefined ? null : JSON.stringify(a.antes), a.depois === undefined ? null : JSON.stringify(a.depois), a.motivo ?? null]);
-}
+export { auditar } from './auditoria';
+import { auditar } from './auditoria';
 
 export type AcaoDeEstado = 'suspender' | 'reativar' | 'excluir';
 export type ResultadoEstado = { ok: true; estado: string; saldoCancelado?: number } | { ok: false; erro: 'NAO_ENCONTRADO' | 'INTERNO' | 'TRANSICAO_INVALIDA' | 'MOTIVO_OBRIGATORIO' };
@@ -204,6 +202,6 @@ export function celulaCsv(v: unknown): string {
   return `"${t.replace(/"/g, '""')}"`;
 }
 export function csvDaLista(mes: string, linhas: Array<Record<string, unknown>>): string {
-  const cab = ['mes', 'slug', 'nome', 'estado', 'verificado', 'ocorrencias_no_mes', 'compras_no_mes', 'comissao_no_mes_centavos', 'saldo_total_centavos'];
-  return [cab.join(','), ...linhas.map((l) => [mes, l.slug, l.nome, l.estado, l.verificado ? 'sim' : 'nao', l.ocorrencias_no_mes, l.compras_no_mes, l.comissao_no_mes_centavos, l.saldo_total_centavos].map(celulaCsv).join(','))].join('\r\n') + '\r\n';
+  const cab = ['mes', 'slug', 'nome', 'estado', 'verificado', 'visitas_no_mes', 'ocorrencias_no_mes', 'compras_no_mes', 'comissao_no_mes_centavos', 'saldo_total_centavos'];
+  return [cab.join(','), ...linhas.map((l) => [mes, l.slug, l.nome, l.estado, l.verificado ? 'sim' : 'nao', l.visitas_no_mes ?? '', l.ocorrencias_no_mes, l.compras_no_mes, l.comissao_no_mes_centavos, l.saldo_total_centavos].map(celulaCsv).join(','))].join('\r\n') + '\r\n';
 }

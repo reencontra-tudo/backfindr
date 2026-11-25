@@ -424,3 +424,6 @@ Painel com ocorrências do link, saldo (atrás de `COLABORADORES_SALDO`), dados 
 
 ### E7 — o que foi construído (24/11/2026, rascunho; empilhado sobre a E6)
 Tela `/admin/colaboradores` (lista com métricas do mês, verificações, saques, regras, exportação CSV), ações auditadas (`auditoria`, só INSERT), exclusão com cancelamento de saldo configurável, regras versionadas só para frente; migration 030. Visitas por mês: E8.
+
+### E8 — o que foi construído (25/11/2026, rascunho)
+Migration 031 (`colaborador_sinais`, `colaborador_visitas_dia`; RLS ligado, não aplicada). Antifraude (`antifraude.ts`): sinais para análise manual, os de compra retêm a comissão no saldo até decisão auditada; interruptor `COLABORADORES_ANTIFRAUDE`. Visitas (`visitas.ts`, rota pública `POST /api/v1/colaboradores/visita`): contador agregado sem IP, cookie ou identificador; interruptor `COLABORADORES_VISITAS`. Auditoria completa (`auditoria.ts`) em inscrição, verificação, canal, saída/reativação, dados de pagamento e saque. Admin: abas Análises e Auditoria, coluna de visitas e no CSV. Estado e sequência de abertura: `ESTADO-DO-PROGRAMA.md`.

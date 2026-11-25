@@ -8,6 +8,8 @@ import { cache } from 'react';
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { notFound, permanentRedirect, redirect } from 'next/navigation';
+import RegistroDeVisita from '@/components/colaboradores/RegistroDeVisita';
+import { visitasAtivas } from '@/lib/colaboradores/visitas';
 import { query } from '@/lib/db';
 import { APP_URL } from '@/lib/constants';
 import { colaboradoresAtivo, slugValido } from '@/lib/colaboradores/rota';
@@ -86,6 +88,7 @@ export default async function ColaboradorPage({ params }: { params: { slug: stri
   const delaRegiao = itens.slice(comCodigo);
   return (
     <main className="mx-auto max-w-2xl px-4 pb-16 pt-6" data-colaborador-pagina>
+      {visitasAtivas() && <RegistroDeVisita slug={c.slug} />}
       <Topo c={c} />
 
       <section aria-labelledby="registrar" className="mt-6">
