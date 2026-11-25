@@ -44,10 +44,20 @@ Cada passo só começa depois do anterior dar certo e só com a sua ordem.
 5. **`PIX_CHAVE_CIFRAGEM`:** gerar a chave de cifragem (você e o NAV; nunca no chat).
 6. **`COLABORADORES_SALDO`:** colaboradores passam a ver o saldo (liberação em 14 dias, canal verificado).
 7. **`COLABORADORES_SAQUE`:** saque mínimo R$ 50, repasse manual por PIX em até 10 dias úteis.
-8. **Revisão jurídica e contábil da política** (guarda do livro por 5 anos, regras de exclusão, tributação). **Sem esse parecer, o passo 9 não acontece.**
-9. **`COLABORADORES_INSCRICAO`:** abre a inscrição, só por link, sem aparecer em menu nem em buscadores.
+8. **Revisão jurídica e contábil da política** (guarda do livro por 5 anos, regras de exclusão, tributação). **Sem esse parecer, a ABERTURA PÚBLICA (passo 9) não acontece.** O modo teste (seção 5b) pode acontecer antes.
+9. **ABERTURA PÚBLICA:** divulgar a inscrição e aceitar colaboradores de verdade, com `COLABORADORES_INSCRICAO` ligado, só por link, sem menu nem buscadores (e, antes do saque ao público, resolver a pendência da chave PIX, seção 6).
 
-## 6. Pendências que não travam a abertura
+## 5b. Modo teste (decidido em 25/11/2026) — o que é e o que NÃO é
+- **Modo teste:** você liga os interruptores em produção, um por vez, **sem divulgar nada** (sem link, menu, rodapé ou botão «Seja colaborador»), para testar o fluxo real: inscrição, painel, feed, visitas, antifraude, saldo, saque e um pagamento de teste. Pode ser feito **antes do parecer**.
+- **Abertura pública:** aceitar colaboradores de verdade e pagar saque a terceiros. **Continua dependendo do parecer jurídico e contábil.**
+- **Como reconhecer o que é teste:** @nome começando com `teste-`, e-mail com `+teste` e título da ocorrência com `[TESTE]`.
+- **Cuidados:** a ocorrência de teste é pública no feed e no mapa; quem souber o endereço de `/colaborador/seja` consegue se inscrever (não há lista de autorizados); e, com o @nome `teste-`, a página sai do sitemap e fica `noindex` (PR de código à parte).
+- **Limpeza ao final (só com seu pedido):** preferência por apagar uma única vez, com exportação prévia para o backup, **só se não existir colaborador nem pagamento real**; se existir, aposentar sem apagar. O jurídico deve ser avisado. Script ensaiado: `limpeza-modo-teste.sql` (termina em ROLLBACK). Se o Mercado Pago reenviar o aviso de um pagamento de teste já apagado, o sistema responde `owner_mismatch` e não recria nada (ver DECISOES, PC-16); mesmo assim, não reenvie avisos depois da limpeza.
+
+## 6. Pendências
+**Obrigatória antes do saque ao público:** como o admin vê a chave PIX completa para pagar, de forma auditada (hoje só vê o final). Opções: botão auditado «ver chave completa»; «PIX copia e cola» entregue ao admin sem mostrar a chave; ou pagamento por integração. Nenhuma implementada.
+
+**Não travam a abertura:**
 Liberar o `@nome` após 12 meses sem atividade (E5b); diferenciais reais do Pro; CI com Postgres (hoje a regra QA-01 cobre); aviso aos 21 titulares afetados; decidir se o `@backfindr` será verificado.
 
 ## 7. Limites desta entrega (sem enfeite)
