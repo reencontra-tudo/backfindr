@@ -97,7 +97,7 @@ Estimativa minha, não medida; cada etapa em PR próprio, rascunho, QA-01 (suít
 | Verificação | Como provar que o colaborador é dono do canal? | **Manual no início:** o colaborador coloca um código `BF-XXXX-XXXX` na descrição do grupo/perfil, e o fundador aprova na fila (E7). | antes da E5 |
 | 13 | Visitas por mês | **Contador próprio mínimo** (por dia e colaborador, sem IP, cookie ou identificador; conta robôs de forma aproximada) — fica na E8. | E8 |
 | 12 e 8 | Código na URL e «só indexa verificada» | **Aceitar os dois** (já valem em produção). | já em uso |
-| Política | Texto da política/termos do programa | **Eu redijo um texto provisório** para o fundador/jurídico revisarem; a inscrição fica só por link, `noindex`, sem menu, até a revisão. | antes de abrir a inscrição |
+| Política | Texto da política/termos do programa | **Eu redijo um texto provisório** para o fundador/jurídico revisarem; a inscrição fica só por link, `noindex`, sem menu, até a revisão. **Atualização de 25/11/2026 (PC-16): em MODO TESTE, sem divulgação, a inscrição pode ser ligada em produção antes da revisão; a revisão é pré-requisito da ABERTURA PÚBLICA.** | antes da abertura pública (o modo teste pode vir antes) |
 
 ## E. O que o FUNDADOR (ou o NAV) faz em cada etapa
 | Etapa | Ação |
