@@ -48,6 +48,7 @@ describe.skipIf(!TEST_DB)('página /colaborador/[slug]', () => {
     await mk('suspenso', 'SU5P', 'Suspenso', 'suspenso', true);
     await mk('saiu', 'SA6U', 'Saiu', 'saiu', true);
     await mk('excluido', 'EX7C', 'Excluído', 'excluido', true);
+    await mk('teste-ana', 'TT4A', 'Teste Ana', 'ativo', true);   // PC-16: colaborador de TESTE (verificado)
   });
   afterEach(() => { delete process.env.COLABORADORES_ATIVO; });
   const ligar = () => { process.env.COLABORADORES_ATIVO = '1'; };
@@ -78,6 +79,15 @@ describe.skipIf(!TEST_DB)('página /colaborador/[slug]', () => {
     expect((await meta({ params: { slug: 'nao-verif' } })).robots?.index).toBe(false);
     expect((await meta({ params: { slug: 'suspenso' } })).robots?.index).toBe(false);
     expect((await meta({ params: { slug: 'nunca-existiu' } })).robots?.index).toBe(false);
+  });
+
+  it('LIGADO: colaborador de TESTE (@teste-…) verificado e com conteúdo fica noindex; a página continua abrindo (PC-16)', async () => {
+    ligar(); await obj('[TESTE] chaves', ids['teste-ana']);
+    const m = await meta({ params: { slug: 'teste-ana' } });
+    expect(m.robots?.index).toBe(false);
+    expect(m.alternates?.canonical).toMatch(/\/@teste-ana$/);
+    await obj('Chaves reais', ids['grupo-sp']); expect((await meta({ params: { slug: 'grupo-sp' } })).robots?.index).toBe(true);   // os demais seguem iguais
+    expect(await erroDe(Pagina({ params: { slug: 'teste-ana' } }))).toBeFalsy();
   });
 
   it('LIGADO: marcação — nome, «por Backfindr», link de origem seguro, botões com o código, cartões, sem promessas e sem dados de terceiros', async () => {

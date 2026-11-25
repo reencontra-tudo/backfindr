@@ -2,7 +2,6 @@
 // Painel do colaborador (E5 + E6): estado da página e da verificação, kit de divulgação, troca de canal e saída. O painel completo (ocorrências, saldo, saque) vem na E6.
 // Comissão: «em apuração», SEM valores, até o fundador ligar COLABORADORES_SALDO; saque só com COLABORADORES_SAQUE. Sem COLABORADORES_INSCRICAO a API responde 404 e esta tela mostra «indisponível».
 import { useCallback, useEffect, useState } from 'react';
-import Link from 'next/link';
 import Cookies from 'js-cookie';
 
 interface Minha {
@@ -62,7 +61,6 @@ export default function PainelColaborador() {
       <main className="mx-auto max-w-2xl px-4 py-10 text-sm text-white/75">
         <h1 className="text-xl font-bold text-white">Programa de Colaboradores</h1>
         <p className="mt-3">Você ainda não tem uma página de colaborador.</p>
-        <Link href="/colaborador/seja" className="mt-4 flex min-h-[44px] items-center justify-center rounded-xl bg-teal-500 px-4 font-semibold text-black hover:bg-teal-400">Quero ser colaborador</Link>
         {msg && <p className="mt-3 text-red-300">{msg}</p>}
       </main>
     );

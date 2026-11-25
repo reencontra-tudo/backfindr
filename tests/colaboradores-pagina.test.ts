@@ -11,7 +11,7 @@ if (TEST_DB) process.env.DATABASE_URL = TEST_DB;
 const SCHEMA = readFileSync(path.join(__dirname, 'fixtures/feed-schema.sql'), 'utf8');
 const MIGRATION = readFileSync(path.join(__dirname, '../src/db/migrations/026_colaboradores.sql'), 'utf8');
 
-import { carregarColaborador, paginaIndexavel, urlSegura, linksDeCadastro, caminhoPagina } from '@/lib/colaboradores/pagina';
+import { carregarColaborador, paginaIndexavel, ehSlugDeTeste, urlSegura, linksDeCadastro, caminhoPagina } from '@/lib/colaboradores/pagina';
 import { feedDoColaborador, COLAB_FEED_MAX, regiaoValida } from '@/lib/colaboradores/feed';
 
 describe('regras puras da página', () => {
@@ -26,6 +26,12 @@ describe('regras puras da página', () => {
     expect(paginaIndexavel({ estado: 'suspenso', verificado: true }, 7)).toBe(false);
     expect(paginaIndexavel({ estado: 'saiu', verificado: true }, 7)).toBe(false);
     expect(paginaIndexavel({ estado: 'excluido', verificado: true }, 7)).toBe(false);
+    // PC-16 (modo teste): @nome `teste-…` nunca é indexável, mesmo ativo, verificado e com conteúdo; os demais seguem a regra de sempre
+    expect(paginaIndexavel({ estado: 'ativo', verificado: true, slug: 'teste-ana' }, 9)).toBe(false);
+    expect(paginaIndexavel({ estado: 'ativo', verificado: true, slug: 'TESTE-Ana' }, 9)).toBe(false);
+    expect(paginaIndexavel({ estado: 'ativo', verificado: true, slug: 'grupo-sp' }, 9)).toBe(true);
+    expect(paginaIndexavel({ estado: 'ativo', verificado: true, slug: 'testes-reais' }, 9)).toBe(true);   // só o prefixo exato `teste-`
+    expect(ehSlugDeTeste('teste-ana')).toBe(true); expect(ehSlugDeTeste('Teste-X')).toBe(true); expect(ehSlugDeTeste('meu-teste-1')).toBe(false);
   });
   it('endereço canônico e links de cadastro com o código na URL (?colab=)', () => {
     expect(caminhoPagina('BackFindr')).toBe('/@backfindr');
@@ -77,6 +83,7 @@ describe.skipIf(!TEST_DB)('página, feed do colaborador e sitemap (banco real)',
     await mk('suspenso', 'SU5P', 'Suspenso', 'suspenso', true);
     await mk('saiu', 'SA6U', 'Saiu', 'saiu', true);
     await mk('excluido', 'EX7C', 'Excluído', 'excluido', true);
+    await mk('teste-ana', 'TT4A', 'Teste Ana', 'ativo', true);   // PC-16: colaborador de TESTE (verificado)
   });
   afterEach(() => { delete process.env.COLABORADORES_ATIVO; });
 
@@ -186,6 +193,15 @@ describe.skipIf(!TEST_DB)('página, feed do colaborador e sitemap (banco real)',
       await novoObjeto({ titulo: 'legado (não conta)', colab: ids['sem-regiao'], legado: true });          // só tem ocorrência fora da elegibilidade
       const r = await paginasDeColaboradorParaSitemap('https://backfindr.com');
       expect(r.map((x) => x.url)).toEqual(['https://backfindr.com/@grupo-sp']);
+    });
+    it('LIGADO: colaborador de TESTE (@teste-…) verificado e com ocorrência elegível NÃO entra no sitemap (PC-16)', async () => {
+      process.env.COLABORADORES_ATIVO = '1';
+      const { paginasDeColaboradorParaSitemap } = await import('@/lib/colaboradores/sitemap');
+      await novoObjeto({ titulo: 'ok', colab: ids['grupo-sp'] });
+      await novoObjeto({ titulo: '[TESTE] ocorrência de teste', colab: ids['teste-ana'] });
+      const r = await paginasDeColaboradorParaSitemap('https://backfindr.com');
+      expect(r.map((x) => x.url)).toEqual(['https://backfindr.com/@grupo-sp']);
+      expect(JSON.stringify(r)).not.toMatch(/teste-ana/);
     });
     it('LIGADO e sem nenhuma página elegível: vazio; falha do banco: vazio (nunca lança)', async () => {
       process.env.COLABORADORES_ATIVO = '1';
