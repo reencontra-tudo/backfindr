@@ -13,7 +13,7 @@ O programa está **todo construído** (etapas E0 a E8). Para o público só exis
 | E5 | Inscrição pelo próprio colaborador, verificação do canal, aceite da política, sair e voltar | Mesclada; inscrição fechada |
 | E6 | Painel do colaborador: ocorrências, saldo, dados de pagamento cifrados, pedido de saque | Mesclada; saldo e saque fechados |
 | E7 | Tela de admin: lista do mês, verificações, saques, regras, exportação CSV | Mesclada |
-| **E8 (esta entrega)** | Antifraude (sinais para você analisar), contador de visitas sem identificar ninguém, auditoria completa, abas novas no admin | **Em rascunho, ainda não mesclada** |
+| E8 | Antifraude (sinais para você analisar), contador de visitas sem identificar ninguém, auditoria completa, abas novas no admin | Mesclada (#204); tudo novo desligado |
 
 ## 3. O que a E8 faz (e o que NÃO faz)
 - **Antifraude:** não bloqueia nem pune ninguém sozinho. Levanta *sinais* para você decidir: o comprador tem o mesmo e-mail do colaborador; o mesmo comprador fez 3 ou mais compras em 30 dias; 5 ou mais contas novas usando o código em 7 dias; 20 ou mais ocorrências em 24 horas. Os dois primeiros **seguram a comissão** daquela compra até você descartar ou confirmar (com motivo escrito, que fica registrado). Os outros dois só avisam.
@@ -33,14 +33,14 @@ O programa está **todo construído** (etapas E0 a E8). Para o público só exis
 | `COLABORADORES_INSCRICAO` | desligado | Inscrição pelo próprio colaborador |
 | `MP_WEBHOOK_SECRET` | **pendente** (você configura com o NAV) | Confirmação segura dos pagamentos |
 
-Banco: migrations 026 a 030 aplicadas. **A 031 (E8) ainda NÃO foi aplicada** (só será com ordem sua e backup do dia conferido pelo NAV).
+Banco: migrations 026 a 031 aplicadas (a 031 em 25/11/2026, com 2 tabelas vazias e proteção RLS).
 
 ## 5. Sequência exata para abrir ao público
 Cada passo só começa depois do anterior dar certo e só com a sua ordem.
-1. **Mesclar a E8** (depois de você revisar o rascunho). Nada muda para o público: tudo novo está desligado.
+1. ~~Mesclar a E8 e aplicar a migration 031~~ — **feito em 25/11/2026**; nada mudou para o público.
 2. **Segredo do webhook:** você configura `MP_WEBHOOK_SECRET` com o NAV; testamos com "Simular notificação" (sem criar cobrança, regra QA-02).
 3. **`COMISSAO_SOMBRA`:** ligar e observar o livro por alguns dias (ninguém vê nada).
-4. **Migration 031** (backup do NAV conferido antes) e então `COLABORADORES_ANTIFRAUDE` e `COLABORADORES_VISITAS`; observar os sinais por alguns dias e calibrar os limites, se preciso.
+4. `COLABORADORES_ANTIFRAUDE` e `COLABORADORES_VISITAS` (a migration 031 já está aplicada); observar os sinais por alguns dias e calibrar os limites, se preciso.
 5. **`PIX_CHAVE_CIFRAGEM`:** gerar a chave de cifragem (você e o NAV; nunca no chat).
 6. **`COLABORADORES_SALDO`:** colaboradores passam a ver o saldo (liberação em 14 dias, canal verificado).
 7. **`COLABORADORES_SAQUE`:** saque mínimo R$ 50, repasse manual por PIX em até 10 dias úteis.
