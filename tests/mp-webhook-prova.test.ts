@@ -62,7 +62,11 @@ describe.skipIf(!TEST_DB)('caso 4: payment aprovado, assinatura válida, COMISSA
     await pool.query(`INSERT INTO colaboradores (id, user_id, slug, codigo_curto, nome, estado, interno, verificado_em) VALUES ($1,$2,'prova-colab','PRVA','Colab','ativo',FALSE, now())`, [CID, CUSER]);
     await pool.query(`INSERT INTO objects (id, user_id, title, colaborador_id, colaborador_codigo) VALUES ($1,$2,'x',$3,'@prova-colab')`, [OBJ, U1, CID]);   // o comprador (metadata.user_id) é o DONO do objeto, como no checkout real
   });
-  afterAll(async () => { await pool?.end(); const { closePool } = await import('@/lib/db'); await closePool(); });
+  afterAll(async () => {
+    // O livro é só-INSERT e tem chaves para `colaboradores`: sem esta limpeza, outros testes que apagam colaboradores falham conforme a ORDEM de execução.
+    await pool.query('DROP TABLE IF EXISTS colaborador_sinais, colaborador_visitas_dia, auditoria, colaborador_saques, colaborador_dados_pagamento, colaborador_lancamentos, pagamento_eventos, programa_config, colaborador_verificacoes, politica_aceites, boosts, subscriptions_p1, objects, colaboradores, users CASCADE');
+    await pool?.end(); const { closePool } = await import('@/lib/db'); await closePool();
+  });
 
   it('grava UMA linha de comissão no livro; repetir o mesmo pagamento (assinado) não duplica', async () => {
     process.env.COLABORADORES_ATIVO = '1'; process.env.COMISSAO_SOMBRA = '1';
