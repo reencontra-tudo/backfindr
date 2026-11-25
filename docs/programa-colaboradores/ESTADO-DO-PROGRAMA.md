@@ -24,22 +24,22 @@ O programa está **todo construído** (etapas E0 a E8). Para o público só exis
 | Interruptor | Estado | O que liga |
 |---|---|---|
 | `COLABORADORES_ATIVO` / `NEXT_PUBLIC_COLABORADORES_ATIVO` | **LIGADO** (piloto) | Página do colaborador e link |
-| `COMISSAO_SOMBRA` | desligado | Cálculo e gravação da comissão no livro |
+| `COMISSAO_SOMBRA` | **LIGADO** em 25/11/2026 | Cálculo e gravação da comissão no livro (ninguém vê) |
 | `COLABORADORES_ANTIFRAUDE` | desligado (novo) | Sinais, retenção, abas de análise |
 | `COLABORADORES_VISITAS` | desligado (novo) | Contador de visitas |
 | `PIX_CHAVE_CIFRAGEM` | não configurado | Guardar chave PIX cifrada |
 | `COLABORADORES_SALDO` | desligado | Colaborador ver o saldo |
 | `COLABORADORES_SAQUE` | desligado | Colaborador pedir saque |
 | `COLABORADORES_INSCRICAO` | desligado | Inscrição pelo próprio colaborador |
-| `MP_WEBHOOK_SECRET` | **pendente** (você configura com o NAV) | Confirmação segura dos pagamentos |
+| `MP_WEBHOOK_SECRET` | **configurado** (trocado em 25/11/2026; o anterior vazou numa captura de tela e foi descartado) | Confirmação segura dos pagamentos |
 
 Banco: migrations 026 a 031 aplicadas (a 031 em 25/11/2026, com 2 tabelas vazias e proteção RLS).
 
 ## 5. Sequência exata para abrir ao público
 Cada passo só começa depois do anterior dar certo e só com a sua ordem.
 1. ~~Mesclar a E8 e aplicar a migration 031~~ — **feito em 25/11/2026**; nada mudou para o público.
-2. **Segredo do webhook:** você configura `MP_WEBHOOK_SECRET` com o NAV; testamos com "Simular notificação" (sem criar cobrança, regra QA-02).
-3. **`COMISSAO_SOMBRA`:** ligar e observar o livro por alguns dias (ninguém vê nada).
+2. ~~Segredo do webhook~~ — **feito em 25/11/2026** (URL corrigida para `backfindr.com`, segredo trocado, «Simular notificação» deu 200).
+3. **`COMISSAO_SOMBRA`:** **ligado em 25/11/2026. ESTAMOS AQUI: observar o livro por alguns dias** (ninguém vê nada; hoje o livro tem 0 linhas, as 2 notificações simuladas não gravaram nada).
 4. `COLABORADORES_ANTIFRAUDE` e `COLABORADORES_VISITAS` (a migration 031 já está aplicada); observar os sinais por alguns dias e calibrar os limites, se preciso.
 5. **`PIX_CHAVE_CIFRAGEM`:** gerar a chave de cifragem (você e o NAV; nunca no chat).
 6. **`COLABORADORES_SALDO`:** colaboradores passam a ver o saldo (liberação em 14 dias, canal verificado).
